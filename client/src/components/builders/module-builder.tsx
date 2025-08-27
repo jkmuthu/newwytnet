@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function ModuleBuilder() {
@@ -53,11 +54,13 @@ export default function ModuleBuilder() {
 }`);
 
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: models } = useQuery({
     queryKey: ["/api/models"],
     retry: false,
+    enabled: isAuthenticated,
   });
 
   const validateMutation = useMutation({
