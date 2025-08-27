@@ -76,7 +76,7 @@ export default function Assessment() {
   });
 
   // Fetch questions
-  const { data: questions, isLoading: loadingQuestions } = useQuery({
+  const { data: questions, isLoading: loadingQuestions } = useQuery<AssessmentQuestion[]>({
     queryKey: ['/api/assessments/questions', participantInfo.categoryId || null, participantInfo.language],
     enabled: currentStep === 'assessment' && !!sessionId,
     retry: false,
@@ -151,7 +151,7 @@ export default function Assessment() {
   });
 
   // Get results query
-  const { data: results, isLoading: loadingResults } = useQuery({
+  const { data: results, isLoading: loadingResults } = useQuery<any>({
     queryKey: [`/api/assessments/sessions/${sessionId}/results`],
     enabled: currentStep === 'results' && !!sessionId,
     retry: false,
