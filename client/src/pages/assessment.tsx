@@ -85,8 +85,7 @@ export default function Assessment() {
   // Create session mutation
   const createSessionMutation = useMutation({
     mutationFn: async (sessionData: any) => {
-      const response = await apiRequest("POST", "/api/assessments/sessions", sessionData);
-      return await response.json();
+      return apiRequest("/api/assessments/sessions", "POST", sessionData);
     },
     onSuccess: (session: AssessmentSession) => {
       setSessionId(session.id);
@@ -108,8 +107,7 @@ export default function Assessment() {
   // Submit response mutation
   const submitResponseMutation = useMutation({
     mutationFn: async (responseData: any) => {
-      const response = await apiRequest("POST", "/api/assessments/responses", responseData);
-      return await response.json();
+      return apiRequest("/api/assessments/responses", "POST", responseData);
     },
     onSuccess: () => {
       if (currentQuestionIndex < (questions?.length || 0) - 1) {
@@ -131,8 +129,7 @@ export default function Assessment() {
   // Calculate results mutation
   const calculateResultsMutation = useMutation({
     mutationFn: async (sessionId: string) => {
-      const response = await apiRequest("POST", `/api/assessments/sessions/${sessionId}/calculate`);
-      return await response.json();
+      return apiRequest(`/api/assessments/sessions/${sessionId}/calculate`, "POST");
     },
     onSuccess: () => {
       setCurrentStep('results');

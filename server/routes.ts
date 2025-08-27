@@ -956,6 +956,301 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Assessment API Routes
+  app.get('/api/assessments/categories', async (req, res) => {
+    try {
+      const categories = [
+        {
+          id: 'general',
+          name: 'general',
+          displayName: 'General Professional',
+          description: 'For general professional development'
+        },
+        {
+          id: 'student',
+          name: 'student', 
+          displayName: 'Student',
+          description: 'For students and academic purposes'
+        },
+        {
+          id: 'manager',
+          name: 'manager',
+          displayName: 'Manager/Leader',
+          description: 'For managers and leadership roles'
+        }
+      ];
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching assessment categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  app.get('/api/assessments/questions', async (req, res) => {
+    try {
+      const { categoryId, language = 'en' } = req.query;
+      
+      const questions = [
+        {
+          id: 'q1',
+          questionNumber: 1,
+          questionText: 'When faced with a challenging problem, I prefer to:',
+          discType: 'D',
+          options: [
+            { id: 'q1_a', optionText: 'Take charge and act decisively', optionValue: 4, discType: 'D' },
+            { id: 'q1_b', optionText: 'Gather people to brainstorm solutions', optionValue: 3, discType: 'I' },
+            { id: 'q1_c', optionText: 'Consider all stakeholders carefully', optionValue: 2, discType: 'S' },
+            { id: 'q1_d', optionText: 'Analyze all possible outcomes first', optionValue: 1, discType: 'C' }
+          ]
+        },
+        {
+          id: 'q2',
+          questionNumber: 2,
+          questionText: 'In social situations, I tend to:',
+          discType: 'I',
+          options: [
+            { id: 'q2_a', optionText: 'Lead conversations and energize others', optionValue: 4, discType: 'I' },
+            { id: 'q2_b', optionText: 'Take control of the situation', optionValue: 3, discType: 'D' },
+            { id: 'q2_c', optionText: 'Listen and support others', optionValue: 2, discType: 'S' },
+            { id: 'q2_d', optionText: 'Observe and contribute thoughtfully', optionValue: 1, discType: 'C' }
+          ]
+        },
+        {
+          id: 'q3',
+          questionNumber: 3,
+          questionText: 'When working in a team, my priority is to:',
+          discType: 'S',
+          options: [
+            { id: 'q3_a', optionText: 'Support team harmony and collaboration', optionValue: 4, discType: 'S' },
+            { id: 'q3_b', optionText: 'Ensure quality and accuracy', optionValue: 3, discType: 'C' },
+            { id: 'q3_c', optionText: 'Drive results and efficiency', optionValue: 2, discType: 'D' },
+            { id: 'q3_d', optionText: 'Motivate and inspire the team', optionValue: 1, discType: 'I' }
+          ]
+        },
+        {
+          id: 'q4',
+          questionNumber: 4,
+          questionText: 'When making important decisions, I:',
+          discType: 'C',
+          options: [
+            { id: 'q4_a', optionText: 'Gather and analyze detailed information', optionValue: 4, discType: 'C' },
+            { id: 'q4_b', optionText: 'Consider impact on relationships', optionValue: 3, discType: 'S' },
+            { id: 'q4_c', optionText: 'Make quick, bold decisions', optionValue: 2, discType: 'D' },
+            { id: 'q4_d', optionText: 'Seek input from others', optionValue: 1, discType: 'I' }
+          ]
+        },
+        {
+          id: 'q5',
+          questionNumber: 5,
+          questionText: 'Under pressure, I:',
+          discType: 'D',
+          options: [
+            { id: 'q5_a', optionText: 'Become more focused and driven', optionValue: 4, discType: 'D' },
+            { id: 'q5_b', optionText: 'Rally others for support', optionValue: 3, discType: 'I' },
+            { id: 'q5_c', optionText: 'Remain calm and steady', optionValue: 2, discType: 'S' },
+            { id: 'q5_d', optionText: 'Systematically work through issues', optionValue: 1, discType: 'C' }
+          ]
+        },
+        {
+          id: 'q6',
+          questionNumber: 6,
+          questionText: 'I prefer communication that is:',
+          discType: 'I',
+          options: [
+            { id: 'q6_a', optionText: 'Enthusiastic and expressive', optionValue: 4, discType: 'I' },
+            { id: 'q6_b', optionText: 'Direct and to the point', optionValue: 3, discType: 'D' },
+            { id: 'q6_c', optionText: 'Supportive and understanding', optionValue: 2, discType: 'S' },
+            { id: 'q6_d', optionText: 'Detailed and precise', optionValue: 1, discType: 'C' }
+          ]
+        },
+        {
+          id: 'q7',
+          questionNumber: 7,
+          questionText: 'In conflicts, I tend to:',
+          discType: 'S',
+          options: [
+            { id: 'q7_a', optionText: 'Seek peaceful resolutions', optionValue: 4, discType: 'S' },
+            { id: 'q7_b', optionText: 'Address issues systematically', optionValue: 3, discType: 'C' },
+            { id: 'q7_c', optionText: 'Take charge and resolve quickly', optionValue: 2, discType: 'D' },
+            { id: 'q7_d', optionText: 'Help everyone feel heard', optionValue: 1, discType: 'I' }
+          ]
+        },
+        {
+          id: 'q8',
+          questionNumber: 8,
+          questionText: 'My work style is best described as:',
+          discType: 'C',
+          options: [
+            { id: 'q8_a', optionText: 'Methodical and thorough', optionValue: 4, discType: 'C' },
+            { id: 'q8_b', optionText: 'Consistent and reliable', optionValue: 3, discType: 'S' },
+            { id: 'q8_c', optionText: 'Fast-paced and results-oriented', optionValue: 2, discType: 'D' },
+            { id: 'q8_d', optionText: 'Collaborative and energetic', optionValue: 1, discType: 'I' }
+          ]
+        },
+        {
+          id: 'q9',
+          questionNumber: 9,
+          questionText: 'When learning something new, I prefer to:',
+          discType: 'D',
+          options: [
+            { id: 'q9_a', optionText: 'Jump in and learn by doing', optionValue: 4, discType: 'D' },
+            { id: 'q9_b', optionText: 'Learn with others in a group', optionValue: 3, discType: 'I' },
+            { id: 'q9_c', optionText: 'Take time to understand thoroughly', optionValue: 2, discType: 'S' },
+            { id: 'q9_d', optionText: 'Study all materials carefully first', optionValue: 1, discType: 'C' }
+          ]
+        },
+        {
+          id: 'q10',
+          questionNumber: 10,
+          questionText: 'I am most motivated by:',
+          discType: 'I',
+          options: [
+            { id: 'q10_a', optionText: 'Recognition and positive feedback', optionValue: 4, discType: 'I' },
+            { id: 'q10_b', optionText: 'Achieving challenging goals', optionValue: 3, discType: 'D' },
+            { id: 'q10_c', optionText: 'Helping and supporting others', optionValue: 2, discType: 'S' },
+            { id: 'q10_d', optionText: 'Doing quality, accurate work', optionValue: 1, discType: 'C' }
+          ]
+        }
+      ];
+
+      res.json(questions);
+    } catch (error) {
+      console.error("Error fetching assessment questions:", error);
+      res.status(500).json({ message: "Failed to fetch questions" });
+    }
+  });
+
+  app.post('/api/assessments/sessions', async (req, res) => {
+    try {
+      const sessionData = req.body;
+      const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      const session = {
+        id: sessionId,
+        ...sessionData,
+        isCompleted: false,
+        createdAt: new Date()
+      };
+
+      res.json(session);
+    } catch (error) {
+      console.error("Error creating assessment session:", error);
+      res.status(500).json({ message: "Failed to create session" });
+    }
+  });
+
+  app.post('/api/assessments/responses', async (req, res) => {
+    try {
+      const responseData = req.body;
+      
+      // Store response (in a real app, this would go to database)
+      const response = {
+        id: `response_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        ...responseData,
+        createdAt: new Date()
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error("Error storing assessment response:", error);
+      res.status(500).json({ message: "Failed to store response" });
+    }
+  });
+
+  app.post('/api/assessments/sessions/:sessionId/calculate', async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      
+      // Mock calculation - in a real app this would calculate based on stored responses
+      const result = {
+        sessionId,
+        primaryType: 'D',
+        secondaryType: 'I',
+        dominanceScore: 75,
+        influenceScore: 65,
+        steadinessScore: 45,
+        conscientiousnessScore: 55,
+        personalityProfile: {
+          dominance: { score: 75, description: 'You are results-oriented and direct in your approach.' },
+          influence: { score: 65, description: 'You enjoy interacting with others and building relationships.' },
+          steadiness: { score: 45, description: 'You prefer some variety and change in your work.' },
+          conscientiousness: { score: 55, description: 'You balance quality with efficiency.' }
+        },
+        strengths: [
+          'Leadership',
+          'Decision Making', 
+          'Communication',
+          'Goal Achievement',
+          'Team Building'
+        ],
+        recommendations: {
+          primary: {
+            career: [
+              'Executive Leadership',
+              'Sales Management',
+              'Project Management',
+              'Business Development',
+              'Operations Management'
+            ]
+          },
+          combinedAdvice: 'Your combination of Dominance and Influence makes you well-suited for leadership roles that require both driving results and inspiring teams. Consider positions where you can lead initiatives, make strategic decisions, and motivate others towards common goals.'
+        }
+      };
+
+      res.json({ result });
+    } catch (error) {
+      console.error("Error calculating assessment results:", error);
+      res.status(500).json({ message: "Failed to calculate results" });
+    }
+  });
+
+  app.get('/api/assessments/sessions/:sessionId/results', async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      
+      // Mock results - in a real app this would fetch from database
+      const result = {
+        sessionId,
+        primaryType: 'D',
+        secondaryType: 'I',
+        dominanceScore: 75,
+        influenceScore: 65,
+        steadinessScore: 45,
+        conscientiousnessScore: 55,
+        personalityProfile: {
+          dominance: { score: 75, description: 'You are results-oriented and direct in your approach.' },
+          influence: { score: 65, description: 'You enjoy interacting with others and building relationships.' },
+          steadiness: { score: 45, description: 'You prefer some variety and change in your work.' },
+          conscientiousness: { score: 55, description: 'You balance quality with efficiency.' }
+        },
+        strengths: [
+          'Leadership',
+          'Decision Making', 
+          'Communication',
+          'Goal Achievement',
+          'Team Building'
+        ],
+        recommendations: {
+          primary: {
+            career: [
+              'Executive Leadership',
+              'Sales Management', 
+              'Project Management',
+              'Business Development',
+              'Operations Management'
+            ]
+          },
+          combinedAdvice: 'Your combination of Dominance and Influence makes you well-suited for leadership roles that require both driving results and inspiring teams. Consider positions where you can lead initiatives, make strategic decisions, and motivate others towards common goals.'
+        }
+      };
+
+      res.json({ result });
+    } catch (error) {
+      console.error("Error fetching assessment results:", error);
+      res.status(500).json({ message: "Failed to fetch results" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
