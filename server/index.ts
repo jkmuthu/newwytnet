@@ -1,8 +1,20 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// CORS configuration for custom domain
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://wytnet.com', 'https://www.wytnet.com', 'http://localhost:5000', 'http://127.0.0.1:5000']
+    : true,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

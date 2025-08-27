@@ -23,6 +23,8 @@ export function getSession() {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       maxAge: sessionTtl,
+      domain: process.env.NODE_ENV === 'production' ? '.wytnet.com' : undefined,
+      sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict',
     },
   });
 }

@@ -16,6 +16,14 @@ The system is built as a monorepo with Express.js backend, React frontend using 
 Preferred communication style: Simple, everyday language.
 Focus: Fully white-label multi-tenant SaaS platform with identity validation.
 
+# Production Domain Setup
+
+**✅ DOMAIN ACTIVE:** wytnet.com is now live and configured
+- Custom domain: https://wytnet.com  
+- Session cookies configured for `.wytnet.com`
+- CORS policy set for production domain
+- All future modules will deploy to this domain
+
 # System Architecture
 
 ## Frontend Architecture
