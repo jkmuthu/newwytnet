@@ -33,7 +33,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, like, count, sql } from "drizzle-orm";
-import { DSLValidator, CodeGenerator } from "../packages/builder/index";
+import { DSLValidator, CodeGenerator } from "@packages/builder/index";
 
 // Interface for storage operations
 export interface IStorage {

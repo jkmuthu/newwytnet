@@ -4,7 +4,7 @@ import { Command } from 'commander';
 import { z } from 'zod';
 import fs from 'fs/promises';
 import path from 'path';
-import { DSLValidator, CodeGenerator } from '../packages/builder/index';
+import { DSLValidator, CodeGenerator } from '@packages/builder/index';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 

@@ -53,7 +53,7 @@ export const users = pgTable("users", {
 
 // Tenant memberships with roles
 export const memberships = pgTable("memberships", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: uuid("id").default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
   role: varchar("role", { length: 50 }).notNull().default('member'),
