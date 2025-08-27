@@ -157,7 +157,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             {/* Logo */}
             <div className="flex items-center space-x-3">
               <img 
-                src="@assets/wyt-logo_1756309893603.png" 
+                src="/wytnet-logo.png" 
                 alt="WytNet Logo" 
                 className="h-8 w-auto"
                 data-testid="img-logo"
