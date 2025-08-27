@@ -545,6 +545,14 @@ export type InsertTrademarkSearch = z.infer<typeof insertTrademarkSearchSchema>;
 export type TrademarkSimilarity = typeof trademarkSimilarities.$inferSelect;
 export type InsertTrademarkSimilarity = z.infer<typeof insertTrademarkSimilaritySchema>;
 
+// TMNumber11 types
+export type TMNumber = typeof tmNumbers.$inferSelect;
+export type InsertTMNumber = z.infer<typeof insertTmNumberSchema>;
+export type NiceClassification = typeof niceClassifications.$inferSelect;
+export type InsertNiceClassification = z.infer<typeof insertNiceClassificationSchema>;
+export type IngestJob = typeof ingestJobs.$inferSelect;
+export type InsertIngestJob = z.infer<typeof insertIngestJobSchema>;
+
 // WytAi Trademark Engine - Proprietary AI-Powered Indian Trademark Intelligence
 export const trademarkStatusEnum = pgEnum('trademark_status', ['pending', 'registered', 'opposed', 'abandoned', 'expired', 'renewal_due']);
 export const trademarkClassificationEnum = pgEnum('trademark_classification', ['class_1', 'class_2', 'class_3', 'class_4', 'class_5', 'class_6', 'class_7', 'class_8', 'class_9', 'class_10', 'class_11', 'class_12', 'class_13', 'class_14', 'class_15', 'class_16', 'class_17', 'class_18', 'class_19', 'class_20', 'class_21', 'class_22', 'class_23', 'class_24', 'class_25', 'class_26', 'class_27', 'class_28', 'class_29', 'class_30', 'class_31', 'class_32', 'class_33', 'class_34', 'class_35', 'class_36', 'class_37', 'class_38', 'class_39', 'class_40', 'class_41', 'class_42', 'class_43', 'class_44', 'class_45']);
@@ -698,6 +706,85 @@ export const trademarkApiUsage = pgTable("trademark_api_usage", {
   index("idx_trademark_api_usage_created").on(table.createdAt),
 ]);
 
+// TMNumber11 proprietary numbering system
+export const tmNumbers = pgTable("tm_numbers", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  // TMNumber11 format: CC + CCC + PPPPP + D (Class 2 + Country 3 + Product 5 + Check 1)
+  classCc: varchar("class_cc", { length: 2 }).notNull(), // Nice classification (01-45)
+  countryCcc: varchar("country_ccc", { length: 3 }).notNull(), // ISO numeric (356=India)
+  productPpppp: varchar("product_ppppp", { length: 5 }).notNull(), // Product code
+  checkD: varchar("check_d", { length: 1 }).notNull(), // Luhn check digit
+  tmnumber11: varchar("tmnumber11", { length: 11 }).notNull().unique(), // Full 11-digit code
+  
+  // Product details
+  title: varchar("title", { length: 255 }).notNull(),
+  longDesc: text("long_desc"),
+  keywords: jsonb("keywords").default([]),
+  segmentKey: varchar("segment_key", { length: 100 }),
+  status: varchar("status", { length: 20 }).notNull().default('active'), // active/deprecated
+  
+  // Relationships and metadata
+  aliasOf: uuid("alias_of").references(() => tmNumbers.id), // For deprecation mapping
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_tm_numbers_class").on(table.classCc),
+  index("idx_tm_numbers_country").on(table.countryCcc),
+  index("idx_tm_numbers_product").on(table.productPpppp),
+  index("idx_tm_numbers_segment").on(table.segmentKey),
+  index("idx_tm_numbers_status").on(table.status),
+  index("idx_tm_numbers_tenant").on(table.tenantId),
+]);
+
+// Enhanced search with classification categories
+export const niceClassifications = pgTable("nice_classifications", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  classNumber: varchar("class_number", { length: 2 }).notNull().unique(), // 01-45
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  category: varchar("category", { length: 50 }).notNull(), // goods/services
+  examples: jsonb("examples").default([]),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_nice_class_number").on(table.classNumber),
+  index("idx_nice_category").on(table.category),
+]);
+
+// Crawler and ETL job tracking
+export const ingestJobs = pgTable("ingest_jobs", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  userId: varchar("user_id").references(() => users.id),
+  
+  // Job configuration
+  adapter: varchar("adapter", { length: 100 }).notNull(), // ipindia, wipo, euipo, generic_html
+  params: jsonb("params").default({}),
+  status: varchar("status", { length: 20 }).notNull().default('queued'), // queued/running/success/failed
+  
+  // Execution details
+  startedAt: timestamp("started_at"),
+  finishedAt: timestamp("finished_at"),
+  stats: jsonb("stats").default({}), // records processed, errors, etc.
+  logUrl: varchar("log_url", { length: 500 }),
+  errorMessage: text("error_message"),
+  
+  // Metadata
+  priority: integer("priority").default(5), // 1-10 scale
+  retryCount: integer("retry_count").default(0),
+  maxRetries: integer("max_retries").default(3),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_ingest_jobs_adapter").on(table.adapter),
+  index("idx_ingest_jobs_status").on(table.status),
+  index("idx_ingest_jobs_tenant").on(table.tenantId),
+  index("idx_ingest_jobs_created").on(table.createdAt),
+]);
+
 // WytAi Trademark schemas (after table definitions)
 export const insertTrademarkSchema = createInsertSchema(trademarks);
 export const selectTrademarkSchema = createSelectSchema(trademarks);
@@ -705,6 +792,14 @@ export const insertTrademarkSearchSchema = createInsertSchema(trademarkSearches)
 export const selectTrademarkSearchSchema = createSelectSchema(trademarkSearches);
 export const insertTrademarkSimilaritySchema = createInsertSchema(trademarkSimilarities);
 export const selectTrademarkSimilaritySchema = createSelectSchema(trademarkSimilarities);
+
+// TMNumber11 schemas
+export const insertTmNumberSchema = createInsertSchema(tmNumbers);
+export const selectTmNumberSchema = createSelectSchema(tmNumbers);
+export const insertNiceClassificationSchema = createInsertSchema(niceClassifications);
+export const selectNiceClassificationSchema = createSelectSchema(niceClassifications);
+export const insertIngestJobSchema = createInsertSchema(ingestJobs);
+export const selectIngestJobSchema = createSelectSchema(ingestJobs);
 
 // AssessDisc DISC Assessment Module Tables
 export const assessmentCategories = pgTable("assessment_categories", {

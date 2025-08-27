@@ -14,9 +14,15 @@ import {
   trademarkSearches,
   trademarkSimilarities,
   trademarkApiUsage,
+  tmNumbers,
+  niceClassifications,
+  ingestJobs,
   type Trademark,
   type TrademarkSearch,
   type InsertTrademarkSearch,
+  type TMNumber,
+  type NiceClassification,
+  type IngestJob,
   insertTrademarkSearchSchema
 } from "@shared/schema";
 import { db } from "./db";
@@ -348,6 +354,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Initialize sample trademark data for demonstration
   await initializeSampleTrademarkData();
+
+  // Initialize TMNumber11 system
+  const tmNumberingService = await import('./services/tmNumbering');
+  await tmNumberingService.initializeNiceClassifications();
+  await tmNumberingService.seedSampleTMNumbers();
 
   // Auth routes - this should not use isAuthenticated middleware as it checks auth status
   app.get('/api/auth/user', async (req: any, res) => {
@@ -1074,6 +1085,201 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching WytAi analytics:", error);
       res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
+  // TMNumber11 Proprietary Numbering System API Endpoints
+  // ====================================================
+
+  // Generate TMNumber11 with Luhn check digit
+  app.post('/api/tm/numbers/generate', isAuthenticated, async (req: any, res) => {
+    try {
+      const { class: classCc, country: countryCcc, product: productPpppp, title, longDesc, keywords, segmentKey } = req.body;
+      const userId = req.user?.claims?.sub;
+      const user = await storage.getUser(userId);
+
+      if (!classCc || !countryCcc || !title) {
+        return res.status(400).json({ error: 'Class, country, and title are required' });
+      }
+
+      const tmNumberingService = await import('./services/tmNumbering');
+      const tmNumber = await tmNumberingService.createTMNumber11({
+        classCc,
+        countryCcc,
+        productPpppp,
+        title,
+        longDesc,
+        keywords: keywords || [],
+        segmentKey,
+        tenantId: user?.tenantId,
+        createdBy: userId,
+      });
+
+      res.json({
+        success: true,
+        tmNumber,
+        message: 'TMNumber11 generated successfully'
+      });
+    } catch (error) {
+      console.error('Error generating TMNumber11:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to generate TMNumber11' });
+    }
+  });
+
+  // Validate TMNumber11 format and check digit
+  app.get('/api/tm/numbers/validate/:number', async (req, res) => {
+    try {
+      const { number } = req.params;
+      
+      const tmNumberingService = await import('./services/tmNumbering');
+      const validation = tmNumberingService.validateTMNumber11(number);
+
+      res.json({
+        tmNumber: number,
+        validation,
+      });
+    } catch (error) {
+      console.error('Error validating TMNumber11:', error);
+      res.status(500).json({ error: 'Failed to validate TMNumber11' });
+    }
+  });
+
+  // Search TMNumbers by various criteria
+  app.get('/api/tm/numbers', async (req, res) => {
+    try {
+      const { class: classCc, country: countryCcc, keyword, segment, status, limit = 50 } = req.query;
+
+      const tmNumberingService = await import('./services/tmNumbering');
+      const results = await tmNumberingService.searchTMNumbers({
+        classCc: classCc as string,
+        countryCcc: countryCcc as string,
+        keyword: keyword as string,
+        segmentKey: segment as string,
+        status: status as string,
+        limit: parseInt(limit as string, 10),
+      });
+
+      res.json({
+        results,
+        total: results.length,
+        filters: { classCc, countryCcc, keyword, segment, status },
+      });
+    } catch (error) {
+      console.error('Error searching TMNumbers:', error);
+      res.status(500).json({ error: 'Failed to search TMNumbers' });
+    }
+  });
+
+  // Get Nice Classifications (01-45)
+  app.get('/api/tm/classes', async (req, res) => {
+    try {
+      const { category } = req.query;
+      
+      let query = db.select().from(niceClassifications).where(eq(niceClassifications.isActive, true));
+      
+      if (category) {
+        query = query.where(eq(niceClassifications.category, category as string));
+      }
+      
+      const classifications = await query.orderBy(niceClassifications.classNumber);
+
+      res.json({
+        classifications,
+        total: classifications.length,
+      });
+    } catch (error) {
+      console.error('Error fetching Nice classifications:', error);
+      res.status(500).json({ error: 'Failed to fetch classifications' });
+    }
+  });
+
+  // Ingest Job Management (for ETL pipeline)
+  app.post('/api/ingest/jobs', isAuthenticated, async (req: any, res) => {
+    try {
+      const { adapter, params = {} } = req.body;
+      const userId = req.user?.claims?.sub;
+      const user = await storage.getUser(userId);
+
+      if (!adapter) {
+        return res.status(400).json({ error: 'Adapter is required' });
+      }
+
+      const [job] = await db.insert(ingestJobs).values({
+        tenantId: user?.tenantId,
+        userId,
+        adapter,
+        params,
+        status: 'queued',
+      }).returning();
+
+      // TODO: Queue job for background processing
+      // For now, we'll just mark it as queued
+
+      res.json({
+        job,
+        message: 'Ingest job queued successfully'
+      });
+    } catch (error) {
+      console.error('Error creating ingest job:', error);
+      res.status(500).json({ error: 'Failed to create ingest job' });
+    }
+  });
+
+  // Get ingest job status
+  app.get('/api/ingest/jobs/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.claims?.sub;
+      const user = await storage.getUser(userId);
+
+      const [job] = await db.select()
+        .from(ingestJobs)
+        .where(and(
+          eq(ingestJobs.id, id),
+          eq(ingestJobs.tenantId, user?.tenantId)
+        ));
+
+      if (!job) {
+        return res.status(404).json({ error: 'Job not found' });
+      }
+
+      res.json({ job });
+    } catch (error) {
+      console.error('Error fetching ingest job:', error);
+      res.status(500).json({ error: 'Failed to fetch job' });
+    }
+  });
+
+  // List ingest jobs for tenant
+  app.get('/api/ingest/jobs', isAuthenticated, async (req: any, res) => {
+    try {
+      const { status, adapter, limit = 50 } = req.query;
+      const userId = req.user?.claims?.sub;
+      const user = await storage.getUser(userId);
+
+      const conditions = [eq(ingestJobs.tenantId, user?.tenantId)];
+      
+      if (status) {
+        conditions.push(eq(ingestJobs.status, status as string));
+      }
+      
+      if (adapter) {
+        conditions.push(eq(ingestJobs.adapter, adapter as string));
+      }
+
+      const jobs = await db.select()
+        .from(ingestJobs)
+        .where(and(...conditions))
+        .orderBy(desc(ingestJobs.createdAt))
+        .limit(parseInt(limit as string, 10));
+
+      res.json({
+        jobs,
+        total: jobs.length,
+      });
+    } catch (error) {
+      console.error('Error fetching ingest jobs:', error);
+      res.status(500).json({ error: 'Failed to fetch jobs' });
     }
   });
 
