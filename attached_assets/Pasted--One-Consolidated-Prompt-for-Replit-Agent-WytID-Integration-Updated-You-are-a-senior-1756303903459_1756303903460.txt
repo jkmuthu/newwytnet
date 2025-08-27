@@ -1,0 +1,99 @@
+## 🚀 One Consolidated Prompt for Replit Agent (WytID Integration, Updated)
+
+```
+You are a senior full-stack architect+implementer. Extend the existing WytNET Foundation 
+monorepo (already built with WytPass, CRUD Builder, CMS, App/Hub Builder) without breaking 
+anything. Add a new core package called **/packages/wytid** (Universal Identity & Validation Kernel) 
+and wire it into Super Admin panel as “WytID Management”.
+
+# 0. Guardrails
+- DO NOT delete or modify existing packages — only extend.
+- All current APIs and DB tables must stay intact.
+- Must run locally on Replit with one click, same as before.
+- Use Postgres + Prisma for new tables, with RLS (tenant_id).
+- Use NestJS gateway for APIs, Next.js for Admin UI.
+- Add only minimal mock adapters (no blockchain requirement yet).
+
+# 1. Package: /packages/wytid
+- Prisma models + migrations:
+  - wytid_entities(id, type, identifier, meta, owner_user_id, tenant_id, created_at)
+  - wytid_proofs(id, entity_id, proof_type, proof_data, issued_at, expires_at)
+  - wytid_transfers(id, entity_id, from_user_id, to_user_id, tx_hash, transferred_at)
+- Type ENUM = ['person','org','asset','document']
+- identifier = unique string "WYT-{ulid}" auto-gen
+- Proof types: hash, signature, blockchain_anchor, notary
+
+# 2. NestJS Gateway APIs
+- POST /api/wytid/entity {type, meta}
+- POST /api/wytid/proof {entity_id, proof_type, proof_data}
+- GET  /api/wytid/verify/:id
+- POST /api/wytid/transfer {entity_id, to_user_id}
+- All guarded by WytPass auth, tenant context, RLS.
+
+# 3. Next.js Admin (Super Admin Panel)
+- Add new menu: **WytID Management**
+- Pages:
+  - Entities (list/detail)
+  - Proofs (list/detail, link to entity)
+  - Transfers (history per entity)
+- Forms:
+  - Create entity
+  - Add proof
+  - Transfer ownership
+
+# 4. Integration Hooks
+- Extend CRUD Builder DSL: allow `"requiresWytID": true`
+  - If true → auto-generate WytID entity when module record is created.
+- Example stub: Certificate module issues WytID automatically.
+
+# 5. Pluggable Proof Anchoring
+- Define interface IProofAnchor { anchor(data): txHash }
+- Default = MOCK (returns fake hash, logs to console).
+- Future: plug Polygon/Solana adapter.
+
+# 6. Public Verification API
+- Expose GET /api/wytid/verify/:id with external WytKey auth (stub).
+- Allows external apps (Edu, Health, Gov) to verify instantly.
+- Policy: enforce API key scopes.
+
+# 7. Super Admin Navigation (updated from PDF)
+Ensure WytID Management appears in the correct place in Super Admin menus:
+- Dashboard
+- Admin Users
+- **Modules Management (CRUD Builder, Forms)**
+- **WytID Management (NEW)**
+- DataSets Management
+- Plan Management
+- Apps Management
+- Hubs Management
+- Games Management
+- Developer Management
+- Roles & Permissions
+- Themes
+- Media
+- APIs
+- AI
+- Demo Data
+- Payment Methods
+- Languages
+- Currencies
+- FAQ
+- Access
+- Policies
+- Analytics & Reports
+- Logs
+- Notifications
+- Server/Backup
+- Documentation
+- Branding
+- My Settings
+
+# 8. Deliverables
+- New /packages/wytid with schema, migrations, service/controller
+- New API endpoints working
+- Super Admin menu + pages for WytID
+- Seed example: create sample “Certificate” entity + proof
+- README updated with WytID usage and external verification flow
+
+Start implementing now, with clean, typed, documented code.
+```

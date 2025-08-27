@@ -2,6 +2,7 @@ import { sql, relations } from 'drizzle-orm';
 import {
   index,
   jsonb,
+  pgEnum,
   pgTable,
   timestamp,
   varchar,
@@ -206,6 +207,85 @@ export const auditLogs = pgTable("audit_logs", {
   index("idx_audit_logs_created_at").on(table.createdAt),
 ]);
 
+// WytID - Universal Identity & Validation Kernel
+export const wytidEntityTypeEnum = pgEnum('wytid_entity_type', ['person', 'org', 'asset', 'document']);
+export const wytidProofTypeEnum = pgEnum('wytid_proof_type', ['hash', 'signature', 'blockchain_anchor', 'notary']);
+export const wytidTransferStatusEnum = pgEnum('wytid_transfer_status', ['pending', 'completed', 'failed', 'cancelled']);
+
+// WytID Entities
+export const wytidEntities = pgTable("wytid_entities", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: wytidEntityTypeEnum("type").notNull(),
+  identifier: varchar("identifier", { length: 100 }).notNull().unique(),
+  meta: jsonb("meta").notNull().default({}),
+  ownerUserId: varchar("owner_user_id").notNull().references(() => users.id),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_wytid_entities_owner").on(table.ownerUserId),
+  index("idx_wytid_entities_tenant").on(table.tenantId),
+  index("idx_wytid_entities_type").on(table.type),
+  index("idx_wytid_entities_identifier").on(table.identifier),
+]);
+
+// WytID Proofs
+export const wytidProofs = pgTable("wytid_proofs", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  entityId: uuid("entity_id").notNull().references(() => wytidEntities.id, { onDelete: 'cascade' }),
+  proofType: wytidProofTypeEnum("proof_type").notNull(),
+  proofData: jsonb("proof_data").notNull().default({}),
+  issuedAt: timestamp("issued_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
+  isRevoked: boolean("is_revoked").default(false),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_wytid_proofs_entity").on(table.entityId),
+  index("idx_wytid_proofs_tenant").on(table.tenantId),
+  index("idx_wytid_proofs_type").on(table.proofType),
+  index("idx_wytid_proofs_issued").on(table.issuedAt),
+]);
+
+// WytID Transfers
+export const wytidTransfers = pgTable("wytid_transfers", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  entityId: uuid("entity_id").notNull().references(() => wytidEntities.id, { onDelete: 'cascade' }),
+  fromUserId: varchar("from_user_id").notNull().references(() => users.id),
+  toUserId: varchar("to_user_id").notNull().references(() => users.id),
+  status: wytidTransferStatusEnum("status").notNull().default('pending'),
+  txHash: varchar("tx_hash", { length: 255 }),
+  transferNote: text("transfer_note"),
+  transferredAt: timestamp("transferred_at"),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_wytid_transfers_entity").on(table.entityId),
+  index("idx_wytid_transfers_from").on(table.fromUserId),
+  index("idx_wytid_transfers_to").on(table.toUserId),
+  index("idx_wytid_transfers_tenant").on(table.tenantId),
+  index("idx_wytid_transfers_status").on(table.status),
+]);
+
+// WytID API Keys for external verification
+export const wytidApiKeys = pgTable("wytid_api_keys", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  apiKey: varchar("api_key", { length: 255 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  scopes: jsonb("scopes").notNull().default([]),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  isActive: boolean("is_active").default(true),
+  rateLimit: varchar("rate_limit", { length: 50 }).default('100/minute'),
+  lastUsedAt: timestamp("last_used_at"),
+  expiresAt: timestamp("expires_at"),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_wytid_api_keys_key").on(table.apiKey),
+  index("idx_wytid_api_keys_tenant").on(table.tenantId),
+  index("idx_wytid_api_keys_active").on(table.isActive),
+]);
+
 // Relations
 export const tenantsRelations = relations(tenants, ({ many }) => ({
   users: many(users),
@@ -216,6 +296,10 @@ export const tenantsRelations = relations(tenants, ({ many }) => ({
   appInstalls: many(appInstalls),
   media: many(media),
   auditLogs: many(auditLogs),
+  wytidEntities: many(wytidEntities),
+  wytidProofs: many(wytidProofs),
+  wytidTransfers: many(wytidTransfers),
+  wytidApiKeys: many(wytidApiKeys),
 }));
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -232,6 +316,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   installedApps: many(appInstalls),
   uploadedMedia: many(media),
   auditLogs: many(auditLogs),
+  ownedWytidEntities: many(wytidEntities),
+  wytidTransfersFrom: many(wytidTransfers, { relationName: 'wytidTransferFrom' }),
+  wytidTransfersTo: many(wytidTransfers, { relationName: 'wytidTransferTo' }),
+  createdWytidApiKeys: many(wytidApiKeys),
 }));
 
 export const membershipsRelations = relations(memberships, ({ one }) => ({
@@ -330,6 +418,63 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   }),
   user: one(users, {
     fields: [auditLogs.userId],
+    references: [users.id],
+  }),
+}));
+
+// WytID Relations
+export const wytidEntitiesRelations = relations(wytidEntities, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [wytidEntities.ownerUserId],
+    references: [users.id],
+  }),
+  tenant: one(tenants, {
+    fields: [wytidEntities.tenantId],
+    references: [tenants.id],
+  }),
+  proofs: many(wytidProofs),
+  transfers: many(wytidTransfers),
+}));
+
+export const wytidProofsRelations = relations(wytidProofs, ({ one }) => ({
+  entity: one(wytidEntities, {
+    fields: [wytidProofs.entityId],
+    references: [wytidEntities.id],
+  }),
+  tenant: one(tenants, {
+    fields: [wytidProofs.tenantId],
+    references: [tenants.id],
+  }),
+}));
+
+export const wytidTransfersRelations = relations(wytidTransfers, ({ one }) => ({
+  entity: one(wytidEntities, {
+    fields: [wytidTransfers.entityId],
+    references: [wytidEntities.id],
+  }),
+  fromUser: one(users, {
+    fields: [wytidTransfers.fromUserId],
+    references: [users.id],
+    relationName: 'wytidTransferFrom',
+  }),
+  toUser: one(users, {
+    fields: [wytidTransfers.toUserId],
+    references: [users.id],
+    relationName: 'wytidTransferTo',
+  }),
+  tenant: one(tenants, {
+    fields: [wytidTransfers.tenantId],
+    references: [tenants.id],
+  }),
+}));
+
+export const wytidApiKeysRelations = relations(wytidApiKeys, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [wytidApiKeys.tenantId],
+    references: [tenants.id],
+  }),
+  createdBy: one(users, {
+    fields: [wytidApiKeys.createdBy],
     references: [users.id],
   }),
 }));

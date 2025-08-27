@@ -11,6 +11,10 @@ import {
   plans,
   media,
   auditLogs,
+  wytidEntities,
+  wytidProofs,
+  wytidTransfers,
+  wytidApiKeys,
   type User,
   type UpsertUser,
   type Tenant,
@@ -126,6 +130,16 @@ export interface IStorage {
   // Activity and audit
   getRecentActivity(tenantId?: string): Promise<AuditLog[]>;
   logActivity(data: any): Promise<AuditLog>;
+
+  // WytID operations
+  getWytIDStats(tenantId: string): Promise<{
+    totalEntities: number;
+    entitiesByType: Record<string, number>;
+    totalProofs: number;
+    proofsByType: Record<string, number>;
+    totalTransfers: number;
+    recentActivity: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -136,17 +150,60 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
+    // Check if user already exists
+    const existingUser = await this.getUser(userData.id!);
+    if (existingUser) {
+      // Update existing user
+      const [user] = await db
+        .update(users)
+        .set({
           ...userData,
           updatedAt: new Date(),
-        },
+        })
+        .where(eq(users.id, userData.id!))
+        .returning();
+      return user;
+    }
+
+    // Create default tenant for new user
+    let tenantId = userData.tenantId;
+    if (!tenantId) {
+      const defaultTenant = await this.createTenant({
+        name: `${userData.firstName || 'User'}'s Organization`,
+        slug: `user-${userData.id}-org`,
+        subdomain: `user-${userData.id}`,
+        status: 'active',
+        settings: {
+          theme: 'default',
+          features: ['crud', 'cms', 'apps', 'hubs']
+        }
+      });
+      tenantId = defaultTenant.id;
+    }
+
+    // Create new user with tenant
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...userData,
+        tenantId,
       })
       .returning();
+
+    // Create membership record
+    await db.insert(memberships).values({
+      userId: user.id,
+      tenantId: tenantId,
+      role: 'owner',
+      status: 'active',
+      permissions: {
+        admin: true,
+        manage_users: true,
+        manage_apps: true,
+        manage_billing: true
+      }
+    });
+
     return user;
   }
 
@@ -774,6 +831,78 @@ export class DatabaseStorage implements IStorage {
     }).returning();
 
     return log;
+  }
+
+  // WytID operations
+  async getWytIDStats(tenantId: string): Promise<{
+    totalEntities: number;
+    entitiesByType: Record<string, number>;
+    totalProofs: number;
+    proofsByType: Record<string, number>;
+    totalTransfers: number;
+    recentActivity: number;
+  }> {
+    const [entitiesCount] = await db
+      .select({ count: count() })
+      .from(wytidEntities)
+      .where(eq(wytidEntities.tenantId, tenantId));
+
+    const [proofsCount] = await db
+      .select({ count: count() })
+      .from(wytidProofs)
+      .where(eq(wytidProofs.tenantId, tenantId));
+
+    const [transfersCount] = await db
+      .select({ count: count() })
+      .from(wytidTransfers)
+      .where(eq(wytidTransfers.tenantId, tenantId));
+
+    // Get entities by type
+    const entitiesByType = await db
+      .select({
+        type: wytidEntities.type,
+        count: count(),
+      })
+      .from(wytidEntities)
+      .where(eq(wytidEntities.tenantId, tenantId))
+      .groupBy(wytidEntities.type);
+
+    // Get proofs by type
+    const proofsByType = await db
+      .select({
+        type: wytidProofs.proofType,
+        count: count(),
+      })
+      .from(wytidProofs)
+      .where(eq(wytidProofs.tenantId, tenantId))
+      .groupBy(wytidProofs.proofType);
+
+    // Recent activity (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const [recentActivity] = await db
+      .select({ count: count() })
+      .from(wytidEntities)
+      .where(
+        and(
+          eq(wytidEntities.tenantId, tenantId),
+          sql`${wytidEntities.createdAt} >= ${sevenDaysAgo}`
+        )
+      );
+
+    return {
+      totalEntities: entitiesCount.count,
+      entitiesByType: Object.fromEntries(
+        entitiesByType.map(e => [e.type, e.count])
+      ),
+      totalProofs: proofsCount.count,
+      proofsByType: Object.fromEntries(
+        proofsByType.map(p => [p.type, p.count])
+      ),
+      totalTransfers: transfersCount.count,
+      recentActivity: recentActivity.count,
+    };
   }
 }
 

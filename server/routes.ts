@@ -4,10 +4,15 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertModelSchema, insertPageSchema, insertAppSchema, insertHubSchema } from "@shared/schema";
+import { WytIDService } from "@packages/wytid/service";
+import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+
+  // Initialize WytID service
+  const wytidService = new WytIDService('mock');
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
@@ -259,6 +264,242 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching activity:", error);
       res.status(500).json({ message: "Failed to fetch activity" });
+    }
+  });
+
+  // WytID API Routes
+  
+  // Get WytID stats for dashboard
+  app.get('/api/wytid/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.tenantId) {
+        return res.status(403).json({ message: "No tenant access" });
+      }
+
+      const stats = await storage.getWytIDStats(user.tenantId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching WytID stats:", error);
+      res.status(500).json({ message: "Failed to fetch WytID stats" });
+    }
+  });
+
+  // Entity management
+  app.get('/api/wytid/entities', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.tenantId) {
+        return res.status(403).json({ message: "No tenant access" });
+      }
+
+      const entities = await wytidService.getEntitiesByTenant(user.tenantId);
+      res.json(entities);
+    } catch (error) {
+      console.error("Error fetching WytID entities:", error);
+      res.status(500).json({ message: "Failed to fetch WytID entities" });
+    }
+  });
+
+  app.post('/api/wytid/entities', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.tenantId) {
+        return res.status(403).json({ message: "No tenant access" });
+      }
+
+      const validatedData = createEntitySchema.parse(req.body);
+      const entity = await wytidService.createEntity(validatedData, userId, user.tenantId);
+      
+      res.json(entity);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating WytID entity:", error);
+      res.status(500).json({ message: "Failed to create WytID entity" });
+    }
+  });
+
+  app.get('/api/wytid/entities/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.tenantId) {
+        return res.status(403).json({ message: "No tenant access" });
+      }
+
+      const { id } = req.params;
+      const entity = await wytidService.getEntity(id, user.tenantId);
+      
+      if (!entity) {
+        return res.status(404).json({ message: "Entity not found" });
+      }
+
+      res.json(entity);
+    } catch (error) {
+      console.error("Error fetching WytID entity:", error);
+      res.status(500).json({ message: "Failed to fetch WytID entity" });
+    }
+  });
+
+  // Proof management
+  app.get('/api/wytid/entities/:id/proofs', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.tenantId) {
+        return res.status(403).json({ message: "No tenant access" });
+      }
+
+      const { id } = req.params;
+      const proofs = await wytidService.getProofsByEntity(id, user.tenantId);
+      res.json(proofs);
+    } catch (error) {
+      console.error("Error fetching WytID proofs:", error);
+      res.status(500).json({ message: "Failed to fetch WytID proofs" });
+    }
+  });
+
+  app.post('/api/wytid/proofs', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.tenantId) {
+        return res.status(403).json({ message: "No tenant access" });
+      }
+
+      const validatedData = createProofSchema.parse(req.body);
+      const proof = await wytidService.createProof(validatedData, user.tenantId);
+      
+      res.json(proof);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating WytID proof:", error);
+      res.status(500).json({ message: "Failed to create WytID proof" });
+    }
+  });
+
+  app.put('/api/wytid/proofs/:id/revoke', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.tenantId) {
+        return res.status(403).json({ message: "No tenant access" });
+      }
+
+      const { id } = req.params;
+      const proof = await wytidService.revokeProof(id, user.tenantId);
+      
+      if (!proof) {
+        return res.status(404).json({ message: "Proof not found" });
+      }
+
+      res.json(proof);
+    } catch (error) {
+      console.error("Error revoking WytID proof:", error);
+      res.status(500).json({ message: "Failed to revoke WytID proof" });
+    }
+  });
+
+  // Transfer management
+  app.post('/api/wytid/transfers', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.tenantId) {
+        return res.status(403).json({ message: "No tenant access" });
+      }
+
+      const validatedData = transferEntitySchema.parse(req.body);
+      const transfer = await wytidService.transferEntity(validatedData, userId, user.tenantId);
+      
+      res.json(transfer);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating WytID transfer:", error);
+      res.status(500).json({ message: "Failed to create WytID transfer" });
+    }
+  });
+
+  app.get('/api/wytid/entities/:id/transfers', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.tenantId) {
+        return res.status(403).json({ message: "No tenant access" });
+      }
+
+      const { id } = req.params;
+      const transfers = await wytidService.getTransfersByEntity(id, user.tenantId);
+      res.json(transfers);
+    } catch (error) {
+      console.error("Error fetching WytID transfers:", error);
+      res.status(500).json({ message: "Failed to fetch WytID transfers" });
+    }
+  });
+
+  // Public verification API (no auth required)
+  app.get('/api/public/wytid/verify/:identifier', async (req, res) => {
+    try {
+      const { identifier } = req.params;
+      const apiKey = req.headers['x-api-key'] as string;
+
+      // Validate API key if provided
+      if (apiKey) {
+        const keyInfo = await wytidService.validateApiKey(apiKey);
+        if (!keyInfo) {
+          return res.status(401).json({ message: "Invalid API key" });
+        }
+      }
+
+      const verification = await wytidService.verifyEntity(identifier);
+      res.json(verification);
+    } catch (error) {
+      console.error("Error verifying WytID entity:", error);
+      res.status(500).json({ message: "Failed to verify WytID entity" });
+    }
+  });
+
+  // API Key management (Super Admin)
+  app.post('/api/wytid/api-keys', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.tenantId) {
+        return res.status(403).json({ message: "No tenant access" });
+      }
+
+      const { name, scopes, expiresAt } = req.body;
+      const apiKey = await wytidService.createApiKey(
+        name, 
+        scopes, 
+        userId, 
+        user.tenantId, 
+        expiresAt ? new Date(expiresAt) : undefined
+      );
+      
+      res.json(apiKey);
+    } catch (error) {
+      console.error("Error creating WytID API key:", error);
+      res.status(500).json({ message: "Failed to create WytID API key" });
     }
   });
 

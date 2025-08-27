@@ -12,6 +12,7 @@ import CMSBuilder from "@/components/builders/cms-builder";
 import AppBuilder from "@/components/builders/app-builder";
 import HubBuilder from "@/components/builders/hub-builder";
 import ActivityFeed from "@/components/ui/activity-feed";
+import WytIDManagement from "./wytid-management";
 
 export default function Dashboard() {
   const { toast } = useToast();
@@ -63,6 +64,7 @@ export default function Dashboard() {
     { id: "cms-builder", label: "CMS Builder", icon: "edit" },
     { id: "app-builder", label: "App Builder", icon: "mobile-alt" },
     { id: "hub-builder", label: "Hub Builder", icon: "network-wired" },
+    { id: "wytid-manager", label: "WytID Manager", icon: "shield-alt" },
   ];
 
   return (
@@ -121,6 +123,7 @@ export default function Dashboard() {
               {activeTab === "cms-builder" && <CMSBuilder />}
               {activeTab === "app-builder" && <AppBuilder />}
               {activeTab === "hub-builder" && <HubBuilder />}
+              {activeTab === "wytid-manager" && <WytIDManagement />}
             </div>
           </div>
 
