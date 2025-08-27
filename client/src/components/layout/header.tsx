@@ -216,12 +216,16 @@ export default function Header({ onMenuClick }: HeaderProps) {
             
             {/* Logo */}
             <div className="flex items-center space-x-3">
-              <img 
-                src="/wytnet-logo.png" 
-                alt="WytNet Logo" 
-                className="h-8 w-auto"
-                data-testid="img-logo"
-              />
+              <Link href="/" className="flex items-center" data-testid="link-logo">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 via-purple-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
+                    <span className="text-white font-bold text-sm">W</span>
+                  </div>
+                  <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    WytNet
+                  </span>
+                </div>
+              </Link>
             </div>
           </div>
 
@@ -296,9 +300,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
               <div className="flex items-center space-x-2">
                 <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="ghost" data-testid="button-login">
+                    <Button data-testid="button-enter" className="bg-blue-600 hover:bg-blue-700 text-white">
                       <LogIn className="h-4 w-4 mr-2" />
-                      Log In
+                      Enter
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[400px]">
@@ -344,18 +348,31 @@ export default function Header({ onMenuClick }: HeaderProps) {
                             {loginMutation.isPending ? "Signing in..." : "Sign In"}
                           </Button>
                         </div>
+                        <div className="pt-4 text-center border-t mt-4">
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Don't have an account?
+                          </p>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={() => {
+                              setLoginOpen(false);
+                              setRegisterOpen(true);
+                            }}
+                            data-testid="button-switch-to-register"
+                            className="w-full"
+                          >
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            Create Account
+                          </Button>
+                        </div>
                       </form>
                     </Form>
                   </DialogContent>
                 </Dialog>
 
                 <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
-                  <DialogTrigger asChild>
-                    <Button data-testid="button-register">
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Sign Up
-                    </Button>
-                  </DialogTrigger>
+                  <DialogTrigger></DialogTrigger>
                   <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                       <DialogTitle>Create Account</DialogTitle>
@@ -438,6 +455,24 @@ export default function Header({ onMenuClick }: HeaderProps) {
                           </Button>
                           <Button type="submit" disabled={registerMutation.isPending} data-testid="button-submit-register">
                             {registerMutation.isPending ? "Creating..." : "Create Account"}
+                          </Button>
+                        </div>
+                        <div className="pt-4 text-center border-t mt-4">
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Already have an account?
+                          </p>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={() => {
+                              setRegisterOpen(false);
+                              setLoginOpen(true);
+                            }}
+                            data-testid="button-switch-to-login"
+                            className="w-full"
+                          >
+                            <LogIn className="h-4 w-4 mr-2" />
+                            Sign In
                           </Button>
                         </div>
                       </form>
