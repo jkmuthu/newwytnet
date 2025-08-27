@@ -14,12 +14,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize WytID service
   const wytidService = new WytIDService('mock');
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Auth routes - this should not use isAuthenticated middleware as it checks auth status
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      const sessionUser = req.session?.user;
+      if (!sessionUser) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = await storage.getUser(sessionUser.id);
+      if (!user) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      res.json({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        tenantId: user.tenantId
+      });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -29,8 +43,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats
   app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      const user = req.user;
       
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
@@ -47,8 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Models/Modules CRUD
   app.get('/api/models', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      const user = req.user;
       
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
@@ -64,8 +76,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/models', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      const user = req.user;
       
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
