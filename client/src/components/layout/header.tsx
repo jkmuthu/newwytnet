@@ -180,6 +180,12 @@ export default function Header({ onMenuClick }: HeaderProps) {
               <Link href="/wytduty" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium" data-testid="nav-wytduty">
                 WytDuty
               </Link>
+              <Link href="/qr-generator" className="text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 font-medium" data-testid="nav-qr-generator">
+                QR Generator
+              </Link>
+              <Link href="/ai-directory" className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium" data-testid="nav-ai-directory">
+                AI Directory
+              </Link>
               {isAuthenticated && (
                 <Link href="/dashboard" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium" data-testid="nav-dashboard">
                   Dashboard
