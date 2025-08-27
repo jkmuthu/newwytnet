@@ -174,10 +174,12 @@ export default function Header({ onMenuClick }: HeaderProps) {
               <Link href="/assessment" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium" data-testid="nav-assessment">
                 Assessment
               </Link>
-              <span className="text-gray-400 dark:text-gray-600 font-medium cursor-not-allowed" data-testid="nav-tools">
-                Tools
-                <span className="ml-1 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">Soon</span>
-              </span>
+              <Link href="/realbro" className="text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 font-medium" data-testid="nav-realbro">
+                RealBro
+              </Link>
+              <Link href="/wytduty" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium" data-testid="nav-wytduty">
+                WytDuty
+              </Link>
               {isAuthenticated && (
                 <Link href="/dashboard" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium" data-testid="nav-dashboard">
                   Dashboard

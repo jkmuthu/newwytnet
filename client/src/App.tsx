@@ -8,7 +8,10 @@ import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import Assessment from "@/pages/assessment";
 import RealBro from "@/pages/realbro";
+import RealBroEnhanced from "@/pages/realbro-enhanced";
 import WytDuty from "@/pages/wytduty";
+import WytDutyEnhanced from "@/pages/wytduty-enhanced";
+import AdminAnalytics from "@/pages/admin-analytics";
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 
@@ -21,11 +24,14 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/assessment" component={Assessment} />
       <Route path="/realbro" component={RealBro} />
+      <Route path="/realbro/enhanced" component={RealBroEnhanced} />
       <Route path="/wytduty" component={WytDuty} />
+      <Route path="/wytduty/enhanced" component={WytDutyEnhanced} />
       
       {/* Protected routes - authentication required */}
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/admin" component={Dashboard} />
+      <Route path="/analytics" component={AdminAnalytics} />
       <Route path="/landing" component={Landing} />
       
       <Route component={NotFound} />

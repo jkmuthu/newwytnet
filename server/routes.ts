@@ -797,6 +797,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin Analytics API Routes  
+  app.get('/api/admin/platform-stats', async (req, res) => {
+    try {
+      const stats = {
+        totalUsers: 2847,
+        activeTenants: 284,
+        monthlyRevenue: 124500,
+        platformUptime: 99.8
+      };
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching platform stats:", error);
+      res.status(500).json({ message: "Failed to fetch platform stats" });
+    }
+  });
+
+  app.get('/api/admin/module-stats', async (req, res) => {
+    try {
+      const moduleStats = {
+        assessment: { users: 8547, completionRate: 94.2, avgTime: 12 },
+        realbro: { brokers: 127, properties: 2456, creditsUsed: 1890 },
+        wytduty: { organizations: 45, dutiesCompleted: 12847, approvalRate: 96.8 }
+      };
+      res.json(moduleStats);
+    } catch (error) {
+      console.error("Error fetching module stats:", error);
+      res.status(500).json({ message: "Failed to fetch module stats" });
+    }
+  });
+
+  app.get('/api/admin/user-metrics', async (req, res) => {
+    try {
+      const userMetrics = {
+        newUsers: 347,
+        retention30d: 78.5,
+        dailyActive: 1247,
+        avgSessionDuration: 24,
+        geography: {
+          india: 85,
+          usa: 8,
+          uk: 4,
+          others: 3
+        }
+      };
+      res.json(userMetrics);
+    } catch (error) {
+      console.error("Error fetching user metrics:", error);
+      res.status(500).json({ message: "Failed to fetch user metrics" });
+    }
+  });
+
+  app.get('/api/admin/revenue-data', async (req, res) => {
+    try {
+      const revenueData = {
+        monthlyRevenue: 124500,
+        breakdown: {
+          wytduty: { amount: 89400, percentage: 72 },
+          realbro: { amount: 28750, percentage: 23 },
+          assessment: { amount: 6350, percentage: 5 }
+        },
+        paymentSuccessRate: 98.7,
+        averageTransaction: 2847,
+        refundRate: 0.8
+      };
+      res.json(revenueData);
+    } catch (error) {
+      console.error("Error fetching revenue data:", error);
+      res.status(500).json({ message: "Failed to fetch revenue data" });
+    }
+  });
+
+  // RealBro Enhanced API Routes
+  app.get('/api/realbro/demo-properties', async (req, res) => {
+    try {
+      const properties = [
+        {
+          title: "3BHK Luxury Apartment",
+          location: "Anna Nagar, Chennai",
+          price: "₹85,00,000",
+          size: "1,200 sq ft",
+          status: "Available"
+        },
+        {
+          title: "Independent Villa",
+          location: "Peelamedu, Coimbatore", 
+          price: "₹1,20,00,000",
+          size: "2,400 sq ft",
+          status: "New"
+        },
+        {
+          title: "2BHK Modern Flat",
+          location: "KK Nagar, Madurai",
+          price: "₹45,00,000", 
+          size: "900 sq ft",
+          status: "Available"
+        },
+        {
+          title: "4BHK Duplex House",
+          location: "Race Course, Salem",
+          price: "₹75,00,000",
+          size: "1,800 sq ft", 
+          status: "Premium"
+        },
+        {
+          title: "Studio Apartment",
+          location: "T Nagar, Chennai",
+          price: "₹35,00,000",
+          size: "450 sq ft",
+          status: "Available"
+        },
+        {
+          title: "Row House with Garden",
+          location: "Saravanampatti, Coimbatore",
+          price: "₹95,00,000",
+          size: "1,600 sq ft",
+          status: "New"
+        }
+      ];
+      res.json(properties);
+    } catch (error) {
+      console.error("Error fetching demo properties:", error);
+      res.status(500).json({ message: "Failed to fetch properties" });
+    }
+  });
+
+  // WytDuty Enhanced API Routes
+  app.get('/api/wytduty/enhanced-duties', async (req, res) => {
+    try {
+      const duties = [
+        {
+          id: 1,
+          title: "Morning Security Check",
+          description: "Complete security rounds of all entry points",
+          assignedTo: "Ravi Kumar",
+          startTime: "06:00",
+          endTime: "14:00",
+          location: "Main Entrance",
+          status: "confirmed",
+          priority: "high"
+        },
+        {
+          id: 2,
+          title: "IT Support Coverage", 
+          description: "Provide technical support for daily operations",
+          assignedTo: "Priya Sharma",
+          startTime: "09:00",
+          endTime: "17:00", 
+          location: "Tech Center",
+          status: "pending",
+          priority: "medium"
+        }
+      ];
+      res.json(duties);
+    } catch (error) {
+      console.error("Error fetching enhanced duties:", error);
+      res.status(500).json({ message: "Failed to fetch duties" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
