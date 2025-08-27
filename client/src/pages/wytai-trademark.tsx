@@ -241,54 +241,58 @@ export default function WytAiTrademark() {
           {searchResults && (
             <div className="space-y-4">
               {/* Risk Assessment */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="h-5 w-5" />
-                    AI Risk Assessment
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <div className={`h-3 w-3 rounded-full ${getRiskColor(searchResults.riskAssessment.level)}`} />
-                        <span className="font-medium capitalize">{searchResults.riskAssessment.level} Risk</span>
+              {searchResults.riskAssessment && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-5 w-5" />
+                      AI Risk Assessment
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <div className={`h-3 w-3 rounded-full ${getRiskColor(searchResults.riskAssessment.level)}`} />
+                          <span className="font-medium capitalize">{searchResults.riskAssessment.level} Risk</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Confidence:</span>
+                          <Progress value={(searchResults.riskAssessment.confidence || 0) * 100} className="w-20" />
+                          <span className="text-sm font-medium">{Math.round((searchResults.riskAssessment.confidence || 0) * 100)}%</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Confidence:</span>
-                        <Progress value={searchResults.riskAssessment.confidence * 100} className="w-20" />
-                        <span className="text-sm font-medium">{Math.round(searchResults.riskAssessment.confidence * 100)}%</span>
-                      </div>
+                      <p className="text-sm text-muted-foreground">{searchResults.riskAssessment.summary}</p>
+                      
+                      {/* Recommendations */}
+                      {searchResults.recommendedActions && searchResults.recommendedActions.length > 0 && (
+                        <div className="space-y-2">
+                          <h4 className="font-medium">AI Recommendations:</h4>
+                          <ul className="space-y-1">
+                            {searchResults.recommendedActions.map((action, index) => (
+                              <li key={index} className="flex items-start gap-2 text-sm">
+                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                {action}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-sm text-muted-foreground">{searchResults.riskAssessment.summary}</p>
-                    
-                    {/* Recommendations */}
-                    <div className="space-y-2">
-                      <h4 className="font-medium">AI Recommendations:</h4>
-                      <ul className="space-y-1">
-                        {searchResults.recommendedActions.map((action, index) => (
-                          <li key={index} className="flex items-start gap-2 text-sm">
-                            <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                            {action}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Results List */}
               <Card>
                 <CardHeader>
                   <CardTitle>
-                    Search Results ({searchResults.totalResults} found in {searchResults.searchDuration}ms)
+                    Search Results ({searchResults.totalResults || 0} found in {searchResults.searchDuration || 0}ms)
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {searchResults.results.map((result) => (
+                    {(searchResults.results || []).map((result) => (
                       <div key={result.id} className="border rounded-lg p-4 space-y-3">
                         <div className="flex justify-between items-start">
                           <div className="space-y-1">
@@ -311,34 +315,34 @@ export default function WytAiTrademark() {
                           <div className="flex justify-between items-center">
                             <span className="text-sm font-medium">WytAi Similarity Score</span>
                             <span className="text-lg font-bold text-blue-600">
-                              {Math.round(result.similarity.overall * 100)}%
+                              {Math.round((result.similarity?.overall || 0) * 100)}%
                             </span>
                           </div>
-                          <Progress value={result.similarity.overall * 100} className="h-2" />
+                          <Progress value={(result.similarity?.overall || 0) * 100} className="h-2" />
                           
                           <div className="grid grid-cols-2 gap-4 text-xs">
                             <div className="space-y-1">
                               <div className="flex justify-between">
                                 <span>Conflict Risk:</span>
                                 <span className="font-medium">
-                                  {Math.round(result.similarity.conflictProbability * 100)}%
+                                  {Math.round((result.similarity?.conflictProbability || 0) * 100)}%
                                 </span>
                               </div>
                               <div className="flex justify-between">
                                 <span>Opposition Risk:</span>
                                 <Badge variant="outline" className={`text-xs ${
-                                  result.similarity.oppositionRisk === 'critical' ? 'border-red-500 text-red-500' :
-                                  result.similarity.oppositionRisk === 'high' ? 'border-orange-500 text-orange-500' :
-                                  result.similarity.oppositionRisk === 'moderate' ? 'border-yellow-500 text-yellow-500' :
+                                  result.similarity?.oppositionRisk === 'critical' ? 'border-red-500 text-red-500' :
+                                  result.similarity?.oppositionRisk === 'high' ? 'border-orange-500 text-orange-500' :
+                                  result.similarity?.oppositionRisk === 'moderate' ? 'border-yellow-500 text-yellow-500' :
                                   'border-green-500 text-green-500'
                                 }`}>
-                                  {result.similarity.oppositionRisk}
+                                  {result.similarity?.oppositionRisk || 'low'}
                                 </Badge>
                               </div>
                             </div>
                             <div className="space-y-1">
                               <div className="text-xs text-muted-foreground">AI Detected Issues:</div>
-                              {result.similarity.reasons.map((reason, index) => (
+                              {(result.similarity?.reasons || []).map((reason, index) => (
                                 <div key={index} className="flex items-center gap-1">
                                   <AlertTriangle className="h-3 w-3 text-amber-500" />
                                   <span className="text-xs">{reason}</span>
@@ -365,7 +369,7 @@ export default function WytAiTrademark() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {analytics.recentActivity.map((activity) => (
+                    {(analytics.recentActivity || []).map((activity) => (
                       <div key={activity.id} className="flex items-center justify-between p-3 border rounded">
                         <div>
                           <p className="font-medium">{activity.query}</p>
