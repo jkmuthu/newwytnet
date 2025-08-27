@@ -1,0 +1,266 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+
+const blockTypes = [
+  { type: 'hero', name: 'Hero Section', icon: 'image', color: 'blue' },
+  { type: 'richtext', name: 'Rich Text', icon: 'align-left', color: 'green' },
+  { type: 'gallery', name: 'Image Gallery', icon: 'images', color: 'purple' },
+  { type: 'cta', name: 'CTA Button', icon: 'mouse-pointer', color: 'orange' },
+  { type: 'collection', name: 'Collection Grid', icon: 'th', color: 'red' },
+  { type: 'form', name: 'Contact Form', icon: 'wpforms', color: 'indigo' },
+];
+
+const colorClasses = {
+  blue: 'text-blue-600',
+  green: 'text-green-600',
+  purple: 'text-purple-600',
+  orange: 'text-orange-600',
+  red: 'text-red-600',
+  indigo: 'text-indigo-600',
+};
+
+export default function CMSBuilder() {
+  const [selectedBlocks, setSelectedBlocks] = useState([
+    {
+      id: '1',
+      type: 'hero',
+      name: 'Hero Section',
+      content: {
+        title: 'Welcome to Our Platform',
+        subtitle: 'Build amazing experiences with our powerful tools',
+        buttonText: 'Get Started'
+      }
+    },
+    {
+      id: '2',
+      type: 'richtext',
+      name: 'Rich Text',
+      content: {
+        title: 'About Our Platform',
+        content: 'Our platform provides comprehensive tools for building modern applications. With our low-code approach, you can create powerful solutions without extensive programming knowledge.'
+      }
+    }
+  ]);
+
+  const [selectedBlock, setSelectedBlock] = useState<any>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: pages } = useQuery({
+    queryKey: ["/api/pages"],
+    retry: false,
+  });
+
+  const createPageMutation = useMutation({
+    mutationFn: async (pageData: any) => {
+      return await apiRequest("POST", "/api/pages", pageData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Page published successfully!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/pages"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddBlock = (blockType: any) => {
+    const newBlock = {
+      id: Date.now().toString(),
+      type: blockType.type,
+      name: blockType.name,
+      content: {}
+    };
+    setSelectedBlocks([...selectedBlocks, newBlock]);
+  };
+
+  const handleDeleteBlock = (blockId: string) => {
+    setSelectedBlocks(selectedBlocks.filter(block => block.id !== blockId));
+    if (selectedBlock?.id === blockId) {
+      setSelectedBlock(null);
+    }
+  };
+
+  const handlePublish = () => {
+    createPageMutation.mutate({
+      title: 'New Page',
+      slug: 'new-page',
+      path: '/new-page',
+      content: {
+        blocks: selectedBlocks
+      },
+      status: 'published'
+    });
+  };
+
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-xl font-semibold text-foreground">CMS Page Builder</h2>
+          <p className="text-muted-foreground">Drag and drop blocks to create beautiful pages</p>
+        </div>
+        <div className="flex space-x-2">
+          <Button variant="secondary" data-testid="button-preview">
+            <i className="fas fa-eye mr-2"></i>Preview
+          </Button>
+          <Button 
+            onClick={handlePublish}
+            disabled={createPageMutation.isPending}
+            data-testid="button-publish"
+          >
+            <i className="fas fa-save mr-2"></i>
+            {createPageMutation.isPending ? "Publishing..." : "Publish"}
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[600px]">
+        {/* Block Library */}
+        <div className="bg-card border border-border rounded-lg p-4">
+          <h3 className="font-medium text-foreground mb-4">Block Library</h3>
+          <div className="space-y-2">
+            {blockTypes.map((block) => (
+              <div
+                key={block.type}
+                className="drag-item bg-muted p-3 rounded-md cursor-pointer hover:bg-accent transition-colors"
+                onClick={() => handleAddBlock(block)}
+                data-testid={`block-${block.type}`}
+              >
+                <div className="flex items-center space-x-2">
+                  <i className={`fas fa-${block.icon} ${colorClasses[block.color as keyof typeof colorClasses]}`}></i>
+                  <span className="text-sm font-medium">{block.name}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Canvas Area */}
+        <div className="lg:col-span-2 bg-background border-2 border-dashed border-border rounded-lg builder-grid relative overflow-y-auto">
+          <div className="p-4 space-y-4">
+            {selectedBlocks.map((block, index) => (
+              <Card 
+                key={block.id} 
+                className="hover:ring-2 hover:ring-ring cursor-pointer"
+                onClick={() => setSelectedBlock(block)}
+              >
+                <CardContent className="pt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-muted-foreground">{block.name}</span>
+                    <div className="flex space-x-1">
+                      <Button 
+                        size="sm" 
+                        variant="secondary"
+                        className="w-6 h-6 p-0"
+                        data-testid={`button-edit-${block.type}-${index}`}
+                      >
+                        <i className="fas fa-edit text-xs"></i>
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        className="w-6 h-6 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteBlock(block.id);
+                        }}
+                        data-testid={`button-delete-${block.type}-${index}`}
+                      >
+                        <i className="fas fa-trash text-xs"></i>
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {block.type === 'hero' && (
+                    <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-8 text-white text-center">
+                      <h1 className="text-2xl font-bold mb-2">{block.content.title || 'Hero Title'}</h1>
+                      <p className="text-blue-100 mb-4">{block.content.subtitle || 'Hero subtitle'}</p>
+                      <Button className="bg-white text-blue-600 hover:bg-gray-100">
+                        {block.content.buttonText || 'Get Started'}
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {block.type === 'richtext' && (
+                    <div className="prose prose-sm max-w-none">
+                      <h2>{block.content.title || 'Rich Text Title'}</h2>
+                      <p>{block.content.content || 'Rich text content goes here...'}</p>
+                    </div>
+                  )}
+                  
+                  {block.type !== 'hero' && block.type !== 'richtext' && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {block.name} Block - Configure in properties panel
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+            
+            {selectedBlocks.length === 0 && (
+              <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm pointer-events-none opacity-50">
+                Drop blocks here to build your page
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Properties Panel */}
+        <div className="bg-card border border-border rounded-lg p-4">
+          <h3 className="font-medium text-foreground mb-4">Properties</h3>
+          {selectedBlock ? (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-2">Block Type</label>
+                <p className="text-sm text-muted-foreground">{selectedBlock.name}</p>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-2">Background Color</label>
+                <div className="flex space-x-2">
+                  <div className="w-8 h-8 bg-blue-500 rounded border-2 border-ring cursor-pointer"></div>
+                  <div className="w-8 h-8 bg-purple-500 rounded border cursor-pointer"></div>
+                  <div className="w-8 h-8 bg-green-500 rounded border cursor-pointer"></div>
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-2">Padding</label>
+                <select className="w-full p-2 border border-border rounded-md bg-background text-sm">
+                  <option>None</option>
+                  <option>Small</option>
+                  <option selected>Medium</option>
+                  <option>Large</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-2">Animation</label>
+                <select className="w-full p-2 border border-border rounded-md bg-background text-sm">
+                  <option selected>None</option>
+                  <option>Fade In</option>
+                  <option>Slide Up</option>
+                  <option>Scale</option>
+                </select>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Select a block to edit its properties</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
