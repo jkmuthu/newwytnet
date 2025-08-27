@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Menu, Search, User, Settings, LogOut, LogIn, UserPlus } from "lucide-react";
+import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -59,10 +60,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
   const loginMutation = useMutation({
     mutationFn: async (data: z.infer<typeof loginSchema>) => {
-      return apiRequest('/api/auth/login', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      return apiRequest('/api/auth/login', 'POST', data);
     },
     onSuccess: () => {
       toast({
@@ -84,10 +82,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
   const registerMutation = useMutation({
     mutationFn: async (data: z.infer<typeof registerSchema>) => {
-      return apiRequest('/api/auth/register', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      return apiRequest('/api/auth/register', 'POST', data);
     },
     onSuccess: () => {
       toast({
@@ -109,9 +104,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest('/api/auth/logout', {
-        method: 'POST',
-      });
+      return apiRequest('/api/auth/logout', 'POST');
     },
     onSuccess: () => {
       toast({
@@ -138,9 +131,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
   const getUserInitials = (user: any) => {
     if (!user) return 'U';
-    const firstInitial = user.firstName?.[0] || '';
-    const lastInitial = user.lastName?.[0] || '';
-    return `${firstInitial}${lastInitial}`.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U';
+    const firstInitial = user?.firstName?.[0] || '';
+    const lastInitial = user?.lastName?.[0] || '';
+    return `${firstInitial}${lastInitial}`.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U';
   };
 
   return (
@@ -172,16 +165,25 @@ export default function Header({ onMenuClick }: HeaderProps) {
             </div>
           </div>
 
-          {/* Center section - Search */}
+          {/* Center section - Public Navigation */}
           <div className="hidden md:block flex-1 max-w-md mx-8">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input 
-                placeholder="Search projects, apps, or resources..."
-                className="pl-10 w-full"
-                data-testid="input-search"
-              />
-            </div>
+            <nav className="flex items-center justify-center space-x-6">
+              <Link href="/" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium" data-testid="nav-home">
+                Home
+              </Link>
+              <Link href="/assessment" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium" data-testid="nav-assessment">
+                Assessment
+              </Link>
+              <span className="text-gray-400 dark:text-gray-600 font-medium cursor-not-allowed" data-testid="nav-tools">
+                Tools
+                <span className="ml-1 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">Soon</span>
+              </span>
+              {isAuthenticated && (
+                <Link href="/dashboard" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium" data-testid="nav-dashboard">
+                  Dashboard
+                </Link>
+              )}
+            </nav>
           </div>
 
           {/* Right section */}
@@ -200,10 +202,10 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 <DropdownMenuContent className="w-56" align="end">
                   <div className="px-2 py-1.5 text-sm">
                     <div className="font-medium" data-testid="text-user-name">
-                      {user.firstName} {user.lastName}
+                      {user?.firstName} {user?.lastName}
                     </div>
                     <div className="text-gray-500 text-xs" data-testid="text-user-email">
-                      {user.email}
+                      {user?.email}
                     </div>
                   </div>
                   <DropdownMenuSeparator />

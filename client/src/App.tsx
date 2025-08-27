@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import Assessment from "@/pages/assessment";
 import Landing from "@/pages/landing";
@@ -14,10 +15,15 @@ function Router() {
 
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/dashboard" component={Dashboard} />
+      {/* Public routes - no authentication required */}
+      <Route path="/" component={Home} />
       <Route path="/assessment" component={Assessment} />
+      
+      {/* Protected routes - authentication required */}
+      <Route path="/dashboard" component={Dashboard} />
+      <Route path="/admin" component={Dashboard} />
       <Route path="/landing" component={Landing} />
+      
       <Route component={NotFound} />
     </Switch>
   );
