@@ -1,0 +1,290 @@
+Awesome—here’s a single, copy-paste Replit AI Agent prompt to scaffold your WytAi™ Trademark API: a production-grade FastAPI service + crawler/ETL pipeline + datasets (including your CC-Country-Product-Check “TMNumber11” logic), all wired for Replit. It’s modular, mobile-friendly for docs, and ready to extend.
+
+
+---
+
+PROMPT (paste everything below into Replit AI Agent)
+
+Goal: Build WytAi™ Trademark API—a proprietary AI-ready engine to collect, normalize, store, and serve trademark data and BGrow numbering datasets. Stack: FastAPI + PostgreSQL + SQLAlchemy + Alembic + Celery (Redis) + Playwright (headless). Include pluggable crawlers (adapters), ETL, and an HTTP API with OpenAPI docs and SDK stubs.
+
+Core Requirements
+
+1. API & App
+
+
+
+Framework: FastAPI with automatic OpenAPI docs at /docs and /redoc.
+
+Modules:
+
+app/main.py – app factory, routers include, CORS for * initially.
+
+app/config.py – Pydantic BaseSettings for env vars.
+
+app/db.py – SQLAlchemy engine/session with PostgreSQL; Alembic migrations.
+
+app/models.py & app/schemas.py – ORM + Pydantic models.
+
+app/routers/ – routers for datasets & trademark search:
+
+/tm/search – query by text, class, owner, status (pagination).
+
+/tm/numbers – serve TMNumber11 (Class 2 + Country 3 + Product 5 + Check 1). Include generator & validator.
+
+/tm/classes – list Nice classes (01–45) + descriptions.
+
+/datasets/export – export CSV/JSONL for selected tables.
+
+/ingest/jobs – trigger ETL jobs, check job status (requires API key).
+
+
+app/services/ – business logic: numbering.py, search.py, etl.py.
+
+app/adapters/ – crawler adapters (pluggable):
+
+wipo.py, ipindia.py, euipo.py (scaffolded), generic_html.py.
+
+
+app/utils/ – rate-limit middleware, logging, text normalizer, HTML→JSON extractor.
+
+
+Auth: API-Key optional (toggle via env API_KEY_REQUIRED=true/false). If on, require x-api-key header for mutating/ingest routes.
+
+Rate limit: per-IP simple sliding window N/min for public GET routes (env-configurable).
+
+Docs: Clear tags, examples, curl snippets.
+
+
+2. Data Model (minimal MVP)
+
+
+
+trademarks:
+
+id (uuid), mark_text, class_code (int), country_code (ISO-numeric string), app_no, reg_no, status, owner_name, filing_date, reg_date, goods_services (text), source (enum), source_url, last_seen_at.
+
+
+owners:
+
+id, name, country_code, url, notes.
+
+
+tm_numbers (your proprietary dataset):
+
+id, class_cc (char[2]), country_ccc (char[3]), product_ppppp (char[5]), check_d (char[1]), tmnumber11 (char[11], unique), title, long_desc, keywords, segment_key, status (active/deprecated), created_by, alias_of (nullable).
+
+
+ingest_jobs:
+
+id, adapter, params (json), status (queued/running/success/failed), started_at, finished_at, stats (json), log_url.
+
+
+
+3. Numbering (BGrow logic)
+
+
+
+Implement:
+
+generate_tmnumber11(class_cc: str, country_ccc: str, product_ppppp: str) -> str
+
+luhn_check_digit(base10: str) -> str  # base10 = CC + CCC + PPPPP
+
+validate_tmnumber11(code: str) -> bool
+
+
+Seed India (356) dataset for classes 09 and 35 with 20 sample products each (titles + keywords), using Luhn check digit, and store in tm_numbers. Add one example alias/deprecation mapping.
+
+
+4. Crawler/ETL
+
+
+
+Use Playwright (headless Chromium) for HTML capture; also support simple httpx fetch.
+
+Adapters:
+
+ipindia.py: scaffold a respectful fetcher (no hardcoded scraping of protected pages; show function signatures, robots.txt checks, rate-limit, and example of parsing public test HTML saved under tests/fixtures/).
+
+wipo.py / euipo.py: placeholder with TODOs & structure.
+
+generic_html.py: accept a seed URL, CSS selectors/XPath settings, and map to trademarks fields.
+
+
+ETL steps:
+
+Fetch → Parse → Normalize → Upsert (trademarks, owners), dedupe by (country_code, app_no) or (country_code, reg_no).
+
+
+Include a Celery worker (worker.py) with tasks:
+
+tasks.crawl_source(adapter, params)
+
+tasks.refresh_dataset()
+
+
+Queue: Redis.
+
+Robots, Legal & Ethics:
+
+Respect robots.txt, retry/backoff, user-agent string, and DOWNLOAD_DELAY.
+
+Make crawling optional; permit batch CSV/JSON upload via /ingest/jobs for official bulk datasets provided by the client.
+
+Log all origins in source_url.
+
+
+
+5. Search
+
+
+
+Full-text search using PostgreSQL GIN or fallback LIKE:
+
+Search across mark_text, owner_name, goods_services.
+
+Filter by class, country, status, date ranges.
+
+Cursor-based pagination (?cursor=…&limit=…).
+
+
+
+6. Testing & Fixtures
+
+
+
+tests/ with:
+
+test_numbering.py (Luhn & generator/validator)
+
+test_search.py (seed small dataset)
+
+fixtures/ with 2 small HTML pages and 1 CSV sample
+
+
+pytest config.
+
+
+7. DevOps
+
+
+
+Files:
+
+requirements.txt: fastapi, uvicorn, sqlalchemy, psycopg2-binary, alembic, pydantic-settings, httpx, playwright, celery, redis, python-dotenv, loguru, orjson, pytest
+
+alembic/ migration setup for tables
+
+Dockerfile and docker-compose.yml (services: api, db, redis, worker)
+
+Makefile with make dev, make test, make migrate, make worker, make seed
+
+
+.env.example with:
+
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/wytai
+
+REDIS_URL=redis://localhost:6379/0
+
+API_KEY_REQUIRED=false
+
+PUBLIC_RATE_LIMIT_PER_MIN=60
+
+ALLOWED_ORIGINS=*
+
+
+Startup script: on Replit, ensure playwright browsers installed at build (playwright install --with-deps chromium).
+
+
+8. SDK stubs
+
+
+
+Generate minimal TypeScript and Python client stubs in /sdk/ that call:
+
+GET /tm/search
+
+GET /tm/classes
+
+GET /tm/numbers?class_cc=09&country_ccc=356&product_ppppp=00001
+
+POST /ingest/jobs (with api key if enabled)
+
+
+
+9. Admin micro-dashboard
+
+
+
+Simple FastAPI template at /admin:
+
+Show ingest job list, recent trademarks, tm_numbers counts.
+
+Button to run a demo ingest/jobs for generic_html with a local fixture.
+
+
+
+10. Acceptance criteria
+
+
+
+uvicorn app.main:app runs; /healthz returns {status:"ok"}.
+
+POST /tm/numbers/generate with {class:"09", country:"356", product:"00001"} returns 0935600001* with correct Luhn check.
+
+Seeded tm_numbers exists (at least 40 rows).
+
+GET /tm/search?q=tea&class=30&country=356 returns results (seed demo).
+
+POST /ingest/jobs enqueues a Celery task and GET /ingest/jobs/{id} shows progress.
+
+Tests pass: pytest -q.
+
+OpenAPI shows clean schemas & examples.
+
+Crawler adapters exist with robots-respect and clear TODO markers for live endpoints.
+
+
+Extra Implementation Notes
+
+Numbering: Keep helpers in app/services/numbering.py. Provide docstrings and 3 unit tests.
+
+Luhn: Use standard mod-10 algorithm over base10 string CCCCC C PPPPP (no spaces), returning check digit; concatenate to form 11-digit code.
+
+Country codes: store ISO numeric (e.g., India=356) as string of 3 digits.
+
+Seed script: scripts/seed_tm_numbers.py to insert 09 & 35 classes with 20 items each (titles/keywords sample).
+
+Search speed: add GIN index on to_tsvector('simple', mark_text || ' ' || owner_name || ' ' || goods_services).
+
+Logging: loguru with JSON logs for worker; request logging middleware for API.
+
+Errors: structured error responses with code, message, hint.
+
+
+Please generate all files, wire them up, and leave inline comments where manual credentials or production crawling endpoints must be configured. Also output a README.md with setup steps for Replit (env, playwright install, run API, run worker), plus notes on data licensing and respecting robots.txt/terms.
+
+
+---
+
+(Optional) Post-gen tasks for the Agent
+
+Run database migrations.
+
+Run seed script.
+
+Start API and worker.
+
+Print sample curl:
+
+curl 'http://localhost:8000/tm/numbers/generate?class_cc=09&country_ccc=356&product_ppppp=00001'
+
+curl 'http://localhost:8000/tm/search?q=sample&class=35&country=356'
+
+
+
+
+---
+
+If any dependency is unavailable on Replit, substitute equivalent (e.g., asyncpg vs psycopg2-binary) but keep the same API surface.
+
