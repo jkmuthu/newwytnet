@@ -1,0 +1,165 @@
+You are a senior full-stack architect+implementer. Extend the existing WytNET Foundation monorepo
+without breaking any current package. Add a new first-party App called **WytDuty** (a.k.a. WytWorks Duty),
+implemented as composable modules + a WytApp manifest so it can be installed per tenant (org).
+
+# 0) Guardrails
+- DO NOT remove or rewrite existing packages. Only add packages, models, routes, and pages.
+- Must run locally on Replit with one click and existing scripts.
+- Use Postgres + Prisma (RLS with tenant_id). Keep Redis/cache usage consistent with repo.
+- Next.js (App Router + TS) for UI, NestJS (TS) for gateway APIs, Tailwind + shadcn/ui, Zod DTOs.
+- Follow existing Foundation conventions for folder layout, policies, audit, and CI.
+
+# 1) New Packages & Folders
+/packages
+  /wytDuty          # domain logic, Prisma models, services, policies
+  /wytDuty-ui       # shared React components (lists, forms, calendars, charts)
+/apps/web
+  # add routes for Super Admin & Tenant Admin/User panels (see #5)
+/apps/gateway
+  # add controllers under /api/wytDuty/* (see #4)
+
+# 2) Data Model (Prisma + RLS)
+Create Prisma models with tenant-aware RLS:
+- duty_users (per-tenant app users table if not already mapped via memberships)
+  id, tenant_id, username, role: 'admin'|'member', active, profile_json, created_at
+  # link to platform users/memberships if present; otherwise map via user_id
+- duties
+  id, tenant_id, title, desc, schedule ENUM('onetime','daily_not_sun','daily_not_sat_sun','weekly_before_sat','monthly_before_5','monthly_before_28'),
+  priority ENUM('high','medium','low'), status ENUM('pending','for_approval','completed'),
+  assignees string[] (usernames or user_ids), created_by, need_approval boolean,
+  due_at timestamptz, created_at timestamptz, last_action, last_action_at timestamptz, last_action_note text,
+  series_id text, occurs_on date
+- holidays
+  id, tenant_id, date, label, is_optional boolean, created_by
+- approvals
+  id, tenant_id, duty_id, requested_by, decided_by, decision ENUM('approved','rejected','none'), decided_at, note
+- backups (optional server-side)
+  id, tenant_id, snapshot_json, created_at, created_by
+RLS: only members of a tenant can CRUD their tenant’s rows; editors/admins enforce per-action rules.
+
+# 3) Permissions & Policies (RBAC/ABAC)
+Define fine-grained Casbin policies:
+- role:admin → full org scope: duties/users/holidays/approvals/reports/data tools
+- role:member → self scope: own duties, personal stats; read-only on org calendar (if policy allows)
+- “need_approval” flow: only admins (or approvers group) can approve/reject.
+- Add audit logs for create/update/approve/reject/delete.
+
+# 4) API Endpoints (NestJS Gateway)
+/api/wytDuty/auth
+  - (if needed) org-scoped login/impersonate endpoints (follow platform conventions)
+/api/wytDuty/duties
+  - POST   create duty (org scope)
+  - GET    list duties (filters: status, priority, assignee, date range)
+  - GET    :id (with history/approvals)
+  - PATCH  :id (update fields, state machine validation)
+  - POST   :id/complete (member → mark complete; if need_approval → move to for_approval)
+  - POST   :id/reopen
+/api/wytDuty/approvals
+  - GET    pending (admin)
+  - POST   :dutyId/approve
+  - POST   :dutyId/reject
+/api/wytDuty/holidays
+  - CRUD (admin)
+/api/wytDuty/reports
+  - GET    summary?scope=personal|org&range=daily|weekly|monthly
+  - GET    export?format=json|csv (org admins can export org; members only personal)
+  
+DTOs: use Zod; sanitize/escape all user content for UI.
+
+# 5) UI – Routes & Screens (Next.js)
+/app/(tenant)/our/[spacename]/wytDuty/admin
+  - Dashboard (KPIs: completion rate, pending approvals, overdue count)
+  - All Duties (org-wide table w/ filters + bulk ops)
+  - Approvals (review queue)
+  - Users (org user mgmt: add/edit/role/activate/impersonate)
+  - Holidays (org holiday mgmt)
+  - Calendar (org calendar with duty indicators)
+  - Reports (org reports + export)
+  - Data Tools (backup/restore/export JSON)
+/app/(tenant)/our/[spacename]/wytDuty/my
+  - My Dashboard (personal KPIs)
+  - My Duties (list + filters + quick actions)
+  - My Calendar (personal calendar)
+  - Reports (personal)
+
+Mobile-first:
+- Collapsible sidebar; bottom nav for member area.
+- 44px+ touch targets; light/dark theme.
+- Loading/empty/error states for each page.
+
+Components (/packages/wytDuty-ui):
+- DutyList, DutyForm (create/edit), DutyFilters, DutyBadges
+- CalendarMonth (multi-source events), CalendarDayModal
+- ApprovalsQueue, UsersTable, HolidaysTable
+- ReportsCards + Charts (basic bar/line via existing chart lib)
+- DataTools (backup/restore/export)
+
+# 6) Scheduling & Recurrence
+Implement recurrence generator for schedule ENUM:
+- onetime → due_at date/time (default = tomorrow 10:00)
+- daily_not_sun, daily_not_sat_sun → generate next occur_on
+- weekly_before_sat → compute next weekday before Saturday
+- monthly_before_5 / monthly_before_28 → compute next month’s cut-off
+Store series_id to tie instances. Background job/cron stub: on user interaction or periodic task, materialize next occurrences.
+
+# 7) Reporting
+Provide KPIs + tabular reports:
+- completion rate, avg completion time, pending approvals, overdue
+- scopes: personal vs org
+- export: JSON/CSV (server-generated; stream where possible)
+
+# 8) Offline/PWA Considerations
+- Keep server as source of truth (Postgres). Add optional local IndexedDB cache for last N views.
+- Service Worker: cache shell + API GET responses; write operations queued and retried (basic stub).
+- “Data Tools” page: client-side export/import of personal duty snapshots (JSON) + admin org snapshot (if allowed).
+
+# 9) Integration with WytNET Builders
+- CRUD Builder DSL extension (optional now): allow a module record to declare `"requiresWytID": false` (default).
+- App Builder manifest for WytDuty:
+  /packages/wytDuty/manifest.json
+  {
+    "key": "wytduty",
+    "name": "WytDuty",
+    "version": "0.1.0",
+    "description": "Duty/Task management with approvals, holidays, calendar and reports.",
+    "categories": ["productivity","operations"],
+    "modules": ["duty","holiday","approval"],
+    "routes": {
+      "admin": ["/wytDuty/admin"],
+      "user": ["/wytDuty/my"]
+    },
+    "permissionsRequired": ["wytDuty.read","wytDuty.write","wytDuty.approve"],
+    "metering": [{"event":"duty.created","unit":"events"}],
+    "pricing": {"model":"tiered","tiers":[{"upto":500,"price":0},{"upto":5000,"price":299}]},
+    "migrations": ["/prisma/migrations/wytduty/*"],
+    "compat": {"kernel": ">=1.0.0", "builder": ">=0.3.0"}
+  }
+
+# 10) Seeds
+- Create a demo tenant with 5 users (admin/member mix), 10 sample duties (coverage across schedules),
+  3 holidays, 3 approval-pending items, and some overdue/completed mix.
+
+# 11) Super Admin Wiring
+- Show WytDuty in Apps Management list with plans/pricing (use existing plans UI).
+- Allow enabling/disabling per tenant; on install, run migrations + seed minimal defaults.
+- Respect Super Admin Policies & Logs; include audit for create/update/approve.
+
+# 12) Testing & Docs
+- Playwright/E2E: login → create duty → mark complete → approval flow → calendar → report export.
+- README: how to enable WytDuty for a tenant, routes, permissions, environment flags.
+- Note migration path for prior single-app localStorage version: include small import tool that reads JSON and posts to /api/wytDuty/duties (admin-only).
+
+# 13) Deliverables
+- New packages (/wytDuty, /wytDuty-ui) with typed APIs, Prisma schema, migrations.
+- Gateway controllers + service with policy guards and audit hooks.
+- Admin + Member UIs with responsive layout and PWA basics.
+- App manifest (wytduty) and install flow registered in App Store.
+- E2E tests + README.
+Start now; keep code clean, documented, and aligned with the repo’s conventions.
+```
+
+### Why this works
+
+* It faithfully ports your existing WytDuty feature set into **WytNET’s** multi-tenant, policy-first architecture, including approvals, holidays, calendar, reports, PWA/offline and data tools—as requested in your doc.&#x20;
+* It preserves the **App Builder** pattern (manifest, install per tenant, plans/pricing), so WytDuty behaves like a first-class **WytApp**.
+* It includes a **migration path** from your old standalone (localStorage) build to WytNET (Postgres+RLS), with an admin import tool—no data loss.
