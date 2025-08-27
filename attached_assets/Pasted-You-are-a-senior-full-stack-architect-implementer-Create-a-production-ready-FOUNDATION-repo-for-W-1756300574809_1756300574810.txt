@@ -1,0 +1,120 @@
+You are a senior full-stack architect+implementer. Create a production-ready FOUNDATION repo
+for “WytNet” (multi-tenant Multi-SaaS engine) that will power:
+- Super Admin panel (modules, datasets, plans, themes, payments, policies, analytics, logs),
+- CRUD Module Builder (low-code),
+- Drag-and-Drop Web/CMS builder,
+- App Builder (compose multiple modules → WytApps),
+- Hub Builder (compose multiple modules/apps → standalone white-label Hubs),
+- Installable Apps & white-label Hubs (only skeletons + examples now).
+
+# 0. Guardrails / Constraints
+- MUST run locally on Replit with one click, no external secrets required.
+- Tech: Next.js (App Router, TS) for UI; NestJS (TS) as API gateway/BFF; PostgreSQL + Prisma; Redis; Tailwind + shadcn/ui; Zod.
+- Security: Postgres Row Level Security (tenant_id everywhere), RBAC+ABAC with Casbin (OpenFGA-ready interface), httpOnly session cookies; CSRF where needed.
+- Multi-tenant routing:
+  - Subdomain and path: tenant1.wytnet.com and wytnet.com/our/{spacename}
+  - Public paths reflecting PDF: /p/* (Pass/Personal), /o/* (Org), /m/* (Modules), /a/* (Apps), /h/* (Hubs), /g/* (Games), /d/* (Developer).
+- Mobile-first PWA; SSR with caching; image proxy; i18n (ta-IN, en-IN).
+- Payments, AI, 3P APIs: provide provider adapters with MOCKS (Razorpay/Stripe, WhatsApp/SMS/Email, “AI Management”), easy to swap later.
+- Licensing: MIT for internal starter packages; NO vendor lock branding.
+
+# 1. Monorepo Layout
+/apps
+  /web         # Next.js UI: User Panel + Workspace Panel + Super Admin
+  /gateway     # NestJS API gateway (REST, JSON)
+// packages (workspace libs)
+  /kernel      # auth, tenancy, sessions, policies, audit, RLS helpers
+  /builder     # CRUD Model DSL, codegen (Prisma + Nest CRUD + Admin UI)
+  /cms         # Page/Block builder runtime + editor + media
+  /appkit      # App Builder (manifest, workflows, pricing/metering)
+  /hubkit      # Hub Builder (cross-tenant aggregation, moderation, directory)
+  /catalog     # eCom primitives (catalog/inventory) – EXAMPLE
+  /assoc       # Association primitives (member/renewal/event) – EXAMPLE
+  /messaging   # email/sms/whatsapp adapters (mock by default)
+  /payments    # Razorpay/Stripe adapters (mock by default)
+  /search      # pg_trgm + Meilisearch adapter (mock interface)
+  /themes      # theme tokens + defaults (landing/site/hub themes)
+  /ui          # shared UI components (shadcn wrappers), forms
+/infrastructure
+  /db/migrations
+  /docker, /helm (stubs), /ci
+
+# 2. Database & Security
+- Postgres with RLS; common columns: id, tenant_id, created_at, updated_at, created_by.
+- Tables: users, tenants, memberships, sessions, policies, audit_logs, media, pages, blocks, models, app_installs, hub_configs, plans, plan_features, currencies, languages, notifications, logs.
+- Provide initial Prisma schema + migrations. Turn RLS ON and generate RLS policies per table.
+
+# 3. Auth (WytPass) & Tenancy
+- Passwordless OTP (mock), Google/Meta OAuth stubs (disabled by default).
+- Session cookie + refresh; per-tenant membership & roles: owner, admin, manager, editor, member, viewer.
+- Policy guards (Casbin): deny-by-default, allow via role/attributes (ABAC) with helper decorators in NestJS.
+
+# 4. CRUD Model Builder (low-code)
+- Define a JSON DSL (model.json) supporting: fields (string/text/number/money/bool/date/datetime/enum/json/media/ref/ref[]), validations (min/max/regex), i18n:true, ui hints (list/filters/sort/actions), permissions (create/read/update/delete expressions), relations, webhooks.
+- CLI commands:
+  - `wyt dsl validate ./defs/my_model.json`
+  - `wyt generate model ./defs/*.json` → Prisma model + Nest CRUD + Next Admin UI
+  - `wyt migrate` → runs Prisma migrations
+- Generate: Prisma schema + zod DTOs, Nest controller/service with guards, Next admin pages (list/form/view), search index (pg trigram), audit hooks.
+
+# 5. Drag-and-Drop Web/CMS
+- Block types: Hero, RichText, Image, Gallery, CTA, CollectionGrid(model+filter), Form, Map, Tabs, Accordion, Footer.
+- Page JSON: path, locale, themeRef, blocks[], status (draft/published), publishedAt.
+- Editor: React (DnD-Kit) with live preview, undo/redo, versioning.
+- Runtime: SSR renderer, per-tenant theme tokens, cache (stale-while-revalidate), signed URLs for media.
+
+# 6. App Builder (Super Admin)
+- app.json manifest schema: key, name, version, description, icon, categories, modules[], blocks[], routes{admin,user}, workflows (triggers → actions: notify/webhook/queue), connectors, permissionsRequired[], metering[], pricing (free/onetime/monthly/yearly tiers), migrations, compat (kernel/builder semver).
+- UI flow: create app → select modules → add routes/blocks → define workflows → choose connectors → permissions → pricing/metering → build & sign → publish to WytApp store (registry stub).
+- Output: signed .tgz artifact + checksum (store locally).
+
+# 7. Hub Builder (Super Admin)
+- hub.yaml schema: key, name, version, type (community/classifieds/directory/marketplace), includesApps[], crossTenantAggregations[], moderation (policies, reviewers), verification (levels, KYC stubs), fees (join, payout%), publicDirectory routes, SEO (canonical, og), legal (tos, privacy), compat.
+- Mechanics:
+  - Cross-tenant export (opt-in) → event bus (mock in-memory) → hub index (Meilisearch adapter stub).
+  - Moderation queue + roles (hub_admin, hub_moderator).
+  - KYC provider interface with mock (PAN/DigiLocker placeholders).
+  - Payment split payouts via payments package (mock).
+
+# 8. Super Admin Menus (match PDF structure)
+- Dashboard, Admin Users, Modules (CRUD Builder + Forms), DataSets, Plan Management, Apps, Hubs, Games (stub), Developer (API key registry stub), Roles & Permissions, Themes, Media, APIs (3P + dataset resale), AI Management (hybrid, mocked), Demo Data, Payment Methods, Languages, Currencies (manual + auto exchange mock), FAQ, Access (country/IP allowlist), Policies (T&C, Privacy, IP, refunds), Analytics/Reports, Logs, Notifications, Server/Backup, Documentation (Dev & Testing), Branding (logos, titles, SEO/OG), My Settings.
+- Provide working routes and stubs where complex (analytics/logs/server/backup).
+
+# 9. Plans & Pricing (Super Admin)
+- Plan builder that links plan features to modules (search and pick module(s) → create relationship).
+- Currencies: INR base; exchange service mocked with simple rates table + roundoff; allow override by country.
+
+# 10. Theming & Branding
+- Theme JSON (colors, fonts, radii) with slots for Landing, Website, Hub.
+- Brand kit upload, favicon/logo; per-tenant theme override.
+
+# 11. Notifications & Integrations
+- messaging package: email/sms/whatsapp adapters (local mock), template engine, sequences.
+- API keys vault (local encrypted file) with per-tenant scoping; rotate keys.
+
+# 12. Example Seeds (MINIMAL, to verify composition)
+- Modules: Contact, Lead, Deal (CRM); Product, Inventory (eCom); Member, Event, Renewal (Association).
+- One example App: “WytCRM” (contacts/leads/deals) → manifest + routes + admin pages.
+- One example Hub: “OwnerNET” with cross-tenant “chapters” aggregation (mock data), public directory page, moderation queue.
+- Example public URLs matching schema: /a/wytcrm, /h/ownernet, /m/product.
+
+# 13. DX & CI
+- Scripts: dev (concurrently run web+gateway), build, lint, test, migrate, seed.
+- Minimal Playwright e2e for: login, create model, generate CRUD, create page, publish, install app.
+- GitHub Actions (yaml stub): typecheck, build, migrate – but keep local-only by default.
+
+# 14. README
+- How to run (one-click), how to add a model via DSL, generate & migrate, create a page, create an app, create a hub, theming, where to plug real providers.
+
+DELIVERABLES NOW:
+1) Monorepo with packages above, compiling and running locally.
+2) Prisma schema + first migrations with RLS policies enabled.
+3) CRUD Builder working for 2–3 sample models; generator produces Nest CRUD + Next Admin pages.
+4) CMS editor with 6–8 blocks and publish flow; SSR renderer.
+5) App Builder + Hub Builder UIs with schema validation and artifact build (local registry).
+6) Super Admin menus wired with working stubs matching PDF items.
+7) Seeds for example app (WytCRM) and hub (OwnerNET) with minimal demo data.
+8) README with precise steps to extend (add new module/app/hub).
+
+Start implementing now; keep code clean, strongly typed, documented. Avoid external calls; use mocks. 
+```
