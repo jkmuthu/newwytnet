@@ -760,9 +760,9 @@ export default function AIDirectory() {
             </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="mb-8">
-            <Tabs value={activeView} onValueChange={(value: any) => setActiveView(value)} className="w-full">
+          {/* Navigation Tabs and Content */}
+          <Tabs value={activeView} onValueChange={(value: any) => setActiveView(value)} className="w-full">
+            <div className="mb-8">
               <TabsList className="grid w-full grid-cols-3 lg:w-fit lg:grid-cols-3 mx-auto">
                 <TabsTrigger value="directory" className="flex items-center gap-2">
                   <Globe className="h-4 w-4" />
@@ -782,8 +782,7 @@ export default function AIDirectory() {
                   Admin
                 </TabsTrigger>
               </TabsList>
-            </Tabs>
-          </div>
+            </div>
 
           {/* Auto-Sync Progress */}
           {crawlProgress > 0 && (
@@ -1544,20 +1543,7 @@ export default function AIDirectory() {
               </Card>
             </div>
           </TabsContent>
-
-          {filteredTools.length === 0 && (
-            <div className="text-center py-12">
-              <Bot className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No AI Tools Found</h3>
-              <p className="text-muted-foreground mb-4">
-                Try adjusting your filters or search terms, or add a new AI tool to get started.
-              </p>
-              <Button onClick={() => setIsAddDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add First AI Tool
-              </Button>
-            </div>
-          )}
+          </Tabs>
         </div>
       </main>
 
