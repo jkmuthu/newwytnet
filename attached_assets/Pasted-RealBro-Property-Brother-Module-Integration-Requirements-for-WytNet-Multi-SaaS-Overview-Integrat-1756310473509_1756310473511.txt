@@ -1,0 +1,178 @@
+RealBro Property Brother - Module Integration Requirements for WytNet Multi SaaS
+Overview
+Integrate the RealBro Property Brother application as a standalone module/app within the WytNet Multi SaaS platform. This is a Tamil-focused real estate management PWA designed for property brokers in Tamil Nadu, India.
+
+Core Application Details
+Technology Stack
+Frontend: Pure JavaScript (React via CDN), no build process required
+Architecture: Single Page Application (SPA) with client-side routing
+Storage: localStorage for data persistence (production would use backend DB)
+Styling: Inline styles with responsive design
+PWA: Service worker enabled with offline support
+Key Features to Integrate
+Authentication System: Username/Password + SMS OTP via MSG91
+Property Management: CRUD operations with credit-based listing system
+Contact Management: Broker network management
+Credit Wallet: Razorpay payment integration for property listing credits
+Admin Panel: System administration with user management
+PWA Features: Installable app with offline support
+Location Services: Mappls API integration for property mapping
+Required Files Structure
+/realbro-module/
+├── index.html (Main entry point)
+├── app.js (Complete React application)
+├── manifest.webmanifest (PWA manifest)
+├── sw.js (Service worker)
+├── icon-192.png (App icon)
+├── icon-512.png (App icon)
+└── style.css (Base styles)
+Integration Requirements
+1. Module Registration in WytNet
+Register as "RealBro Property Brother" module
+Category: Real Estate Management
+Target Users: Property Brokers, Real Estate Agents
+Geographic Focus: Tamil Nadu, India
+2. Authentication Integration
+Integrate with WytNet's user management system
+Support both standalone auth and WytNet SSO
+Preserve existing MSG91 SMS OTP functionality
+Demo credentials: username: "kumar", password: "kumar123"
+3. Database Schema (for production backend)
+-- Users table
+CREATE TABLE realbro_users (
+  id VARCHAR(10) PRIMARY KEY,
+  username VARCHAR(50) UNIQUE,
+  password_hash VARCHAR(255),
+  name VARCHAR(100),
+  phone VARCHAR(15),
+  email VARCHAR(100),
+  district VARCHAR(50),
+  role ENUM('broker', 'admin'),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_login TIMESTAMP,
+  is_demo BOOLEAN DEFAULT false
+);
+-- Properties table
+CREATE TABLE realbro_properties (
+  id VARCHAR(20) PRIMARY KEY,
+  user_id VARCHAR(10),
+  title VARCHAR(100),
+  size_text VARCHAR(50),
+  price_max INT,
+  price_min INT,
+  commission_type ENUM('PERCENT', 'FIXED'),
+  commission_value DECIMAL(10,2),
+  lat DECIMAL(10,6),
+  lng DECIMAL(10,6),
+  status ENUM('AVAILABLE', 'ON_HOLD', 'SOLD'),
+  share_slug VARCHAR(50),
+  title_slug VARCHAR(100),
+  notes TEXT,
+  photos JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  credit_used BOOLEAN DEFAULT true,
+  FOREIGN KEY (user_id) REFERENCES realbro_users(id)
+);
+-- Credits table
+CREATE TABLE realbro_credits (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id VARCHAR(10),
+  amount INT,
+  type ENUM('PURCHASED', 'USED', 'FREE', 'REFUNDED'),
+  description TEXT,
+  price_paid INT,
+  transaction_id VARCHAR(100),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES realbro_users(id)
+);
+4. API Integrations Required
+MSG91 SMS API
+Auth Key: 464667ALFYbnq3689f001dP1
+Template ID: 689f1962da0e0318b2083334
+Purpose: OTP verification for phone authentication
+Razorpay Payment Gateway
+Key ID: rzp_live_R5Em6KAVZUwlWX
+Domain: bgrow.com (supports all subdomains)
+Purpose: Credit purchases for property listings
+Pricing: ₹250 per credit (1 credit = 1 property listing)
+Mappls API
+Static Key: wquogeybsfxbdvmfonjmltzjicjyizlclrby
+Domain: https://realbro.bgrow.com
+Purpose: Property location mapping and geocoding
+5. WytNet Platform Integration Points
+Module Entry Point
+URL Pattern: /apps/realbro or /modules/realbro
+Support deep linking: /apps/realbro/property/{id}
+Admin access: /apps/realbro?admin=true
+Navigation Integration
+Add to WytNet app directory
+Category: "Real Estate & Property"
+Icon: Property/House icon
+Description: "Tamil real estate broker management tool"
+User Context
+Inherit logged-in user from WytNet platform
+Map WytNet user to RealBro user profile
+Support user switching between modules
+Data Isolation
+Ensure user data is isolated per WytNet tenant
+Support multi-tenant architecture
+Preserve existing demo data for new users
+6. Configuration Variables
+const REALBRO_CONFIG = {
+  // Payment
+  razorpay: {
+    keyId: "rzp_live_R5Em6KAVZUwlWX",
+    domain: "bgrow.com"
+  },
+  
+  // SMS
+  msg91: {
+    authKey: "464667ALFYbnq3689f001dP1",
+    templateId: "689f1962da0e0318b2083334"
+  },
+  
+  // Maps
+  mappls: {
+    staticKey: "wquogeybsfxbdvmfonjmltzjicjyizlclrby"
+  },
+  
+  // Business Logic
+  creditPrice: 250, // ₹250 per credit
+  freeCredits: 1,   // 1 free credit for new users
+  graceMinutes: 15  // 15 minutes grace period for deletions
+};
+7. Localization
+Primary Language: Tamil (தமிழ்)
+Secondary Language: English
+Currency: Indian Rupee (₹)
+Region: Tamil Nadu districts (35 districts supported)
+8. Security Requirements
+CSRF protection for all forms
+Input validation and sanitization
+Rate limiting for SMS OTP
+Secure payment processing via Razorpay
+Admin panel access control
+9. Performance Requirements
+PWA compliance for offline functionality
+Responsive design for mobile-first usage
+Lazy loading for images/photos
+Local storage optimization
+Service worker caching strategy
+10. Testing Requirements
+Demo user account pre-configured
+Sample property data for testing
+Mock payment testing via Razorpay
+SMS OTP testing with demo number: 8220449911
+Admin panel testing with credentials: admin/admin123
+Implementation Notes
+File Structure: Keep all files in a dedicated /realbro directory within WytNet
+Routing: Implement client-side routing to handle deep links
+State Management: Use localStorage for demo, integrate with WytNet's state management for production
+Error Handling: Comprehensive error handling with Tamil language error messages
+Mobile First: Optimized for mobile browsers with touch interactions
+Offline Support: Service worker for offline property viewing
+Demo Credentials for Testing
+User Login: username: kumar, password: kumar123
+Admin Login: username: admin, password: admin123
+Demo Phone: 8220449911 (OTP: 1234)
+This module should be accessible at /apps/realbro within the WytNet platform and maintain full functionality while integrating seamlessly with the parent platform's authentication and navigation systems.
