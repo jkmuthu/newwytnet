@@ -5,10 +5,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Menu, Search, User, Settings, LogOut, LogIn, UserPlus } from "lucide-react";
+import { Menu, Search, User, Settings, LogOut, LogIn, UserPlus, Home, Activity, Building, Briefcase, QrCode, Bot, BarChart } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -35,6 +36,7 @@ interface HeaderProps {
 export default function Header({ onMenuClick }: HeaderProps) {
   const [loginOpen, setLoginOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isAuthenticated, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -142,6 +144,64 @@ export default function Header({ onMenuClick }: HeaderProps) {
         <div className="flex justify-between items-center h-16">
           {/* Left section */}
           <div className="flex items-center space-x-4">
+            {/* Mobile menu trigger */}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="md:hidden"
+                  data-testid="button-mobile-menu"
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-80">
+                <SheetHeader>
+                  <SheetTitle className="flex items-center gap-2">
+                    <img 
+                      src="/wytnet-logo.png" 
+                      alt="WytNet" 
+                      className="h-6 w-auto"
+                    />
+                    WytNet
+                  </SheetTitle>
+                </SheetHeader>
+                <nav className="mt-6 space-y-2">
+                  <Link href="/" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
+                    <Home className="h-5 w-5" />
+                    <span>Home</span>
+                  </Link>
+                  <Link href="/assessment" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
+                    <Activity className="h-5 w-5" />
+                    <span>Assessment</span>
+                  </Link>
+                  <Link href="/realbro" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
+                    <Building className="h-5 w-5" />
+                    <span>RealBro</span>
+                  </Link>
+                  <Link href="/wytduty" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
+                    <Briefcase className="h-5 w-5" />
+                    <span>WytDuty</span>
+                  </Link>
+                  <Link href="/qr-generator" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
+                    <QrCode className="h-5 w-5" />
+                    <span>QR Generator</span>
+                  </Link>
+                  <Link href="/ai-directory" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
+                    <Bot className="h-5 w-5" />
+                    <span>AI Directory</span>
+                  </Link>
+                  {isAuthenticated && (
+                    <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
+                      <BarChart className="h-5 w-5" />
+                      <span>Dashboard</span>
+                    </Link>
+                  )}
+                </nav>
+              </SheetContent>
+            </Sheet>
+
             {onMenuClick && (
               <Button 
                 variant="ghost" 
