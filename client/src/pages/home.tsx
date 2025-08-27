@@ -130,69 +130,91 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            {/* Productivity Tools - Coming Soon */}
-            <Card className="hover:shadow-lg transition-shadow opacity-75">
+            {/* RealBro Property Brother */}
+            <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <Zap className="h-8 w-8 text-orange-600" />
-                  <Badge variant="secondary">Coming Soon</Badge>
+                  <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                    🏠
+                  </div>
+                  <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100">
+                    Demo
+                  </Badge>
                 </div>
-                <CardTitle>Productivity Suite</CardTitle>
+                <CardTitle>RealBro Property Brother</CardTitle>
                 <CardDescription>
-                  Time tracking, project management, and productivity analytics tools.
+                  Tamil Nadu property management platform for real estate brokers and professionals.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-gray-400 mr-2" />
-                    Time & task tracking
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Property listing management
                   </div>
                   <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-gray-400 mr-2" />
-                    Project analytics
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Broker network & contacts
                   </div>
                   <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-gray-400 mr-2" />
-                    Team collaboration
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Credit-based system
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Tamil language support
                   </div>
                 </div>
-                <Button disabled className="w-full mt-4" data-testid="button-productivity-tools">
-                  Notify Me
-                </Button>
+                <Link href="/realbro">
+                  <Button className="w-full mt-4 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700" data-testid="button-start-realbro">
+                    Try RealBro Demo
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
-            {/* Rare Tools - Coming Soon */}
-            <Card className="hover:shadow-lg transition-shadow opacity-75">
+            {/* WytDuty Enterprise */}
+            <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <Shield className="h-8 w-8 text-purple-600" />
-                  <Badge variant="secondary">Coming Soon</Badge>
+                  <div className="h-8 w-8 bg-gradient-to-r from-blue-600 to-purple-700 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                    ✓
+                  </div>
+                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                    Enterprise
+                  </Badge>
                 </div>
-                <CardTitle>Specialized Tools</CardTitle>
+                <CardTitle>WytDuty Enterprise</CardTitle>
                 <CardDescription>
-                  Unique utilities and specialized tools for specific business needs.
+                  Advanced duty and task management with approvals, calendar, and enterprise reporting.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-gray-400 mr-2" />
-                    Data analysis tools
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Duty assignment & tracking
                   </div>
                   <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-gray-400 mr-2" />
-                    Business calculators
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Approval workflows
                   </div>
                   <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-gray-400 mr-2" />
-                    Process automation
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Calendar & scheduling
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Analytics & reporting
                   </div>
                 </div>
-                <Button disabled className="w-full mt-4" data-testid="button-specialized-tools">
-                  Coming Soon
-                </Button>
+                <Link href="/wytduty">
+                  <Button className="w-full mt-4 bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800" data-testid="button-start-wytduty">
+                    Try WytDuty Demo
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </div>

@@ -633,3 +633,228 @@ export type InsertAssessmentResult = typeof assessmentResults.$inferInsert;
 export const insertAssessmentSessionSchema = createInsertSchema(assessmentSessions);
 export const insertAssessmentResponseSchema = createInsertSchema(assessmentResponses);
 export const insertAssessmentResultSchema = createInsertSchema(assessmentResults);
+
+// RealBro Property Brother Module Schema
+export const realbroUsers = pgTable("realbro_users", {
+  id: varchar("id", { length: 10 }).primaryKey(),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  username: varchar("username", { length: 50 }).unique().notNull(),
+  passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+  name: varchar("name", { length: 100 }).notNull(),
+  phone: varchar("phone", { length: 15 }).notNull(),
+  email: varchar("email", { length: 100 }),
+  district: varchar("district", { length: 50 }),
+  role: varchar("role", { length: 20 }).$type<'broker' | 'admin'>().default('broker'),
+  createdAt: timestamp("created_at").defaultNow(),
+  lastLogin: timestamp("last_login"),
+  isDemo: boolean("is_demo").default(false),
+});
+
+export const realbroProperties = pgTable("realbro_properties", {
+  id: varchar("id", { length: 20 }).primaryKey(),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  userId: varchar("user_id", { length: 10 }).notNull().references(() => realbroUsers.id),
+  title: varchar("title", { length: 100 }).notNull(),
+  sizeText: varchar("size_text", { length: 50 }),
+  priceMax: integer("price_max"),
+  priceMin: integer("price_min"),
+  commissionType: varchar("commission_type", { length: 20 }).$type<'PERCENT' | 'FIXED'>(),
+  commissionValue: decimal("commission_value", { precision: 10, scale: 2 }),
+  lat: decimal("lat", { precision: 10, scale: 6 }),
+  lng: decimal("lng", { precision: 10, scale: 6 }),
+  status: varchar("status", { length: 20 }).$type<'AVAILABLE' | 'ON_HOLD' | 'SOLD'>().default('AVAILABLE'),
+  shareSlug: varchar("share_slug", { length: 50 }),
+  titleSlug: varchar("title_slug", { length: 100 }),
+  notes: text("notes"),
+  photos: jsonb("photos").$type<string[]>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  creditUsed: boolean("credit_used").default(true),
+});
+
+export const realbroCredits = pgTable("realbro_credits", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  userId: varchar("user_id", { length: 10 }).notNull().references(() => realbroUsers.id),
+  amount: integer("amount").notNull(),
+  type: varchar("type", { length: 20 }).$type<'PURCHASED' | 'USED' | 'FREE' | 'REFUNDED'>().notNull(),
+  description: text("description"),
+  pricePaid: integer("price_paid"),
+  transactionId: varchar("transaction_id", { length: 100 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// RealBro Relations
+export const realbroUsersRelations = relations(realbroUsers, ({ one, many }) => ({
+  tenant: one(tenants, {
+    fields: [realbroUsers.tenantId],
+    references: [tenants.id],
+  }),
+  properties: many(realbroProperties),
+  credits: many(realbroCredits),
+}));
+
+export const realbroPropertiesRelations = relations(realbroProperties, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [realbroProperties.tenantId],
+    references: [tenants.id],
+  }),
+  user: one(realbroUsers, {
+    fields: [realbroProperties.userId],
+    references: [realbroUsers.id],
+  }),
+}));
+
+export const realbroCreditsRelations = relations(realbroCredits, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [realbroCredits.tenantId],
+    references: [tenants.id],
+  }),
+  user: one(realbroUsers, {
+    fields: [realbroCredits.userId],
+    references: [realbroUsers.id],
+  }),
+}));
+
+// RealBro Types
+export type RealbroUser = typeof realbroUsers.$inferSelect;
+export type InsertRealbroUser = typeof realbroUsers.$inferInsert;
+export type RealbroProperty = typeof realbroProperties.$inferSelect;
+export type InsertRealbroProperty = typeof realbroProperties.$inferInsert;
+export type RealbroCredit = typeof realbroCredits.$inferSelect;
+export type InsertRealbroCredit = typeof realbroCredits.$inferInsert;
+
+// WytDuty Enterprise Productivity Module Schema
+export const dutyUsers = pgTable("duty_users", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  username: varchar("username", { length: 50 }).notNull(),
+  role: varchar("role", { length: 20 }).$type<'admin' | 'member'>().default('member'),
+  active: boolean("active").default(true),
+  profileJson: jsonb("profile_json"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const duties = pgTable("duties", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  schedule: varchar("schedule", { length: 50 }).$type<'onetime' | 'daily_not_sun' | 'daily_not_sat_sun' | 'weekly_before_sat' | 'monthly_before_5' | 'monthly_before_28'>(),
+  priority: varchar("priority", { length: 20 }).$type<'high' | 'medium' | 'low'>().default('medium'),
+  status: varchar("status", { length: 20 }).$type<'pending' | 'for_approval' | 'completed'>().default('pending'),
+  assignees: jsonb("assignees").$type<string[]>(),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  needApproval: boolean("need_approval").default(false),
+  dueAt: timestamp("due_at"),
+  seriesId: varchar("series_id", { length: 100 }),
+  occursOn: timestamp("occurs_on"),
+  lastAction: varchar("last_action", { length: 100 }),
+  lastActionAt: timestamp("last_action_at"),
+  lastActionNote: text("last_action_note"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const holidays = pgTable("holidays", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  date: timestamp("date").notNull(),
+  label: varchar("label", { length: 255 }).notNull(),
+  isOptional: boolean("is_optional").default(false),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const approvals = pgTable("approvals", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  dutyId: uuid("duty_id").notNull().references(() => duties.id),
+  requestedBy: varchar("requested_by").notNull().references(() => users.id),
+  decidedBy: varchar("decided_by").references(() => users.id),
+  decision: varchar("decision", { length: 20 }).$type<'approved' | 'rejected' | 'pending'>().default('pending'),
+  decidedAt: timestamp("decided_at"),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const backups = pgTable("backups", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
+  snapshotJson: jsonb("snapshot_json").notNull(),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// WytDuty Relations
+export const dutyUsersRelations = relations(dutyUsers, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [dutyUsers.tenantId],
+    references: [tenants.id],
+  }),
+}));
+
+export const dutiesRelations = relations(duties, ({ one, many }) => ({
+  tenant: one(tenants, {
+    fields: [duties.tenantId],
+    references: [tenants.id],
+  }),
+  createdBy: one(users, {
+    fields: [duties.createdBy],
+    references: [users.id],
+  }),
+  approvals: many(approvals),
+}));
+
+export const holidaysRelations = relations(holidays, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [holidays.tenantId],
+    references: [tenants.id],
+  }),
+  createdBy: one(users, {
+    fields: [holidays.createdBy],
+    references: [users.id],
+  }),
+}));
+
+export const approvalsRelations = relations(approvals, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [approvals.tenantId],
+    references: [tenants.id],
+  }),
+  duty: one(duties, {
+    fields: [approvals.dutyId],
+    references: [duties.id],
+  }),
+  requestedBy: one(users, {
+    fields: [approvals.requestedBy],
+    references: [users.id],
+    relationName: 'approvalRequester',
+  }),
+  decidedBy: one(users, {
+    fields: [approvals.decidedBy],
+    references: [users.id],
+    relationName: 'approvalDecider',
+  }),
+}));
+
+export const backupsRelations = relations(backups, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [backups.tenantId],
+    references: [tenants.id],
+  }),
+  createdBy: one(users, {
+    fields: [backups.createdBy],
+    references: [users.id],
+  }),
+}));
+
+// WytDuty Types
+export type DutyUser = typeof dutyUsers.$inferSelect;
+export type InsertDutyUser = typeof dutyUsers.$inferInsert;
+export type Duty = typeof duties.$inferSelect;
+export type InsertDuty = typeof duties.$inferInsert;
+export type Holiday = typeof holidays.$inferSelect;
+export type InsertHoliday = typeof holidays.$inferInsert;
+export type Approval = typeof approvals.$inferSelect;
+export type InsertApproval = typeof approvals.$inferInsert;
+export type Backup = typeof backups.$inferSelect;
+export type InsertBackup = typeof backups.$inferInsert;

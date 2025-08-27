@@ -629,6 +629,174 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // RealBro Property Brother API Routes
+  app.get('/api/realbro/demo-stats', async (req, res) => {
+    try {
+      // Demo data for RealBro module
+      const stats = {
+        totalProperties: 12,
+        availableProperties: 8,
+        soldProperties: 4,
+        creditsRemaining: 5
+      };
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching RealBro stats:", error);
+      res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
+  app.get('/api/realbro/demo-properties', async (req, res) => {
+    try {
+      // Demo properties data
+      const properties = [
+        {
+          id: "RB001",
+          title: "3 BHK Apartment in Anna Nagar",
+          price: "₹85,00,000",
+          size: "1200 sq ft",
+          location: "Anna Nagar, Chennai",
+          status: "AVAILABLE",
+          commission: "2%",
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: "RB002", 
+          title: "2 BHK House in Coimbatore",
+          price: "₹45,00,000",
+          size: "900 sq ft",
+          location: "RS Puram, Coimbatore", 
+          status: "SOLD",
+          commission: "₹50,000",
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: "RB003",
+          title: "Villa in ECR",
+          price: "₹1,20,00,000", 
+          size: "2500 sq ft",
+          location: "ECR, Chennai",
+          status: "AVAILABLE",
+          commission: "1.5%",
+          createdAt: new Date().toISOString()
+        }
+      ];
+      res.json(properties);
+    } catch (error) {
+      console.error("Error fetching RealBro properties:", error);
+      res.status(500).json({ message: "Failed to fetch properties" });
+    }
+  });
+
+  app.get('/api/realbro/demo-contacts', async (req, res) => {
+    try {
+      // Demo broker contacts
+      const contacts = [
+        { name: "Ravi Kumar", phone: "+91 98765 43210", email: "ravi@example.com", district: "Chennai" },
+        { name: "Priya Sharma", phone: "+91 87654 32109", email: "priya@example.com", district: "Coimbatore" },
+        { name: "Murugan S", phone: "+91 76543 21098", email: "murugan@example.com", district: "Madurai" }
+      ];
+      res.json(contacts);
+    } catch (error) {
+      console.error("Error fetching RealBro contacts:", error);
+      res.status(500).json({ message: "Failed to fetch contacts" });
+    }
+  });
+
+  app.get('/api/realbro/demo-credits', async (req, res) => {
+    try {
+      // Demo credit transactions
+      const creditHistory = [
+        { type: "USED", amount: -1, description: "Property listing: Anna Nagar Apartment", date: "2 days ago" },
+        { type: "PURCHASED", amount: 10, description: "Credit purchase - ₹2,500", date: "1 week ago" },
+        { type: "FREE", amount: 1, description: "Welcome bonus", date: "2 weeks ago" }
+      ];
+      res.json({ balance: 5, history: creditHistory });
+    } catch (error) {
+      console.error("Error fetching RealBro credits:", error);
+      res.status(500).json({ message: "Failed to fetch credits" });
+    }
+  });
+
+  // WytDuty Enterprise API Routes
+  app.get('/api/wytduty/demo-stats', async (req, res) => {
+    try {
+      const stats = {
+        totalDuties: 247,
+        pendingApproval: 8,
+        completionRate: 94,
+        overdue: 3
+      };
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching WytDuty stats:", error);
+      res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
+  app.get('/api/wytduty/demo-duties', async (req, res) => {
+    try {
+      const duties = [
+        {
+          id: "D001",
+          title: "Q4 Financial Report",
+          assignee: "Finance Team",
+          status: "pending",
+          priority: "high",
+          schedule: "monthly_before_5",
+          dueAt: new Date(Date.now() + 86400000).toISOString()
+        },
+        {
+          id: "D002",
+          title: "Security Audit Review",
+          assignee: "Security Team", 
+          status: "for_approval",
+          priority: "high",
+          schedule: "onetime",
+          dueAt: new Date(Date.now() + 172800000).toISOString()
+        },
+        {
+          id: "D003",
+          title: "Weekly Newsletter",
+          assignee: "Marketing",
+          status: "pending",
+          priority: "medium",
+          schedule: "weekly_before_sat",
+          dueAt: new Date(Date.now() + 432000000).toISOString()
+        }
+      ];
+      res.json(duties);
+    } catch (error) {
+      console.error("Error fetching WytDuty duties:", error);
+      res.status(500).json({ message: "Failed to fetch duties" });
+    }
+  });
+
+  app.get('/api/wytduty/demo-approvals', async (req, res) => {
+    try {
+      const approvals = [
+        {
+          id: "D002",
+          title: "Security Audit Review",
+          requestedBy: "John Smith",
+          date: "2 hours ago",
+          priority: "high"
+        },
+        {
+          id: "D008", 
+          title: "Budget Revision Request",
+          requestedBy: "Finance Team",
+          date: "1 day ago",
+          priority: "medium"
+        }
+      ];
+      res.json(approvals);
+    } catch (error) {
+      console.error("Error fetching WytDuty approvals:", error);
+      res.status(500).json({ message: "Failed to fetch approvals" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
