@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Menu, Search, User, Settings, LogOut, LogIn, UserPlus, Home, Activity, Building, Briefcase, QrCode, Bot, BarChart } from "lucide-react";
+import { Menu, Search, User, Settings, LogOut, LogIn, UserPlus, Home, Activity, Building, Briefcase, QrCode, Bot, BarChart, Brain } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -192,6 +192,10 @@ export default function Header({ onMenuClick }: HeaderProps) {
                     <Bot className="h-5 w-5" />
                     <span>AI Directory</span>
                   </Link>
+                  <Link href="/wytai-trademark" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700" onClick={() => setMobileMenuOpen(false)}>
+                    <Brain className="h-5 w-5" />
+                    <span>WytAi Trademark</span>
+                  </Link>
                   {isAuthenticated && (
                     <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
                       <BarChart className="h-5 w-5" />
@@ -249,6 +253,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
               </Link>
               <Link href="/ai-directory" className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium" data-testid="nav-ai-directory">
                 AI Directory
+              </Link>
+              <Link href="/wytai-trademark" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-md border border-blue-200 dark:border-blue-700" data-testid="nav-wytai-trademark">
+                WytAi Trademark
               </Link>
               {isAuthenticated && (
                 <Link href="/dashboard" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium" data-testid="nav-dashboard">

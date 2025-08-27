@@ -522,6 +522,7 @@ export const selectPlanSchema = createSelectSchema(plans);
 export const selectMediaSchema = createSelectSchema(media);
 export const selectAuditLogSchema = createSelectSchema(auditLogs);
 
+
 // Insert types
 export type InsertTenant = z.infer<typeof insertTenantSchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -535,6 +536,175 @@ export type InsertHub = z.infer<typeof insertHubSchema>;
 export type InsertPlan = z.infer<typeof insertPlanSchema>;
 export type InsertMedia = z.infer<typeof insertMediaSchema>;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+
+// WytAi Trademark types
+export type Trademark = typeof trademarks.$inferSelect;
+export type InsertTrademark = z.infer<typeof insertTrademarkSchema>;
+export type TrademarkSearch = typeof trademarkSearches.$inferSelect;
+export type InsertTrademarkSearch = z.infer<typeof insertTrademarkSearchSchema>;
+export type TrademarkSimilarity = typeof trademarkSimilarities.$inferSelect;
+export type InsertTrademarkSimilarity = z.infer<typeof insertTrademarkSimilaritySchema>;
+
+// WytAi Trademark Engine - Proprietary AI-Powered Indian Trademark Intelligence
+export const trademarkStatusEnum = pgEnum('trademark_status', ['pending', 'registered', 'opposed', 'abandoned', 'expired', 'renewal_due']);
+export const trademarkClassificationEnum = pgEnum('trademark_classification', ['class_1', 'class_2', 'class_3', 'class_4', 'class_5', 'class_6', 'class_7', 'class_8', 'class_9', 'class_10', 'class_11', 'class_12', 'class_13', 'class_14', 'class_15', 'class_16', 'class_17', 'class_18', 'class_19', 'class_20', 'class_21', 'class_22', 'class_23', 'class_24', 'class_25', 'class_26', 'class_27', 'class_28', 'class_29', 'class_30', 'class_31', 'class_32', 'class_33', 'class_34', 'class_35', 'class_36', 'class_37', 'class_38', 'class_39', 'class_40', 'class_41', 'class_42', 'class_43', 'class_44', 'class_45']);
+export const trademarkTypeEnum = pgEnum('trademark_type', ['word', 'logo', 'device', 'combined', 'sound', 'shape', 'color', 'movement']);
+export const similarityAlgorithmEnum = pgEnum('similarity_algorithm', ['wytai_semantic', 'wytai_phonetic', 'wytai_visual', 'wytai_combined', 'levenshtein', 'soundex']);
+
+// Core trademark records from Indian Patent Office
+export const trademarks = pgTable("trademarks", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  // Official trademark details
+  applicationNumber: varchar("application_number", { length: 50 }).notNull().unique(),
+  registrationNumber: varchar("registration_number", { length: 50 }),
+  trademarkText: text("trademark_text").notNull(),
+  trademarkType: trademarkTypeEnum("trademark_type").notNull(),
+  applicantName: varchar("applicant_name", { length: 500 }).notNull(),
+  applicantAddress: text("applicant_address"),
+  applicantCountry: varchar("applicant_country", { length: 100 }),
+  
+  // Classification and status
+  niceClassification: trademarkClassificationEnum("nice_classification").notNull(),
+  goodsServices: text("goods_services").notNull(),
+  status: trademarkStatusEnum("status").notNull(),
+  filingDate: timestamp("filing_date").notNull(),
+  registrationDate: timestamp("registration_date"),
+  expiryDate: timestamp("expiry_date"),
+  renewalDate: timestamp("renewal_date"),
+  
+  // Legal and procedural
+  attorney: varchar("attorney", { length: 255 }),
+  oppositions: jsonb("oppositions").default([]),
+  legalProceedings: jsonb("legal_proceedings").default([]),
+  
+  // AI Enhancement metadata
+  searchKeywords: jsonb("search_keywords").default([]), // AI-extracted keywords
+  similarityVector: jsonb("similarity_vector").default([]), // ML vector representation
+  confidenceScore: decimal("confidence_score", { precision: 5, scale: 4 }).default('1.0000'),
+  dataSource: varchar("data_source", { length: 100 }).notNull(), // 'ipo_official', 'court_records', 'web_crawl'
+  dataQuality: integer("data_quality").default(100), // 0-100 quality score
+  
+  // System metadata
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  lastSyncedAt: timestamp("last_synced_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_trademarks_application").on(table.applicationNumber),
+  index("idx_trademarks_text").on(table.trademarkText),
+  index("idx_trademarks_applicant").on(table.applicantName),
+  index("idx_trademarks_classification").on(table.niceClassification),
+  index("idx_trademarks_status").on(table.status),
+  index("idx_trademarks_filing_date").on(table.filingDate),
+  index("idx_trademarks_tenant").on(table.tenantId),
+]);
+
+// User search queries and AI-powered results
+export const trademarkSearches = pgTable("trademark_searches", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  userId: varchar("user_id").references(() => users.id),
+  
+  // Search parameters
+  queryText: text("query_text").notNull(),
+  searchType: varchar("search_type", { length: 50 }).notNull(), // 'exact', 'similar', 'phonetic', 'semantic'
+  filters: jsonb("filters").default({}), // Classification, status, date ranges
+  
+  // AI Analysis results
+  totalResults: integer("total_results").default(0),
+  aiConfidenceScore: decimal("ai_confidence_score", { precision: 5, scale: 4 }),
+  riskAssessment: varchar("risk_assessment", { length: 20 }), // 'low', 'medium', 'high', 'critical'
+  recommendedActions: jsonb("recommended_actions").default([]),
+  
+  // Performance metrics
+  searchDuration: integer("search_duration"), // milliseconds
+  algorithmUsed: similarityAlgorithmEnum("algorithm_used").default('wytai_combined'),
+  
+  // Business context
+  ipAddress: varchar("ip_address", { length: 45 }),
+  apiKeyUsed: uuid("api_key_used").references(() => wytidApiKeys.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_trademark_searches_tenant").on(table.tenantId),
+  index("idx_trademark_searches_user").on(table.userId),
+  index("idx_trademark_searches_text").on(table.queryText),
+  index("idx_trademark_searches_created").on(table.createdAt),
+]);
+
+// AI-powered similarity analysis between trademarks
+export const trademarkSimilarities = pgTable("trademark_similarities", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  searchId: uuid("search_id").notNull().references(() => trademarkSearches.id, { onDelete: 'cascade' }),
+  trademarkId: uuid("trademark_id").notNull().references(() => trademarks.id),
+  
+  // Similarity scores (proprietary WytAi algorithms)
+  overallSimilarity: decimal("overall_similarity", { precision: 5, scale: 4 }).notNull(),
+  textSimilarity: decimal("text_similarity", { precision: 5, scale: 4 }),
+  phoneticSimilarity: decimal("phonetic_similarity", { precision: 5, scale: 4 }),
+  semanticSimilarity: decimal("semantic_similarity", { precision: 5, scale: 4 }),
+  visualSimilarity: decimal("visual_similarity", { precision: 5, scale: 4 }),
+  
+  // Legal risk assessment
+  conflictProbability: decimal("conflict_probability", { precision: 5, scale: 4 }),
+  oppositionRisk: varchar("opposition_risk", { length: 20 }), // 'minimal', 'low', 'moderate', 'high', 'critical'
+  legalPrecedents: jsonb("legal_precedents").default([]),
+  
+  // AI explanation
+  similarityReasons: jsonb("similarity_reasons").default([]),
+  algorithmBreakdown: jsonb("algorithm_breakdown").default({}),
+  confidence: decimal("confidence", { precision: 5, scale: 4 }).default('1.0000'),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_trademark_similarities_search").on(table.searchId),
+  index("idx_trademark_similarities_trademark").on(table.trademarkId),
+  index("idx_trademark_similarities_overall").on(table.overallSimilarity),
+  index("idx_trademark_similarities_conflict").on(table.conflictProbability),
+]);
+
+// API usage tracking for monitoring and billing
+export const trademarkApiUsage = pgTable("trademark_api_usage", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  apiKeyId: uuid("api_key_id").references(() => wytidApiKeys.id),
+  
+  // Usage details
+  endpoint: varchar("endpoint", { length: 255 }).notNull(),
+  httpMethod: varchar("http_method", { length: 10 }).notNull(),
+  requestSize: integer("request_size"), // bytes
+  responseSize: integer("response_size"), // bytes
+  processingTime: integer("processing_time"), // milliseconds
+  
+  // Business metrics
+  searchesPerformed: integer("searches_performed").default(0),
+  similaritiesCalculated: integer("similarities_calculated").default(0),
+  aiOperations: integer("ai_operations").default(0),
+  
+  // Technical metrics
+  statusCode: integer("status_code").notNull(),
+  errorMessage: text("error_message"),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  
+  // Billing
+  creditsCost: decimal("credits_cost", { precision: 10, scale: 4 }).default('0.0000'),
+  billingTier: varchar("billing_tier", { length: 50 }),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_trademark_api_usage_tenant").on(table.tenantId),
+  index("idx_trademark_api_usage_api_key").on(table.apiKeyId),
+  index("idx_trademark_api_usage_endpoint").on(table.endpoint),
+  index("idx_trademark_api_usage_created").on(table.createdAt),
+]);
+
+// WytAi Trademark schemas (after table definitions)
+export const insertTrademarkSchema = createInsertSchema(trademarks);
+export const selectTrademarkSchema = createSelectSchema(trademarks);
+export const insertTrademarkSearchSchema = createInsertSchema(trademarkSearches);
+export const selectTrademarkSearchSchema = createSelectSchema(trademarkSearches);
+export const insertTrademarkSimilaritySchema = createInsertSchema(trademarkSimilarities);
+export const selectTrademarkSimilaritySchema = createSelectSchema(trademarkSimilarities);
 
 // AssessDisc DISC Assessment Module Tables
 export const assessmentCategories = pgTable("assessment_categories", {
