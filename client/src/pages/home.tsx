@@ -22,11 +22,15 @@ export default function Home() {
             </Badge>
           </div>
           
+          <div className="flex justify-center mb-8">
+            <img 
+              src="@assets/wyt-logo_1756309893603.png" 
+              alt="WytNet - Multi-SaaS Engine" 
+              className="h-16 md:h-20 w-auto"
+            />
+          </div>
+          
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              WytNet
-            </span>
-            <br />
             Multi-SaaS Engine
           </h1>
           
@@ -256,11 +260,12 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">W</span>
-                </div>
-                <span className="text-xl font-bold">WytNet</span>
+              <div className="flex items-center space-x-3 mb-4">
+                <img 
+                  src="@assets/wyt-logo_1756309893603.png" 
+                  alt="WytNet Logo" 
+                  className="h-8 w-auto"
+                />
               </div>
               <p className="text-gray-400 text-sm">
                 The ultimate multi-tenant SaaS platform for building scalable applications.
