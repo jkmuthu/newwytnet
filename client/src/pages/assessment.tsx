@@ -77,7 +77,7 @@ export default function Assessment() {
 
   // Fetch questions
   const { data: questions, isLoading: loadingQuestions } = useQuery({
-    queryKey: ['/api/assessments/questions', participantInfo.categoryId, participantInfo.language],
+    queryKey: ['/api/assessments/questions', participantInfo.categoryId || null, participantInfo.language],
     enabled: currentStep === 'assessment' && !!sessionId,
     retry: false,
   });
