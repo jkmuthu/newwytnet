@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./customAuth";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertModelSchema, insertPageSchema, insertAppSchema, insertHubSchema } from "@shared/schema";

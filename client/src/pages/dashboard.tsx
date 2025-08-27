@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
+import Footer from "@/components/layout/footer";
 import StatsCard from "@/components/ui/stats-card";
 import TabNavigation from "@/components/ui/tab-navigation";
 import ModuleBuilder from "@/components/builders/module-builder";
@@ -20,18 +21,14 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("module-builder");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Redirect to home if not authenticated
+  // Optional authentication - show login prompt if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
+      // Don't force redirect, just show a helpful message
       toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
+        title: "Welcome to WytNet",
+        description: "Sign in to access your personal dashboard and create projects.",
       });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
     }
   }, [isAuthenticated, isLoading, toast]);
 
@@ -55,9 +52,7 @@ export default function Dashboard() {
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  // Allow access even without authentication, but show limited functionality
 
   const tabs = [
     { id: "module-builder", label: "Module Builder", icon: "cubes" },
