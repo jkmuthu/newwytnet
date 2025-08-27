@@ -6,13 +6,19 @@ import { z } from "zod";
 import { insertModelSchema, insertPageSchema, insertAppSchema, insertHubSchema } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
+import { AssessmentService } from "./assessmentService";
+import { insertAssessmentSessionSchema, insertAssessmentResponseSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
-  // Initialize WytID service
+  // Initialize services
   const wytidService = new WytIDService('mock');
+  const assessmentService = new AssessmentService();
+  
+  // Initialize assessment default data
+  await assessmentService.initializeDefaultData();
 
   // Auth routes - this should not use isAuthenticated middleware as it checks auth status
   app.get('/api/auth/user', async (req: any, res) => {
@@ -511,6 +517,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating WytID API key:", error);
       res.status(500).json({ message: "Failed to create WytID API key" });
+    }
+  });
+
+  // AssessDisc DISC Assessment Routes (Public Access)
+  
+  // Get assessment categories
+  app.get('/api/assessments/categories', async (req, res) => {
+    try {
+      const categories = await assessmentService.getCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching assessment categories:", error);
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  // Get assessment questions
+  app.get('/api/assessments/questions', async (req, res) => {
+    try {
+      const { categoryId, language = 'en' } = req.query;
+      const questions = await assessmentService.getQuestions(
+        categoryId as string, 
+        language as string
+      );
+      res.json(questions);
+    } catch (error) {
+      console.error("Error fetching assessment questions:", error);
+      res.status(500).json({ message: "Failed to fetch questions" });
+    }
+  });
+
+  // Start assessment session
+  app.post('/api/assessments/sessions', async (req, res) => {
+    try {
+      const sessionData = insertAssessmentSessionSchema.parse({
+        ...req.body,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent'),
+      });
+      
+      const session = await assessmentService.createSession(sessionData);
+      res.json(session);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error creating assessment session:", error);
+      res.status(500).json({ message: "Failed to create session" });
+    }
+  });
+
+  // Submit assessment response
+  app.post('/api/assessments/responses', async (req, res) => {
+    try {
+      const responseData = insertAssessmentResponseSchema.parse(req.body);
+      const response = await assessmentService.saveResponse(responseData);
+      res.json(response);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      console.error("Error saving assessment response:", error);
+      res.status(500).json({ message: "Failed to save response" });
+    }
+  });
+
+  // Calculate assessment results
+  app.post('/api/assessments/sessions/:sessionId/calculate', async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const result = await assessmentService.calculateAndSaveResults(sessionId);
+      res.json(result);
+    } catch (error) {
+      console.error("Error calculating assessment results:", error);
+      res.status(500).json({ message: "Failed to calculate results" });
+    }
+  });
+
+  // Get assessment results
+  app.get('/api/assessments/sessions/:sessionId/results', async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const sessionWithResult = await assessmentService.getSessionWithResult(sessionId);
+      
+      if (!sessionWithResult) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      
+      res.json(sessionWithResult);
+    } catch (error) {
+      console.error("Error fetching assessment results:", error);
+      res.status(500).json({ message: "Failed to fetch results" });
+    }
+  });
+
+  // Get assessment session
+  app.get('/api/assessments/sessions/:sessionId', async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const session = await assessmentService.getSessionWithResult(sessionId);
+      
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+      
+      res.json(session);
+    } catch (error) {
+      console.error("Error fetching assessment session:", error);
+      res.status(500).json({ message: "Failed to fetch session" });
     }
   });
 

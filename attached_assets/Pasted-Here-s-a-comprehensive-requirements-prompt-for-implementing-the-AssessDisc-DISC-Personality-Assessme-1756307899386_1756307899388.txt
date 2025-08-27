@@ -1,0 +1,132 @@
+Here's a comprehensive requirements prompt for implementing the AssessDisc DISC Personality Assessment Tool in your WytNet Multi-SaaS platform:
+
+AssessDisc Module - Requirements Document
+Project Overview
+Create a multi-tenant DISC personality assessment module for the WytNet Multi-SaaS platform. This module should provide organization-specific DISC assessments with white-label branding capabilities.
+
+Core Features Required
+1. Multi-Tenancy Architecture
+Support multiple organizations with separate branding
+Organization-specific URLs/subdomains
+Custom logo and color scheme per organization
+Separate data isolation per tenant
+2. DISC Assessment Engine
+15-question assessment with category-specific questions
+Four personality types: Dominance (D), Influence (I), Steadiness (S), Conscientiousness (C)
+Dynamic question loading based on user category selection
+Real-time scoring algorithm
+3. User Categories Support
+Student, Job Seeker, Freelancer, Volunteer, Self-Employed
+Parent, Startup Entrepreneur, Corporate Leader
+Educator/Trainer, Expert/Consultant
+Category-specific question sets
+4. Multilingual Support
+Primary: English and Tamil
+Expandable language system
+Real-time language switching during assessment
+Localized content for all user-facing elements
+5. User Information Collection
+Name, Age, Gender, Country, City
+Category selection
+Contact information (optional)
+GDPR-compliant data handling
+6. Results & Analytics
+Detailed personality type breakdown with percentages
+Career insights and recommendations
+Strengths and development areas
+Work style preferences
+Downloadable PDF reports
+Excel export functionality
+7. Admin Dashboard Features
+Organization management
+User analytics and statistics
+Assessment completion tracking
+Data export capabilities
+Custom branding configuration
+User management per organization
+8. White-Label Capabilities
+Custom organization logos
+Branded color schemes
+Custom domain support
+Organization-specific content
+Branded PDF reports
+Custom footer and header content
+9. Data Management
+User assessment history
+Organization-specific data segregation
+Export functionality (PDF, Excel)
+Data retention policies
+Backup and recovery
+10. Technical Requirements
+Responsive web design (mobile-first)
+Progressive Web App features
+Fast loading times (<3 seconds)
+Cross-browser compatibility
+SEO optimization
+Schema markup for search engines
+11. Security Features
+Data encryption at rest and in transit
+Organization data isolation
+User consent management
+Privacy policy compliance
+Secure API endpoints
+Input validation and sanitization
+12. Integration Capabilities
+REST API for external integrations
+Webhook support for real-time notifications
+SSO integration options
+CRM integration capabilities
+Email marketing tool integration
+13. Performance Requirements
+Support 1000+ concurrent users per organization
+Auto-scaling capabilities
+CDN integration for assets
+Optimized database queries
+Caching mechanisms
+14. User Experience Features
+Intuitive assessment flow
+Progress tracking during assessment
+Save and resume functionality
+Social sharing of results
+Mobile-optimized interface
+Accessibility compliance (WCAG 2.1)
+15. Reporting & Analytics
+Organization-level analytics dashboard
+Assessment completion rates
+Popular user categories
+Geographic distribution
+Time-based analytics
+Custom report generation
+Database Schema Requirements
+Organizations Table
+Organization ID, Name, Logo, Colors, Domain
+Subscription details, Status, Settings
+Users Table
+User ID, Organization ID, Personal details
+Assessment history, Created date
+Assessments Table
+Assessment ID, User ID, Organization ID
+Responses, Scores, Completion status, Timestamp
+Questions Table
+Question ID, Category, Language, Text
+Answer options, Scoring weights
+API Endpoints Required
+Organization management (CRUD)
+User registration and authentication
+Assessment operations
+Results retrieval
+Analytics data
+Export functions
+Deployment Considerations
+Multi-environment support (dev, staging, prod)
+Database migration scripts
+Environment variable management
+Monitoring and logging
+Error tracking and reporting
+Third-Party Integrations
+PDF generation library
+Excel export functionality
+Email service provider
+Analytics tracking
+CDN service
+This comprehensive module should seamlessly integrate into your WytNet Multi-SaaS platform while maintaining the core functionality and user experience of the original AssessDisc tool, enhanced with multi-tenancy and white-label capabilities.

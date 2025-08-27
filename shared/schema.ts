@@ -535,3 +535,101 @@ export type InsertHub = z.infer<typeof insertHubSchema>;
 export type InsertPlan = z.infer<typeof insertPlanSchema>;
 export type InsertMedia = z.infer<typeof insertMediaSchema>;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+
+// AssessDisc DISC Assessment Module Tables
+export const assessmentCategories = pgTable("assessment_categories", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  displayName: varchar("display_name", { length: 255 }).notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const assessmentQuestions = pgTable("assessment_questions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  categoryId: uuid("category_id").references(() => assessmentCategories.id),
+  questionNumber: integer("question_number").notNull(),
+  questionText: text("question_text").notNull(),
+  language: varchar("language", { length: 10 }).notNull().default('en'),
+  discType: varchar("disc_type", { length: 1 }).notNull(), // D, I, S, C
+  weight: decimal("weight", { precision: 3, scale: 2 }).default('1.00'),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const assessmentOptions = pgTable("assessment_options", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  questionId: uuid("question_id").notNull().references(() => assessmentQuestions.id),
+  optionText: text("option_text").notNull(),
+  optionValue: integer("option_value").notNull(), // 1-4 scale
+  discType: varchar("disc_type", { length: 1 }).notNull(), // D, I, S, C
+  language: varchar("language", { length: 10 }).notNull().default('en'),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const assessmentSessions = pgTable("assessment_sessions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  participantName: varchar("participant_name", { length: 255 }).notNull(),
+  participantEmail: varchar("participant_email", { length: 255 }),
+  age: integer("age"),
+  gender: varchar("gender", { length: 20 }),
+  country: varchar("country", { length: 100 }),
+  city: varchar("city", { length: 100 }),
+  categoryId: uuid("category_id").references(() => assessmentCategories.id),
+  language: varchar("language", { length: 10 }).notNull().default('en'),
+  isCompleted: boolean("is_completed").default(false),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const assessmentResponses = pgTable("assessment_responses", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: uuid("session_id").notNull().references(() => assessmentSessions.id),
+  questionId: uuid("question_id").notNull().references(() => assessmentQuestions.id),
+  optionId: uuid("option_id").notNull().references(() => assessmentOptions.id),
+  responseValue: integer("response_value").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const assessmentResults = pgTable("assessment_results", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  sessionId: uuid("session_id").notNull().references(() => assessmentSessions.id),
+  dominanceScore: decimal("dominance_score", { precision: 5, scale: 2 }).notNull(),
+  influenceScore: decimal("influence_score", { precision: 5, scale: 2 }).notNull(),
+  steadinessScore: decimal("steadiness_score", { precision: 5, scale: 2 }).notNull(),
+  conscientiousnessScore: decimal("conscientiousness_score", { precision: 5, scale: 2 }).notNull(),
+  primaryType: varchar("primary_type", { length: 1 }).notNull(), // D, I, S, or C
+  secondaryType: varchar("secondary_type", { length: 1 }),
+  personalityProfile: jsonb("personality_profile"), // Detailed breakdown
+  recommendations: jsonb("recommendations"), // Career insights and recommendations
+  strengths: jsonb("strengths"),
+  developmentAreas: jsonb("development_areas"),
+  workStyle: jsonb("work_style"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Type exports for AssessDisc
+export type AssessmentCategory = typeof assessmentCategories.$inferSelect;
+export type AssessmentQuestion = typeof assessmentQuestions.$inferSelect;
+export type AssessmentOption = typeof assessmentOptions.$inferSelect;
+export type AssessmentSession = typeof assessmentSessions.$inferSelect;
+export type AssessmentResponse = typeof assessmentResponses.$inferSelect;
+export type AssessmentResult = typeof assessmentResults.$inferSelect;
+
+export type InsertAssessmentSession = typeof assessmentSessions.$inferInsert;
+export type InsertAssessmentResponse = typeof assessmentResponses.$inferInsert;
+export type InsertAssessmentResult = typeof assessmentResults.$inferInsert;
+
+// Insert schemas for AssessDisc
+export const insertAssessmentSessionSchema = createInsertSchema(assessmentSessions);
+export const insertAssessmentResponseSchema = createInsertSchema(assessmentResponses);
+export const insertAssessmentResultSchema = createInsertSchema(assessmentResults);

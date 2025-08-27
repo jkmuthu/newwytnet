@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import Dashboard from "@/pages/dashboard";
+import Assessment from "@/pages/assessment";
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 
@@ -15,6 +16,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/assessment" component={Assessment} />
       <Route path="/landing" component={Landing} />
       <Route component={NotFound} />
     </Switch>

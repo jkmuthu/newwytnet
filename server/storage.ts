@@ -15,6 +15,12 @@ import {
   wytidProofs,
   wytidTransfers,
   wytidApiKeys,
+  assessmentCategories,
+  assessmentQuestions,
+  assessmentOptions,
+  assessmentSessions,
+  assessmentResponses,
+  assessmentResults,
   type User,
   type UpsertUser,
   type Tenant,
@@ -34,6 +40,15 @@ import {
   type InsertHub,
   type InsertPlan,
   type InsertMedia,
+  type AssessmentCategory,
+  type AssessmentQuestion,
+  type AssessmentOption,
+  type AssessmentSession,
+  type AssessmentResponse,
+  type AssessmentResult,
+  type InsertAssessmentSession,
+  type InsertAssessmentResponse,
+  type InsertAssessmentResult,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, like, count, sql } from "drizzle-orm";
