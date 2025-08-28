@@ -1289,7 +1289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Initiate registration/login with WhatsApp OTP
   app.post('/api/auth/whatsapp/send-otp', async (req, res) => {
     try {
-      const { name, country = 'IN', whatsappNumber } = req.body;
+      const { name, country = 'IN', whatsappNumber, gender, dateOfBirth } = req.body;
 
       if (!whatsappNumber) {
         return res.status(400).json({ error: 'WhatsApp number is required' });
@@ -1312,17 +1312,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user exists
       let user = await whatsappAuthService.findWhatsAppUser(formattedNumber);
       
-      // If user doesn't exist and name is provided, create new user
-      if (!user && name) {
-        user = await whatsappAuthService.createWhatsAppUser({
-          name,
-          country,
-          whatsappNumber: formattedNumber,
-        });
-      } else if (!user) {
-        return res.status(400).json({ 
-          error: 'User not found. Please provide your name for registration.' 
-        });
+      let isNewUser = false;
+      
+      // If user doesn't exist, detect if it's a new user registration
+      if (!user) {
+        isNewUser = true;
+        
+        // For new users, validate required fields
+        if (name && gender && dateOfBirth) {
+          user = await whatsappAuthService.createWhatsAppUser({
+            name,
+            country,
+            whatsappNumber: formattedNumber,
+            gender,
+            dateOfBirth,
+          });
+        } else {
+          // Return new user indication - frontend will show registration form
+          return res.json({
+            success: true,
+            isNewUser: true,
+            message: 'New user detected. Please complete registration.',
+            whatsappNumber: formattedNumber,
+          });
+        }
       }
 
       // Generate OTP session
@@ -1333,12 +1346,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        message: 'OTP generated successfully',
+        message: isNewUser ? 'Welcome! OTP generated for new WytPass account.' : 'Welcome back! OTP generated.',
         sessionId,
         whatsappLink,
         whatsappNumber: formattedNumber,
         expiresIn: 300, // 5 minutes in seconds
-        isNewUser: !user.isVerified,
+        isNewUser: isNewUser || !user.isVerified,
       });
     } catch (error) {
       console.error('Error sending WhatsApp OTP:', error);
@@ -1375,12 +1388,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        message: 'Login successful',
+        message: user.isSuperAdmin ? 'Welcome back, Super Admin!' : 'Login successful',
         user: {
           id: user.id,
           name: user.name,
           country: user.country,
           whatsappNumber: user.whatsappNumber,
+          gender: user.gender,
+          dateOfBirth: user.dateOfBirth,
+          role: user.role,
+          isSuperAdmin: user.isSuperAdmin,
           isVerified: user.isVerified,
           lastLoginAt: user.lastLoginAt,
         },

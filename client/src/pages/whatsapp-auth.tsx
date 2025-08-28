@@ -18,6 +18,9 @@ interface RegistrationData {
   name: string;
   country: string;
   whatsappNumber: string;
+  gender?: string;
+  dateOfBirth?: string;
+  isNewUser?: boolean;
 }
 
 interface OTPResponse {
@@ -34,6 +37,10 @@ interface User {
   name: string;
   country: string;
   whatsappNumber: string;
+  gender?: string;
+  dateOfBirth?: string;
+  role: string;
+  isSuperAdmin: boolean;
   isVerified: boolean;
 }
 
@@ -52,11 +59,29 @@ export default function WhatsAppAuth() {
     name: '',
     country: 'IN',
     whatsappNumber: '',
+    gender: '',
+    dateOfBirth: '',
+    isNewUser: false,
   });
+  const [isNewUser, setIsNewUser] = useState(false);
   const [otpData, setOtpData] = useState<OTPResponse | null>(null);
   const [enteredOTP, setEnteredOTP] = useState('');
   const [timeLeft, setTimeLeft] = useState(0);
   const [user, setUser] = useState<User | null>(null);
+
+  // Calculate default date (18 years ago)
+  const getDefaultDate = () => {
+    const today = new Date();
+    const defaultDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+    return defaultDate.toISOString().split('T')[0];
+  };
+
+  // Initialize default date of birth
+  React.useEffect(() => {
+    if (!registrationData.dateOfBirth) {
+      setRegistrationData(prev => ({ ...prev, dateOfBirth: getDefaultDate() }));
+    }
+  }, []);
 
   // Timer for OTP expiry
   useEffect(() => {
@@ -92,14 +117,21 @@ export default function WhatsAppAuth() {
     onSuccess: (response: OTPResponse) => {
       setOtpData(response);
       setTimeLeft(response.expiresIn);
-      setCurrentStep('otp-sent');
+      setIsNewUser(response.isNewUser);
+      setCurrentStep(response.isNewUser ? 'register' : 'otp-sent');
       
-      toast({
-        title: 'OTP Generated!',
-        description: response.isNewUser 
-          ? 'Welcome to WytNet! Your OTP is ready to share.'
-          : 'Welcome back! Your OTP is ready to share.',
-      });
+      if (response.isNewUser) {
+        setRegistrationData(prev => ({ ...prev, isNewUser: true }));
+        toast({
+          title: 'New User Detected!',
+          description: 'Please complete your WytPass registration below.',
+        });
+      } else {
+        toast({
+          title: 'OTP Generated!',
+          description: 'Welcome back! Your OTP is ready to share.',
+        });
+      }
     },
     onError: (error: any) => {
       toast({
@@ -152,15 +184,6 @@ export default function WhatsAppAuth() {
   const handleSendOTP = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!registrationData.name.trim()) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please enter your name',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     if (!registrationData.whatsappNumber.trim()) {
       toast({
         title: 'Validation Error',
@@ -168,6 +191,36 @@ export default function WhatsAppAuth() {
         variant: 'destructive',
       });
       return;
+    }
+
+    // For new users, validate additional fields
+    if (isNewUser || registrationData.isNewUser) {
+      if (!registrationData.name.trim()) {
+        toast({
+          title: 'Validation Error',
+          description: 'Please enter your name',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!registrationData.gender) {
+        toast({
+          title: 'Validation Error',
+          description: 'Please select your gender',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!registrationData.dateOfBirth) {
+        toast({
+          title: 'Validation Error',
+          description: 'Please enter your date of birth',
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     sendOTPMutation.mutate(registrationData);
@@ -224,28 +277,18 @@ export default function WhatsAppAuth() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
-                Register / Login
+                {isNewUser || registrationData.isNewUser ? 'Create Your WytPass !!!' : 'Login / Register'}
               </CardTitle>
               <CardDescription>
-                Enter your details to receive WhatsApp OTP
+                {isNewUser || registrationData.isNewUser 
+                  ? 'Complete your WytPass registration for global access'
+                  : 'Enter your WhatsApp number to receive OTP'
+                }
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSendOTP} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Name *
-                  </Label>
-                  <Input
-                    id="name"
-                    value={registrationData.name}
-                    onChange={(e) => setRegistrationData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Enter your full name"
-                    data-testid="input-name"
-                  />
-                </div>
-
+                {/* Always show country selection */}
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2">
                     <Globe className="h-4 w-4" />
@@ -268,6 +311,7 @@ export default function WhatsAppAuth() {
                   </Select>
                 </div>
 
+                {/* Always show WhatsApp number */}
                 <div className="space-y-2">
                   <Label htmlFor="whatsapp" className="flex items-center gap-2">
                     <Phone className="h-4 w-4" />
@@ -294,6 +338,71 @@ export default function WhatsAppAuth() {
                   </p>
                 </div>
 
+                {/* Show additional fields for new users */}
+                {(isNewUser || registrationData.isNewUser) && (
+                  <>
+                    <div className="border-t pt-4 mt-4">
+                      <h3 className="text-sm font-semibold text-center mb-4 text-primary">
+                        🚀 Complete Your WytPass Registration
+                      </h3>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Full Name *
+                      </Label>
+                      <Input
+                        id="name"
+                        value={registrationData.name}
+                        onChange={(e) => setRegistrationData(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Enter your full name"
+                        maxLength={100}
+                        data-testid="input-name"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Enter your full name (2-100 characters)
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        ⚧️ Gender *
+                      </Label>
+                      <Select
+                        value={registrationData.gender}
+                        onValueChange={(value) => setRegistrationData(prev => ({ ...prev, gender: value }))}
+                      >
+                        <SelectTrigger data-testid="select-gender">
+                          <SelectValue placeholder="Select your gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="male">👨 Male</SelectItem>
+                          <SelectItem value="female">👩 Female</SelectItem>
+                          <SelectItem value="other">⚧️ Other</SelectItem>
+                          <SelectItem value="prefer_not_to_say">🤐 Prefer not to say</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="dob" className="flex items-center gap-2">
+                        🎂 Date of Birth *
+                      </Label>
+                      <Input
+                        id="dob"
+                        type="date"
+                        value={registrationData.dateOfBirth}
+                        onChange={(e) => setRegistrationData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
+                        data-testid="input-dob"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Default set to 18 years back for easy selection
+                      </p>
+                    </div>
+                  </>
+                )}
+
                 <Button
                   type="submit"
                   className="w-full"
@@ -301,14 +410,31 @@ export default function WhatsAppAuth() {
                   data-testid="button-send-otp"
                 >
                   {sendOTPMutation.isPending ? (
-                    'Generating OTP...'
+                    'Processing...'
                   ) : (
                     <>
-                      Login / Register
+                      {isNewUser || registrationData.isNewUser ? 'Create Your WytPass !!!' : 'Login / Register'}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </>
                   )}
                 </Button>
+
+                {/* Show "Already registered?" option for new users */}
+                {(isNewUser || registrationData.isNewUser) && (
+                  <div className="text-center">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setIsNewUser(false);
+                        setRegistrationData(prev => ({ ...prev, isNewUser: false }));
+                      }}
+                      className="text-sm"
+                    >
+                      Already have a WytPass? Login instead
+                    </Button>
+                  </div>
+                )}
               </form>
             </CardContent>
           </Card>

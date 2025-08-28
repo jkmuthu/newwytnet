@@ -52,14 +52,25 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// WhatsApp OTP Authentication System
+// Gender enum for WhatsApp users
+export const genderEnum = pgEnum("gender", ["male", "female", "other", "prefer_not_to_say"]);
+
+// User roles enum for WytPass system
+export const userRoleEnum = pgEnum("user_role", ["super_admin", "admin", "manager", "user", "guest"]);
+
+// WhatsApp OTP Authentication System (WytPass)
 export const whatsappUsers = pgTable("whatsapp_users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name", { length: 255 }).notNull(),
   country: varchar("country", { length: 10 }).notNull().default('IN'),
   whatsappNumber: varchar("whatsapp_number", { length: 20 }).notNull().unique(),
+  gender: genderEnum("gender"),
+  dateOfBirth: timestamp("date_of_birth"),
+  role: userRoleEnum("role").notNull().default('user'),
   isVerified: boolean("is_verified").default(false),
+  isSuperAdmin: boolean("is_super_admin").default(false),
   tenantId: uuid("tenant_id").references(() => tenants.id),
+  permissions: jsonb("permissions").default({}),
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

@@ -1,6 +1,6 @@
 import { db } from "../db";
 import { whatsappUsers, whatsappOtpSessions, tenants } from "@shared/schema";
-import { eq, and, gt } from "drizzle-orm";
+import { eq, and, gt, sql } from "drizzle-orm";
 import type { InsertWhatsAppUser, WhatsAppUser, InsertWhatsAppOtpSession } from "@shared/schema";
 
 // Phone number validation for Indian numbers
@@ -55,6 +55,8 @@ export async function createWhatsAppUser(userData: {
   name: string;
   country: string;
   whatsappNumber: string;
+  gender?: string;
+  dateOfBirth?: string;
 }): Promise<WhatsAppUser> {
   try {
     // Get or create default tenant
@@ -75,12 +77,28 @@ export async function createWhatsAppUser(userData: {
         .returning();
     }
 
+    // Check if this is the super admin WhatsApp number
+    const isSuperAdmin = userData.whatsappNumber === '+919345228184';
+    
+    // Parse date of birth if provided
+    let dateOfBirth = null;
+    if (userData.dateOfBirth) {
+      dateOfBirth = new Date(userData.dateOfBirth);
+    }
+
     const [user] = await db
       .insert(whatsappUsers)
       .values({
-        ...userData,
+        name: userData.name,
+        country: userData.country,
+        whatsappNumber: userData.whatsappNumber,
+        gender: userData.gender as any,
+        dateOfBirth,
+        role: isSuperAdmin ? 'super_admin' : 'user',
+        isSuperAdmin,
         tenantId: tenant.id,
         isVerified: false,
+        permissions: isSuperAdmin ? { all: true } : {},
       })
       .returning();
 
@@ -167,7 +185,7 @@ export async function verifyOTP(whatsappNumber: string, otp: string): Promise<Wh
           eq(whatsappOtpSessions.whatsappNumber, whatsappNumber),
           eq(whatsappOtpSessions.otp, otp),
           eq(whatsappOtpSessions.isUsed, false),
-          gt(whatsappOtpSessions.expiresAt, new Date())
+          gt(whatsappOtpSessions.expiresAt, sql`now()`)
         )
       )
       .limit(1);

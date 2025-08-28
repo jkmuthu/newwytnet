@@ -38,6 +38,7 @@ function Router() {
       <Route path="/wytai-trademark" component={WytAiTrademark} />
       <Route path="/tm-numbering" component={TMNumbering} />
       <Route path="/auth/whatsapp" component={WhatsAppAuth} />
+      <Route path="/whatsapp-auth" component={WhatsAppAuth} />
       <Route path="/search" component={SearchPage} />
       
       {/* Protected routes - authentication required */}

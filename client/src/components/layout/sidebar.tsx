@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
 
 interface SidebarProps {
   open: boolean;
@@ -6,46 +7,138 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
-  const menuItems = [
-    {
-      section: "Core Platform",
-      items: [
-        { label: "Dashboard", icon: "tachometer-alt", href: "#dashboard", active: true },
-        { label: "Tenants", icon: "building", href: "#tenants" },
-        { label: "Admin Users", icon: "users", href: "#users" },
-      ]
-    },
-    {
-      section: "Builders",
-      items: [
-        { label: "Modules (CRUD)", icon: "cubes", href: "#modules" },
-        { label: "CMS Builder", icon: "edit", href: "#cms" },
-        { label: "App Builder", icon: "mobile-alt", href: "#apps" },
-        { label: "Hub Builder", icon: "network-wired", href: "#hubs" },
-        { label: "DataSets", icon: "database", href: "#datasets" },
-      ]
-    },
-    {
-      section: "Business",
-      items: [
-        { label: "Plan Management", icon: "credit-card", href: "#plans" },
-        { label: "Payment Methods", icon: "wallet", href: "#payments" },
-        { label: "Analytics", icon: "chart-line", href: "#analytics" },
-      ]
-    },
-    {
-      section: "System",
-      items: [
-        { label: "Search", icon: "search", href: "/search" },
-        { label: "Themes", icon: "palette", href: "#themes" },
-        { label: "Media", icon: "images", href: "#media" },
-        { label: "APIs", icon: "plug", href: "#apis" },
-        { label: "AI Management", icon: "robot", href: "#ai" },
-        { label: "Policies", icon: "shield-alt", href: "#policies" },
-        { label: "Logs", icon: "list-alt", href: "#logs" },
-      ]
+  const { user, isAuthenticated, isSuperAdmin, role } = useWhatsAppAuth();
+
+  // Define menu items based on user role
+  const getMenuItems = () => {
+    const baseItems = [
+      {
+        section: "Core Platform",
+        items: [
+          { label: "Dashboard", icon: "tachometer-alt", href: "#dashboard", active: true },
+        ]
+      },
+    ];
+
+    // Add role-specific menu items
+    if (isSuperAdmin) {
+      // Super Admin gets all capabilities
+      return [
+        {
+          section: "🦸‍♂️ Super Admin",
+          items: [
+            { label: "Dashboard", icon: "tachometer-alt", href: "#dashboard", active: true },
+            { label: "System Overview", icon: "server", href: "#system-overview" },
+            { label: "Global Settings", icon: "cogs", href: "#global-settings" },
+          ]
+        },
+        {
+          section: "Core Platform",
+          items: [
+            { label: "Tenants", icon: "building", href: "#tenants" },
+            { label: "All Users", icon: "users", href: "#users" },
+            { label: "WytPass Management", icon: "id-badge", href: "#wytpass" },
+          ]
+        },
+        {
+          section: "Builders",
+          items: [
+            { label: "Modules (CRUD)", icon: "cubes", href: "#modules" },
+            { label: "CMS Builder", icon: "edit", href: "#cms" },
+            { label: "App Builder", icon: "mobile-alt", href: "#apps" },
+            { label: "Hub Builder", icon: "network-wired", href: "#hubs" },
+            { label: "DataSets", icon: "database", href: "#datasets" },
+          ]
+        },
+        {
+          section: "Business",
+          items: [
+            { label: "Plan Management", icon: "credit-card", href: "#plans" },
+            { label: "Payment Methods", icon: "wallet", href: "#payments" },
+            { label: "Analytics", icon: "chart-line", href: "#analytics" },
+          ]
+        },
+        {
+          section: "System",
+          items: [
+            { label: "Search", icon: "search", href: "/search" },
+            { label: "Themes", icon: "palette", href: "#themes" },
+            { label: "Media", icon: "images", href: "#media" },
+            { label: "APIs", icon: "plug", href: "#apis" },
+            { label: "AI Management", icon: "robot", href: "#ai" },
+            { label: "Policies", icon: "shield-alt", href: "#policies" },
+            { label: "Logs", icon: "list-alt", href: "#logs" },
+          ]
+        }
+      ];
+    } else if (role === 'admin') {
+      // Admin gets most capabilities except system-wide settings
+      return [
+        ...baseItems,
+        {
+          section: "Core Platform",
+          items: [
+            { label: "Tenants", icon: "building", href: "#tenants" },
+            { label: "Users", icon: "users", href: "#users" },
+          ]
+        },
+        {
+          section: "Builders",
+          items: [
+            { label: "Modules (CRUD)", icon: "cubes", href: "#modules" },
+            { label: "CMS Builder", icon: "edit", href: "#cms" },
+            { label: "App Builder", icon: "mobile-alt", href: "#apps" },
+            { label: "Hub Builder", icon: "network-wired", href: "#hubs" },
+          ]
+        },
+        {
+          section: "Business",
+          items: [
+            { label: "Analytics", icon: "chart-line", href: "#analytics" },
+          ]
+        },
+        {
+          section: "System",
+          items: [
+            { label: "Search", icon: "search", href: "/search" },
+            { label: "Media", icon: "images", href: "#media" },
+          ]
+        }
+      ];
+    } else if (role === 'manager') {
+      // Manager gets limited administrative access
+      return [
+        ...baseItems,
+        {
+          section: "Builders",
+          items: [
+            { label: "CMS Builder", icon: "edit", href: "#cms" },
+            { label: "App Builder", icon: "mobile-alt", href: "#apps" },
+          ]
+        },
+        {
+          section: "System",
+          items: [
+            { label: "Search", icon: "search", href: "/search" },
+          ]
+        }
+      ];
+    } else {
+      // Regular user gets basic access
+      return [
+        ...baseItems,
+        {
+          section: "Tools",
+          items: [
+            { label: "Search", icon: "search", href: "/search" },
+            { label: "My Content", icon: "folder", href: "#my-content" },
+          ]
+        }
+      ];
     }
-  ];
+  };
+
+  const menuItems = getMenuItems();
 
   return (
     <>
@@ -70,7 +163,9 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">WytNet</h1>
-              <p className="text-xs text-muted-foreground">Multi-SaaS Platform</p>
+              <p className="text-xs text-muted-foreground">
+                {isSuperAdmin ? '🦸‍♂️ Super Admin' : user?.name || 'Multi-SaaS Platform'}
+              </p>
             </div>
           </div>
         </div>
