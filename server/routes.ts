@@ -1283,6 +1283,203 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // WhatsApp OTP Authentication System
+  // =================================
+
+  // Initiate registration/login with WhatsApp OTP
+  app.post('/api/auth/whatsapp/send-otp', async (req, res) => {
+    try {
+      const { name, country = 'IN', whatsappNumber } = req.body;
+
+      if (!whatsappNumber) {
+        return res.status(400).json({ error: 'WhatsApp number is required' });
+      }
+
+      const whatsappAuthService = await import('./services/whatsappAuth');
+      
+      // Validate phone number
+      if (!whatsappAuthService.validatePhoneNumber(whatsappNumber, country)) {
+        return res.status(400).json({ 
+          error: country === 'IN' 
+            ? 'Invalid Indian mobile number. Please enter 10 digits starting with 6, 7, 8, or 9'
+            : 'Invalid phone number format'
+        });
+      }
+
+      // Format phone number
+      const formattedNumber = whatsappAuthService.formatPhoneNumber(whatsappNumber, country);
+
+      // Check if user exists
+      let user = await whatsappAuthService.findWhatsAppUser(formattedNumber);
+      
+      // If user doesn't exist and name is provided, create new user
+      if (!user && name) {
+        user = await whatsappAuthService.createWhatsAppUser({
+          name,
+          country,
+          whatsappNumber: formattedNumber,
+        });
+      } else if (!user) {
+        return res.status(400).json({ 
+          error: 'User not found. Please provide your name for registration.' 
+        });
+      }
+
+      // Generate OTP session
+      const { otp, sessionId } = await whatsappAuthService.createOTPSession(formattedNumber);
+
+      // Generate WhatsApp share link
+      const whatsappLink = whatsappAuthService.generateWhatsAppLink(formattedNumber, otp);
+
+      res.json({
+        success: true,
+        message: 'OTP generated successfully',
+        sessionId,
+        whatsappLink,
+        whatsappNumber: formattedNumber,
+        expiresIn: 300, // 5 minutes in seconds
+        isNewUser: !user.isVerified,
+      });
+    } catch (error) {
+      console.error('Error sending WhatsApp OTP:', error);
+      res.status(500).json({ error: 'Failed to send OTP' });
+    }
+  });
+
+  // Verify WhatsApp OTP and complete login
+  app.post('/api/auth/whatsapp/verify-otp', async (req, res) => {
+    try {
+      const { whatsappNumber, otp } = req.body;
+
+      if (!whatsappNumber || !otp) {
+        return res.status(400).json({ error: 'WhatsApp number and OTP are required' });
+      }
+
+      const whatsappAuthService = await import('./services/whatsappAuth');
+
+      // Verify OTP
+      const user = await whatsappAuthService.verifyOTP(whatsappNumber, otp);
+
+      if (!user) {
+        return res.status(401).json({ 
+          error: 'Invalid or expired OTP. Please request a new one.' 
+        });
+      }
+
+      // Create session (similar to regular auth)
+      if (req.session) {
+        req.session.whatsappUserId = user.id;
+        req.session.whatsappNumber = user.whatsappNumber;
+        req.session.isWhatsAppAuth = true;
+      }
+
+      res.json({
+        success: true,
+        message: 'Login successful',
+        user: {
+          id: user.id,
+          name: user.name,
+          country: user.country,
+          whatsappNumber: user.whatsappNumber,
+          isVerified: user.isVerified,
+          lastLoginAt: user.lastLoginAt,
+        },
+      });
+    } catch (error) {
+      console.error('Error verifying WhatsApp OTP:', error);
+      res.status(500).json({ error: 'Failed to verify OTP' });
+    }
+  });
+
+  // Get current WhatsApp authenticated user
+  app.get('/api/auth/whatsapp/user', async (req, res) => {
+    try {
+      if (!req.session?.whatsappUserId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const whatsappAuthService = await import('./services/whatsappAuth');
+      const user = await whatsappAuthService.findWhatsAppUser(req.session.whatsappNumber);
+
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+
+      res.json({
+        user: {
+          id: user.id,
+          name: user.name,
+          country: user.country,
+          whatsappNumber: user.whatsappNumber,
+          isVerified: user.isVerified,
+          lastLoginAt: user.lastLoginAt,
+        },
+      });
+    } catch (error) {
+      console.error('Error getting WhatsApp user:', error);
+      res.status(500).json({ error: 'Failed to get user' });
+    }
+  });
+
+  // WhatsApp logout
+  app.post('/api/auth/whatsapp/logout', async (req, res) => {
+    try {
+      if (req.session) {
+        req.session.destroy((err) => {
+          if (err) {
+            console.error('Error destroying session:', err);
+            return res.status(500).json({ error: 'Logout failed' });
+          }
+          res.json({ success: true, message: 'Logged out successfully' });
+        });
+      } else {
+        res.json({ success: true, message: 'Already logged out' });
+      }
+    } catch (error) {
+      console.error('Error during WhatsApp logout:', error);
+      res.status(500).json({ error: 'Logout failed' });
+    }
+  });
+
+  // Check phone number availability
+  app.post('/api/auth/whatsapp/check-number', async (req, res) => {
+    try {
+      const { whatsappNumber, country = 'IN' } = req.body;
+
+      if (!whatsappNumber) {
+        return res.status(400).json({ error: 'WhatsApp number is required' });
+      }
+
+      const whatsappAuthService = await import('./services/whatsappAuth');
+
+      // Validate phone number format
+      if (!whatsappAuthService.validatePhoneNumber(whatsappNumber, country)) {
+        return res.status(400).json({ 
+          error: 'Invalid phone number format',
+          isValid: false 
+        });
+      }
+
+      // Format and check if exists
+      const formattedNumber = whatsappAuthService.formatPhoneNumber(whatsappNumber, country);
+      const existingUser = await whatsappAuthService.findWhatsAppUser(formattedNumber);
+
+      res.json({
+        isValid: true,
+        isAvailable: !existingUser,
+        isRegistered: !!existingUser,
+        formattedNumber,
+        existingUser: existingUser ? {
+          name: existingUser.name,
+          isVerified: existingUser.isVerified,
+        } : null,
+      });
+    } catch (error) {
+      console.error('Error checking phone number:', error);
+      res.status(500).json({ error: 'Failed to check number' });
+    }
+  });
+
   // AssessDisc DISC Assessment Routes (Public Access)
   
   // Get assessment categories

@@ -52,6 +52,29 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// WhatsApp OTP Authentication System
+export const whatsappUsers = pgTable("whatsapp_users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  country: varchar("country", { length: 10 }).notNull().default('IN'),
+  whatsappNumber: varchar("whatsapp_number", { length: 20 }).notNull().unique(),
+  isVerified: boolean("is_verified").default(false),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  lastLoginAt: timestamp("last_login_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const whatsappOtpSessions = pgTable("whatsapp_otp_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  whatsappNumber: varchar("whatsapp_number", { length: 20 }).notNull(),
+  otp: varchar("otp", { length: 6 }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  isUsed: boolean("is_used").default(false),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Tenant memberships with roles
 export const memberships = pgTable("memberships", {
   id: uuid("id").default(sql`gen_random_uuid()`),
@@ -300,6 +323,8 @@ export const tenantsRelations = relations(tenants, ({ many }) => ({
   wytidProofs: many(wytidProofs),
   wytidTransfers: many(wytidTransfers),
   wytidApiKeys: many(wytidApiKeys),
+  whatsappUsers: many(whatsappUsers),
+  whatsappOtpSessions: many(whatsappOtpSessions),
 }));
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -479,6 +504,22 @@ export const wytidApiKeysRelations = relations(wytidApiKeys, ({ one }) => ({
   }),
 }));
 
+// WhatsApp OTP Relations
+export const whatsappUsersRelations = relations(whatsappUsers, ({ one, many }) => ({
+  tenant: one(tenants, {
+    fields: [whatsappUsers.tenantId],
+    references: [tenants.id],
+  }),
+  otpSessions: many(whatsappOtpSessions),
+}));
+
+export const whatsappOtpSessionsRelations = relations(whatsappOtpSessions, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [whatsappOtpSessions.tenantId],
+    references: [tenants.id],
+  }),
+}));
+
 // Schema types
 export type Tenant = typeof tenants.$inferSelect;
 export type UpsertUser = typeof users.$inferInsert;
@@ -507,6 +548,12 @@ export const insertHubSchema = createInsertSchema(hubs);
 export const insertPlanSchema = createInsertSchema(plans);
 export const insertMediaSchema = createInsertSchema(media);
 export const insertAuditLogSchema = createInsertSchema(auditLogs);
+
+// WhatsApp OTP schemas
+export const insertWhatsAppUserSchema = createInsertSchema(whatsappUsers);
+export const selectWhatsAppUserSchema = createSelectSchema(whatsappUsers);
+export const insertWhatsAppOtpSessionSchema = createInsertSchema(whatsappOtpSessions);
+export const selectWhatsAppOtpSessionSchema = createSelectSchema(whatsappOtpSessions);
 
 // Select schemas
 export const selectTenantSchema = createSelectSchema(tenants);
@@ -552,6 +599,12 @@ export type NiceClassification = typeof niceClassifications.$inferSelect;
 export type InsertNiceClassification = z.infer<typeof insertNiceClassificationSchema>;
 export type IngestJob = typeof ingestJobs.$inferSelect;
 export type InsertIngestJob = z.infer<typeof insertIngestJobSchema>;
+
+// WhatsApp OTP Authentication types
+export type WhatsAppUser = typeof whatsappUsers.$inferSelect;
+export type InsertWhatsAppUser = typeof whatsappUsers.$inferInsert;
+export type WhatsAppOtpSession = typeof whatsappOtpSessions.$inferSelect;
+export type InsertWhatsAppOtpSession = typeof whatsappOtpSessions.$inferInsert;
 
 // WytAi Trademark Engine - Proprietary AI-Powered Indian Trademark Intelligence
 export const trademarkStatusEnum = pgEnum('trademark_status', ['pending', 'registered', 'opposed', 'abandoned', 'expired', 'renewal_due']);

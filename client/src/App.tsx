@@ -16,6 +16,7 @@ import QRGenerator from "@/pages/qr-generator";
 import AIDirectory from "@/pages/ai-directory";
 import WytAiTrademark from "@/pages/wytai-trademark";
 import TMNumbering from "@/pages/tm-numbering";
+import WhatsAppAuth from "@/pages/whatsapp-auth";
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/ai-directory" component={AIDirectory} />
       <Route path="/wytai-trademark" component={WytAiTrademark} />
       <Route path="/tm-numbering" component={TMNumbering} />
+      <Route path="/auth/whatsapp" component={WhatsAppAuth} />
       
       {/* Protected routes - authentication required */}
       <Route path="/dashboard" component={Dashboard} />
