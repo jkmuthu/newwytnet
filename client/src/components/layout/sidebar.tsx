@@ -36,6 +36,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     {
       section: "System",
       items: [
+        { label: "Search", icon: "search", href: "/search" },
         { label: "Themes", icon: "palette", href: "#themes" },
         { label: "Media", icon: "images", href: "#media" },
         { label: "APIs", icon: "plug", href: "#apis" },

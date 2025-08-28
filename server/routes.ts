@@ -1480,6 +1480,423 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Production Search API with Meilisearch
+  // =====================================
+
+  // Global search across all content
+  app.get('/api/search/global', async (req, res) => {
+    try {
+      const { q, limit = 20, offset = 0, filter, tenantId } = req.query as any;
+      
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ error: 'Search query is required' });
+      }
+
+      const { shouldUseMockService } = await import('./services/searchService');
+      
+      let results;
+      if (shouldUseMockService()) {
+        const { mockSearchService } = await import('./services/mockSearchService');
+        results = await mockSearchService.globalSearch(q, {
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          filter: filter as string,
+          tenantId: tenantId as string,
+        });
+      } else {
+        const { searchService } = await import('./services/searchService');
+        results = await searchService.globalSearch(q, {
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          filter: filter as string,
+          tenantId: tenantId as string,
+          attributesToHighlight: ['title', 'description', 'content'],
+        });
+      }
+
+      res.json(results);
+    } catch (error) {
+      console.error('Global search error:', error);
+      res.status(500).json({ error: 'Search failed' });
+    }
+  });
+
+  // Search tenants
+  app.get('/api/search/tenants', async (req, res) => {
+    try {
+      const { q, limit = 20, offset = 0 } = req.query as any;
+      
+      const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
+
+      const results = await searchService.search(
+        SEARCH_INDEXES.TENANTS,
+        q || '',
+        {
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+        }
+      );
+
+      res.json(results);
+    } catch (error) {
+      console.error('Tenant search error:', error);
+      res.status(500).json({ error: 'Search failed' });
+    }
+  });
+
+  // Search users
+  app.get('/api/search/users', async (req, res) => {
+    try {
+      const { q, limit = 20, offset = 0, tenantId } = req.query as any;
+      
+      const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
+
+      const results = await searchService.tenantSearch(
+        SEARCH_INDEXES.USERS,
+        q || '',
+        {
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          tenantId: tenantId as string,
+        }
+      );
+
+      res.json(results);
+    } catch (error) {
+      console.error('User search error:', error);
+      res.status(500).json({ error: 'Search failed' });
+    }
+  });
+
+  // Search WhatsApp users
+  app.get('/api/search/whatsapp-users', async (req, res) => {
+    try {
+      const { q, limit = 20, offset = 0, tenantId, country } = req.query as any;
+      
+      const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
+
+      let filter = '';
+      if (country) {
+        filter = `country = "${country}"`;
+      }
+
+      const results = await searchService.tenantSearch(
+        SEARCH_INDEXES.WHATSAPP_USERS,
+        q || '',
+        {
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          tenantId: tenantId as string,
+          filter,
+        }
+      );
+
+      res.json(results);
+    } catch (error) {
+      console.error('WhatsApp user search error:', error);
+      res.status(500).json({ error: 'Search failed' });
+    }
+  });
+
+  // Search models
+  app.get('/api/search/models', async (req, res) => {
+    try {
+      const { q, limit = 20, offset = 0, tenantId, status } = req.query as any;
+      
+      const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
+
+      let filter = '';
+      if (status) {
+        filter = `status = "${status}"`;
+      }
+
+      const results = await searchService.tenantSearch(
+        SEARCH_INDEXES.MODELS,
+        q || '',
+        {
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          tenantId: tenantId as string,
+          filter,
+        }
+      );
+
+      res.json(results);
+    } catch (error) {
+      console.error('Model search error:', error);
+      res.status(500).json({ error: 'Search failed' });
+    }
+  });
+
+  // Search pages
+  app.get('/api/search/pages', async (req, res) => {
+    try {
+      const { q, limit = 20, offset = 0, tenantId, status, locale } = req.query as any;
+      
+      const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
+
+      const filters = [];
+      if (status) filters.push(`status = "${status}"`);
+      if (locale) filters.push(`locale = "${locale}"`);
+
+      const results = await searchService.tenantSearch(
+        SEARCH_INDEXES.PAGES,
+        q || '',
+        {
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          tenantId: tenantId as string,
+          filter: filters.length > 0 ? filters.join(' AND ') : undefined,
+        }
+      );
+
+      res.json(results);
+    } catch (error) {
+      console.error('Page search error:', error);
+      res.status(500).json({ error: 'Search failed' });
+    }
+  });
+
+  // Search apps
+  app.get('/api/search/apps', async (req, res) => {
+    try {
+      const { q, limit = 20, offset = 0, tenantId, status, isPublic } = req.query as any;
+      
+      const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
+
+      const filters = [];
+      if (status) filters.push(`status = "${status}"`);
+      if (isPublic !== undefined) filters.push(`isPublic = ${isPublic}`);
+
+      const results = await searchService.tenantSearch(
+        SEARCH_INDEXES.APPS,
+        q || '',
+        {
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          tenantId: tenantId as string,
+          filter: filters.length > 0 ? filters.join(' AND ') : undefined,
+        }
+      );
+
+      res.json(results);
+    } catch (error) {
+      console.error('App search error:', error);
+      res.status(500).json({ error: 'Search failed' });
+    }
+  });
+
+  // Search trademarks
+  app.get('/api/search/trademarks', async (req, res) => {
+    try {
+      const { q, limit = 20, offset = 0, status, classification, country } = req.query as any;
+      
+      const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
+
+      const filters = [];
+      if (status) filters.push(`status = "${status}"`);
+      if (classification) filters.push(`classification = "${classification}"`);
+      if (country) filters.push(`country = "${country}"`);
+
+      const results = await searchService.search(
+        SEARCH_INDEXES.TRADEMARKS,
+        q || '',
+        {
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          filter: filters.length > 0 ? filters.join(' AND ') : undefined,
+          attributesToHighlight: ['wordMark', 'applicantName', 'description'],
+        }
+      );
+
+      res.json(results);
+    } catch (error) {
+      console.error('Trademark search error:', error);
+      res.status(500).json({ error: 'Search failed' });
+    }
+  });
+
+  // Search TM numbers
+  app.get('/api/search/tm-numbers', async (req, res) => {
+    try {
+      const { q, limit = 20, offset = 0, classCc, countryCcc, status } = req.query as any;
+      
+      const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
+
+      const filters = [];
+      if (classCc) filters.push(`classCc = "${classCc}"`);
+      if (countryCcc) filters.push(`countryCcc = "${countryCcc}"`);
+      if (status) filters.push(`status = "${status}"`);
+
+      const results = await searchService.search(
+        SEARCH_INDEXES.TM_NUMBERS,
+        q || '',
+        {
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          filter: filters.length > 0 ? filters.join(' AND ') : undefined,
+        }
+      );
+
+      res.json(results);
+    } catch (error) {
+      console.error('TM number search error:', error);
+      res.status(500).json({ error: 'Search failed' });
+    }
+  });
+
+  // Search media files
+  app.get('/api/search/media', async (req, res) => {
+    try {
+      const { q, limit = 20, offset = 0, tenantId, mimeType } = req.query as any;
+      
+      const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
+
+      let filter = '';
+      if (mimeType) {
+        filter = `mimeType = "${mimeType}"`;
+      }
+
+      const results = await searchService.tenantSearch(
+        SEARCH_INDEXES.MEDIA,
+        q || '',
+        {
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          tenantId: tenantId as string,
+          filter,
+        }
+      );
+
+      res.json(results);
+    } catch (error) {
+      console.error('Media search error:', error);
+      res.status(500).json({ error: 'Search failed' });
+    }
+  });
+
+  // Get search suggestions/autocomplete
+  app.get('/api/search/suggestions/:index', async (req, res) => {
+    try {
+      const { index } = req.params;
+      const { q, limit = 5, tenantId } = req.query as any;
+      
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ error: 'Search query is required' });
+      }
+
+      const { shouldUseMockService, SEARCH_INDEXES } = await import('./services/searchService');
+
+      // Validate index name
+      const validIndexes = Object.values(SEARCH_INDEXES);
+      if (!validIndexes.includes(index as any)) {
+        return res.status(400).json({ error: 'Invalid search index' });
+      }
+
+      let suggestions;
+      if (shouldUseMockService()) {
+        const { mockSearchService } = await import('./services/mockSearchService');
+        suggestions = await mockSearchService.getSuggestions(
+          index as any,
+          q,
+          parseInt(limit)
+        );
+      } else {
+        const { searchService } = await import('./services/searchService');
+        suggestions = await searchService.getSuggestions(
+          index as any,
+          q,
+          parseInt(limit),
+          tenantId as string
+        );
+      }
+
+      res.json({ suggestions });
+    } catch (error) {
+      console.error('Search suggestions error:', error);
+      res.status(500).json({ error: 'Failed to get suggestions' });
+    }
+  });
+
+  // Get search index statistics
+  app.get('/api/search/stats', async (req, res) => {
+    try {
+      const { shouldUseMockService, SEARCH_INDEXES } = await import('./services/searchService');
+
+      const stats: Record<string, any> = {};
+      
+      if (shouldUseMockService()) {
+        const { mockSearchService } = await import('./services/mockSearchService');
+        for (const [key, indexName] of Object.entries(SEARCH_INDEXES)) {
+          stats[key] = await mockSearchService.getIndexStats(indexName as any);
+        }
+      } else {
+        const { searchService } = await import('./services/searchService');
+        for (const [key, indexName] of Object.entries(SEARCH_INDEXES)) {
+          stats[key] = await searchService.getIndexStats(indexName);
+        }
+      }
+
+      res.json({ indexes: stats });
+    } catch (error) {
+      console.error('Search stats error:', error);
+      res.status(500).json({ error: 'Failed to get search statistics' });
+    }
+  });
+
+  // Search service health check
+  app.get('/api/search/health', async (req, res) => {
+    try {
+      const { shouldUseMockService } = await import('./services/searchService');
+      
+      let isHealthy;
+      if (shouldUseMockService()) {
+        const { mockSearchService } = await import('./services/mockSearchService');
+        isHealthy = await mockSearchService.isHealthy();
+      } else {
+        const { searchService } = await import('./services/searchService');
+        isHealthy = await searchService.isHealthy();
+      }
+      
+      res.json({ 
+        status: isHealthy ? 'healthy' : 'unhealthy',
+        service: shouldUseMockService() ? 'mock' : 'meilisearch',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Search health check error:', error);
+      res.status(500).json({ 
+        status: 'unhealthy',
+        error: 'Health check failed',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  // Rebuild search indexes (admin only)
+  app.post('/api/search/rebuild', async (req, res) => {
+    try {
+      const { index } = req.body;
+      
+      const { searchIndexer } = await import('./services/searchIndexer');
+
+      if (index === 'all') {
+        // Rebuild all indexes
+        await searchIndexer.initialize();
+        res.json({ message: 'All search indexes rebuilt successfully' });
+      } else if (index === 'global') {
+        // Rebuild only global index
+        await searchIndexer.rebuildGlobalIndex();
+        res.json({ message: 'Global search index rebuilt successfully' });
+      } else {
+        res.status(400).json({ error: 'Invalid rebuild option' });
+      }
+    } catch (error) {
+      console.error('Search rebuild error:', error);
+      res.status(500).json({ error: 'Failed to rebuild search indexes' });
+    }
+  });
+
   // AssessDisc DISC Assessment Routes (Public Access)
   
   // Get assessment categories

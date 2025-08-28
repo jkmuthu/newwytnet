@@ -49,6 +49,31 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize search service in the background
+  try {
+    console.log('Initializing search service...');
+    const { checkMeilisearchAvailability } = await import('./services/searchService');
+    
+    // Check if Meilisearch is available
+    const isAvailable = await checkMeilisearchAvailability();
+    
+    if (isAvailable) {
+      console.log('Meilisearch is available, initializing production search...');
+      const { searchIndexer } = await import('./services/searchIndexer');
+      
+      // Initialize search indexes in background
+      searchIndexer.initialize().catch(error => {
+        console.error('Search initialization failed:', error);
+        console.log('Search functionality will be limited until manual initialization');
+      });
+    } else {
+      console.log('Using mock search service for development');
+    }
+  } catch (error) {
+    console.error('Failed to load search service:', error);
+    console.log('Server starting with limited search functionality');
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

@@ -17,6 +17,7 @@ import AIDirectory from "@/pages/ai-directory";
 import WytAiTrademark from "@/pages/wytai-trademark";
 import TMNumbering from "@/pages/tm-numbering";
 import WhatsAppAuth from "@/pages/whatsapp-auth";
+import SearchPage from "@/pages/search";
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/wytai-trademark" component={WytAiTrademark} />
       <Route path="/tm-numbering" component={TMNumbering} />
       <Route path="/auth/whatsapp" component={WhatsAppAuth} />
+      <Route path="/search" component={SearchPage} />
       
       {/* Protected routes - authentication required */}
       <Route path="/dashboard" component={Dashboard} />
