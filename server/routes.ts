@@ -1423,14 +1423,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({
-        user: {
-          id: user.id,
-          name: user.name,
-          country: user.country,
-          whatsappNumber: user.whatsappNumber,
-          isVerified: user.isVerified,
-          lastLoginAt: user.lastLoginAt,
-        },
+        id: user.id,
+        name: user.name,
+        country: user.country,
+        whatsappNumber: user.whatsappNumber,
+        gender: user.gender,
+        dateOfBirth: user.dateOfBirth,
+        role: user.role,
+        isSuperAdmin: user.isSuperAdmin,
+        isVerified: user.isVerified,
+        lastLoginAt: user.lastLoginAt,
       });
     } catch (error) {
       console.error('Error getting WhatsApp user:', error);
