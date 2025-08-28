@@ -118,19 +118,33 @@ export default function WhatsAppAuth() {
       setOtpData(response);
       setTimeLeft(response.expiresIn);
       setIsNewUser(response.isNewUser);
-      setCurrentStep(response.isNewUser ? 'register' : 'otp-sent');
       
-      if (response.isNewUser) {
+      // If this is a new user and we already have registration data filled out,
+      // then proceed to OTP step. Otherwise, show registration form.
+      const hasRegistrationData = registrationData.name && registrationData.whatsappNumber;
+      
+      if (response.isNewUser && !hasRegistrationData) {
+        // New user detected, show registration form
+        setCurrentStep('register');
         setRegistrationData(prev => ({ ...prev, isNewUser: true }));
         toast({
           title: 'New User Detected!',
           description: 'Please complete your WytPass registration below.',
         });
       } else {
-        toast({
-          title: 'OTP Generated!',
-          description: 'Welcome back! Your OTP is ready to share.',
-        });
+        // Either returning user or new user with completed registration
+        setCurrentStep('otp-sent');
+        if (response.isNewUser) {
+          toast({
+            title: 'Registration Complete!',
+            description: 'Your OTP is ready to share. Check the instructions below.',
+          });
+        } else {
+          toast({
+            title: 'OTP Generated!',
+            description: 'Welcome back! Your OTP is ready to share.',
+          });
+        }
       }
     },
     onError: (error: any) => {
