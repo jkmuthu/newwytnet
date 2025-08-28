@@ -1,0 +1,247 @@
+import { useState } from 'react';
+import { Link, useLocation } from 'wouter';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Menu, 
+  Home, 
+  Search, 
+  User, 
+  Settings, 
+  Activity,
+  Building,
+  Briefcase,
+  QrCode,
+  Bot,
+  Brain,
+  BarChart3,
+  Bell,
+  MessageCircle,
+  Shield,
+  Users,
+  Database
+} from 'lucide-react';
+import { useWhatsAppAuth } from '@/hooks/useWhatsAppAuth';
+import { useDeviceDetection } from '@/hooks/useDeviceDetection';
+
+export default function MobileNavigation() {
+  const [location] = useLocation();
+  const { user, isAuthenticated, isSuperAdmin } = useWhatsAppAuth();
+  const { isMobile, touchEnabled } = useDeviceDetection();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const publicNavItems = [
+    { icon: Home, label: 'Home', href: '/', badge: null },
+    { icon: Activity, label: 'Assessment', href: '/assessment', badge: 'NEW' },
+    { icon: Building, label: 'RealBro', href: '/realbro', badge: null },
+    { icon: Briefcase, label: 'WytDuty', href: '/wytduty', badge: null },
+    { icon: QrCode, label: 'QR Generator', href: '/qr-generator', badge: null },
+    { icon: Bot, label: 'AI Directory', href: '/ai-directory', badge: 'HOT' },
+    { icon: Brain, label: 'WytAi Trademark', href: '/wytai-trademark', badge: 'PRO' },
+    { icon: Search, label: 'Search', href: '/search', badge: null },
+  ];
+
+  const dashboardItems = isAuthenticated ? [
+    { icon: BarChart3, label: 'Dashboard', href: '/dashboard', badge: null },
+  ] : [];
+
+  const superAdminItems = isSuperAdmin ? [
+    { icon: Shield, label: 'System Overview', href: '/system-overview', badge: null },
+    { icon: Settings, label: 'Global Settings', href: '/global-settings', badge: null },
+    { icon: Users, label: 'All Users', href: '/users', badge: null },
+    { icon: Database, label: 'WytPass Management', href: '/wytpass', badge: null },
+  ] : [];
+
+  const allItems = [...publicNavItems, ...dashboardItems, ...superAdminItems];
+
+  const getUserInitials = (user: any) => {
+    if (!user?.name) return 'U';
+    const nameParts = user.name.split(' ');
+    if (nameParts.length >= 2) {
+      return `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase();
+    }
+    return user.name[0]?.toUpperCase() || 'U';
+  };
+
+  if (!isMobile) return null;
+
+  return (
+    <>
+      {/* Mobile Header */}
+      <div className="sticky top-0 z-50 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between md:hidden">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 via-purple-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
+            <span className="text-white font-bold text-sm">W</span>
+          </div>
+          <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            WytNet
+          </span>
+        </Link>
+
+        <div className="flex items-center gap-2">
+          {/* Notifications */}
+          {isAuthenticated && (
+            <Button variant="ghost" size="sm" className="relative">
+              <Bell className="h-5 w-5" />
+              <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs">3</Badge>
+            </Button>
+          )}
+
+          {/* Profile/Login */}
+          {isAuthenticated && user ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setProfileOpen(true)}
+              className="relative"
+            >
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className={`${isSuperAdmin ? 'bg-gradient-to-br from-red-500 to-purple-600' : 'bg-gradient-to-br from-blue-500 to-purple-600'} text-white text-sm`}>
+                  {isSuperAdmin ? '🦸‍♂️' : getUserInitials(user)}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          ) : (
+            <Link href="/whatsapp-auth">
+              <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                <MessageCircle className="h-4 w-4 mr-1" />
+                Login
+              </Button>
+            </Link>
+          )}
+
+          {/* Menu Toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setMenuOpen(true)}
+            data-testid="mobile-menu-trigger"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-2 flex items-center justify-around z-40 md:hidden">
+        {[
+          { icon: Home, label: 'Home', href: '/' },
+          { icon: Search, label: 'Search', href: '/search' },
+          { icon: Brain, label: 'WytAi', href: '/wytai-trademark' },
+          isAuthenticated 
+            ? { icon: BarChart3, label: 'Dashboard', href: '/dashboard' }
+            : { icon: MessageCircle, label: 'Login', href: '/whatsapp-auth' }
+        ].map((item, index) => (
+          <Link key={index} href={item.href} className="flex-1">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className={`w-full h-12 flex flex-col items-center justify-center p-1 ${
+                location === item.href ? 'text-blue-600 bg-blue-50' : 'text-gray-600'
+              }`}
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="text-xs mt-1 leading-none">{item.label}</span>
+            </Button>
+          </Link>
+        ))}
+      </div>
+
+      {/* Mobile Menu Sheet */}
+      <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+        <SheetContent side="right" className="w-80 p-0">
+          <SheetHeader className="p-4 border-b">
+            <SheetTitle className="text-left">Navigation Menu</SheetTitle>
+          </SheetHeader>
+          
+          <div className="flex flex-col h-full">
+            <nav className="flex-1 overflow-auto p-4">
+              <div className="space-y-1">
+                {allItems.map((item, index) => (
+                  <Link key={index} href={item.href} onClick={() => setMenuOpen(false)}>
+                    <Button
+                      variant="ghost"
+                      className={`w-full justify-start h-12 ${
+                        location === item.href ? 'bg-blue-50 text-blue-600' : ''
+                      }`}
+                    >
+                      <item.icon className="h-5 w-5 mr-3" />
+                      <span className="flex-1 text-left">{item.label}</span>
+                      {item.badge && (
+                        <Badge variant="secondary" className="text-xs">
+                          {item.badge}
+                        </Badge>
+                      )}
+                    </Button>
+                  </Link>
+                ))}
+              </div>
+            </nav>
+
+            {/* Footer */}
+            <div className="border-t p-4 space-y-2">
+              <div className="text-center text-sm text-gray-500">
+                WytNet Multi-SaaS Platform
+              </div>
+              <div className="text-center text-xs text-gray-400">
+                Version 2.0 • Made with ❤️
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Profile Bottom Sheet */}
+      {isAuthenticated && user && (
+        <BottomSheet open={profileOpen} onOpenChange={setProfileOpen}>
+          <div className="p-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12">
+                <AvatarFallback className={`${isSuperAdmin ? 'bg-gradient-to-br from-red-500 to-purple-600' : 'bg-gradient-to-br from-blue-500 to-purple-600'} text-white`}>
+                  {isSuperAdmin ? '🦸‍♂️' : getUserInitials(user)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="font-semibold">
+                  {isSuperAdmin ? '🦸‍♂️ ' : ''}{user.name}
+                </div>
+                <div className="text-sm text-gray-500">{user.whatsappNumber}</div>
+                <div className="text-xs text-gray-400">{user.role?.toUpperCase()}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Profile
+              </Button>
+              <Button variant="outline" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Settings
+              </Button>
+            </div>
+
+            <Button 
+              variant="destructive" 
+              className="w-full"
+              onClick={() => {
+                // Implement logout
+                window.location.href = '/api/auth/whatsapp/logout';
+              }}
+            >
+              Logout
+            </Button>
+          </div>
+        </BottomSheet>
+      )}
+
+      {/* Bottom padding to prevent content from being hidden behind bottom nav */}
+      <div className="h-16 md:hidden" />
+    </>
+  );
+}

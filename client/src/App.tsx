@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
+import { useDeviceDetection } from "@/hooks/useDeviceDetection";
 import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import Assessment from "@/pages/assessment";
@@ -17,12 +18,14 @@ import AIDirectory from "@/pages/ai-directory";
 import WytAiTrademark from "@/pages/wytai-trademark";
 import TMNumbering from "@/pages/tm-numbering";
 import WhatsAppAuth from "@/pages/whatsapp-auth";
+import UserAuthMethods from "@/pages/user-auth-methods";
 import SearchPage from "@/pages/search";
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   const { isAuthenticated, isLoading } = useWhatsAppAuth();
+  const { isMobile } = useDeviceDetection();
 
   return (
     <Switch>
@@ -45,6 +48,7 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/admin" component={Dashboard} />
       <Route path="/analytics" component={AdminAnalytics} />
+      <Route path="/user-auth-methods" component={UserAuthMethods} />
       <Route path="/landing" component={Landing} />
       
       <Route component={NotFound} />

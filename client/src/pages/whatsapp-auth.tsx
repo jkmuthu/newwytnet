@@ -8,7 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useMutation } from '@tanstack/react-query';
+import { useDeviceDetection } from '@/hooks/useDeviceDetection';
 import { MessageCircle, Shield, CheckCircle, AlertCircle, Phone, User, Globe, ArrowRight, Timer } from 'lucide-react';
+import Header from '@/components/layout/header';
+import MobileNavigation from '@/components/layout/MobileNavigation';
 
 interface AuthStep {
   step: 'register' | 'otp-sent' | 'verify-otp' | 'success';
@@ -54,6 +57,7 @@ const countries = [
 
 export default function WhatsAppAuth() {
   const { toast } = useToast();
+  const { isMobile } = useDeviceDetection();
   const [currentStep, setCurrentStep] = useState<AuthStep['step']>('register');
   const [registrationData, setRegistrationData] = useState<RegistrationData>({
     name: '',

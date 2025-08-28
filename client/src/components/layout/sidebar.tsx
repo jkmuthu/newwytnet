@@ -37,7 +37,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           items: [
             { label: "Tenants", icon: "building", href: "#tenants" },
             { label: "All Users", icon: "users", href: "#users" },
-            { label: "WytPass Management", icon: "id-badge", href: "#wytpass" },
+            { label: "WytPass Management", icon: "id-badge", href: "/user-auth-methods" },
           ]
         },
         {
