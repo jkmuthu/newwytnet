@@ -487,13 +487,27 @@ export default function WhatsAppAuth() {
                 Open WhatsApp & Share OTP
               </Button>
 
-              <div className="text-center">
+              <div className="text-center space-y-3">
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
+                    ✅ Shared the OTP message to yourself?
+                  </p>
+                  <Button
+                    onClick={() => setCurrentStep('verify-otp')}
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    data-testid="button-proceed-verify"
+                  >
+                    <ArrowRight className="mr-2 h-4 w-4" />
+                    Yes, I've sent it - Enter OTP Now
+                  </Button>
+                </div>
+                
                 <Button
-                  variant="outline"
-                  onClick={() => setCurrentStep('verify-otp')}
-                  data-testid="button-proceed-verify"
+                  variant="ghost"
+                  onClick={handleOpenWhatsApp}
+                  className="text-sm text-muted-foreground"
                 >
-                  I've sent the message - Proceed to verify
+                  Need to share again?
                 </Button>
               </div>
 
