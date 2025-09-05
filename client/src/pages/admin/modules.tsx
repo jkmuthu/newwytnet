@@ -14,8 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 
-// Mock data for existing modules - in production this would come from API
-const platformModules = [
+// Initial module data - this will be managed in state
+const initialPlatformModules = [
   {
     id: 'qr-generator',
     name: 'QR Code Generator',
@@ -121,7 +121,7 @@ const platformModules = [
   }
 ];
 
-const userModules = [
+const initialUserModules = [
   {
     id: 'contact-crm',
     name: 'Contact CRM',
@@ -159,6 +159,9 @@ export default function AdminModules() {
   const [filterCategory, setFilterCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedModule, setSelectedModule] = useState<any>(null);
+  const [editingModule, setEditingModule] = useState<any>(null);
+  const [platformModules, setPlatformModules] = useState(initialPlatformModules);
+  const [userModules, setUserModules] = useState(initialUserModules);
   
   const { user } = useWhatsAppAuth();
   const { toast } = useToast();
@@ -175,13 +178,58 @@ export default function AdminModules() {
 
   const toggleModuleStatus = useMutation({
     mutationFn: async ({ moduleId, enabled }: { moduleId: string, enabled: boolean }) => {
+      // Update local state immediately for better UX
+      const updateModules = (modules: any[]) => 
+        modules.map(m => m.id === moduleId ? { ...m, status: enabled ? 'enabled' : 'disabled' } : m);
+      
+      setPlatformModules(prev => updateModules(prev));
+      setUserModules(prev => updateModules(prev));
+      
+      // Update selected module if it's the one being toggled
+      if (selectedModule?.id === moduleId) {
+        setSelectedModule((prev: any) => ({ ...prev, status: enabled ? 'enabled' : 'disabled' }));
+      }
+      
       // In production, this would make API call to update module status
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
       return { moduleId, enabled };
     },
     onSuccess: () => {
       toast({
         title: "Success",
         description: "Module status updated successfully!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update module status",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const updateModulePricing = useMutation({
+    mutationFn: async ({ moduleId, pricing, price }: { moduleId: string, pricing: string, price?: number }) => {
+      // Update local state
+      const updateModules = (modules: any[]) => 
+        modules.map(m => m.id === moduleId ? { ...m, pricing, price } : m);
+      
+      setPlatformModules(prev => updateModules(prev));
+      setUserModules(prev => updateModules(prev));
+      
+      // Update selected module
+      if (selectedModule?.id === moduleId) {
+        setSelectedModule((prev: any) => ({ ...prev, pricing, price }));
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+      return { moduleId, pricing, price };
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Module pricing updated successfully!",
       });
     }
   });
@@ -338,6 +386,7 @@ export default function AdminModules() {
                         </div>
                         <Switch 
                           checked={module.status === 'enabled'}
+                          disabled={toggleModuleStatus.isPending}
                           onCheckedChange={(checked) => {
                             toggleModuleStatus.mutate({ 
                               moduleId: module.id, 
@@ -395,8 +444,32 @@ export default function AdminModules() {
             </TabsContent>
 
             <TabsContent value="builder" className="space-y-6">
+              {editingModule ? (
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold text-blue-900">Editing: {editingModule.name}</h3>
+                      <p className="text-sm text-blue-700">Modify the module configuration below</p>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setEditingModule(null)}
+                    >
+                      <i className="fas fa-times mr-2"></i>
+                      Cancel Edit
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <h3 className="font-semibold text-green-900">Create New Module</h3>
+                  <p className="text-sm text-green-700">Define a new CRUD module using JSON DSL</p>
+                </div>
+              )}
+              
               <div className="bg-card rounded-lg border border-border">
-                <ModuleBuilder />
+                <ModuleBuilder editingModule={editingModule} />
               </div>
             </TabsContent>
           </Tabs>
@@ -459,7 +532,19 @@ export default function AdminModules() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-foreground">Pricing Model</label>
-                    <select className="w-full mt-1 p-2 border border-border rounded-md bg-background">
+                    <select 
+                      value={selectedModule.pricing}
+                      onChange={(e) => {
+                        const newPricing = e.target.value;
+                        updateModulePricing.mutate({ 
+                          moduleId: selectedModule.id, 
+                          pricing: newPricing,
+                          price: newPricing === 'free' ? 0 : selectedModule.price 
+                        });
+                      }}
+                      className="w-full mt-1 p-2 border border-border rounded-md bg-background"
+                      data-testid="select-pricing-model"
+                    >
                       <option value="free">Free</option>
                       <option value="premium">Premium</option>
                       <option value="freemium">Freemium</option>
@@ -471,7 +556,15 @@ export default function AdminModules() {
                       <label className="text-sm font-medium text-foreground">Price (INR)</label>
                       <Input 
                         type="number" 
-                        defaultValue={selectedModule.price || 0}
+                        value={selectedModule.price || 0}
+                        onChange={(e) => {
+                          const newPrice = parseInt(e.target.value) || 0;
+                          updateModulePricing.mutate({ 
+                            moduleId: selectedModule.id, 
+                            pricing: selectedModule.pricing,
+                            price: newPrice 
+                          });
+                        }}
                         className="mt-1"
                         data-testid="input-module-price"
                       />
@@ -485,6 +578,7 @@ export default function AdminModules() {
                 <div className="flex items-center space-x-2">
                   <Switch 
                     checked={selectedModule.status === 'enabled'}
+                    disabled={toggleModuleStatus.isPending}
                     onCheckedChange={(checked) => {
                       toggleModuleStatus.mutate({ 
                         moduleId: selectedModule.id, 
@@ -497,11 +591,24 @@ export default function AdminModules() {
                   </span>
                 </div>
                 <div className="flex space-x-2">
-                  <Button variant="outline" data-testid="button-edit-module">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setEditingModule(selectedModule);
+                      setActiveTab('builder');
+                      setSelectedModule(null);
+                    }}
+                    data-testid="button-edit-module"
+                  >
                     <i className="fas fa-edit mr-2"></i>
                     Edit Module
                   </Button>
-                  <Button data-testid="button-view-details">
+                  <Button 
+                    onClick={() => {
+                      window.open(selectedModule.route, '_blank');
+                    }}
+                    data-testid="button-view-details"
+                  >
                     <i className="fas fa-external-link-alt mr-2"></i>
                     View Live
                   </Button>

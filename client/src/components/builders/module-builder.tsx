@@ -8,8 +8,42 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 
-export default function ModuleBuilder() {
-  const [dsl, setDsl] = useState(`{
+export default function ModuleBuilder({ editingModule }: { editingModule?: any }) {
+  const [dsl, setDsl] = useState(editingModule ? `{
+  "name": "${editingModule.name}",
+  "description": "${editingModule.description}",
+  "type": "${editingModule.type}",
+  "category": "${editingModule.category}",
+  "pricing": "${editingModule.pricing}",
+  ${editingModule.price ? `"price": ${editingModule.price},` : ''}
+  "fields": [
+    {
+      "name": "id",
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "required": true,
+      "validation": {
+        "minLength": 2,
+        "maxLength": 100
+      }
+    },
+    {
+      "name": "description",
+      "type": "text"
+    }
+  ],
+  "permissions": {
+    "create": "role:editor",
+    "read": "role:viewer", 
+    "update": "role:editor",
+    "delete": "role:admin"
+  }
+}` : `{
   "name": "Contact",
   "description": "Customer contact management",
   "fields": [
@@ -146,16 +180,20 @@ export default function ModuleBuilder() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-xl font-semibold text-foreground">CRUD Module Builder</h2>
-          <p className="text-muted-foreground">Define data models with JSON DSL and generate full CRUD operations</p>
+          <h2 className="text-xl font-semibold text-foreground">
+            {editingModule ? `Edit Module: ${editingModule.name}` : 'CRUD Module Builder'}
+          </h2>
+          <p className="text-muted-foreground">
+            {editingModule ? 'Modify the existing module configuration' : 'Define data models with JSON DSL and generate full CRUD operations'}
+          </p>
         </div>
         <Button 
           onClick={handleCreateModel}
           disabled={createModelMutation.isPending}
           data-testid="button-create-module"
         >
-          <i className="fas fa-plus mr-2"></i>
-          New Module
+          <i className={`fas fa-${editingModule ? 'save' : 'plus'} mr-2`}></i>
+          {editingModule ? 'Update Module' : 'New Module'}
         </Button>
       </div>
 
