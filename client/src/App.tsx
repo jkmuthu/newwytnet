@@ -23,6 +23,15 @@ import SearchPage from "@/pages/search";
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 
+// Admin pages
+import AdminCMS from "@/pages/admin/cms";
+import AdminModules from "@/pages/admin/modules";
+import AdminApps from "@/pages/admin/apps";
+import AdminHubs from "@/pages/admin/hubs";
+import AdminSystemOverview from "@/pages/admin/system-overview";
+import AdminUsers from "@/pages/admin/users";
+import AdminTenants from "@/pages/admin/tenants";
+
 function Router() {
   const { isAuthenticated, isLoading } = useWhatsAppAuth();
   const { isMobile } = useDeviceDetection();
@@ -50,6 +59,15 @@ function Router() {
       <Route path="/analytics" component={AdminAnalytics} />
       <Route path="/user-auth-methods" component={UserAuthMethods} />
       <Route path="/landing" component={Landing} />
+      
+      {/* Admin routes */}
+      <Route path="/admin/cms" component={AdminCMS} />
+      <Route path="/admin/modules" component={AdminModules} />
+      <Route path="/admin/apps" component={AdminApps} />
+      <Route path="/admin/hubs" component={AdminHubs} />
+      <Route path="/admin/system-overview" component={AdminSystemOverview} />
+      <Route path="/admin/users" component={AdminUsers} />
+      <Route path="/admin/tenants" component={AdminTenants} />
       
       <Route component={NotFound} />
     </Switch>

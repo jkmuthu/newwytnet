@@ -8,53 +8,13 @@ import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import StatsCard from "@/components/ui/stats-card";
-import TabNavigation from "@/components/ui/tab-navigation";
-import ModuleBuilder from "@/components/builders/module-builder";
-import CMSBuilder from "@/components/builders/cms-builder";
-import AppBuilder from "@/components/builders/app-builder";
-import HubBuilder from "@/components/builders/hub-builder";
 import ActivityFeed from "@/components/ui/activity-feed";
-import WytIDManagement from "./wytid-management";
 
 export default function Dashboard() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user } = useAuth();
   const { isSuperAdmin } = useWhatsAppAuth();
-  const [activeTab, setActiveTab] = useState("module-builder");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Listen for hash changes from sidebar navigation
-  useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      const hashToTabMap: { [key: string]: string } = {
-        'dashboard': 'module-builder',
-        'modules': 'module-builder', 
-        'cms': 'cms-builder',
-        'apps': 'app-builder',
-        'hubs': 'hub-builder',
-        'wytid': 'wytid-manager',
-        'system-overview': 'module-builder',
-        'global-settings': 'module-builder',
-        'tenants': 'module-builder',
-        'users': 'module-builder',
-      };
-      
-      if (hashToTabMap[hash]) {
-        setActiveTab(hashToTabMap[hash]);
-      }
-    };
-
-    // Set initial tab based on hash
-    handleHashChange();
-    
-    // Listen for hash changes
-    window.addEventListener('hashchange', handleHashChange);
-    
-    return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-    };
-  }, []);
 
   // Optional authentication - show login prompt if not authenticated
   useEffect(() => {
@@ -88,15 +48,6 @@ export default function Dashboard() {
   }
 
   // Allow access even without authentication, but show limited functionality
-
-  // Build tabs based on user role
-  const tabs = [
-    { id: "module-builder", label: "Module Builder", icon: "cubes" },
-    { id: "cms-builder", label: "Pages CMS", icon: "edit" },
-    { id: "app-builder", label: "App Builder", icon: "mobile-alt" },
-    { id: "hub-builder", label: "Hub Builder", icon: "network-wired" },
-    { id: "wytid-manager", label: "WytID Manager", icon: "shield-alt" },
-  ];
 
   return (
     <div className="flex h-screen bg-background">
@@ -141,20 +92,42 @@ export default function Dashboard() {
             />
           </div>
 
-          {/* Main Content Tabs */}
-          <div className="bg-card rounded-lg border border-border">
-            <TabNavigation 
-              tabs={tabs} 
-              activeTab={activeTab} 
-              onTabChange={setActiveTab} 
-            />
-
-            <div className="p-6">
-              {activeTab === "module-builder" && <ModuleBuilder />}
-              {activeTab === "cms-builder" && <CMSBuilder />}
-              {activeTab === "app-builder" && <AppBuilder />}
-              {activeTab === "hub-builder" && <HubBuilder />}
-              {activeTab === "wytid-manager" && <WytIDManagement />}
+          {/* Welcome Message */}
+          <div className="bg-card rounded-lg border border-border p-6">
+            <h2 className="text-2xl font-bold text-foreground mb-4">
+              Welcome to WytNet Dashboard
+            </h2>
+            <p className="text-muted-foreground mb-4">
+              Use the sidebar to navigate to different sections and manage your platform.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <h3 className="font-semibold text-foreground mb-2">Quick Actions</h3>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Manage content with CMS Builder</li>
+                  <li>• Create modules with CRUD Builder</li>
+                  <li>• Build applications</li>
+                  <li>• Configure system settings</li>
+                </ul>
+              </div>
+              <div className="p-4 bg-muted rounded-lg">
+                <h3 className="font-semibold text-foreground mb-2">System Status</h3>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• All services running</li>
+                  <li>• Database connected</li>
+                  <li>• API endpoints active</li>
+                  <li>• Authentication working</li>
+                </ul>
+              </div>
+              <div className="p-4 bg-muted rounded-lg">
+                <h3 className="font-semibold text-foreground mb-2">Recent Updates</h3>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Platform optimization</li>
+                  <li>• New features added</li>
+                  <li>• Security improvements</li>
+                  <li>• Performance enhancements</li>
+                </ul>
+              </div>
             </div>
           </div>
 
