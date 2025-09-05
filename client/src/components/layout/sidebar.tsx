@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
+import { useLocation } from "wouter";
 
 interface SidebarProps {
   open: boolean;
@@ -8,6 +9,7 @@ interface SidebarProps {
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const { user, isAuthenticated, isSuperAdmin, role } = useWhatsAppAuth();
+  const [location] = useLocation();
 
   // Define menu items based on user role
   const getMenuItems = () => {
@@ -27,47 +29,47 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         {
           section: "🦸‍♂️ Super Admin",
           items: [
-            { label: "Dashboard", icon: "tachometer-alt", href: "/dashboard", active: true },
-            { label: "System Overview", icon: "server", href: "/admin/system-overview" },
-            { label: "Global Settings", icon: "cogs", href: "/admin/global-settings" },
+            { label: "Dashboard", icon: "tachometer-alt", href: "/dashboard", active: location === "/dashboard" },
+            { label: "System Overview", icon: "server", href: "/admin/system-overview", active: location === "/admin/system-overview" },
+            { label: "Global Settings", icon: "cogs", href: "/admin/global-settings", active: location === "/admin/global-settings" },
           ]
         },
         {
           section: "Core Platform",
           items: [
-            { label: "Tenants", icon: "building", href: "/admin/tenants" },
-            { label: "All Users", icon: "users", href: "/admin/users" },
-            { label: "WytPass Management", icon: "id-badge", href: "/user-auth-methods" },
+            { label: "Tenants", icon: "building", href: "/admin/tenants", active: location === "/admin/tenants" },
+            { label: "All Users", icon: "users", href: "/admin/users", active: location === "/admin/users" },
+            { label: "WytPass Management", icon: "id-badge", href: "/user-auth-methods", active: location === "/user-auth-methods" },
           ]
         },
         {
           section: "Builders",
           items: [
-            { label: "Modules (CRUD)", icon: "cubes", href: "/admin/modules" },
-            { label: "CMS Builder", icon: "edit", href: "/admin/cms" },
-            { label: "App Builder", icon: "mobile-alt", href: "/admin/apps" },
-            { label: "Hub Builder", icon: "network-wired", href: "/admin/hubs" },
-            { label: "DataSets", icon: "database", href: "/admin/datasets" },
+            { label: "Modules (CRUD)", icon: "cubes", href: "/admin/modules", active: location === "/admin/modules" },
+            { label: "CMS Builder", icon: "edit", href: "/admin/cms", active: location === "/admin/cms" },
+            { label: "App Builder", icon: "mobile-alt", href: "/admin/apps", active: location === "/admin/apps" },
+            { label: "Hub Builder", icon: "network-wired", href: "/admin/hubs", active: location === "/admin/hubs" },
+            { label: "DataSets", icon: "database", href: "/admin/datasets", active: location === "/admin/datasets" },
           ]
         },
         {
           section: "Business",
           items: [
-            { label: "Plan Management", icon: "credit-card", href: "/admin/plans" },
-            { label: "Payment Methods", icon: "wallet", href: "/admin/payments" },
-            { label: "Analytics", icon: "chart-line", href: "/analytics" },
+            { label: "Plan Management", icon: "credit-card", href: "/admin/plans", active: location === "/admin/plans" },
+            { label: "Payment Methods", icon: "wallet", href: "/admin/payments", active: location === "/admin/payments" },
+            { label: "Analytics", icon: "chart-line", href: "/analytics", active: location === "/analytics" },
           ]
         },
         {
           section: "System",
           items: [
-            { label: "Search", icon: "search", href: "/search" },
-            { label: "Themes", icon: "palette", href: "/admin/themes" },
-            { label: "Media", icon: "images", href: "/admin/media" },
-            { label: "APIs", icon: "plug", href: "/admin/apis" },
-            { label: "AI Management", icon: "robot", href: "/admin/ai" },
-            { label: "Policies", icon: "shield-alt", href: "/admin/policies" },
-            { label: "Logs", icon: "list-alt", href: "/admin/logs" },
+            { label: "Search", icon: "search", href: "/search", active: location === "/search" },
+            { label: "Themes", icon: "palette", href: "/admin/themes", active: location === "/admin/themes" },
+            { label: "Media", icon: "images", href: "/admin/media", active: location === "/admin/media" },
+            { label: "APIs", icon: "plug", href: "/admin/apis", active: location === "/admin/apis" },
+            { label: "AI Management", icon: "robot", href: "/admin/ai", active: location === "/admin/ai" },
+            { label: "Policies", icon: "shield-alt", href: "/admin/policies", active: location === "/admin/policies" },
+            { label: "Logs", icon: "list-alt", href: "/admin/logs", active: location === "/admin/logs" },
           ]
         }
       ];

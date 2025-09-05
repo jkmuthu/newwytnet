@@ -6,6 +6,22 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
 import { apiRequest } from "@/lib/queryClient";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { SortableBlock } from './sortable-block';
 
 const blockTypes = [
   { type: 'hero', name: 'Hero Banner', icon: 'image', color: 'blue', description: 'Main landing page banner' },
@@ -148,6 +164,26 @@ export default function CMSBuilder() {
     }
   };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      setSelectedBlocks((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over?.id);
+
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const handlePublish = () => {
     createPageMutation.mutate({
       title: 'New Page',
@@ -228,64 +264,24 @@ export default function CMSBuilder() {
         {/* Canvas Area */}
         <div className="lg:col-span-2 bg-background border-2 border-dashed border-border rounded-lg builder-grid relative overflow-y-auto">
           <div className="p-4 space-y-4">
-            {selectedBlocks.map((block, index) => (
-              <Card 
-                key={block.id} 
-                className="hover:ring-2 hover:ring-ring cursor-pointer"
-                onClick={() => setSelectedBlock(block)}
-              >
-                <CardContent className="pt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-muted-foreground">{block.name}</span>
-                    <div className="flex space-x-1">
-                      <Button 
-                        size="sm" 
-                        variant="secondary"
-                        className="w-6 h-6 p-0"
-                        data-testid={`button-edit-${block.type}-${index}`}
-                      >
-                        <i className="fas fa-edit text-xs"></i>
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="destructive"
-                        className="w-6 h-6 p-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteBlock(block.id);
-                        }}
-                        data-testid={`button-delete-${block.type}-${index}`}
-                      >
-                        <i className="fas fa-trash text-xs"></i>
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {block.type === 'hero' && (
-                    <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-8 text-white text-center">
-                      <h1 className="text-2xl font-bold mb-2">{block.content.title || 'Hero Title'}</h1>
-                      <p className="text-blue-100 mb-4">{block.content.subtitle || 'Hero subtitle'}</p>
-                      <Button className="bg-white text-blue-600 hover:bg-gray-100">
-                        {block.content.buttonText || 'Get Started'}
-                      </Button>
-                    </div>
-                  )}
-                  
-                  {block.type === 'richtext' && (
-                    <div className="prose prose-sm max-w-none">
-                      <h2>{block.content.title || 'Rich Text Title'}</h2>
-                      <p>{block.content.content || 'Rich text content goes here...'}</p>
-                    </div>
-                  )}
-                  
-                  {block.type !== 'hero' && block.type !== 'richtext' && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      {block.name} Block - Configure in properties panel
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={selectedBlocks.map(block => block.id)} strategy={verticalListSortingStrategy}>
+                {selectedBlocks.map((block, index) => (
+                  <SortableBlock
+                    key={block.id}
+                    block={block}
+                    index={index}
+                    selectedBlock={selectedBlock}
+                    onSelectBlock={setSelectedBlock}
+                    onDeleteBlock={handleDeleteBlock}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
             
             {selectedBlocks.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm pointer-events-none opacity-50">
