@@ -279,7 +279,7 @@ export default function WhatsAppAuth() {
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2">
             <img 
-              src="/attached_assets/wyt-logo_1757064733529.png" 
+              src="/wytnet-logo.png" 
               alt="WytNet Logo" 
               className="h-12 w-auto transition-transform hover:scale-105"
             />

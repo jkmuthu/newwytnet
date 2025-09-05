@@ -87,7 +87,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 <SheetHeader>
                   <SheetTitle className="flex items-center gap-2">
                     <img 
-                      src="/attached_assets/wyt-logo_1757064733529.png" 
+                      src="/wytnet-logo.png" 
                       alt="WytNet" 
                       className="h-6 w-auto"
                     />
@@ -98,32 +98,36 @@ export default function Header({ onMenuClick }: HeaderProps) {
                     <Home className="h-5 w-5" />
                     <span>Home</span>
                   </Link>
-                  <Link href="/assessment" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
-                    <Activity className="h-5 w-5" />
-                    <span>Assessment</span>
-                  </Link>
-                  <Link href="/realbro" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
-                    <Building className="h-5 w-5" />
-                    <span>RealBro</span>
-                  </Link>
-                  <Link href="/wytduty" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
-                    <Briefcase className="h-5 w-5" />
-                    <span>WytDuty</span>
-                  </Link>
-                  <Link href="/qr-generator" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
-                    <QrCode className="h-5 w-5" />
-                    <span>QR Generator</span>
-                  </Link>
                   <Link href="/ai-directory" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
                     <Bot className="h-5 w-5" />
                     <span>AI Directory</span>
                   </Link>
-                  <Link href="/wytai-trademark" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700" onClick={() => setMobileMenuOpen(false)}>
-                    <Brain className="h-5 w-5" />
-                    <span>WytAi Trademark</span>
+                  
+                  {/* WytTools Section */}
+                  <div className="px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400">
+                    WytTools
+                  </div>
+                  <Link href="/qr-generator" className="flex items-center gap-3 px-6 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
+                    <QrCode className="h-5 w-5" />
+                    <span>QR Generator</span>
                   </Link>
-                  <Link href="/search" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
-                    <span>🔍 Search</span>
+                  <Link href="/assessment" className="flex items-center gap-3 px-6 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
+                    <Activity className="h-5 w-5" />
+                    <span>Disc Assess</span>
+                  </Link>
+                  
+                  {/* WytHubs Section */}
+                  <div className="px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400">
+                    WytHubs
+                  </div>
+                  <Link href="/realbro" className="flex items-center gap-3 px-6 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
+                    <Building className="h-5 w-5" />
+                    <span>RealBRO</span>
+                  </Link>
+                  
+                  <Link href="/wytapps" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
+                    <Briefcase className="h-5 w-5" />
+                    <span>WytApps</span>
                   </Link>
                   {isAuthenticated && (
                     <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
@@ -152,7 +156,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
               <Link href="/" className="flex items-center" data-testid="link-logo">
                 <div className="flex items-center space-x-2">
                   <img 
-                    src="/attached_assets/wyt-logo_1757064733529.png" 
+                    src="/wytnet-logo.png" 
                     alt="WytNet - Multi-SaaS Engine" 
                     className="h-8 w-auto transition-transform hover:scale-105"
                   />
@@ -162,31 +166,56 @@ export default function Header({ onMenuClick }: HeaderProps) {
           </div>
 
           {/* Center section - Public Navigation */}
-          <div className="hidden md:block flex-1 max-w-md mx-8">
+          <div className="hidden md:block flex-1 max-w-4xl mx-8">
             <nav className="flex items-center justify-center space-x-6">
               <Link href="/" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium" data-testid="nav-home">
                 Home
               </Link>
-              <Link href="/assessment" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium" data-testid="nav-assessment">
-                Assessment
-              </Link>
-              <Link href="/realbro" className="text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 font-medium" data-testid="nav-realbro">
-                RealBro
-              </Link>
-              <Link href="/wytduty" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium" data-testid="nav-wytduty">
-                WytDuty
-              </Link>
-              <Link href="/qr-generator" className="text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 font-medium" data-testid="nav-qr-generator">
-                QR Generator
-              </Link>
               <Link href="/ai-directory" className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium" data-testid="nav-ai-directory">
                 AI Directory
               </Link>
-              <Link href="/wytai-trademark" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-md border border-blue-200 dark:border-blue-700" data-testid="nav-wytai-trademark">
-                WytAi Trademark
-              </Link>
-              <Link href="/search" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium" data-testid="nav-search">
-                🔍 Search
+              
+              {/* WytTools Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 font-medium flex items-center" data-testid="dropdown-wyttools">
+                    WytTools
+                    <span className="ml-1">▼</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link href="/qr-generator" className="flex items-center w-full" data-testid="link-qr-generator">
+                      🔳 QR Generator
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/assessment" className="flex items-center w-full" data-testid="link-disc-assess">
+                      📊 Disc Assess
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* WytHubs Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 font-medium flex items-center" data-testid="dropdown-wythubs">
+                    WytHubs
+                    <span className="ml-1">▼</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link href="/realbro" className="flex items-center w-full" data-testid="link-realbro">
+                      🏠 RealBRO
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <Link href="/wytapps" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium" data-testid="nav-wytapps">
+                WytApps
               </Link>
               {isAuthenticated && (
                 <Link href="/dashboard" className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 font-medium" data-testid="nav-dashboard">

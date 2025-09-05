@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Brain, Zap, Shield, Rocket, CheckCircle, ArrowRight, Users, Globe, BarChart3, Smartphone, Star, TrendingUp } from "lucide-react";
 import Header from "@/components/layout/header";
 import MobileNavigation from "@/components/layout/MobileNavigation";
+import MobileBottomNavigation from "@/components/layout/MobileBottomNavigation";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
 
 export default function Home() {
@@ -13,8 +14,9 @@ export default function Home() {
   const { isMobile } = useDeviceDetection();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 ${isMobile ? 'pb-20' : ''}`}>
       {isMobile ? <MobileNavigation /> : <Header />}
+      {isMobile && <MobileBottomNavigation />}
       
       {/* Hero Section */}
       <section className={`relative px-4 sm:px-6 lg:px-8 ${isMobile ? 'py-8 pt-4' : 'py-20'}`}>
@@ -44,7 +46,7 @@ export default function Home() {
           <div className="flex justify-center mb-8">
             <div className="relative">
               <img 
-                src="/attached_assets/wyt-logo_1757064733529.png" 
+                src="/wytnet-logo.png" 
                 alt="WytNet - Multi-SaaS Engine" 
                 className={`${isMobile ? 'h-16' : 'h-20 md:h-24'} w-auto transition-transform hover:scale-105`}
               />

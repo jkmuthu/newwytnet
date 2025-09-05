@@ -76,7 +76,7 @@ export default function MobileNavigation() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <img 
-            src="/attached_assets/wyt-logo_1757064733529.png" 
+            src="/wytnet-logo.png" 
             alt="WytNet" 
             className="h-8 w-auto transition-transform hover:scale-105"
           />

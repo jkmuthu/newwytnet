@@ -159,7 +159,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         <div className="p-6 border-b border-border">
           <div className="flex items-center space-x-3">
             <img 
-              src="/attached_assets/wyt-logo_1757064733529.png" 
+              src="/wytnet-logo.png" 
               alt="WytNet" 
               className="h-8 w-auto transition-transform hover:scale-105"
             />
