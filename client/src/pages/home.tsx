@@ -3,41 +3,83 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Zap, Shield, Rocket, CheckCircle, ArrowRight, Users, Globe, BarChart3, Smartphone } from "lucide-react";
+import { Brain, Zap, Shield, Rocket, CheckCircle, ArrowRight, Users, Globe, BarChart3, Smartphone, Star, TrendingUp } from "lucide-react";
 import Header from "@/components/layout/header";
+import MobileNavigation from "@/components/layout/MobileNavigation";
+import { useDeviceDetection } from "@/hooks/useDeviceDetection";
 
 export default function Home() {
   const [activeView, setActiveView] = useState<'desktop' | 'mobile'>('desktop');
+  const { isMobile } = useDeviceDetection();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <Header />
+      {isMobile ? <MobileNavigation /> : <Header />}
       
       {/* Hero Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8">
+      <section className={`relative px-4 sm:px-6 lg:px-8 ${isMobile ? 'py-8 pt-4' : 'py-20'}`}>
         <div className="max-w-7xl mx-auto text-center">
           <div className="flex justify-center mb-6">
-            <Badge variant="secondary" className="px-6 py-2 text-sm font-medium">
+            <Badge variant="secondary" className="px-6 py-2 text-sm font-medium animate-pulse">
               🚀 Platform Launch - Free Tools Available
             </Badge>
           </div>
           
-          <div className="flex justify-center mb-8">
-            <img 
-              src="/wytnet-logo.png" 
-              alt="WytNet - Multi-SaaS Engine" 
-              className="h-16 md:h-20 w-auto"
-            />
+          {/* Stats Banner */}
+          <div className={`flex justify-center space-x-6 mb-6 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+            <div className="flex items-center text-gray-600 dark:text-gray-300">
+              <Users className="h-4 w-4 mr-1" />
+              <span className="font-medium">1000+ Users</span>
+            </div>
+            <div className="flex items-center text-gray-600 dark:text-gray-300">
+              <Star className="h-4 w-4 mr-1 text-yellow-500" />
+              <span className="font-medium">4.9/5 Rating</span>
+            </div>
+            <div className="flex items-center text-gray-600 dark:text-gray-300">
+              <TrendingUp className="h-4 w-4 mr-1 text-green-500" />
+              <span className="font-medium">Growing Fast</span>
+            </div>
           </div>
           
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
+          <div className="flex justify-center mb-8">
+            <div className="relative">
+              <img 
+                src="/wytnet-logo.png" 
+                alt="WytNet - Multi-SaaS Engine" 
+                className={`${isMobile ? 'h-12' : 'h-16 md:h-20'} w-auto transition-transform hover:scale-105`}
+              />
+              <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full animate-bounce">
+                LIVE
+              </div>
+            </div>
+          </div>
+          
+          <h1 className={`${isMobile ? 'text-3xl' : 'text-4xl md:text-6xl'} font-bold text-gray-900 dark:text-white mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent`}>
             Multi-SaaS Engine
           </h1>
           
-          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+          <p className={`${isMobile ? 'text-lg' : 'text-xl'} text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed`}>
             The ultimate platform for building, managing, and scaling SaaS applications. 
             Get started with our free productivity tools and assessment modules.
           </p>
+          
+          {/* Trust indicators */}
+          <div className={`flex justify-center items-center space-x-4 mb-8 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+            <div className="flex items-center text-green-600 font-medium">
+              <Shield className="h-4 w-4 mr-1" />
+              100% Secure
+            </div>
+            <div className="text-gray-400">•</div>
+            <div className="flex items-center text-blue-600 font-medium">
+              <Zap className="h-4 w-4 mr-1" />
+              No Registration Required
+            </div>
+            <div className="text-gray-400">•</div>
+            <div className="flex items-center text-purple-600 font-medium">
+              <Rocket className="h-4 w-4 mr-1" />
+              Instant Access
+            </div>
+          </div>
 
           {/* Platform Mode Toggle */}
           <div className="flex justify-center mb-8">
@@ -64,17 +106,30 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className={`flex ${isMobile ? 'flex-col' : 'flex-col sm:flex-row'} gap-4 justify-center`}>
             <Link href="/assessment">
-              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700" data-testid="button-try-assessment">
+              <Button 
+                size={isMobile ? "default" : "lg"} 
+                className={`${isMobile ? 'w-full' : ''} bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105`} 
+                data-testid="button-try-assessment"
+              >
                 <Brain className="h-5 w-5 mr-2" />
                 Try Free Assessment
+                <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </Link>
-            <Button variant="outline" size="lg" data-testid="button-view-tools">
-              <Zap className="h-5 w-5 mr-2" />
-              Explore Tools
-            </Button>
+            <Link href="/ai-directory">
+              <Button 
+                variant="outline" 
+                size={isMobile ? "default" : "lg"} 
+                className={`${isMobile ? 'w-full' : ''} border-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 transform hover:scale-105`} 
+                data-testid="button-view-tools"
+              >
+                <Zap className="h-5 w-5 mr-2" />
+                Explore Tools
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
