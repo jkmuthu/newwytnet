@@ -41,7 +41,7 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-center mb-4">
             <div className="relative">
               <img 
                 src="/wytnet-logo.png" 
@@ -54,8 +54,13 @@ export default function Home() {
             </div>
           </div>
           
-          <h1 className={`${isMobile ? 'text-3xl' : 'text-4xl md:text-6xl'} font-bold text-gray-900 dark:text-white mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent`}>
-            Getin .. Get Done | Better Lifestyle and Workstyle
+          {/* Small tagline under logo */}
+          <p className={`${isMobile ? 'text-sm' : 'text-lg'} text-gray-500 dark:text-gray-400 mb-6 font-medium tracking-wide`}>
+            Get in .. Get Done
+          </p>
+          
+          <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl md:text-5xl'} font-bold text-gray-900 dark:text-white mb-8 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent leading-tight`}>
+            WytNet for Better Lifestyle and Workstyle
           </h1>
           
           {/* Trust indicators */}
