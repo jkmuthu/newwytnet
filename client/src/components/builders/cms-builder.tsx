@@ -129,7 +129,7 @@ export default function CMSBuilder() {
 
   const createPageMutation = useMutation({
     mutationFn: async (pageData: any) => {
-      return await apiRequest("POST", "/api/pages", pageData);
+      return await apiRequest("/api/pages", "POST", pageData);
     },
     onSuccess: () => {
       toast({
@@ -152,9 +152,43 @@ export default function CMSBuilder() {
       id: Date.now().toString(),
       type: blockType.type,
       name: blockType.name,
-      content: {}
+      content: getDefaultContent(blockType.type)
     };
     setSelectedBlocks([...selectedBlocks, newBlock]);
+  };
+
+  const getDefaultContent = (blockType: string) => {
+    switch (blockType) {
+      case 'hero':
+        return {
+          title: 'New Hero Title',
+          subtitle: 'Hero subtitle',
+          buttonText: 'Get Started',
+          backgroundImage: '/hero-bg.jpg',
+          stats: { users: '1000+', rating: '4.9/5', growth: 'Growing' }
+        };
+      case 'promotion_cards':
+        return {
+          title: 'Features',
+          cards: [
+            { title: 'Feature 1', description: 'Description', icon: 'star', color: 'blue', link: '#' }
+          ]
+        };
+      case 'stats_banner':
+        return {
+          title: 'Statistics',
+          stats: [
+            { label: 'Users', value: '1000+', icon: 'users' }
+          ]
+        };
+      case 'richtext':
+        return {
+          title: 'Rich Text Title',
+          content: 'Rich text content goes here...'
+        };
+      default:
+        return { title: 'New Block', content: 'Configure this block' };
+    }
   };
 
   const handleDeleteBlock = (blockId: string) => {
