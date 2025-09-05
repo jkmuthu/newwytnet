@@ -150,6 +150,50 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* QR Code Generator Tool */}
+            <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="h-8 w-8 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                    📱
+                  </div>
+                  <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-800 dark:text-emerald-100">
+                    Free
+                  </Badge>
+                </div>
+                <CardTitle>QR Code Generator</CardTitle>
+                <CardDescription>
+                  Generate custom QR codes instantly. Perfect for URLs, text, contact info, and more.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Instant QR code generation
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Multiple data types support
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Customizable colors & styles
+                  </div>
+                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Download in multiple formats
+                  </div>
+                </div>
+                <Link href="/qr-generator">
+                  <Button className="w-full mt-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700" data-testid="button-qr-generator">
+                    Generate QR Code
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
             {/* Assessment Module */}
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
