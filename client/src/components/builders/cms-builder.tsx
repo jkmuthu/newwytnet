@@ -2,16 +2,22 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
 import { apiRequest } from "@/lib/queryClient";
 
 const blockTypes = [
-  { type: 'hero', name: 'Hero Section', icon: 'image', color: 'blue' },
-  { type: 'richtext', name: 'Rich Text', icon: 'align-left', color: 'green' },
-  { type: 'gallery', name: 'Image Gallery', icon: 'images', color: 'purple' },
-  { type: 'cta', name: 'CTA Button', icon: 'mouse-pointer', color: 'orange' },
-  { type: 'collection', name: 'Collection Grid', icon: 'th', color: 'red' },
-  { type: 'form', name: 'Contact Form', icon: 'wpforms', color: 'indigo' },
+  { type: 'hero', name: 'Hero Banner', icon: 'image', color: 'blue', description: 'Main landing page banner' },
+  { type: 'navigation', name: 'Navigation Menu', icon: 'bars', color: 'gray', description: 'Header navigation links' },
+  { type: 'promotion_cards', name: 'Promotion Cards', icon: 'credit-card', color: 'yellow', description: 'Feature/service promotion cards' },
+  { type: 'stats_banner', name: 'Stats Banner', icon: 'chart-bar', color: 'green', description: 'User statistics and achievements' },
+  { type: 'richtext', name: 'Rich Text', icon: 'align-left', color: 'green', description: 'Formatted text content' },
+  { type: 'gallery', name: 'Image Gallery', icon: 'images', color: 'purple', description: 'Photo galleries' },
+  { type: 'cta', name: 'CTA Button', icon: 'mouse-pointer', color: 'orange', description: 'Call-to-action buttons' },
+  { type: 'collection', name: 'Collection Grid', icon: 'th', color: 'red', description: 'Dynamic content grids' },
+  { type: 'form', name: 'Contact Form', icon: 'wpforms', color: 'indigo', description: 'Contact and feedback forms' },
+  { type: 'footer', name: 'Footer Section', icon: 'window-minimize', color: 'gray', description: 'Site footer with links' },
 ];
 
 const colorClasses = {
@@ -24,24 +30,74 @@ const colorClasses = {
 };
 
 export default function CMSBuilder() {
+  const [pageType, setPageType] = useState('home');
   const [selectedBlocks, setSelectedBlocks] = useState([
     {
       id: '1',
       type: 'hero',
-      name: 'Hero Section',
+      name: 'Hero Banner',
       content: {
-        title: 'Welcome to Our Platform',
-        subtitle: 'Build amazing experiences with our powerful tools',
-        buttonText: 'Get Started'
+        title: 'WytNet - Multi-SaaS Engine',
+        subtitle: 'The ultimate platform for building, managing, and scaling SaaS applications',
+        buttonText: 'Get Started Free',
+        backgroundImage: '/wytnet-hero-bg.jpg',
+        stats: {
+          users: '1000+',
+          rating: '4.9/5',
+          growth: 'Growing Fast'
+        }
       }
     },
     {
       id: '2',
-      type: 'richtext',
-      name: 'Rich Text',
+      type: 'promotion_cards',
+      name: 'Feature Cards',
       content: {
-        title: 'About Our Platform',
-        content: 'Our platform provides comprehensive tools for building modern applications. With our low-code approach, you can create powerful solutions without extensive programming knowledge.'
+        title: 'Platform Features',
+        cards: [
+          {
+            title: 'AI Directory',
+            description: 'Comprehensive AI tools and services directory',
+            icon: 'robot',
+            color: 'green',
+            link: '/ai-directory'
+          },
+          {
+            title: 'WytTools',
+            description: 'QR Generator, Disc Assessment & more',
+            icon: 'tools',
+            color: 'purple',
+            link: '/qr-generator'
+          },
+          {
+            title: 'WytHubs',
+            description: 'RealBRO and other specialized hubs',
+            icon: 'network-wired',
+            color: 'orange',
+            link: '/realbro'
+          },
+          {
+            title: 'WytApps',
+            description: 'Custom application marketplace',
+            icon: 'mobile-alt',
+            color: 'blue',
+            link: '/wytapps'
+          }
+        ]
+      }
+    },
+    {
+      id: '3',
+      type: 'stats_banner',
+      name: 'Platform Stats',
+      content: {
+        title: 'Trusted by Users Worldwide',
+        stats: [
+          { label: 'Active Users', value: '1,000+', icon: 'users' },
+          { label: 'User Rating', value: '4.9/5', icon: 'star' },
+          { label: 'Growth Rate', value: 'Fast', icon: 'trending-up' },
+          { label: 'Uptime', value: '99.9%', icon: 'check-circle' }
+        ]
       }
     }
   ]);
@@ -104,14 +160,32 @@ export default function CMSBuilder() {
     });
   };
 
+  const { isSuperAdmin, user } = useWhatsAppAuth();
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-xl font-semibold text-foreground">CMS Page Builder</h2>
-          <p className="text-muted-foreground">Drag and drop blocks to create beautiful pages</p>
+          <h2 className="text-xl font-semibold text-foreground">📄 Pages CMS</h2>
+          <p className="text-muted-foreground">Manage home page content, menus, and promotion cards</p>
+          {isSuperAdmin && (
+            <Badge variant="secondary" className="mt-2">
+              🦸‍♂️ Super Admin Access
+            </Badge>
+          )}
         </div>
-        <div className="flex space-x-2">
+        <div className="flex items-center space-x-3">
+          <select 
+            value={pageType} 
+            onChange={(e) => setPageType(e.target.value)}
+            className="px-3 py-2 border rounded-lg bg-background"
+          >
+            <option value="home">🏠 Home Page</option>
+            <option value="landing">🚀 Landing Page</option>
+            <option value="about">ℹ️ About Page</option>
+            <option value="custom">⚙️ Custom Page</option>
+          </select>
+          <div className="flex space-x-2">
           <Button variant="secondary" data-testid="button-preview">
             <i className="fas fa-eye mr-2"></i>Preview
           </Button>
@@ -123,6 +197,7 @@ export default function CMSBuilder() {
             <i className="fas fa-save mr-2"></i>
             {createPageMutation.isPending ? "Publishing..." : "Publish"}
           </Button>
+          </div>
         </div>
       </div>
 
@@ -140,7 +215,10 @@ export default function CMSBuilder() {
               >
                 <div className="flex items-center space-x-2">
                   <i className={`fas fa-${block.icon} ${colorClasses[block.color as keyof typeof colorClasses]}`}></i>
-                  <span className="text-sm font-medium">{block.name}</span>
+                  <div>
+                    <div className="text-sm font-medium">{block.name}</div>
+                    <div className="text-xs text-muted-foreground">{block.description}</div>
+                  </div>
                 </div>
               </div>
             ))}
