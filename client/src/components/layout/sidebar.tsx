@@ -181,7 +181,14 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                 {section.items.map((item) => (
                   <li key={item.href}>
                     <a
-                      href={item.href}
+                      href={item.href.startsWith('#') ? `/dashboard${item.href}` : item.href}
+                      onClick={(e) => {
+                        if (item.href.startsWith('#')) {
+                          e.preventDefault();
+                          window.location.hash = item.href;
+                          onClose(); // Close sidebar on mobile after navigation
+                        }
+                      }}
                       className={cn(
                         "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors",
                         item.active 

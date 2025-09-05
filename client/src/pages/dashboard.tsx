@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import Sidebar from "@/components/layout/sidebar";
@@ -18,8 +19,42 @@ import WytIDManagement from "./wytid-management";
 export default function Dashboard() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading, user } = useAuth();
+  const { isSuperAdmin } = useWhatsAppAuth();
   const [activeTab, setActiveTab] = useState("module-builder");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Listen for hash changes from sidebar navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      const hashToTabMap: { [key: string]: string } = {
+        'dashboard': 'module-builder',
+        'modules': 'module-builder', 
+        'cms': 'cms-builder',
+        'apps': 'app-builder',
+        'hubs': 'hub-builder',
+        'wytid': 'wytid-manager',
+        'system-overview': 'module-builder',
+        'global-settings': 'module-builder',
+        'tenants': 'module-builder',
+        'users': 'module-builder',
+      };
+      
+      if (hashToTabMap[hash]) {
+        setActiveTab(hashToTabMap[hash]);
+      }
+    };
+
+    // Set initial tab based on hash
+    handleHashChange();
+    
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+    };
+  }, []);
 
   // Optional authentication - show login prompt if not authenticated
   useEffect(() => {
@@ -54,9 +89,10 @@ export default function Dashboard() {
 
   // Allow access even without authentication, but show limited functionality
 
+  // Build tabs based on user role
   const tabs = [
     { id: "module-builder", label: "Module Builder", icon: "cubes" },
-    { id: "cms-builder", label: "CMS Builder", icon: "edit" },
+    { id: "cms-builder", label: "Pages CMS", icon: "edit" },
     { id: "app-builder", label: "App Builder", icon: "mobile-alt" },
     { id: "hub-builder", label: "Hub Builder", icon: "network-wired" },
     { id: "wytid-manager", label: "WytID Manager", icon: "shield-alt" },
