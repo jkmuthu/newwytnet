@@ -7,11 +7,19 @@ import Header from "@/components/layout/header";
 import MobileNavigation from "@/components/layout/MobileNavigation";
 import MobileBottomNavigation from "@/components/layout/MobileBottomNavigation";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
-import { getEnabledModules } from "@/utils/moduleStatus";
+import { useQuery } from "@tanstack/react-query";
+import { fetchEnabledPlatformModules } from "@/lib/api";
 
 export default function Home() {
   const { isMobile } = useDeviceDetection();
-  const enabledModules = getEnabledModules();
+  
+  // Fetch enabled modules from API
+  const { data: enabledModules = [], isLoading, error } = useQuery({
+    queryKey: ['platform-modules', 'enabled'],
+    queryFn: fetchEnabledPlatformModules,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+  });
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 ${isMobile ? 'pb-20' : ''}`}>
@@ -125,7 +133,38 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {enabledModules.map((module) => {
+            {isLoading ? (
+              // Loading skeleton
+              [...Array(6)].map((_, index) => (
+                <Card key={index} className="animate-pulse">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="h-8 w-8 bg-gray-200 rounded-lg"></div>
+                      <div className="h-6 w-16 bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="h-6 w-32 bg-gray-200 rounded"></div>
+                    <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="h-4 w-full bg-gray-200 rounded"></div>
+                      ))}
+                    </div>
+                    <div className="h-10 w-full bg-gray-200 rounded mt-4"></div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : error ? (
+              // Error state
+              <div className="col-span-full text-center py-12">
+                <div className="text-red-400 mb-4">
+                  <i className="fas fa-exclamation-triangle text-4xl"></i>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Failed to load modules</h3>
+                <p className="text-gray-600 dark:text-gray-300">Please refresh the page to try again.</p>
+              </div>
+            ) : enabledModules.map((module) => {
               // Map module types to specific content
               if (module.id === 'qr-generator') {
                 return (
@@ -136,7 +175,7 @@ export default function Home() {
                           📱
                         </div>
                         <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-800 dark:text-emerald-100">
-                          {module.pricing === 'free' ? 'Free' : module.pricing === 'premium' ? `₹${module.price}` : module.pricing}
+                          {module.pricing === 'free' ? 'Free' : module.pricing === 'premium' && module.price ? `₹${module.price}` : module.pricing}
                         </Badge>
                       </div>
                       <CardTitle>{module.name}</CardTitle>
@@ -306,11 +345,11 @@ export default function Home() {
                 <Card key={module.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <div className="flex items-center justify-between">
-                      <div className={`h-8 w-8 bg-gradient-to-r from-${module.color}-500 to-${module.color}-600 rounded-lg flex items-center justify-center text-white font-bold text-sm`}>
+                      <div className={`h-8 w-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm`}>
                         <i className={`fas fa-${module.icon}`}></i>
                       </div>
-                      <Badge className={`bg-${module.color}-100 text-${module.color}-800`}>
-                        {module.pricing === 'free' ? 'Free' : module.pricing === 'premium' ? `₹${module.price}` : module.pricing}
+                      <Badge className="bg-blue-100 text-blue-800">
+                        {module.pricing === 'free' ? 'Free' : module.pricing === 'premium' && module.price ? `₹${module.price}` : module.pricing}
                       </Badge>
                     </div>
                     <CardTitle>{module.name}</CardTitle>
@@ -318,14 +357,23 @@ export default function Home() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                        <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                        {module.usage.toLocaleString()} monthly users
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                        <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                        {module.installs.toLocaleString()} total installs
-                      </div>
+                      {module.features?.slice(0, 2).map((feature, index) => (
+                        <div key={index} className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          {feature}
+                        </div>
+                      )) || (
+                        <>
+                          <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                            {module.usage?.toLocaleString() || 0} monthly users
+                          </div>
+                          <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                            <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                            {module.installs?.toLocaleString() || 0} total installs
+                          </div>
+                        </>
+                      )}
                     </div>
                     <Link href={module.route}>
                       <Button className="w-full mt-4" data-testid={`button-${module.id}`}>

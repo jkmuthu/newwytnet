@@ -7,8 +7,8 @@ import { Menu, User, Settings, LogOut, Home, Activity, Building, Briefcase, QrCo
 import { Link } from "wouter";
 import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { getEnabledModules, isModuleEnabled } from "@/utils/moduleStatus";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { fetchEnabledPlatformModules } from "@/lib/api";
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -19,7 +19,19 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const { isAuthenticated, user, isSuperAdmin } = useWhatsAppAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const enabledModules = getEnabledModules();
+  
+  // Fetch enabled modules from API
+  const { data: enabledModules = [] } = useQuery({
+    queryKey: ['platform-modules', 'enabled'],
+    queryFn: fetchEnabledPlatformModules,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+  });
+  
+  // Helper function to check if module is enabled
+  const isModuleEnabled = (moduleId: string) => {
+    return enabledModules.some(module => module.id === moduleId);
+  };
 
   const logoutMutation = useMutation({
     mutationFn: async () => {

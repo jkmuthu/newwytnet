@@ -193,6 +193,32 @@ export const hubs = pgTable("hubs", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Platform Modules (QR Generator, RealBro, WytDuty, etc.)
+export const platformModules = pgTable("platform_modules", {
+  id: varchar("id").primaryKey(), // 'qr-generator', 'realbro', etc.
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 50 }).notNull().default('platform'),
+  type: varchar("type", { length: 50 }).notNull(),
+  status: varchar("status", { length: 20 }).notNull().default('enabled'),
+  pricing: varchar("pricing", { length: 20 }).notNull().default('free'),
+  price: decimal("price", { precision: 10, scale: 2 }),
+  currency: varchar("currency", { length: 3 }).default('INR'),
+  icon: varchar("icon", { length: 100 }),
+  color: varchar("color", { length: 50 }).default('blue'),
+  route: varchar("route", { length: 255 }).notNull(),
+  features: jsonb("features").default([]),
+  metadata: jsonb("metadata").default({}),
+  usage: integer("usage").default(0),
+  installs: integer("installs").default(0),
+  creator: varchar("creator", { length: 255 }),
+  order: integer("order").default(0),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  createdBy: varchar("created_by").references(() => whatsappUsers.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Plans
 export const plans = pgTable("plans", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1175,6 +1201,16 @@ export const backupsRelations = relations(backups, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+// Platform Modules Types
+export type PlatformModule = typeof platformModules.$inferSelect;
+export type InsertPlatformModule = typeof platformModules.$inferInsert;
+
+// Zod schemas for platform modules
+export const insertPlatformModuleSchema = createInsertSchema(platformModules);
+export const selectPlatformModuleSchema = createSelectSchema(platformModules);
+export type InsertPlatformModuleType = z.infer<typeof insertPlatformModuleSchema>;
+export type SelectPlatformModuleType = z.infer<typeof selectPlatformModuleSchema>;
 
 // WytDuty Types
 export type DutyUser = typeof dutyUsers.$inferSelect;

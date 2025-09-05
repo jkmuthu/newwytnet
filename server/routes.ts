@@ -3,7 +3,16 @@ import { createServer, type Server } from "http";
 import { setupAuth, isAuthenticated } from "./customAuth";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertModelSchema, insertPageSchema, insertAppSchema, insertHubSchema } from "@shared/schema";
+import { 
+  insertModelSchema, 
+  insertPageSchema, 
+  insertAppSchema, 
+  insertHubSchema,
+  platformModules,
+  insertPlatformModuleSchema,
+  type PlatformModule,
+  type InsertPlatformModule
+} from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
 import { AssessmentService } from "./assessmentService";
@@ -2648,6 +2657,337 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching assessment results:", error);
       res.status(500).json({ message: "Failed to fetch results" });
+    }
+  });
+
+  // ============================================================================
+  // Platform Modules Management API
+  // ============================================================================
+  
+  // Initialize default platform modules service
+  async function initializeDefaultModules() {
+    try {
+      const existingModules = await db.select().from(platformModules).limit(1);
+      
+      if (existingModules.length === 0) {
+        console.log('Initializing default platform modules...');
+        
+        const defaultModules: InsertPlatformModule[] = [
+          {
+            id: 'qr-generator',
+            name: 'QR Code Generator',
+            description: 'Generate QR codes for URLs, text, and contact information',
+            category: 'platform',
+            type: 'tool',
+            status: 'enabled',
+            pricing: 'free',
+            icon: 'qrcode',
+            color: 'blue',
+            route: '/qr-generator',
+            features: ['Instant QR code generation', 'Multiple data types support', 'Customizable colors & styles', 'Download in multiple formats'],
+            usage: 1250,
+            installs: 8900,
+            order: 1
+          },
+          {
+            id: 'assessment',
+            name: 'DISC Assessment',
+            description: 'Personality and behavioral assessment tool',
+            category: 'platform',
+            type: 'assessment',
+            status: 'enabled',
+            pricing: 'premium',
+            price: '299',
+            currency: 'INR',
+            icon: 'chart-pie',
+            color: 'purple',
+            route: '/assessment',
+            features: ['15-question assessment', 'Detailed personality insights', 'Career recommendations'],
+            usage: 450,
+            installs: 2100,
+            order: 2
+          },
+          {
+            id: 'ai-directory',
+            name: 'AI Directory',
+            description: 'Comprehensive AI tools and services directory',
+            category: 'platform',
+            type: 'directory',
+            status: 'enabled',
+            pricing: 'free',
+            icon: 'robot',
+            color: 'green',
+            route: '/ai-directory',
+            features: ['AI tools database', 'Categorized listings', 'Reviews and ratings'],
+            usage: 3200,
+            installs: 15600,
+            order: 3
+          },
+          {
+            id: 'realbro',
+            name: 'RealBRO Hub',
+            description: 'Real estate broker and professional networking hub',
+            category: 'platform',
+            type: 'hub',
+            status: 'enabled',
+            pricing: 'freemium',
+            price: '999',
+            currency: 'INR',
+            icon: 'home',
+            color: 'orange',
+            route: '/realbro',
+            features: ['Property listing management', 'Broker network & contacts', 'Credit-based system', 'Tamil language support'],
+            usage: 850,
+            installs: 4200,
+            order: 4
+          },
+          {
+            id: 'wytduty',
+            name: 'WytDuty Task Manager',
+            description: 'Task and duty management for teams',
+            category: 'platform',
+            type: 'productivity',
+            status: 'enabled',
+            pricing: 'premium',
+            price: '599',
+            currency: 'INR',
+            icon: 'tasks',
+            color: 'indigo',
+            route: '/wytduty',
+            features: ['Duty assignment & tracking', 'Approval workflows', 'Calendar & scheduling', 'Analytics & reporting'],
+            usage: 650,
+            installs: 3100,
+            order: 5
+          },
+          {
+            id: 'tm-numbering',
+            name: 'TMNumber11 System',
+            description: 'Trademark numbering and classification system',
+            category: 'platform',
+            type: 'utility',
+            status: 'enabled',
+            pricing: 'premium',
+            price: '1999',
+            currency: 'INR',
+            icon: 'trademark',
+            color: 'red',
+            route: '/tm-numbering',
+            features: ['Trademark number generation', 'Classification system', 'Validation tools'],
+            usage: 180,
+            installs: 950,
+            order: 6
+          },
+          {
+            id: 'wytai-trademark',
+            name: 'WytAi Trademark Analysis',
+            description: 'AI-powered Indian trademark analysis engine',
+            category: 'platform',
+            type: 'ai-analysis',
+            status: 'enabled',
+            pricing: 'premium',
+            price: '2499',
+            currency: 'INR',
+            icon: 'search',
+            color: 'teal',
+            route: '/wytai-trademark',
+            features: ['AI-powered analysis', 'Similarity detection', 'Risk assessment', 'Legal insights'],
+            usage: 320,
+            installs: 1200,
+            order: 7
+          }
+        ];
+
+        await db.insert(platformModules).values(defaultModules);
+        console.log(`✅ Initialized ${defaultModules.length} default platform modules`);
+      }
+    } catch (error) {
+      console.error('❌ Failed to initialize default modules:', error);
+    }
+  }
+
+  // Initialize default modules on startup
+  initializeDefaultModules();
+
+  // Get all platform modules (public endpoint)
+  app.get('/api/platform-modules', async (req, res) => {
+    try {
+      const modules = await db
+        .select()
+        .from(platformModules)
+        .orderBy(platformModules.order, platformModules.name);
+
+      res.json({
+        success: true,
+        modules
+      });
+    } catch (error) {
+      console.error('Error fetching platform modules:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch platform modules'
+      });
+    }
+  });
+
+  // Get enabled platform modules only (public endpoint)
+  app.get('/api/platform-modules/enabled', async (req, res) => {
+    try {
+      const modules = await db
+        .select()
+        .from(platformModules)
+        .where(eq(platformModules.status, 'enabled'))
+        .orderBy(platformModules.order, platformModules.name);
+
+      res.json({
+        success: true,
+        modules
+      });
+    } catch (error) {
+      console.error('Error fetching enabled platform modules:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch enabled platform modules'
+      });
+    }
+  });
+
+  // Update platform module status (Super Admin only)
+  app.put('/api/platform-modules/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { status, ...updateData } = req.body;
+      const user = req.user;
+
+      // Check if user is super admin
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Only super admin can modify platform modules'
+        });
+      }
+
+      // Validate status
+      if (status && !['enabled', 'disabled', 'maintenance'].includes(status)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid status. Must be: enabled, disabled, or maintenance'
+        });
+      }
+
+      const updatedModule = await db
+        .update(platformModules)
+        .set({
+          ...updateData,
+          ...(status && { status }),
+          updatedAt: new Date()
+        })
+        .where(eq(platformModules.id, id))
+        .returning();
+
+      if (updatedModule.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: 'Platform module not found'
+        });
+      }
+
+      res.json({
+        success: true,
+        module: updatedModule[0],
+        message: `Platform module ${status ? 'status updated' : 'updated'} successfully`
+      });
+    } catch (error) {
+      console.error('Error updating platform module:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update platform module'
+      });
+    }
+  });
+
+  // Create new platform module (Super Admin only)
+  app.post('/api/platform-modules', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+
+      // Check if user is super admin
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Only super admin can create platform modules'
+        });
+      }
+
+      // Validate request body
+      const validatedData = insertPlatformModuleSchema.parse({
+        ...req.body,
+        createdBy: user.id
+      });
+
+      const newModule = await db
+        .insert(platformModules)
+        .values(validatedData)
+        .returning();
+
+      res.status(201).json({
+        success: true,
+        module: newModule[0],
+        message: 'Platform module created successfully'
+      });
+    } catch (error) {
+      console.error('Error creating platform module:', error);
+      
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid module data',
+          details: error.errors
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create platform module'
+      });
+    }
+  });
+
+  // Delete platform module (Super Admin only)
+  app.delete('/api/platform-modules/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const user = req.user;
+
+      // Check if user is super admin
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Only super admin can delete platform modules'
+        });
+      }
+
+      const deletedModule = await db
+        .delete(platformModules)
+        .where(eq(platformModules.id, id))
+        .returning();
+
+      if (deletedModule.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: 'Platform module not found'
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Platform module deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting platform module:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to delete platform module'
+      });
     }
   });
 
