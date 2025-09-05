@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
@@ -152,6 +152,46 @@ const initialUserModules = [
   }
 ];
 
+// Utility functions for localStorage persistence
+const STORAGE_KEY = 'wytnet_modules_state';
+
+const saveModulesToStorage = (platformModules: any[], userModules: any[]) => {
+  try {
+    const state = {
+      platformModules,
+      userModules,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.error('Failed to save modules to localStorage:', error);
+  }
+};
+
+const loadModulesFromStorage = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const state = JSON.parse(saved);
+      // Check if data is not too old (24 hours)
+      if (Date.now() - state.timestamp < 24 * 60 * 60 * 1000) {
+        return {
+          platformModules: state.platformModules || initialPlatformModules,
+          userModules: state.userModules || initialUserModules
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load modules from localStorage:', error);
+  }
+  
+  // Return initial data if no saved state or error
+  return {
+    platformModules: initialPlatformModules,
+    userModules: initialUserModules
+  };
+};
+
 export default function AdminModules() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -160,12 +200,19 @@ export default function AdminModules() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedModule, setSelectedModule] = useState<any>(null);
   const [editingModule, setEditingModule] = useState<any>(null);
-  const [platformModules, setPlatformModules] = useState(initialPlatformModules);
-  const [userModules, setUserModules] = useState(initialUserModules);
+  const [platformModules, setPlatformModules] = useState<any[]>([]);
+  const [userModules, setUserModules] = useState<any[]>([]);
   
   const { user } = useWhatsAppAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Load persisted modules state on component mount
+  useEffect(() => {
+    const savedState = loadModulesFromStorage();
+    setPlatformModules(savedState.platformModules);
+    setUserModules(savedState.userModules);
+  }, []);
 
   const allModules = [...platformModules, ...userModules];
 
@@ -182,13 +229,27 @@ export default function AdminModules() {
       const updateModules = (modules: any[]) => 
         modules.map(m => m.id === moduleId ? { ...m, status: enabled ? 'enabled' : 'disabled' } : m);
       
-      setPlatformModules(prev => updateModules(prev));
-      setUserModules(prev => updateModules(prev));
+      let updatedPlatformModules: any[];
+      let updatedUserModules: any[];
+      
+      setPlatformModules(prev => {
+        updatedPlatformModules = updateModules(prev);
+        return updatedPlatformModules;
+      });
+      setUserModules(prev => {
+        updatedUserModules = updateModules(prev);
+        return updatedUserModules;
+      });
       
       // Update selected module if it's the one being toggled
       if (selectedModule?.id === moduleId) {
         setSelectedModule((prev: any) => ({ ...prev, status: enabled ? 'enabled' : 'disabled' }));
       }
+      
+      // Save to localStorage for persistence
+      setTimeout(() => {
+        saveModulesToStorage(updatedPlatformModules, updatedUserModules);
+      }, 0);
       
       // In production, this would make API call to update module status
       await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
@@ -197,10 +258,21 @@ export default function AdminModules() {
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Module status updated successfully!",
+        description: "Module status updated and saved successfully!",
       });
     },
-    onError: () => {
+    onError: (error, { moduleId, enabled }) => {
+      // Revert the changes on error
+      const revertModules = (modules: any[]) => 
+        modules.map(m => m.id === moduleId ? { ...m, status: !enabled ? 'enabled' : 'disabled' } : m);
+      
+      setPlatformModules(prev => revertModules(prev));
+      setUserModules(prev => revertModules(prev));
+      
+      if (selectedModule?.id === moduleId) {
+        setSelectedModule((prev: any) => ({ ...prev, status: !enabled ? 'enabled' : 'disabled' }));
+      }
+      
       toast({
         title: "Error",
         description: "Failed to update module status",
@@ -215,13 +287,27 @@ export default function AdminModules() {
       const updateModules = (modules: any[]) => 
         modules.map(m => m.id === moduleId ? { ...m, pricing, price } : m);
       
-      setPlatformModules(prev => updateModules(prev));
-      setUserModules(prev => updateModules(prev));
+      let updatedPlatformModules: any[];
+      let updatedUserModules: any[];
+      
+      setPlatformModules(prev => {
+        updatedPlatformModules = updateModules(prev);
+        return updatedPlatformModules;
+      });
+      setUserModules(prev => {
+        updatedUserModules = updateModules(prev);
+        return updatedUserModules;
+      });
       
       // Update selected module
       if (selectedModule?.id === moduleId) {
         setSelectedModule((prev: any) => ({ ...prev, pricing, price }));
       }
+      
+      // Save to localStorage for persistence
+      setTimeout(() => {
+        saveModulesToStorage(updatedPlatformModules, updatedUserModules);
+      }, 0);
       
       await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
       return { moduleId, pricing, price };
@@ -229,7 +315,7 @@ export default function AdminModules() {
     onSuccess: () => {
       toast({
         title: "Success",
-        description: "Module pricing updated successfully!",
+        description: "Module pricing updated and saved successfully!",
       });
     }
   });
