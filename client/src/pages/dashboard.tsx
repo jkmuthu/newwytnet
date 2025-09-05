@@ -15,6 +15,7 @@ export default function Dashboard() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const { isSuperAdmin } = useWhatsAppAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Optional authentication - show login prompt if not authenticated
   useEffect(() => {
@@ -51,7 +52,12 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen bg-background">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar 
+        open={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
       
       <main className="flex-1 overflow-y-auto">
         <Header 

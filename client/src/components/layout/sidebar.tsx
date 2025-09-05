@@ -5,9 +5,11 @@ import { useLocation } from "wouter";
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
-export default function Sidebar({ open, onClose }: SidebarProps) {
+export default function Sidebar({ open, onClose, isCollapsed, onToggleCollapse }: SidebarProps) {
   const { user, isAuthenticated, isSuperAdmin, role } = useWhatsAppAuth();
   const [location] = useLocation();
 
@@ -154,31 +156,51 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       
       {/* Sidebar */}
       <aside className={cn(
-        "sidebar-transition w-64 bg-card border-r border-border fixed lg:relative h-full z-30 overflow-y-auto",
+        "sidebar-transition bg-card border-r border-border fixed lg:relative h-full z-30 overflow-y-auto transition-all duration-300",
         "lg:translate-x-0",
-        open ? "translate-x-0" : "-translate-x-full"
+        open ? "translate-x-0" : "-translate-x-full",
+        isCollapsed ? "w-16" : "w-64"
       )}>
-        <div className="p-6 border-b border-border">
-          <div className="flex items-center space-x-3">
-            <img 
-              src="/wytnet-logo.png" 
-              alt="WytNet" 
-              className="h-8 w-auto transition-transform hover:scale-105"
-            />
-            <div>
-              <p className="text-xs text-muted-foreground">
-                {isSuperAdmin ? '🦸‍♂️ Super Admin' : user?.name || 'Multi-SaaS Platform'}
-              </p>
-            </div>
+        {/* Header with hamburger toggle */}
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center justify-between">
+            {!isCollapsed && (
+              <div className="flex items-center space-x-3">
+                <img 
+                  src="/wytnet-logo.png" 
+                  alt="WytNet" 
+                  className="h-8 w-auto transition-transform hover:scale-105"
+                />
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    {isSuperAdmin ? '🦸‍♂️ Super Admin' : user?.name || 'Multi-SaaS Platform'}
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {/* Hamburger Toggle Button */}
+            <button
+              onClick={onToggleCollapse}
+              className={cn(
+                "p-2 rounded-md hover:bg-muted transition-colors",
+                isCollapsed ? "mx-auto" : "ml-auto"
+              )}
+              data-testid="button-hamburger-toggle"
+            >
+              <i className={`fas ${isCollapsed ? 'fa-chevron-right' : 'fa-bars'} text-muted-foreground`}></i>
+            </button>
           </div>
         </div>
 
-        <nav className="p-4 space-y-2">
+        <nav className="p-2 space-y-2">
           {menuItems.map((section) => (
-            <div key={section.section} className="mb-6">
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                {section.section}
-              </h3>
+            <div key={section.section} className="mb-4">
+              {!isCollapsed && (
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">
+                  {section.section}
+                </h3>
+              )}
               <ul className="space-y-1">
                 {section.items.map((item) => (
                   <li key={item.href}>
@@ -188,15 +210,24 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                         onClose(); // Close sidebar on mobile after navigation
                       }}
                       className={cn(
-                        "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors",
+                        "flex items-center rounded-md transition-colors group relative",
+                        isCollapsed ? "px-3 py-3 justify-center" : "px-3 py-2 space-x-3",
                         item.active 
                           ? "bg-primary text-primary-foreground" 
                           : "hover:bg-muted text-foreground"
                       )}
                       data-testid={`link-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                      title={isCollapsed ? item.label : undefined}
                     >
-                      <i className={`fas fa-${item.icon} w-5`}></i>
-                      <span>{item.label}</span>
+                      <i className={`fas fa-${item.icon} ${isCollapsed ? 'text-lg' : 'w-5'}`}></i>
+                      {!isCollapsed && <span>{item.label}</span>}
+                      
+                      {/* Tooltip for collapsed mode */}
+                      {isCollapsed && (
+                        <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-sm rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                          {item.label}
+                        </div>
+                      )}
                     </a>
                   </li>
                 ))}

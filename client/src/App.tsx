@@ -32,14 +32,30 @@ import AdminSystemOverview from "@/pages/admin/system-overview";
 import AdminUsers from "@/pages/admin/users";
 import AdminTenants from "@/pages/admin/tenants";
 
+// Role-based dashboard component
+function RoleBasedDashboard() {
+  const { isAuthenticated, isLoading, isSuperAdmin, role } = useWhatsAppAuth();
+  
+  // For authenticated users, show dashboard directly
+  // For non-authenticated users, show home page
+  if (isAuthenticated) {
+    return <Dashboard />;
+  }
+  
+  return <Home />;
+}
+
 function Router() {
   const { isAuthenticated, isLoading } = useWhatsAppAuth();
   const { isMobile } = useDeviceDetection();
 
   return (
     <Switch>
+      {/* Root route with role-based dashboards */}
+      <Route path="/" component={RoleBasedDashboard} />
+      
       {/* Public routes - no authentication required */}
-      <Route path="/" component={Home} />
+      <Route path="/home" component={Home} />
       <Route path="/assessment" component={Assessment} />
       <Route path="/realbro" component={RealBro} />
       <Route path="/realbro/enhanced" component={RealBroEnhanced} />
