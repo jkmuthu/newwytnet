@@ -55,13 +55,8 @@ export default function Home() {
           </div>
           
           <h1 className={`${isMobile ? 'text-3xl' : 'text-4xl md:text-6xl'} font-bold text-gray-900 dark:text-white mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent`}>
-            Multi-SaaS Engine
+            Getin .. Get Done | Better Lifestyle and Workstyle
           </h1>
-          
-          <p className={`${isMobile ? 'text-lg' : 'text-xl'} text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed`}>
-            The ultimate platform for building, managing, and scaling SaaS applications. 
-            Get started with our free productivity tools and assessment modules.
-          </p>
           
           {/* Trust indicators */}
           <div className={`flex justify-center items-center space-x-4 mb-8 ${isMobile ? 'text-xs' : 'text-sm'}`}>
