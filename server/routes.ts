@@ -1422,6 +1422,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'User not found' });
       }
 
+      // Security check: Ensure role matches the actual WhatsApp number
+      const isSuperAdmin = user.whatsappNumber === '+919345228184';
+      const correctRole = isSuperAdmin ? 'super_admin' : 'user';
+
       res.json({
         id: user.id,
         name: user.name,
@@ -1429,8 +1433,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         whatsappNumber: user.whatsappNumber,
         gender: user.gender,
         dateOfBirth: user.dateOfBirth,
-        role: user.role,
-        isSuperAdmin: user.isSuperAdmin,
+        role: correctRole,
+        isSuperAdmin,
         isVerified: user.isVerified,
         lastLoginAt: user.lastLoginAt,
       });

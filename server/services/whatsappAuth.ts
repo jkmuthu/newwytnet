@@ -204,13 +204,20 @@ export async function verifyOTP(whatsappNumber: string, otp: string): Promise<Wh
     let user = await findWhatsAppUser(whatsappNumber);
     
     if (user) {
-      // Update last login time and mark as verified
+      // Check if this is the super admin WhatsApp number and ensure role is correct
+      const isSuperAdmin = user.whatsappNumber === '+919345228184';
+      const correctRole = isSuperAdmin ? 'super_admin' : 'user';
+      
+      // Update last login time, mark as verified, and ensure correct role/permissions
       [user] = await db
         .update(whatsappUsers)
         .set({
           isVerified: true,
           lastLoginAt: new Date(),
           updatedAt: new Date(),
+          role: correctRole,
+          isSuperAdmin,
+          permissions: isSuperAdmin ? { all: true } : {},
         })
         .where(eq(whatsappUsers.id, user.id))
         .returning();
