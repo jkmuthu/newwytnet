@@ -7,9 +7,11 @@ import Header from "@/components/layout/header";
 import MobileNavigation from "@/components/layout/MobileNavigation";
 import MobileBottomNavigation from "@/components/layout/MobileBottomNavigation";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
+import { getEnabledModules } from "@/utils/moduleStatus";
 
 export default function Home() {
   const { isMobile } = useDeviceDetection();
+  const enabledModules = getEnabledModules();
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 ${isMobile ? 'pb-20' : ''}`}>
@@ -123,175 +125,228 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* QR Code Generator Tool */}
-            <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="h-8 w-8 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                    📱
-                  </div>
-                  <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-800 dark:text-emerald-100">
-                    Free
-                  </Badge>
+            {enabledModules.map((module) => {
+              // Map module types to specific content
+              if (module.id === 'qr-generator') {
+                return (
+                  <Card key={module.id} className="hover:shadow-lg transition-all duration-300 hover:scale-105">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="h-8 w-8 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                          📱
+                        </div>
+                        <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-800 dark:text-emerald-100">
+                          {module.pricing === 'free' ? 'Free' : module.pricing === 'premium' ? `₹${module.price}` : module.pricing}
+                        </Badge>
+                      </div>
+                      <CardTitle>{module.name}</CardTitle>
+                      <CardDescription>{module.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          Instant QR code generation
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          Multiple data types support
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          Customizable colors & styles
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          Download in multiple formats
+                        </div>
+                      </div>
+                      <Link href={module.route}>
+                        <Button className="w-full mt-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700" data-testid="button-qr-generator">
+                          Generate QR Code
+                          <ArrowRight className="h-4 w-4 ml-2" />
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                );
+              }
+              
+              if (module.id === 'assessment') {
+                return (
+                  <Card key={module.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <Brain className="h-8 w-8 text-blue-600" />
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+                          Live
+                        </Badge>
+                      </div>
+                      <CardTitle>{module.name}</CardTitle>
+                      <CardDescription>{module.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          15-question assessment
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          Detailed personality insights
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          Career recommendations
+                        </div>
+                      </div>
+                      <Link href={module.route}>
+                        <Button className="w-full mt-4" data-testid="button-start-assessment">
+                          Start Assessment
+                          <ArrowRight className="h-4 w-4 ml-2" />
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                );
+              }
+              
+              if (module.id === 'realbro') {
+                return (
+                  <Card key={module.id} className="hover:shadow-lg transition-shadow">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                          🏠
+                        </div>
+                        <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100">
+                          Demo
+                        </Badge>
+                      </div>
+                      <CardTitle>{module.name}</CardTitle>
+                      <CardDescription>{module.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          Property listing management
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          Broker network & contacts
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          Credit-based system
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          Tamil language support
+                        </div>
+                      </div>
+                      <Link href={module.route}>
+                        <Button className="w-full mt-4 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700" data-testid="button-start-realbro">
+                          Try RealBro Demo
+                          <ArrowRight className="h-4 w-4 ml-2" />
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                );
+              }
+              
+              if (module.id === 'wytduty') {
+                return (
+                  <Card key={module.id} className="hover:shadow-lg transition-all duration-300 hover:scale-105">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="h-8 w-8 bg-gradient-to-r from-blue-600 to-purple-700 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                          ✓
+                        </div>
+                        <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                          Enterprise
+                        </Badge>
+                      </div>
+                      <CardTitle>{module.name}</CardTitle>
+                      <CardDescription>{module.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          Duty assignment & tracking
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          Approval workflows
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          Calendar & scheduling
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          Analytics & reporting
+                        </div>
+                      </div>
+                      <Link href={module.route}>
+                        <Button className="w-full mt-4 bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800" data-testid="button-start-wytduty">
+                          Try WytDuty Demo
+                          <ArrowRight className="h-4 w-4 ml-2" />
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                );
+              }
+              
+              // Generic module card for other modules
+              return (
+                <Card key={module.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className={`h-8 w-8 bg-gradient-to-r from-${module.color}-500 to-${module.color}-600 rounded-lg flex items-center justify-center text-white font-bold text-sm`}>
+                        <i className={`fas fa-${module.icon}`}></i>
+                      </div>
+                      <Badge className={`bg-${module.color}-100 text-${module.color}-800`}>
+                        {module.pricing === 'free' ? 'Free' : module.pricing === 'premium' ? `₹${module.price}` : module.pricing}
+                      </Badge>
+                    </div>
+                    <CardTitle>{module.name}</CardTitle>
+                    <CardDescription>{module.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                        {module.usage.toLocaleString()} monthly users
+                      </div>
+                      <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                        {module.installs.toLocaleString()} total installs
+                      </div>
+                    </div>
+                    <Link href={module.route}>
+                      <Button className="w-full mt-4" data-testid={`button-${module.id}`}>
+                        Try {module.name}
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              );
+            })}
+            
+            {enabledModules.length === 0 && (
+              <div className="col-span-full text-center py-12">
+                <div className="text-gray-400 mb-4">
+                  <i className="fas fa-info-circle text-4xl"></i>
                 </div>
-                <CardTitle>QR Code Generator</CardTitle>
-                <CardDescription>
-                  Generate custom QR codes instantly. Perfect for URLs, text, contact info, and more.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Instant QR code generation
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Multiple data types support
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Customizable colors & styles
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Download in multiple formats
-                  </div>
-                </div>
-                <Link href="/qr-generator">
-                  <Button className="w-full mt-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700" data-testid="button-qr-generator">
-                    Generate QR Code
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            {/* Assessment Module */}
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <Brain className="h-8 w-8 text-blue-600" />
-                  <Badge className="bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
-                    Live
-                  </Badge>
-                </div>
-                <CardTitle>DISC Assessment</CardTitle>
-                <CardDescription>
-                  Professional personality assessment with detailed insights and career recommendations.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    15-question assessment
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Detailed personality insights
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Career recommendations
-                  </div>
-                </div>
-                <Link href="/assessment">
-                  <Button className="w-full mt-4" data-testid="button-start-assessment">
-                    Start Assessment
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            {/* RealBro Property Brother */}
-            <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="h-8 w-8 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                    🏠
-                  </div>
-                  <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100">
-                    Demo
-                  </Badge>
-                </div>
-                <CardTitle>RealBro Property Brother</CardTitle>
-                <CardDescription>
-                  Tamil Nadu property management platform for real estate brokers and professionals.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Property listing management
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Broker network & contacts
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Credit-based system
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Tamil language support
-                  </div>
-                </div>
-                <Link href="/realbro">
-                  <Button className="w-full mt-4 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700" data-testid="button-start-realbro">
-                    Try RealBro Demo
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            {/* WytDuty Enterprise */}
-            <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="h-8 w-8 bg-gradient-to-r from-blue-600 to-purple-700 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                    ✓
-                  </div>
-                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
-                    Enterprise
-                  </Badge>
-                </div>
-                <CardTitle>WytDuty Enterprise</CardTitle>
-                <CardDescription>
-                  Advanced duty and task management with approvals, calendar, and enterprise reporting.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Duty assignment & tracking
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Approval workflows
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Calendar & scheduling
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                    Analytics & reporting
-                  </div>
-                </div>
-                <Link href="/wytduty">
-                  <Button className="w-full mt-4 bg-gradient-to-r from-blue-600 to-purple-700 hover:from-blue-700 hover:to-purple-800" data-testid="button-start-wytduty">
-                    Try WytDuty Demo
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No modules available</h3>
+                <p className="text-gray-600 dark:text-gray-300">All modules are currently disabled by the administrator.</p>
+              </div>
+            )}
           </div>
         </div>
       </section>
