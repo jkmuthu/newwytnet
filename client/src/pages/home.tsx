@@ -1,16 +1,14 @@
-import { useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Zap, Shield, Rocket, CheckCircle, ArrowRight, Users, Globe, BarChart3, Smartphone, Star, TrendingUp } from "lucide-react";
+import { Brain, Zap, Shield, Rocket, CheckCircle, ArrowRight, Users, BarChart3, Star, TrendingUp } from "lucide-react";
 import Header from "@/components/layout/header";
 import MobileNavigation from "@/components/layout/MobileNavigation";
 import MobileBottomNavigation from "@/components/layout/MobileBottomNavigation";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
 
 export default function Home() {
-  const [activeView, setActiveView] = useState<'desktop' | 'mobile'>('desktop');
   const { isMobile } = useDeviceDetection();
 
   return (
@@ -83,31 +81,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Platform Mode Toggle */}
-          <div className="flex justify-center mb-8">
-            <div className="bg-white dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg">
-              <Button 
-                variant={activeView === 'desktop' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setActiveView('desktop')}
-                className="mr-1 transition-all duration-300 hover:shadow-md"
-                data-testid="button-desktop-view"
-              >
-                <Globe className="h-4 w-4 mr-2" />
-                Desktop
-              </Button>
-              <Button 
-                variant={activeView === 'mobile' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setActiveView('mobile')}
-                className="transition-all duration-300 hover:shadow-md"
-                data-testid="button-mobile-view"
-              >
-                <Smartphone className="h-4 w-4 mr-2" />
-                Mobile PWA
-              </Button>
-            </div>
-          </div>
 
           <div className={`flex ${isMobile ? 'flex-col' : 'flex-col sm:flex-row'} gap-4 justify-center`}>
             <Link href="/assessment">
