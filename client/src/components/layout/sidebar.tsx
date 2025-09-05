@@ -158,11 +158,12 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       )}>
         <div className="p-6 border-b border-border">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <i className="fas fa-cube text-primary-foreground text-sm"></i>
-            </div>
+            <img 
+              src="/attached_assets/wyt-logo_1757064733529.png" 
+              alt="WytNet" 
+              className="h-8 w-auto transition-transform hover:scale-105"
+            />
             <div>
-              <h1 className="text-xl font-bold text-foreground">WytNet</h1>
               <p className="text-xs text-muted-foreground">
                 {isSuperAdmin ? '🦸‍♂️ Super Admin' : user?.name || 'Multi-SaaS Platform'}
               </p>

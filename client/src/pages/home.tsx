@@ -44,9 +44,9 @@ export default function Home() {
           <div className="flex justify-center mb-8">
             <div className="relative">
               <img 
-                src="/wytnet-logo.png" 
+                src="/attached_assets/wyt-logo_1757064733529.png" 
                 alt="WytNet - Multi-SaaS Engine" 
-                className={`${isMobile ? 'h-12' : 'h-16 md:h-20'} w-auto transition-transform hover:scale-105`}
+                className={`${isMobile ? 'h-16' : 'h-20 md:h-24'} w-auto transition-transform hover:scale-105`}
               />
               <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full animate-bounce">
                 LIVE
@@ -83,12 +83,12 @@ export default function Home() {
 
           {/* Platform Mode Toggle */}
           <div className="flex justify-center mb-8">
-            <div className="bg-white dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 p-1 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg">
               <Button 
                 variant={activeView === 'desktop' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setActiveView('desktop')}
-                className="mr-1"
+                className="mr-1 transition-all duration-300 hover:shadow-md"
                 data-testid="button-desktop-view"
               >
                 <Globe className="h-4 w-4 mr-2" />
@@ -98,6 +98,7 @@ export default function Home() {
                 variant={activeView === 'mobile' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setActiveView('mobile')}
+                className="transition-all duration-300 hover:shadow-md"
                 data-testid="button-mobile-view"
               >
                 <Smartphone className="h-4 w-4 mr-2" />
@@ -230,7 +231,7 @@ export default function Home() {
             </Card>
 
             {/* WytDuty Enterprise */}
-            <Card className="hover:shadow-lg transition-shadow">
+            <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="h-8 w-8 bg-gradient-to-r from-blue-600 to-purple-700 rounded-lg flex items-center justify-center text-white font-bold text-sm">

@@ -278,8 +278,11 @@ export default function WhatsAppAuth() {
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2">
-            <MessageCircle className="h-8 w-8 text-green-600" />
-            <h1 className="text-3xl font-bold">WytNet</h1>
+            <img 
+              src="/attached_assets/wyt-logo_1757064733529.png" 
+              alt="WytNet Logo" 
+              className="h-12 w-auto transition-transform hover:scale-105"
+            />
           </div>
           <p className="text-muted-foreground">
             {currentStep === 'register' && 'Sign in with WhatsApp OTP'}

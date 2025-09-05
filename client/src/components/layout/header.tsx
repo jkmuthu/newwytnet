@@ -87,11 +87,10 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 <SheetHeader>
                   <SheetTitle className="flex items-center gap-2">
                     <img 
-                      src="/wytnet-logo.png" 
+                      src="/attached_assets/wyt-logo_1757064733529.png" 
                       alt="WytNet" 
                       className="h-6 w-auto"
                     />
-                    WytNet
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="mt-6 space-y-2">
@@ -152,12 +151,11 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <div className="flex items-center space-x-3">
               <Link href="/" className="flex items-center" data-testid="link-logo">
                 <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 via-purple-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
-                    <span className="text-white font-bold text-sm">W</span>
-                  </div>
-                  <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    WytNet
-                  </span>
+                  <img 
+                    src="/attached_assets/wyt-logo_1757064733529.png" 
+                    alt="WytNet - Multi-SaaS Engine" 
+                    className="h-8 w-auto transition-transform hover:scale-105"
+                  />
                 </div>
               </Link>
             </div>
