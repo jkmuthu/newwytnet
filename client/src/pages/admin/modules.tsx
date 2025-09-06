@@ -11,14 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { fetchPlatformModules, updatePlatformModule, type PlatformModule } from "@/lib/api";
+import { fetchPlatformModules, updatePlatformModule, getUserApps, getPlatformModules, type PlatformModule } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 export default function AdminModules() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState('list');
-  const [filterCategory, setFilterCategory] = useState('all');
+  const [activeTab, setActiveTab] = useState('apps');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedModule, setSelectedModule] = useState<PlatformModule | null>(null);
   
@@ -34,12 +33,16 @@ export default function AdminModules() {
     cacheTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  const filteredModules = modules.filter(module => {
-    const matchesCategory = filterCategory === 'all' || module.category === filterCategory;
-    const matchesSearch = module.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         module.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  // Separate user apps from platform modules
+  const userApps = getUserApps(modules).filter(app => 
+    app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    app.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const platformModules = getPlatformModules(modules).filter(module => 
+    module.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    module.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Update module status (enable/disable)
   const toggleModuleStatus = useMutation({
@@ -84,11 +87,22 @@ export default function AdminModules() {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'platform':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
       case 'user':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
+    }
+  };
+
+  const getCategoryLabel = (category: string) => {
+    switch (category) {
+      case 'user':
+        return 'User App';
+      case 'platform':
+        return 'System Module';
+      default:
+        return category;
     }
   };
 
@@ -137,62 +151,43 @@ export default function AdminModules() {
             {/* Page Header */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                Platform Modules Management
+                Apps & Modules Management
               </h1>
               <p className="text-gray-600 dark:text-gray-300">
-                Configure and manage platform modules that are available to users
+                Manage user-facing apps and platform system modules
               </p>
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="list">Module List</TabsTrigger>
-                <TabsTrigger value="create">Create Module</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="apps">User Apps ({userApps.length})</TabsTrigger>
+                <TabsTrigger value="modules">Platform Modules ({platformModules.length})</TabsTrigger>
+                <TabsTrigger value="builder">Builder</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="list" className="space-y-6">
-                {/* Filters */}
+              <TabsContent value="apps" className="space-y-6">
+                {/* Search */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Filter Modules</CardTitle>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-blue-600">User Apps</CardTitle>
+                        <p className="text-sm text-gray-600 mt-1">Direct user-facing tools and applications</p>
+                      </div>
+                      <Badge variant="secondary">{userApps.length} apps</Badge>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <div className="flex-1">
-                        <Input
-                          placeholder="Search modules..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant={filterCategory === 'all' ? 'default' : 'outline'}
-                          onClick={() => setFilterCategory('all')}
-                          size="sm"
-                        >
-                          All
-                        </Button>
-                        <Button
-                          variant={filterCategory === 'platform' ? 'default' : 'outline'}
-                          onClick={() => setFilterCategory('platform')}
-                          size="sm"
-                        >
-                          Platform
-                        </Button>
-                        <Button
-                          variant={filterCategory === 'user' ? 'default' : 'outline'}
-                          onClick={() => setFilterCategory('user')}
-                          size="sm"
-                        >
-                          User
-                        </Button>
-                      </div>
-                    </div>
+                    <Input
+                      placeholder="Search user apps..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="max-w-md"
+                    />
                   </CardContent>
                 </Card>
 
-                {/* Module List */}
+                {/* User Apps List */}
                 {isLoading ? (
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {[...Array(6)].map((_, index) => (
@@ -219,7 +214,7 @@ export default function AdminModules() {
                       <i className="fas fa-exclamation-triangle text-4xl"></i>
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                      Failed to load modules
+                      Failed to load user apps
                     </h3>
                     <p className="text-gray-600 dark:text-gray-300">
                       Please refresh the page to try again.
@@ -227,8 +222,132 @@ export default function AdminModules() {
                   </div>
                 ) : (
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {filteredModules.map((module) => (
-                      <Card key={module.id} className="hover:shadow-md transition-shadow">
+                    {userApps.map((module) => (
+                      <Card key={module.id} className="hover:shadow-lg transition-shadow duration-200 border-l-4 border-l-blue-500">
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-${module.color}-100`}>
+                                <i className={`fas fa-${module.icon} text-${module.color}-600`}></i>
+                              </div>
+                              <div>
+                                <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
+                                  {module.name}
+                                </h3>
+                                <div className="flex gap-2 mt-1">
+                                  <Badge className={getCategoryColor(module.category)}>
+                                    {getCategoryLabel(module.category)}
+                                  </Badge>
+                                  <Badge className={getPricingColor(module.pricing)}>
+                                    {module.pricing}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={module.status === 'enabled'}
+                              onCheckedChange={(enabled) => 
+                                toggleModuleStatus.mutate({ moduleId: module.id, enabled })
+                              }
+                              disabled={toggleModuleStatus.isPending}
+                            />
+                          </div>
+                          <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">
+                            {module.description}
+                          </p>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex items-center justify-between">
+                            <div className="flex gap-4 text-sm text-gray-600">
+                              <span>👥 {module.installs?.toLocaleString() || 0}</span>
+                              <span>📊 {module.usage?.toLocaleString() || 0}</span>
+                            </div>
+                            <Badge className={getStatusColor(module.status)}>
+                              {module.status}
+                            </Badge>
+                          </div>
+                          {module.features && (
+                            <div className="mt-3">
+                              <div className="flex flex-wrap gap-1">
+                                {module.features.slice(0, 3).map((feature, index) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {feature}
+                                  </Badge>
+                                ))}
+                                {module.features.length > 3 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{module.features.length - 3} more
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="modules" className="space-y-6">
+                {/* Search */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-gray-600">Platform Modules</CardTitle>
+                        <p className="text-sm text-gray-600 mt-1">System components and building blocks</p>
+                      </div>
+                      <Badge variant="secondary">{platformModules.length} modules</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Input
+                      placeholder="Search platform modules..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="max-w-md"
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* Platform Modules List */}
+                {isLoading ? (
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {[...Array(6)].map((_, index) => (
+                      <Card key={index} className="animate-pulse">
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <div className="h-6 w-32 bg-gray-200 rounded"></div>
+                            <div className="h-6 w-16 bg-gray-200 rounded"></div>
+                          </div>
+                          <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex items-center justify-between">
+                            <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                            <div className="h-6 w-12 bg-gray-200 rounded"></div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : error ? (
+                  <div className="text-center py-12">
+                    <div className="text-red-400 mb-4">
+                      <i className="fas fa-exclamation-triangle text-4xl"></i>
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                      Failed to load platform modules
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300">
+                      Please refresh the page to try again.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {platformModules.map((module) => (
+                      <Card key={module.id} className="hover:shadow-md transition-shadow border-l-4 border-l-gray-500">
                         <CardHeader>
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
@@ -237,7 +356,7 @@ export default function AdminModules() {
                                   {module.name}
                                 </h3>
                                 <Badge className={getCategoryColor(module.category)}>
-                                  {module.category}
+                                  {getCategoryLabel(module.category)}
                                 </Badge>
                               </div>
                               <p className="text-sm text-gray-600 dark:text-gray-300">
@@ -289,16 +408,16 @@ export default function AdminModules() {
                 )}
 
                 {/* No modules found */}
-                {!isLoading && !error && filteredModules.length === 0 && (
+                {!isLoading && !error && platformModules.length === 0 && (
                   <div className="text-center py-12">
                     <div className="text-gray-400 mb-4">
                       <i className="fas fa-search text-4xl"></i>
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                      No modules found
+                      No platform modules found
                     </h3>
                     <p className="text-gray-600 dark:text-gray-300">
-                      Try adjusting your search or filter criteria.
+                      Try adjusting your search criteria.
                     </p>
                   </div>
                 )}
