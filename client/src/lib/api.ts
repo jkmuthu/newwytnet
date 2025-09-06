@@ -5,7 +5,7 @@ export interface PlatformModule {
   id: string;
   name: string;
   description: string;
-  category: 'platform' | 'user';
+  category: 'platform' | 'user';  // 'user' = Apps (user-facing), 'platform' = Modules (system components)
   type: string;
   status: 'enabled' | 'disabled' | 'maintenance';
   pricing: string;
@@ -22,6 +22,15 @@ export interface PlatformModule {
   order?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+// Helper functions to distinguish Apps from Modules
+export function getUserApps(modules: PlatformModule[]): PlatformModule[] {
+  return modules.filter(module => module.category === 'user');
+}
+
+export function getPlatformModules(modules: PlatformModule[]): PlatformModule[] {
+  return modules.filter(module => module.category === 'platform');
 }
 
 export interface PlatformModulesResponse {
