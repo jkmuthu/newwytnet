@@ -50,6 +50,22 @@ export async function findWhatsAppUser(whatsappNumber: string): Promise<WhatsApp
   }
 }
 
+// Check if user exists by ID
+export async function findWhatsAppUserById(userId: string): Promise<WhatsAppUser | null> {
+  try {
+    const [user] = await db
+      .select()
+      .from(whatsappUsers)
+      .where(eq(whatsappUsers.id, userId))
+      .limit(1);
+    
+    return user || null;
+  } catch (error) {
+    console.error('Error finding WhatsApp user by ID:', error);
+    return null;
+  }
+}
+
 // Create new WhatsApp user
 export async function createWhatsAppUser(userData: {
   name: string;

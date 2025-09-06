@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth, isAuthenticated } from "./customAuth";
+import * as whatsappAuthService from "./services/whatsappAuth";
 import { storage } from "./storage";
 import { z } from "zod";
 import { 
@@ -349,6 +350,59 @@ async function initializeSampleTrademarkData() {
     console.error('Error initializing sample trademark data:', error);
   }
 }
+
+// Enhanced authentication middleware that supports both WhatsApp and custom auth
+const isAuthenticatedUnified: RequestHandler = async (req, res, next) => {
+  let user = null;
+  
+  // First, try WhatsApp authentication by checking session
+  const whatsappUserId = (req.session as any)?.whatsappUserId;
+  const whatsappNumber = (req.session as any)?.whatsappNumber;
+  
+  if (whatsappUserId && whatsappNumber) {
+    try {
+      user = await whatsappAuthService.findWhatsAppUser(whatsappNumber);
+      if (user && user.isVerified && user.id === whatsappUserId) {
+        // Attach WhatsApp user to request with proper structure
+        (req as any).user = {
+          id: user.id,
+          tenantId: user.tenantId,
+          email: user.email,
+          whatsappNumber: user.whatsappNumber,
+          isSuperAdmin: user.isSuperAdmin,
+          role: user.role,
+          claims: { sub: user.id }
+        };
+        return next();
+      }
+    } catch (error) {
+      console.error("WhatsApp auth error:", error);
+    }
+  }
+  
+  // Fallback to custom authentication
+  const sessionUser = (req.session as any)?.user;
+  if (sessionUser) {
+    try {
+      const customUser = await storage.getUser(sessionUser.id);
+      if (customUser) {
+        (req as any).user = { 
+          id: customUser.id,
+          tenantId: customUser.tenantId,
+          email: customUser.email,
+          isSuperAdmin: false, // Custom auth users are not super admin
+          claims: { sub: customUser.id }
+        };
+        return next();
+      }
+    } catch (error) {
+      console.error("Custom auth error:", error);
+    }
+  }
+  
+  // No authentication found
+  return res.status(401).json({ message: "Unauthorized" });
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -2852,7 +2906,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update platform module status (Super Admin only)
-  app.put('/api/platform-modules/:id', isAuthenticated, async (req: any, res) => {
+  app.put('/api/platform-modules/:id', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
       const { status, ...updateData } = req.body;
@@ -2906,7 +2960,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new platform module (Super Admin only)
-  app.post('/api/platform-modules', isAuthenticated, async (req: any, res) => {
+  app.post('/api/platform-modules', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const user = req.user;
 
@@ -2953,7 +3007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete platform module (Super Admin only)
-  app.delete('/api/platform-modules/:id', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/platform-modules/:id', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { id } = req.params;
       const user = req.user;
