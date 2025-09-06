@@ -2748,11 +2748,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Initializing default platform modules...');
         
         const defaultModules: InsertPlatformModule[] = [
+          // USER APPS (Direct user-facing tools)
           {
             id: 'qr-generator',
             name: 'QR Code Generator',
             description: 'Generate QR codes for URLs, text, and contact information',
-            category: 'platform',
+            category: 'user',
             type: 'tool',
             status: 'enabled',
             pricing: 'free',
@@ -2768,12 +2769,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: 'assessment',
             name: 'DISC Assessment',
             description: 'Personality and behavioral assessment tool',
-            category: 'platform',
+            category: 'user',
             type: 'assessment',
             status: 'enabled',
-            pricing: 'premium',
-            price: '299',
-            currency: 'INR',
+            pricing: 'free',
             icon: 'chart-pie',
             color: 'purple',
             route: '/assessment',
@@ -2786,9 +2785,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: 'ai-directory',
             name: 'AI Directory',
             description: 'Comprehensive AI tools and services directory',
-            category: 'platform',
+            category: 'user',
             type: 'directory',
-            status: 'enabled',
+            status: 'disabled',
             pricing: 'free',
             icon: 'robot',
             color: 'green',
@@ -2802,9 +2801,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: 'realbro',
             name: 'RealBRO Hub',
             description: 'Real estate broker and professional networking hub',
-            category: 'platform',
+            category: 'user',
             type: 'hub',
-            status: 'enabled',
+            status: 'disabled',
             pricing: 'freemium',
             price: '999',
             currency: 'INR',
@@ -2820,9 +2819,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: 'wytduty',
             name: 'WytDuty Task Manager',
             description: 'Task and duty management for teams',
-            category: 'platform',
+            category: 'user',
             type: 'productivity',
-            status: 'enabled',
+            status: 'disabled',
             pricing: 'premium',
             price: '599',
             currency: 'INR',
@@ -2838,9 +2837,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: 'tm-numbering',
             name: 'TMNumber11 System',
             description: 'Trademark numbering and classification system',
-            category: 'platform',
+            category: 'user',
             type: 'utility',
-            status: 'enabled',
+            status: 'disabled',
             pricing: 'premium',
             price: '1999',
             currency: 'INR',
@@ -2856,9 +2855,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: 'wytai-trademark',
             name: 'WytAi Trademark Analysis',
             description: 'AI-powered Indian trademark analysis engine',
-            category: 'platform',
+            category: 'user',
             type: 'ai-analysis',
-            status: 'enabled',
+            status: 'disabled',
             pricing: 'premium',
             price: '2499',
             currency: 'INR',
@@ -2869,6 +2868,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
             usage: 320,
             installs: 1200,
             order: 7
+          },
+          
+          // PLATFORM MODULES (System components)
+          {
+            id: 'auth-module',
+            name: 'Authentication Module',
+            description: 'Multi-tenant authentication and user management system',
+            category: 'platform',
+            type: 'system',
+            status: 'enabled',
+            pricing: 'core',
+            icon: 'shield',
+            color: 'gray',
+            route: '/admin/auth',
+            features: ['WhatsApp OTP', 'Multi-tenant isolation', 'Role-based access', 'Session management'],
+            usage: 0,
+            installs: 1,
+            order: 101
+          },
+          {
+            id: 'cms-builder',
+            name: 'CMS Builder',
+            description: 'Content management system with drag-and-drop functionality',
+            category: 'platform',
+            type: 'builder',
+            status: 'enabled',
+            pricing: 'core',
+            icon: 'layout',
+            color: 'gray',
+            route: '/admin/cms',
+            features: ['Drag-and-drop editor', 'Block-based content', 'Multi-language support', 'Template system'],
+            usage: 0,
+            installs: 1,
+            order: 102
+          },
+          {
+            id: 'tenant-manager',
+            name: 'Multi-Tenant Core',
+            description: 'Core multi-tenancy management and isolation system',
+            category: 'platform',
+            type: 'core',
+            status: 'enabled',
+            pricing: 'core',
+            icon: 'building',
+            color: 'gray',
+            route: '/admin/tenants',
+            features: ['Tenant isolation', 'Row-level security', 'Resource allocation', 'Billing integration'],
+            usage: 0,
+            installs: 1,
+            order: 103
+          },
+          {
+            id: 'hub-aggregator',
+            name: 'Hub Aggregation Engine',
+            description: 'Cross-tenant data aggregation and hub management',
+            category: 'platform',
+            type: 'engine',
+            status: 'enabled',
+            pricing: 'core',
+            icon: 'network',
+            color: 'gray',
+            route: '/admin/hubs',
+            features: ['Cross-tenant queries', 'Data aggregation', 'Hub marketplace', 'API federation'],
+            usage: 0,
+            installs: 1,
+            order: 104
+          },
+          {
+            id: 'search-engine',
+            name: 'Platform Search Engine',
+            description: 'Unified search across all platform components and content',
+            category: 'platform',
+            type: 'service',
+            status: 'enabled',
+            pricing: 'core',
+            icon: 'search',
+            color: 'gray',
+            route: '/admin/search',
+            features: ['Full-text search', 'Multi-tenant indexing', 'Real-time updates', 'Faceted search'],
+            usage: 0,
+            installs: 1,
+            order: 105
+          },
+          {
+            id: 'analytics-engine',
+            name: 'Analytics & Metrics Engine',
+            description: 'Platform-wide analytics, usage tracking, and business intelligence',
+            category: 'platform',
+            type: 'analytics',
+            status: 'enabled',
+            pricing: 'core',
+            icon: 'chart-bar',
+            color: 'gray',
+            route: '/admin/analytics',
+            features: ['Usage tracking', 'Performance metrics', 'Business intelligence', 'Custom dashboards'],
+            usage: 0,
+            installs: 1,
+            order: 106
           }
         ];
 
@@ -2882,6 +2979,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Initialize default modules on startup
   initializeDefaultModules();
+
+  // Reset platform modules (for development)
+  app.post('/api/platform-modules/reset', async (req, res) => {
+    try {
+      // Clear all platform modules
+      await db.delete(platformModules);
+      
+      // Reinitialize default modules
+      await initializeDefaultModules();
+      
+      res.json({ success: true, message: 'Platform modules reset and reinitialized' });
+    } catch (error) {
+      console.error('Error resetting platform modules:', error);
+      res.status(500).json({ error: 'Failed to reset platform modules' });
+    }
+  });
 
   // Get all platform modules (public endpoint)
   app.get('/api/platform-modules', async (req, res) => {
