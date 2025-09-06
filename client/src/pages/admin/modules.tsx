@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { fetchPlatformModules, updatePlatformModule, getUserApps, getPlatformModules, type PlatformModule } from "@/lib/api";
+import { fetchPlatformModules, updatePlatformModule, getWytApps, getWytHubs, getPlatformModules, type PlatformModule } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 export default function AdminModules() {
@@ -33,10 +33,15 @@ export default function AdminModules() {
     cacheTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  // Separate user apps from platform modules
-  const userApps = getUserApps(modules).filter(app => 
+  // Separate WytApps, WytHubs, and Platform Modules
+  const wytApps = getWytApps(modules).filter(app => 
     app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     app.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  const wytHubs = getWytHubs(modules).filter(hub => 
+    hub.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    hub.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
   const platformModules = getPlatformModules(modules).filter(module => 
@@ -86,10 +91,12 @@ export default function AdminModules() {
 
   const getCategoryColor = (category: string) => {
     switch (category) {
+      case 'wytapps':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100';
+      case 'wythubs':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-800 dark:text-orange-100';
       case 'platform':
         return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
-      case 'user':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
     }
@@ -97,8 +104,10 @@ export default function AdminModules() {
 
   const getCategoryLabel = (category: string) => {
     switch (category) {
-      case 'user':
-        return 'User App';
+      case 'wytapps':
+        return 'WytApp';
+      case 'wythubs':
+        return 'WytHub';
       case 'platform':
         return 'System Module';
       default:
@@ -159,9 +168,10 @@ export default function AdminModules() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="apps">User Apps ({userApps.length})</TabsTrigger>
-                <TabsTrigger value="modules">Platform Modules ({platformModules.length})</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="apps">WytApps ({wytApps.length})</TabsTrigger>
+                <TabsTrigger value="hubs">WytHubs ({wytHubs.length})</TabsTrigger>
+                <TabsTrigger value="modules">Platform ({platformModules.length})</TabsTrigger>
                 <TabsTrigger value="builder">Builder</TabsTrigger>
               </TabsList>
 
@@ -171,15 +181,15 @@ export default function AdminModules() {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle className="text-blue-600">User Apps</CardTitle>
-                        <p className="text-sm text-gray-600 mt-1">Direct user-facing tools and applications</p>
+                        <CardTitle className="text-blue-600">WytApps</CardTitle>
+                        <p className="text-sm text-gray-600 mt-1">Direct user-facing applications</p>
                       </div>
-                      <Badge variant="secondary">{userApps.length} apps</Badge>
+                      <Badge variant="secondary">{wytApps.length} apps</Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <Input
-                      placeholder="Search user apps..."
+                      placeholder="Search WytApps..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="max-w-md"
@@ -214,7 +224,7 @@ export default function AdminModules() {
                       <i className="fas fa-exclamation-triangle text-4xl"></i>
                     </div>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                      Failed to load user apps
+                      Failed to load WytApps
                     </h3>
                     <p className="text-gray-600 dark:text-gray-300">
                       Please refresh the page to try again.
@@ -222,7 +232,7 @@ export default function AdminModules() {
                   </div>
                 ) : (
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {userApps.map((module) => (
+                    {wytApps.map((module) => (
                       <Card key={module.id} className="hover:shadow-lg transition-shadow duration-200 border-l-4 border-l-blue-500">
                         <CardHeader>
                           <div className="flex items-center justify-between">
@@ -285,6 +295,148 @@ export default function AdminModules() {
                         </CardContent>
                       </Card>
                     ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="hubs" className="space-y-6">
+                {/* Search */}
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-orange-600">WytHubs</CardTitle>
+                        <p className="text-sm text-gray-600 mt-1">Hub services with /h/ routes and whitelabel domains</p>
+                      </div>
+                      <Badge variant="secondary">{wytHubs.length} hubs</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <Input
+                      placeholder="Search WytHubs..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="max-w-md"
+                    />
+                  </CardContent>
+                </Card>
+
+                {/* WytHubs List */}
+                {isLoading ? (
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {[...Array(6)].map((_, index) => (
+                      <Card key={index} className="animate-pulse">
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <div className="h-6 w-32 bg-gray-200 rounded"></div>
+                            <div className="h-6 w-16 bg-gray-200 rounded"></div>
+                          </div>
+                          <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex items-center justify-between">
+                            <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                            <div className="h-6 w-12 bg-gray-200 rounded"></div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : error ? (
+                  <div className="text-center py-12">
+                    <div className="text-red-400 mb-4">
+                      <i className="fas fa-exclamation-triangle text-4xl"></i>
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                      Failed to load WytHubs
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300">
+                      Please refresh the page to try again.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {wytHubs.map((module) => (
+                      <Card key={module.id} className="hover:shadow-lg transition-shadow duration-200 border-l-4 border-l-orange-500">
+                        <CardHeader>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-${module.color}-100`}>
+                                <i className={`fas fa-${module.icon} text-${module.color}-600`}></i>
+                              </div>
+                              <div>
+                                <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
+                                  {module.name}
+                                </h3>
+                                <div className="flex gap-2 mt-1">
+                                  <Badge className={getCategoryColor(module.category)}>
+                                    {getCategoryLabel(module.category)}
+                                  </Badge>
+                                  <Badge className={getPricingColor(module.pricing)}>
+                                    {module.pricing}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                            <Switch
+                              checked={module.status === 'enabled'}
+                              onCheckedChange={(enabled) => 
+                                toggleModuleStatus.mutate({ moduleId: module.id, enabled })
+                              }
+                              disabled={toggleModuleStatus.isPending}
+                            />
+                          </div>
+                          <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">
+                            {module.description}
+                          </p>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex items-center justify-between">
+                            <div className="flex gap-4 text-sm text-gray-600">
+                              <span>👥 {module.installs?.toLocaleString() || 0}</span>
+                              <span>📊 {module.usage?.toLocaleString() || 0}</span>
+                            </div>
+                            <Badge className={getStatusColor(module.status)}>
+                              {module.status}
+                            </Badge>
+                          </div>
+                          {module.features && (
+                            <div className="mt-3">
+                              <div className="flex flex-wrap gap-1">
+                                {module.features.slice(0, 3).map((feature, index) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {feature}
+                                  </Badge>
+                                ))}
+                                {module.features.length > 3 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    +{module.features.length - 3} more
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          <div className="mt-2 text-xs text-gray-500">
+                            Route: <code className="bg-gray-100 px-1 rounded">{module.route}</code>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+
+                {/* No hubs found */}
+                {!isLoading && !error && wytHubs.length === 0 && (
+                  <div className="text-center py-12">
+                    <div className="text-gray-400 mb-4">
+                      <i className="fas fa-search text-4xl"></i>
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                      No WytHubs found
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-300">
+                      Try adjusting your search criteria.
+                    </p>
                   </div>
                 )}
               </TabsContent>

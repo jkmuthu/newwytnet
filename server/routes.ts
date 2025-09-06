@@ -2748,12 +2748,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Initializing default platform modules...');
         
         const defaultModules: InsertPlatformModule[] = [
-          // USER APPS (Direct user-facing tools)
+          // WYTAPPS (Direct user-facing applications)
           {
             id: 'qr-generator',
             name: 'QR Code Generator',
             description: 'Generate QR codes for URLs, text, and contact information',
-            category: 'user',
+            category: 'wytapps',
             type: 'tool',
             status: 'enabled',
             pricing: 'free',
@@ -2769,7 +2769,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: 'assessment',
             name: 'DISC Assessment',
             description: 'Personality and behavioral assessment tool',
-            category: 'user',
+            category: 'wytapps',
             type: 'assessment',
             status: 'enabled',
             pricing: 'free',
@@ -2785,7 +2785,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: 'ai-directory',
             name: 'AI Directory',
             description: 'Comprehensive AI tools and services directory',
-            category: 'user',
+            category: 'wytapps',
             type: 'directory',
             status: 'disabled',
             pricing: 'free',
@@ -2799,17 +2799,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
           {
             id: 'realbro',
-            name: 'RealBRO Hub',
+            name: 'RealBRO Hub', 
             description: 'Real estate broker and professional networking hub',
-            category: 'user',
+            category: 'wythubs',
             type: 'hub',
-            status: 'disabled',
+            status: 'enabled',
             pricing: 'freemium',
             price: '999',
             currency: 'INR',
             icon: 'home',
             color: 'orange',
-            route: '/realbro',
+            route: '/h/realbro',
             features: ['Property listing management', 'Broker network & contacts', 'Credit-based system', 'Tamil language support'],
             usage: 850,
             installs: 4200,
@@ -2819,7 +2819,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: 'wytduty',
             name: 'WytDuty Task Manager',
             description: 'Task and duty management for teams',
-            category: 'user',
+            category: 'wythubs',
             type: 'productivity',
             status: 'disabled',
             pricing: 'premium',
@@ -2837,7 +2837,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: 'tm-numbering',
             name: 'TMNumber11 System',
             description: 'Trademark numbering and classification system',
-            category: 'user',
+            category: 'wythubs',
             type: 'utility',
             status: 'disabled',
             pricing: 'premium',
@@ -2855,7 +2855,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: 'wytai-trademark',
             name: 'WytAi Trademark Analysis',
             description: 'AI-powered Indian trademark analysis engine',
-            category: 'user',
+            category: 'wythubs',
             type: 'ai-analysis',
             status: 'disabled',
             pricing: 'premium',
@@ -2868,6 +2868,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             usage: 320,
             installs: 1200,
             order: 7
+          },
+          
+          // WYTHUBS (Hub services with /h/ routes)  
+          {
+            id: 'ai-directory-hub',
+            name: 'AI Directory Hub',
+            description: 'AI Directory as a hub service with whitelabel domain support',
+            category: 'wythubs',
+            type: 'hub',
+            status: 'enabled',
+            pricing: 'free',
+            icon: 'robot',
+            color: 'green',
+            route: '/h/ai-directory',
+            features: ['Hub-based AI tools', 'Cross-tenant data', 'Whitelabel domains', 'Directory aggregation'],
+            usage: 3200,
+            installs: 15600,
+            order: 101
           },
           
           // PLATFORM MODULES (System components)
@@ -2885,7 +2903,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             features: ['WhatsApp OTP', 'Multi-tenant isolation', 'Role-based access', 'Session management'],
             usage: 0,
             installs: 1,
-            order: 101
+            order: 201
           },
           {
             id: 'cms-builder',
@@ -2901,7 +2919,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             features: ['Drag-and-drop editor', 'Block-based content', 'Multi-language support', 'Template system'],
             usage: 0,
             installs: 1,
-            order: 102
+            order: 202
           },
           {
             id: 'tenant-manager',
@@ -2917,7 +2935,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             features: ['Tenant isolation', 'Row-level security', 'Resource allocation', 'Billing integration'],
             usage: 0,
             installs: 1,
-            order: 103
+            order: 203
           },
           {
             id: 'hub-aggregator',
@@ -2933,7 +2951,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             features: ['Cross-tenant queries', 'Data aggregation', 'Hub marketplace', 'API federation'],
             usage: 0,
             installs: 1,
-            order: 104
+            order: 204
           },
           {
             id: 'search-engine',
@@ -2949,7 +2967,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             features: ['Full-text search', 'Multi-tenant indexing', 'Real-time updates', 'Faceted search'],
             usage: 0,
             installs: 1,
-            order: 105
+            order: 205
           },
           {
             id: 'analytics-engine',
@@ -2965,7 +2983,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             features: ['Usage tracking', 'Performance metrics', 'Business intelligence', 'Custom dashboards'],
             usage: 0,
             installs: 1,
-            order: 106
+            order: 206
           }
         ];
 

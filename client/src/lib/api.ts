@@ -5,7 +5,7 @@ export interface PlatformModule {
   id: string;
   name: string;
   description: string;
-  category: 'platform' | 'user';  // 'user' = Apps (user-facing), 'platform' = Modules (system components)
+  category: 'wytapps' | 'wythubs' | 'platform';  // 'wytapps' = User Apps, 'wythubs' = Hub Services, 'platform' = System Modules
   type: string;
   status: 'enabled' | 'disabled' | 'maintenance';
   pricing: string;
@@ -24,9 +24,13 @@ export interface PlatformModule {
   updatedAt: string;
 }
 
-// Helper functions to distinguish Apps from Modules
-export function getUserApps(modules: PlatformModule[]): PlatformModule[] {
-  return modules.filter(module => module.category === 'user');
+// Helper functions to categorize modules
+export function getWytApps(modules: PlatformModule[]): PlatformModule[] {
+  return modules.filter(module => module.category === 'wytapps');
+}
+
+export function getWytHubs(modules: PlatformModule[]): PlatformModule[] {
+  return modules.filter(module => module.category === 'wythubs');
 }
 
 export function getPlatformModules(modules: PlatformModule[]): PlatformModule[] {
