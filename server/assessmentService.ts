@@ -107,17 +107,69 @@ export class AssessmentService {
         { optionText: "Remain calm and steady", optionValue: 2, discType: 'S' },
         { optionText: "Systematically work through issues", optionValue: 1, discType: 'C' },
       ],
+      6: [
+        { optionText: "Speak with enthusiasm and passion", optionValue: 4, discType: 'I' },
+        { optionText: "Be direct and to the point", optionValue: 3, discType: 'D' },
+        { optionText: "Listen carefully and respond thoughtfully", optionValue: 2, discType: 'S' },
+        { optionText: "Provide detailed and accurate information", optionValue: 1, discType: 'C' },
+      ],
+      7: [
+        { optionText: "Stable, predictable routines", optionValue: 4, discType: 'S' },
+        { optionText: "High standards and quality focus", optionValue: 3, discType: 'C' },
+        { optionText: "Fast-paced, results-oriented", optionValue: 2, discType: 'D' },
+        { optionText: "Dynamic, people-centered atmosphere", optionValue: 1, discType: 'I' },
+      ],
+      8: [
+        { optionText: "Research thoroughly and verify facts", optionValue: 4, discType: 'C' },
+        { optionText: "Consider how it affects team dynamics", optionValue: 3, discType: 'S' },
+        { optionText: "Focus on key points and act quickly", optionValue: 2, discType: 'D' },
+        { optionText: "Discuss with others to gain insights", optionValue: 1, discType: 'I' },
+      ],
+      9: [
+        { optionText: "Embrace it as an opportunity to lead", optionValue: 4, discType: 'D' },
+        { optionText: "Get excited about new possibilities", optionValue: 3, discType: 'I' },
+        { optionText: "Need time to adjust and adapt", optionValue: 2, discType: 'S' },
+        { optionText: "Carefully evaluate risks and benefits", optionValue: 1, discType: 'C' },
+      ],
+      10: [
+        { optionText: "Inspire with vision and enthusiasm", optionValue: 4, discType: 'I' },
+        { optionText: "Set clear goals and drive results", optionValue: 3, discType: 'D' },
+        { optionText: "Support and encourage their growth", optionValue: 2, discType: 'S' },
+        { optionText: "Provide clear guidelines and feedback", optionValue: 1, discType: 'C' },
+      ],
+      11: [
+        { optionText: "Work to maintain relationships and find common ground", optionValue: 4, discType: 'S' },
+        { optionText: "Focus on facts and find logical solutions", optionValue: 3, discType: 'C' },
+        { optionText: "Address issues head-on and resolve quickly", optionValue: 2, discType: 'D' },
+        { optionText: "Try to lighten the mood and bring people together", optionValue: 1, discType: 'I' },
+      ],
+      12: [
+        { optionText: "Establish precise, detailed criteria", optionValue: 4, discType: 'C' },
+        { optionText: "Consider what works best for the team", optionValue: 3, discType: 'S' },
+        { optionText: "Set high expectations for results", optionValue: 2, discType: 'D' },
+        { optionText: "Focus on inspiring excellence in others", optionValue: 1, discType: 'I' },
+      ],
+      13: [
+        { optionText: "Decisive and results-focused", optionValue: 4, discType: 'D' },
+        { optionText: "Motivational and people-focused", optionValue: 3, discType: 'I' },
+        { optionText: "Supportive and collaborative", optionValue: 2, discType: 'S' },
+        { optionText: "Systematic and quality-focused", optionValue: 1, discType: 'C' },
+      ],
+      14: [
+        { optionText: "Connect through shared experiences and fun", optionValue: 4, discType: 'I' },
+        { optionText: "Focus on achieving mutual goals", optionValue: 3, discType: 'D' },
+        { optionText: "Build trust through consistency and support", optionValue: 2, discType: 'S' },
+        { optionText: "Develop respect through competence and reliability", optionValue: 1, discType: 'C' },
+      ],
+      15: [
+        { optionText: "Steady and consistent", optionValue: 4, discType: 'S' },
+        { optionText: "Methodical and thorough", optionValue: 3, discType: 'C' },
+        { optionText: "Fast and efficient", optionValue: 2, discType: 'D' },
+        { optionText: "Varied and dynamic", optionValue: 1, discType: 'I' },
+      ],
     };
 
-    // Use similar patterns for remaining questions
-    const defaultOptions = [
-      { optionText: "Option A", optionValue: 4, discType: 'D' },
-      { optionText: "Option B", optionValue: 3, discType: 'I' },
-      { optionText: "Option C", optionValue: 2, discType: 'S' },
-      { optionText: "Option D", optionValue: 1, discType: 'C' },
-    ];
-
-    const questionOptions = optionSets[questionNumber] || defaultOptions;
+    const questionOptions = optionSets[questionNumber];
     
     return questionOptions.map(option => ({
       questionId,
@@ -133,7 +185,7 @@ export class AssessmentService {
     return await db.select().from(assessmentCategories).where(eq(assessmentCategories.isActive, true));
   }
 
-  // Get questions for assessment
+  // Get questions for assessment with randomization
   async getQuestions(categoryId?: string, language = 'en'): Promise<(AssessmentQuestion & { options: AssessmentOption[] })[]> {
     const questionsQuery = db.select().from(assessmentQuestions)
       .where(and(
@@ -154,11 +206,33 @@ export class AssessmentService {
             eq(assessmentOptions.language, language)
           ));
         
-        return { ...question, options };
+        // Randomize option order for each question
+        const shuffledOptions = this.shuffleArray([...options]);
+        
+        return { ...question, options: shuffledOptions };
       })
     );
 
-    return questionsWithOptions;
+    // Randomize question order while maintaining question numbers for tracking
+    const shuffledQuestions = this.shuffleArray([...questionsWithOptions]);
+    
+    // Re-assign display order while keeping original questionNumber for tracking
+    const questionsWithRandomOrder = shuffledQuestions.map((question, index) => ({
+      ...question,
+      displayOrder: index + 1
+    }));
+
+    return questionsWithRandomOrder;
+  }
+
+  // Helper function to shuffle arrays
+  private shuffleArray<T>(array: T[]): T[] {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
   }
 
   // Create assessment session
