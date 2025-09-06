@@ -340,6 +340,51 @@ export default function Home() {
                 );
               }
               
+              if (module.id === 'ai-directory') {
+                return (
+                  <Card key={module.id} className="hover:shadow-lg transition-all duration-300 hover:scale-105">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div className="h-8 w-8 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                          🤖
+                        </div>
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+                          {module.pricing === 'free' ? 'Free' : module.pricing === 'premium' && module.price ? `₹${module.price}` : module.pricing}
+                        </Badge>
+                      </div>
+                      <CardTitle>{module.name}</CardTitle>
+                      <CardDescription>{module.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          200+ AI tools catalog
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          Search & filter options
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          Tool descriptions & links
+                        </div>
+                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                          Regular updates
+                        </div>
+                      </div>
+                      <Link href={module.route}>
+                        <Button className="w-full mt-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700" data-testid="button-ai-directory">
+                          Browse AI Directory
+                          <ArrowRight className="h-4 w-4 ml-2" />
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                );
+              }
+              
               // Generic module card for other modules
               return (
                 <Card key={module.id} className="hover:shadow-lg transition-shadow">
