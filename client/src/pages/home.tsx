@@ -70,7 +70,7 @@ export default function Home() {
           </p>
           
           <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl md:text-5xl'} font-bold text-gray-900 dark:text-white mb-8 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent leading-tight`}>
-            WytNet for Better Lifestyle and Workstyle
+            WytNet for Better Lifestyle and Best Workstyle
           </h1>
           
           {/* Trust indicators */}
@@ -128,7 +128,7 @@ export default function Home() {
               Free Public Modules
             </h2>
             <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Start using our powerful tools today. No registration required for basic features.
+              Simple, powerful tools to boost your productivity. Start using them instantly - no sign-up needed.
             </p>
           </div>
 
@@ -404,10 +404,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              Platform Capabilities
+              Why Choose WytNet?
             </h2>
             <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Built for scale, designed for simplicity. WytNet powers the next generation of SaaS applications.
+              Designed for businesses and professionals who want to work smarter, not harder. Get things done efficiently.
             </p>
           </div>
 
@@ -416,9 +416,9 @@ export default function Home() {
               <div className="bg-blue-100 dark:bg-blue-900 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Users className="h-8 w-8 text-blue-600 dark:text-blue-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Multi-Tenant</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Team-Ready</h3>
               <p className="text-gray-600 dark:text-gray-300 text-sm">
-                Complete tenant isolation with row-level security and custom domains.
+                Perfect for teams, departments, and organizations of any size. Collaborate seamlessly.
               </p>
             </div>
 
@@ -426,9 +426,9 @@ export default function Home() {
               <div className="bg-green-100 dark:bg-green-900 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Rocket className="h-8 w-8 text-green-600 dark:text-green-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Low-Code</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Easy to Use</h3>
               <p className="text-gray-600 dark:text-gray-300 text-sm">
-                Visual builders for CRUD operations, CMS, and application composition.
+                Simple, intuitive tools that anyone can use. No technical knowledge required.
               </p>
             </div>
 
@@ -436,9 +436,9 @@ export default function Home() {
               <div className="bg-purple-100 dark:bg-purple-900 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <BarChart3 className="h-8 w-8 text-purple-600 dark:text-purple-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Analytics</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Track Progress</h3>
               <p className="text-gray-600 dark:text-gray-300 text-sm">
-                Built-in analytics and reporting for all your applications and modules.
+                Monitor your work, track achievements, and measure what matters to your business.
               </p>
             </div>
 
@@ -446,9 +446,9 @@ export default function Home() {
               <div className="bg-orange-100 dark:bg-orange-900 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Shield className="h-8 w-8 text-orange-600 dark:text-orange-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Secure</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Safe & Secure</h3>
               <p className="text-gray-600 dark:text-gray-300 text-sm">
-                Enterprise-grade security with role-based access control.
+                Your data is protected with bank-level security. Privacy and trust guaranteed.
               </p>
             </div>
           </div>
