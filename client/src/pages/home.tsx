@@ -468,27 +468,27 @@ export default function Home() {
                 />
               </div>
               <p className="text-gray-400 text-sm">
-                The ultimate multi-tenant SaaS platform for building scalable applications.
+                Smart tools and solutions to improve your lifestyle and boost workplace productivity.
               </p>
             </div>
             
             <div>
-              <h3 className="font-semibold mb-4">Platform</h3>
+              <h3 className="font-semibold mb-4">Tools</h3>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><Link href="/assessment">Assessment Tools</Link></li>
-                <li>Productivity Suite</li>
-                <li>Analytics Dashboard</li>
-                <li>API Documentation</li>
+                <li><Link href="/qr-generator">QR Code Generator</Link></li>
+                <li><Link href="/assessment">Personality Assessment</Link></li>
+                <li><Link href="/ai-directory">AI Directory</Link></li>
+                <li>Coming Soon...</li>
               </ul>
             </div>
             
             <div>
-              <h3 className="font-semibold mb-4">Features</h3>
+              <h3 className="font-semibold mb-4">Benefits</h3>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li>Multi-Tenant Architecture</li>
-                <li>Low-Code Builders</li>
-                <li>Security & Compliance</li>
-                <li>Custom Domains</li>
+                <li>Free to Use</li>
+                <li>No Registration Required</li>
+                <li>Secure & Private</li>
+                <li>Works on All Devices</li>
               </ul>
             </div>
             
