@@ -23,6 +23,17 @@ import SearchPage from "@/pages/search";
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 
+// New content pages
+import WytApps from "@/pages/wytapps";
+import About from "@/pages/about";
+import Features from "@/pages/features";
+import Pricing from "@/pages/pricing";
+import Contact from "@/pages/contact";
+import Privacy from "@/pages/privacy";
+import Terms from "@/pages/terms";
+import Help from "@/pages/help";
+import Status from "@/pages/status";
+
 // Admin pages
 import AdminCMS from "@/pages/admin/cms";
 import AdminModules from "@/pages/admin/modules";
@@ -68,6 +79,17 @@ function Router() {
       <Route path="/auth/whatsapp" component={WhatsAppAuth} />
       <Route path="/whatsapp-auth" component={WhatsAppAuth} />
       <Route path="/search" component={SearchPage} />
+      
+      {/* Content pages */}
+      <Route path="/wytapps" component={WytApps} />
+      <Route path="/about" component={About} />
+      <Route path="/features" component={Features} />
+      <Route path="/pricing" component={Pricing} />
+      <Route path="/contact" component={Contact} />
+      <Route path="/privacy" component={Privacy} />
+      <Route path="/terms" component={Terms} />
+      <Route path="/help" component={Help} />
+      <Route path="/status" component={Status} />
       
       {/* Protected routes - authentication required */}
       <Route path="/dashboard" component={Dashboard} />
