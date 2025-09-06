@@ -32,8 +32,9 @@ export interface PlatformModulesResponse {
 // Fetch all platform modules
 export async function fetchPlatformModules(): Promise<PlatformModule[]> {
   try {
-    const response = await apiRequest('/api/platform-modules', 'GET') as PlatformModulesResponse;
-    return response.modules || [];
+    const response = await apiRequest('/api/platform-modules', 'GET');
+    const data = await response.json() as PlatformModulesResponse;
+    return data.modules || [];
   } catch (error) {
     console.error('Failed to fetch platform modules:', error);
     return [];
@@ -43,8 +44,9 @@ export async function fetchPlatformModules(): Promise<PlatformModule[]> {
 // Fetch only enabled platform modules
 export async function fetchEnabledPlatformModules(): Promise<PlatformModule[]> {
   try {
-    const response = await apiRequest('/api/platform-modules/enabled', 'GET') as PlatformModulesResponse;
-    return response.modules || [];
+    const response = await apiRequest('/api/platform-modules/enabled', 'GET');
+    const data = await response.json() as PlatformModulesResponse;
+    return data.modules || [];
   } catch (error) {
     console.error('Failed to fetch enabled platform modules:', error);
     return [];
@@ -53,15 +55,18 @@ export async function fetchEnabledPlatformModules(): Promise<PlatformModule[]> {
 
 // Update platform module (Super Admin only)
 export async function updatePlatformModule(id: string, updateData: Partial<PlatformModule>) {
-  return apiRequest(`/api/platform-modules/${id}`, 'PUT', updateData);
+  const response = await apiRequest(`/api/platform-modules/${id}`, 'PUT', updateData);
+  return response.json();
 }
 
 // Create new platform module (Super Admin only)
 export async function createPlatformModule(moduleData: Omit<PlatformModule, 'createdAt' | 'updatedAt'>) {
-  return apiRequest('/api/platform-modules', 'POST', moduleData);
+  const response = await apiRequest('/api/platform-modules', 'POST', moduleData);
+  return response.json();
 }
 
 // Delete platform module (Super Admin only)
 export async function deletePlatformModule(id: string) {
-  return apiRequest(`/api/platform-modules/${id}`, 'DELETE');
+  const response = await apiRequest(`/api/platform-modules/${id}`, 'DELETE');
+  return response.json();
 }
