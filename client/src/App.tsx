@@ -80,6 +80,11 @@ function Router() {
       <Route path="/whatsapp-auth" component={WhatsAppAuth} />
       <Route path="/search" component={SearchPage} />
       
+      {/* Legacy route redirects to prevent 404s */}
+      <Route path="/astro-pre" component={() => { window.location.href = "/"; return null; }} />
+      <Route path="/business" component={() => { window.location.href = "/"; return null; }} />
+      <Route path="/invoice-c" component={() => { window.location.href = "/"; return null; }} />
+      
       {/* Content pages */}
       <Route path="/wytapps" component={WytApps} />
       <Route path="/about" component={About} />
