@@ -322,7 +322,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              isModuleEnabled('auth-module') && (
+              // WytPass Login - Hidden when auth-module is disabled
+              false && (
                 <div className="flex items-center space-x-2">
                   <Button onClick={handleWhatsAppLogin} data-testid="button-whatsapp-login" className="bg-green-600 hover:bg-green-700 text-white">
                     <MessageCircle className="h-4 w-4 mr-2" />
