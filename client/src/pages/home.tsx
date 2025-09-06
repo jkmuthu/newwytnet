@@ -164,7 +164,7 @@ export default function Home() {
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Failed to load modules</h3>
                 <p className="text-gray-600 dark:text-gray-300">Please refresh the page to try again.</p>
               </div>
-            ) : enabledModules.map((module) => {
+            ) : enabledModules.filter(module => module.category === 'wytapps').map((module) => {
               // Map module types to specific content
               if (module.id === 'qr-generator') {
                 return (
