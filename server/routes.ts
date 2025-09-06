@@ -1985,6 +1985,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // AssessDisc DISC Assessment Routes (Public Access)
   
+  // Reset assessment data (for development)
+  app.delete('/api/assessments/reset', async (req, res) => {
+    try {
+      // Clear all assessment data to reinitialize
+      await db.delete(assessmentOptions);
+      await db.delete(assessmentQuestions);
+      await db.delete(assessmentCategories);
+      await db.delete(assessmentResults);
+      await db.delete(assessmentResponses);
+      await db.delete(assessmentSessions);
+      
+      // Reinitialize default data
+      await assessmentService.initializeDefaultData();
+      
+      res.json({ success: true, message: 'Assessment data reset and reinitialized' });
+    } catch (error) {
+      console.error('Error resetting assessment data:', error);
+      res.status(500).json({ error: 'Failed to reset assessment data' });
+    }
+  });
+
   // Get assessment categories
   app.get('/api/assessments/categories', async (req, res) => {
     try {
