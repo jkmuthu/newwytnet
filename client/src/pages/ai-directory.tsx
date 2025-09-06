@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
+import { openExternalLink, UTMCampaigns } from "@/lib/utm";
 
 interface AITool {
   id: string;
@@ -1264,7 +1265,11 @@ export default function AIDirectory() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => window.open(tool.url, '_blank')}
+                        onClick={() => openExternalLink(tool.url, {
+                          ...UTMCampaigns.AI_DIRECTORY,
+                          content: tool.name,
+                          term: tool.category
+                        })}
                         className="hover:bg-purple-100 dark:hover:bg-purple-900/20"
                         data-testid={`button-visit-${tool.id}`}
                       >

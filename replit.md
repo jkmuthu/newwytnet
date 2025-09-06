@@ -16,6 +16,17 @@ The system is built as a monorepo with Express.js backend, React frontend using 
 Preferred communication style: Simple, everyday language.
 Focus: Fully white-label multi-tenant SaaS platform with identity validation.
 
+## UTM Tracking Standard
+
+All external links from WytNet must include UTM parameters for proper traffic attribution:
+- **Source**: `wytnet.com` (mandatory for all external links)
+- **Medium**: Context-specific (e.g., `ai_directory`, `qr_generator`, `referral`)
+- **Campaign**: Purpose-specific (e.g., `ai_tools_referral`, `platform_traffic`)
+- **Content**: Tool/feature name when applicable
+- **Term**: Category or specific context when relevant
+
+Use the `openExternalLink()` function from `/client/src/lib/utm.ts` for all external links instead of direct `window.open()` calls.
+
 # Production Domain Setup
 
 **✅ DOMAIN ACTIVE:** wytnet.com is now live and configured
