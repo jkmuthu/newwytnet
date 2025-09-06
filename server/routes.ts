@@ -3009,7 +3009,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             description: 'Multi-tenant authentication and user management system',
             category: 'platform',
             type: 'system',
-            status: 'enabled',
+            status: 'disabled',
             pricing: 'core',
             icon: 'shield',
             color: 'gray',

@@ -322,12 +322,14 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <div className="flex items-center space-x-2">
-                <Button onClick={handleWhatsAppLogin} data-testid="button-whatsapp-login" className="bg-green-600 hover:bg-green-700 text-white">
-                  <MessageCircle className="h-4 w-4 mr-2" />
-                  WytPass Login
-                </Button>
-              </div>
+              isModuleEnabled('auth-module') && (
+                <div className="flex items-center space-x-2">
+                  <Button onClick={handleWhatsAppLogin} data-testid="button-whatsapp-login" className="bg-green-600 hover:bg-green-700 text-white">
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    WytPass Login
+                  </Button>
+                </div>
+              )
             )}
           </div>
         </div>
