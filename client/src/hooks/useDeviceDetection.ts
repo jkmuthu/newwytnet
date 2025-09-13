@@ -42,14 +42,18 @@ export function useDeviceDetection() {
 
       // Override with user agent detection for better accuracy
       const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
-      const tabletRegex = /iPad|Android(?=.*Mobile)/i;
+      const tabletRegex = /iPad|Android(?!.*Mobile)/i; // Fixed: Android tablets don't have "Mobile" in UA
+      
+      // Determine type by width first
+      const widthType = type;
       
       if (mobileRegex.test(userAgent)) {
-        if (tabletRegex.test(userAgent)) {
-          type = 'tablet';
-        } else {
-          type = 'mobile';
-        }
+        type = 'mobile'; // All mobile devices should be mobile
+      }
+      
+      // Only override to tablet if width isn't already mobile and UA indicates tablet
+      if (tabletRegex.test(userAgent) && widthType !== 'mobile') {
+        type = 'tablet';
       }
 
       // Detect OS
