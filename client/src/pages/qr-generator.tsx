@@ -11,8 +11,6 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import QRCode from "qrcode";
 import { Download, Share2, Copy, Smartphone, Globe, Mail, Wifi, QrCode, History, Zap, Palette, Settings, Eye, CheckCircle, Star } from "lucide-react";
-import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
 
 interface QRHistory {
   id: string;
@@ -216,8 +214,6 @@ export default function QRGenerator() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
-      <Header />
-      
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
@@ -681,8 +677,6 @@ export default function QRGenerator() {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }
