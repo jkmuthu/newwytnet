@@ -3310,6 +3310,282 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // =============================================================================
+  // SOCIAL AUTHENTICATION ROUTES
+  // =============================================================================
+
+  // Social auth providers info
+  app.get('/api/auth/social/providers', (req, res) => {
+    res.json({
+      success: true,
+      providers: {
+        google: { name: 'Google', color: 'red', authUrl: '/api/auth/google' },
+        facebook: { name: 'Facebook', color: 'blue', authUrl: '/api/auth/facebook' },
+        linkedin: { name: 'LinkedIn', color: 'blue', authUrl: '/api/auth/linkedin' },
+        instagram: { name: 'Instagram', color: 'pink', authUrl: '/api/auth/instagram' }
+      }
+    });
+  });
+
+  // Social auth mobile link endpoint
+  app.post('/api/auth/social/link-mobile', async (req, res) => {
+    try {
+      const { socialUserId, mobileNumber } = req.body;
+      
+      if (!socialUserId || !mobileNumber) {
+        return res.status(400).json({
+          success: false,
+          error: 'Social user ID and mobile number are required'
+        });
+      }
+
+      const { linkMobileToSocialAccount } = await import('./services/socialAuth');
+      const user = await linkMobileToSocialAccount(socialUserId, mobileNumber);
+      
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          name: user.name,
+          whatsappNumber: user.whatsappNumber,
+          email: user.email,
+          authMethods: user.authMethods
+        }
+      });
+    } catch (error) {
+      console.error('Error linking mobile to social account:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to link mobile number'
+      });
+    }
+  });
+
+  // Social auth demo endpoints (placeholder for OAuth integration)
+  app.get('/api/auth/google', (req, res) => {
+    // In production, this would redirect to Google OAuth
+    res.json({
+      success: true,
+      message: 'Google OAuth integration available in production',
+      redirectUrl: 'https://accounts.google.com/oauth/authorize',
+      demoMode: true
+    });
+  });
+
+  app.get('/api/auth/facebook', (req, res) => {
+    // In production, this would redirect to Facebook OAuth
+    res.json({
+      success: true,
+      message: 'Facebook OAuth integration available in production',
+      redirectUrl: 'https://www.facebook.com/v18.0/dialog/oauth',
+      demoMode: true
+    });
+  });
+
+  app.get('/api/auth/linkedin', (req, res) => {
+    // In production, this would redirect to LinkedIn OAuth
+    res.json({
+      success: true,
+      message: 'LinkedIn OAuth integration available in production',
+      redirectUrl: 'https://www.linkedin.com/oauth/v2/authorization',
+      demoMode: true
+    });
+  });
+
+  app.get('/api/auth/instagram', (req, res) => {
+    // In production, this would redirect to Instagram OAuth
+    res.json({
+      success: true,
+      message: 'Instagram OAuth integration available in production',
+      redirectUrl: 'https://api.instagram.com/oauth/authorize',
+      demoMode: true
+    });
+  });
+
+  // =============================================================================
+  // SUPER ADMIN DASHBOARD ROUTES
+  // =============================================================================
+
+  // Super Admin dashboard data
+  app.get('/api/admin/dashboard', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const user = req.user;
+
+      // Check if user is super admin
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Super Admin required'
+        });
+      }
+
+      // Get comprehensive dashboard data
+      const [
+        totalUsers,
+        totalTenants,
+        totalApps,
+        totalHubs,
+        platformModules,
+        recentUsers,
+        systemMetrics
+      ] = await Promise.all([
+        // Total users count
+        db.select({ count: sql<number>`cast(count(*) as integer)` }).from(users),
+        
+        // Total tenants count
+        db.select({ count: sql<number>`cast(count(*) as integer)` }).from(tenants),
+        
+        // Total apps count
+        db.select({ count: sql<number>`cast(count(*) as integer)` }).from(apps),
+        
+        // Total hubs count
+        db.select({ count: sql<number>`cast(count(*) as integer)` }).from(hubs),
+        
+        // Platform modules status
+        db.select().from(platformModules).orderBy(platformModules.name),
+        
+        // Recent users (last 10)
+        db.select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          createdAt: users.createdAt,
+          role: users.role
+        }).from(users).orderBy(desc(users.createdAt)).limit(10),
+        
+        // System metrics (placeholder)
+        Promise.resolve({
+          uptime: process.uptime(),
+          memoryUsage: process.memoryUsage(),
+          cpuLoad: 0.45, // Mock data
+          activeConnections: 42 // Mock data
+        })
+      ]);
+
+      res.json({
+        success: true,
+        dashboard: {
+          statistics: {
+            totalUsers: totalUsers[0]?.count || 0,
+            totalTenants: totalTenants[0]?.count || 0,
+            totalApps: totalApps[0]?.count || 0,
+            totalHubs: totalHubs[0]?.count || 0,
+            platformModules: platformModules.length
+          },
+          platformModules: platformModules.map(module => ({
+            id: module.id,
+            name: module.name,
+            description: module.description,
+            isEnabled: module.isEnabled,
+            category: module.category,
+            version: module.version
+          })),
+          recentActivity: recentUsers.map(user => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            joinedAt: user.createdAt,
+            role: user.role,
+            type: 'user_registration'
+          })),
+          systemMetrics: {
+            ...systemMetrics,
+            timestamp: new Date().toISOString()
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error loading admin dashboard:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to load dashboard data'
+      });
+    }
+  });
+
+  // Super Admin user management
+  app.get('/api/admin/users', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const user = req.user;
+
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Super Admin required'
+        });
+      }
+
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = (page - 1) * limit;
+
+      const [allUsers, totalCount] = await Promise.all([
+        db.select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          role: users.role,
+          createdAt: users.createdAt,
+          lastLoginAt: users.lastLoginAt,
+          tenantId: users.tenantId
+        }).from(users).limit(limit).offset(offset).orderBy(desc(users.createdAt)),
+        
+        db.select({ count: sql<number>`cast(count(*) as integer)` }).from(users)
+      ]);
+
+      res.json({
+        success: true,
+        users: allUsers,
+        pagination: {
+          total: totalCount[0]?.count || 0,
+          page,
+          limit,
+          totalPages: Math.ceil((totalCount[0]?.count || 0) / limit)
+        }
+      });
+    } catch (error) {
+      console.error('Error loading users for admin:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to load users'
+      });
+    }
+  });
+
+  // Super Admin tenant management
+  app.get('/api/admin/tenants', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const user = req.user;
+
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Super Admin required'
+        });
+      }
+
+      const allTenants = await db.select({
+        id: tenants.id,
+        name: tenants.name,
+        slug: tenants.slug,
+        status: tenants.status,
+        createdAt: tenants.createdAt,
+        settings: tenants.settings
+      }).from(tenants).orderBy(desc(tenants.createdAt));
+
+      res.json({
+        success: true,
+        tenants: allTenants
+      });
+    } catch (error) {
+      console.error('Error loading tenants for admin:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to load tenants'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

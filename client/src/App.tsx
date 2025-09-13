@@ -42,6 +42,7 @@ import AdminHubs from "@/pages/admin/hubs";
 import AdminSystemOverview from "@/pages/admin/system-overview";
 import AdminUsers from "@/pages/admin/users";
 import AdminTenants from "@/pages/admin/tenants";
+import SuperAdminDashboard from "@/pages/SuperAdminDashboard";
 
 // Role-based dashboard component
 function RoleBasedDashboard() {
@@ -111,6 +112,9 @@ function Router() {
       <Route path="/admin/system-overview" component={AdminSystemOverview} />
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/tenants" component={AdminTenants} />
+      
+      {/* Super Admin Dashboard */}
+      <Route path="/super-admin" component={SuperAdminDashboard} />
       
       <Route component={NotFound} />
     </Switch>
