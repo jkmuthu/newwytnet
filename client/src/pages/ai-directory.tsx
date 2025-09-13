@@ -972,15 +972,6 @@ export default function AIDirectory() {
                     </DialogContent>
                   </Dialog>
                   
-                  <Button 
-                    variant="outline" 
-                    onClick={autoFetchAITools}
-                    disabled={isAutoFetching}
-                    data-testid="button-auto-sync"
-                  >
-                    <RefreshCw className={`h-4 w-4 mr-2 ${isAutoFetching ? 'animate-spin' : ''}`} />
-                    {isAutoFetching ? 'Syncing...' : 'Auto Sync'}
-                  </Button>
                 </div>
               </div>
             </div>
