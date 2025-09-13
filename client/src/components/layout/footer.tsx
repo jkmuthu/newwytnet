@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Heart, Github, Twitter, Linkedin, Mail, Phone, MapPin } from "lucide-react";
+import { Heart, Github, Twitter, Linkedin, Mail, Phone, MapPin, MessageCircle } from "lucide-react";
+import { FaFacebook } from "react-icons/fa";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -48,15 +49,26 @@ export default function Footer() {
               />
             </div>
             <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md" data-testid="footer-description">
-              A comprehensive multi-tenant SaaS platform foundation with low-code capabilities, 
-              featuring CRUD builders, CMS functionality, and universal identity validation.
+              Your all-in-one digital platform for a better lifestyle and smarter workstyle.
+              ⚡ Speed. 🔒 Secure. 📈 Scale.
+              Start instantly with simple, powerful tools that boost your productivity — no complicated setup.
             </p>
             <div className="flex items-center space-x-4">
-              <Button variant="ghost" size="sm" data-testid="social-github">
-                <Github className="h-4 w-4" />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                data-testid="social-facebook"
+                onClick={() => window.open('https://www.facebook.com/WytNet', '_blank')}
+              >
+                <FaFacebook className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" data-testid="social-twitter">
-                <Twitter className="h-4 w-4" />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                data-testid="social-whatsapp"
+                onClick={() => window.open('https://wa.me/918220449911', '_blank')}
+              >
+                <MessageCircle className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="sm" data-testid="social-linkedin">
                 <Linkedin className="h-4 w-4" />
@@ -133,7 +145,7 @@ export default function Footer() {
               <div>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">Email</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400" data-testid="contact-email">
-                  hello@wytnet.com
+                  info@wytnet.com
                 </p>
               </div>
             </div>
@@ -142,7 +154,7 @@ export default function Footer() {
               <div>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">Phone</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400" data-testid="contact-phone">
-                  +1 (555) 123-4567
+                  +91 8220449911
                 </p>
               </div>
             </div>
@@ -151,7 +163,7 @@ export default function Footer() {
               <div>
                 <p className="text-sm font-medium text-gray-900 dark:text-white">Address</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400" data-testid="contact-address">
-                  San Francisco, CA
+                  Kamalam Ventures, Annanagar, Madurai - 625020
                 </p>
               </div>
             </div>
