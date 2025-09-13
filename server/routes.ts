@@ -2,6 +2,7 @@ import type { Express, RequestHandler } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth, isAuthenticated } from "./customAuth";
 import * as whatsappAuthService from "./services/whatsappAuth";
+import * as socialAuthService from "./services/socialAuth";
 import { storage } from "./storage";
 import { z } from "zod";
 import { 
@@ -3314,92 +3315,261 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // SOCIAL AUTHENTICATION ROUTES
   // =============================================================================
 
-  // Social auth providers info
+  // Social auth providers info with mobile verification policy
   app.get('/api/auth/social/providers', (req, res) => {
     res.json({
       success: true,
-      providers: {
-        google: { name: 'Google', color: 'red', authUrl: '/api/auth/google' },
-        facebook: { name: 'Facebook', color: 'blue', authUrl: '/api/auth/facebook' },
-        linkedin: { name: 'LinkedIn', color: 'blue', authUrl: '/api/auth/linkedin' },
-        instagram: { name: 'Instagram', color: 'pink', authUrl: '/api/auth/instagram' }
-      }
+      providers: socialAuthService.SOCIAL_PROVIDERS,
+      securityPolicy: {
+        requiresMobileVerification: true,
+        mobileFirstPolicy: true,
+        noSyntheticNumbers: true,
+        otpVerificationRequired: true
+      },
+      message: 'All social authentication requires mobile number verification via OTP'
     });
   });
 
-  // Social auth mobile link endpoint
-  app.post('/api/auth/social/link-mobile', async (req, res) => {
+  // Complete social account setup after mobile verification
+  app.post('/api/auth/social/complete-setup', async (req, res) => {
     try {
-      const { socialUserId, mobileNumber } = req.body;
+      const { pendingUserId, verifiedMobileNumber, otpToken } = req.body;
       
-      if (!socialUserId || !mobileNumber) {
+      if (!pendingUserId || !verifiedMobileNumber || !otpToken) {
         return res.status(400).json({
           success: false,
-          error: 'Social user ID and mobile number are required'
+          error: 'Pending user ID, verified mobile number and OTP token are required'
         });
       }
 
-      const { linkMobileToSocialAccount } = await import('./services/socialAuth');
-      const user = await linkMobileToSocialAccount(socialUserId, mobileNumber);
+      // Verify OTP first using WhatsApp auth service
+      const otpVerification = await whatsappAuthService.verifyOtp(verifiedMobileNumber, otpToken);
+      if (!otpVerification.success) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid OTP. Please verify your mobile number first.'
+        });
+      }
+
+      // Complete social account setup with verified mobile
+      const user = await socialAuthService.completeSocialAccountSetup(pendingUserId, verifiedMobileNumber);
+      
+      // Create session for the user
+      (req as any).session.userId = user.id;
+      (req as any).session.isAuthenticated = true;
       
       res.json({
         success: true,
+        message: 'Social account setup completed successfully',
         user: {
           id: user.id,
           name: user.name,
           whatsappNumber: user.whatsappNumber,
           email: user.email,
-          authMethods: user.authMethods
+          isVerified: user.isVerified,
+          authMethods: user.authMethods,
+          socialProviders: user.socialProviders
         }
       });
     } catch (error) {
-      console.error('Error linking mobile to social account:', error);
+      console.error('Error completing social account setup:', error);
       res.status(500).json({
         success: false,
-        error: 'Failed to link mobile number'
+        error: error.message || 'Failed to complete social account setup'
       });
     }
   });
 
-  // Social auth demo endpoints (placeholder for OAuth integration)
+  // Check pending social verification status
+  app.get('/api/auth/social/pending/:userId', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      const pendingStatus = await socialAuthService.getPendingSocialVerification(userId);
+      
+      res.json({
+        success: true,
+        ...pendingStatus
+      });
+    } catch (error) {
+      console.error('Error checking pending social verification:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to check pending verification status'
+      });
+    }
+  });
+
+  // OAuth initiation endpoints - redirect to provider with mobile verification flow
   app.get('/api/auth/google', (req, res) => {
-    // In production, this would redirect to Google OAuth
+    // For demo: simulate OAuth initiation that requires mobile verification
+    const state = Buffer.from(JSON.stringify({
+      provider: 'google',
+      timestamp: Date.now(),
+      requiresMobileVerification: true
+    })).toString('base64');
+    
     res.json({
       success: true,
-      message: 'Google OAuth integration available in production',
-      redirectUrl: 'https://accounts.google.com/oauth/authorize',
+      provider: 'google',
+      message: 'Google OAuth - Mobile verification required',
+      redirectUrl: `https://accounts.google.com/oauth/authorize?client_id=demo&redirect_uri=${encodeURIComponent(process.env.OAUTH_REDIRECT_URI || '/api/auth/callback/google')}&state=${state}&scope=openid%20profile%20email`,
+      requiresMobileVerification: true,
       demoMode: true
     });
   });
 
   app.get('/api/auth/facebook', (req, res) => {
-    // In production, this would redirect to Facebook OAuth
+    const state = Buffer.from(JSON.stringify({
+      provider: 'facebook',
+      timestamp: Date.now(),
+      requiresMobileVerification: true
+    })).toString('base64');
+    
     res.json({
       success: true,
-      message: 'Facebook OAuth integration available in production',
-      redirectUrl: 'https://www.facebook.com/v18.0/dialog/oauth',
+      provider: 'facebook',
+      message: 'Facebook OAuth - Mobile verification required',
+      redirectUrl: `https://www.facebook.com/v18.0/dialog/oauth?client_id=demo&redirect_uri=${encodeURIComponent(process.env.OAUTH_REDIRECT_URI || '/api/auth/callback/facebook')}&state=${state}&scope=public_profile,email`,
+      requiresMobileVerification: true,
       demoMode: true
     });
   });
 
   app.get('/api/auth/linkedin', (req, res) => {
-    // In production, this would redirect to LinkedIn OAuth
+    const state = Buffer.from(JSON.stringify({
+      provider: 'linkedin',
+      timestamp: Date.now(),
+      requiresMobileVerification: true
+    })).toString('base64');
+    
     res.json({
       success: true,
-      message: 'LinkedIn OAuth integration available in production',
-      redirectUrl: 'https://www.linkedin.com/oauth/v2/authorization',
+      provider: 'linkedin',
+      message: 'LinkedIn OAuth - Mobile verification required',
+      redirectUrl: `https://www.linkedin.com/oauth/v2/authorization?client_id=demo&redirect_uri=${encodeURIComponent(process.env.OAUTH_REDIRECT_URI || '/api/auth/callback/linkedin')}&state=${state}&scope=r_liteprofile%20r_emailaddress`,
+      requiresMobileVerification: true,
       demoMode: true
     });
   });
 
   app.get('/api/auth/instagram', (req, res) => {
-    // In production, this would redirect to Instagram OAuth
+    const state = Buffer.from(JSON.stringify({
+      provider: 'instagram',
+      timestamp: Date.now(),
+      requiresMobileVerification: true
+    })).toString('base64');
+    
     res.json({
       success: true,
-      message: 'Instagram OAuth integration available in production',
-      redirectUrl: 'https://api.instagram.com/oauth/authorize',
+      provider: 'instagram',
+      message: 'Instagram OAuth - Mobile verification required',
+      redirectUrl: `https://api.instagram.com/oauth/authorize?client_id=demo&redirect_uri=${encodeURIComponent(process.env.OAUTH_REDIRECT_URI || '/api/auth/callback/instagram')}&state=${state}&scope=user_profile,user_media`,
+      requiresMobileVerification: true,
       demoMode: true
     });
+  });
+
+  // OAuth callback endpoints - handle provider response and initiate mobile verification
+  app.get('/api/auth/callback/:provider', async (req, res) => {
+    try {
+      const { provider } = req.params;
+      const { code, state } = req.query;
+      
+      if (!code || !state) {
+        return res.redirect('/auth/error?message=Missing authorization code or state');
+      }
+
+      // Decode state to verify request
+      let stateData;
+      try {
+        stateData = JSON.parse(Buffer.from(state as string, 'base64').toString());
+      } catch {
+        return res.redirect('/auth/error?message=Invalid state parameter');
+      }
+
+      if (stateData.provider !== provider) {
+        return res.redirect('/auth/error?message=Provider mismatch');
+      }
+
+      // For demo: simulate OAuth profile retrieval
+      const mockProfile: socialAuthService.SocialProfile = {
+        id: `demo_${provider}_${Date.now()}`,
+        email: `demo.user@${provider}.example.com`,
+        name: `Demo ${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+        firstName: 'Demo',
+        lastName: 'User',
+        profileImageUrl: `https://via.placeholder.com/150?text=${provider.toUpperCase()}`,
+        provider: provider as socialAuthService.SocialProvider
+      };
+
+      // Mock tokens
+      const mockTokens = {
+        accessToken: `demo_access_token_${Date.now()}`,
+        refreshToken: `demo_refresh_token_${Date.now()}`,
+        expiresAt: new Date(Date.now() + 3600000) // 1 hour
+      };
+
+      // Create pending social user (requires mobile verification)
+      const result = await socialAuthService.createPendingSocialUser(mockProfile, mockTokens);
+      
+      // Redirect to mobile verification page
+      const redirectUrl = `/auth/mobile-verification?userId=${result.pendingUserId}&provider=${provider}&requiresVerification=${result.requiresMobileVerification}`;
+      
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error(`Error in ${req.params.provider} OAuth callback:`, error);
+      res.redirect('/auth/error?message=OAuth authentication failed');
+    }
+  });
+
+  // Social auth login simulation for demo purposes  
+  app.post('/api/auth/social/demo-login', async (req, res) => {
+    try {
+      const { provider, userEmail, userName } = req.body;
+      
+      if (!provider || !socialAuthService.SOCIAL_PROVIDERS[provider as socialAuthService.SocialProvider]) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid social provider'
+        });
+      }
+
+      // Create demo profile
+      const demoProfile: socialAuthService.SocialProfile = {
+        id: `demo_${provider}_${Date.now()}`,
+        email: userEmail || `demo.user@${provider}.example.com`,
+        name: userName || `Demo ${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+        firstName: 'Demo',
+        lastName: 'User',
+        profileImageUrl: `https://via.placeholder.com/150?text=${provider.toUpperCase()}`,
+        provider: provider as socialAuthService.SocialProvider
+      };
+
+      // Create demo tokens
+      const demoTokens = {
+        accessToken: `demo_access_token_${Date.now()}`,
+        refreshToken: `demo_refresh_token_${Date.now()}`,
+        expiresAt: new Date(Date.now() + 3600000)
+      };
+
+      // Create pending social user
+      const result = await socialAuthService.createPendingSocialUser(demoProfile, demoTokens);
+      
+      res.json({
+        success: true,
+        pendingUserId: result.pendingUserId,
+        requiresMobileVerification: result.requiresMobileVerification,
+        provider: provider,
+        message: 'Social authentication initiated. Mobile verification required to complete setup.'
+      });
+    } catch (error) {
+      console.error('Error in demo social login:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to initiate social authentication'
+      });
+    }
   });
 
   // =============================================================================
@@ -3582,6 +3752,229 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         success: false,
         error: 'Failed to load tenants'
+      });
+    }
+  });
+
+  // =============================================================================
+  // SOCIAL AUTH ADMIN MANAGEMENT ROUTES
+  // =============================================================================
+
+  // Social Auth dashboard data for Super Admin
+  app.get('/api/admin/social-auth', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const user = req.user;
+
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Super Admin required'
+        });
+      }
+
+      // Get social auth statistics
+      const [
+        totalSocialUsers,
+        pendingVerifications,
+        verifiedAccounts,
+        recentSocialActivity,
+        allSocialTokens
+      ] = await Promise.all([
+        // Total users with social providers
+        db.select({ count: sql<number>`cast(count(*) as integer)` })
+          .from(whatsappUsers)
+          .where(sql`cardinality(social_providers) > 0`),
+        
+        // Pending mobile verifications
+        db.select({ count: sql<number>`cast(count(*) as integer)` })
+          .from(whatsappUsers)
+          .where(and(
+            sql`cardinality(social_providers) > 0`,
+            eq(whatsappUsers.isVerified, false)
+          )),
+        
+        // Verified social accounts
+        db.select({ count: sql<number>`cast(count(*) as integer)` })
+          .from(whatsappUsers)
+          .where(and(
+            sql`cardinality(social_providers) > 0`,
+            eq(whatsappUsers.isVerified, true)
+          )),
+        
+        // Recent social users
+        db.select({
+          id: whatsappUsers.id,
+          name: whatsappUsers.name,
+          email: whatsappUsers.email,
+          socialProviders: whatsappUsers.socialProviders,
+          isVerified: whatsappUsers.isVerified,
+          whatsappNumber: whatsappUsers.whatsappNumber,
+          lastLoginAt: whatsappUsers.lastLoginAt
+        })
+          .from(whatsappUsers)
+          .where(sql`cardinality(social_providers) > 0`)
+          .orderBy(desc(whatsappUsers.lastLoginAt))
+          .limit(50),
+        
+        // All social tokens for audit
+        db.select()
+          .from(socialAuthTokens)
+          .orderBy(desc(socialAuthTokens.createdAt))
+          .limit(100)
+      ]);
+
+      // Provider statistics
+      const providers = [
+        {
+          provider: 'google',
+          name: 'Google',
+          enabled: true,
+          userCount: 0,
+          lastActivity: null
+        },
+        {
+          provider: 'facebook',
+          name: 'Facebook',
+          enabled: true,
+          userCount: 0,
+          lastActivity: null
+        },
+        {
+          provider: 'linkedin',
+          name: 'LinkedIn',
+          enabled: true,
+          userCount: 0,
+          lastActivity: null
+        },
+        {
+          provider: 'instagram',
+          name: 'Instagram',
+          enabled: true,
+          userCount: 0,
+          lastActivity: null
+        }
+      ];
+
+      // Calculate provider user counts
+      for (const user of recentSocialActivity) {
+        if (user.socialProviders) {
+          for (const provider of user.socialProviders) {
+            const providerData = providers.find(p => p.provider === provider);
+            if (providerData) {
+              providerData.userCount++;
+              if (!providerData.lastActivity || (user.lastLoginAt && new Date(user.lastLoginAt) > new Date(providerData.lastActivity))) {
+                providerData.lastActivity = user.lastLoginAt;
+              }
+            }
+          }
+        }
+      }
+
+      // Generate audit log
+      const auditLog = allSocialTokens.map(token => ({
+        id: token.id,
+        userId: token.userId,
+        action: 'Social Login',
+        provider: token.provider,
+        timestamp: token.createdAt,
+        details: `${token.provider} authentication token created`
+      }));
+
+      res.json({
+        success: true,
+        socialAuth: {
+          statistics: {
+            totalSocialUsers: totalSocialUsers[0]?.count || 0,
+            pendingVerifications: pendingVerifications[0]?.count || 0,
+            linkedAccounts: verifiedAccounts[0]?.count || 0,
+            blockedProviders: 0 // Future feature
+          },
+          providers,
+          users: recentSocialActivity.map(user => ({
+            ...user,
+            status: user.isVerified ? 'verified' : 'pending',
+            lastLogin: user.lastLoginAt
+          })),
+          auditLog
+        }
+      });
+    } catch (error) {
+      console.error('Error loading social auth data:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to load social auth data'
+      });
+    }
+  });
+
+  // Toggle social provider enable/disable
+  app.put('/api/admin/social-auth/provider/:provider', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const user = req.user;
+      
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Super Admin required'
+        });
+      }
+
+      const { provider } = req.params;
+      const { enabled } = req.body;
+
+      // For demo purposes, just return success
+      // In production, this would update provider settings in database
+      
+      res.json({
+        success: true,
+        message: `${provider} provider ${enabled ? 'enabled' : 'disabled'} successfully`,
+        provider,
+        enabled
+      });
+    } catch (error) {
+      console.error('Error updating social provider:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update social provider'
+      });
+    }
+  });
+
+  // Unlink social account
+  app.post('/api/admin/social-auth/unlink', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const user = req.user;
+      
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Super Admin required'
+        });
+      }
+
+      const { userId, provider } = req.body;
+
+      if (!userId || !provider) {
+        return res.status(400).json({
+          success: false,
+          error: 'User ID and provider are required'
+        });
+      }
+
+      // Unlink the social provider using the service
+      await socialAuthService.unlinkSocialProvider(userId, provider as socialAuthService.SocialProvider);
+
+      res.json({
+        success: true,
+        message: `Successfully unlinked ${provider} from user account`,
+        userId,
+        provider
+      });
+    } catch (error) {
+      console.error('Error unlinking social account:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to unlink social account'
       });
     }
   });

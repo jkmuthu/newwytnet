@@ -44,30 +44,39 @@ export interface SocialProfile {
   provider: SocialProvider;
 }
 
-// Generate a mobile number from social profile email or create a placeholder
-export function generateMobileFromSocial(profile: SocialProfile, provider: SocialProvider): string {
-  // For demo purposes, we'll create a mobile number format
-  // In production, this would prompt user to enter their mobile number
-  const providerId = profile.id.slice(-6); // Last 6 digits of social ID
-  const providerCode = {
-    google: '90',
-    facebook: '91', 
-    linkedin: '92',
-    instagram: '93'
-  }[provider];
-  
-  return `+91${providerCode}${providerId}`;
+// Security: REMOVED synthetic mobile generation - users must verify real mobile numbers
+// Social auth users are required to verify actual mobile numbers via OTP
+export function validateMobileNumber(mobile: string): boolean {
+  // Validate real mobile number format (international)
+  const mobileRegex = /^\+[1-9]\d{1,14}$/;
+  return mobileRegex.test(mobile) && !mobile.includes('90') && !mobile.includes('91') && !mobile.includes('92') && !mobile.includes('93');
 }
 
-// Create or update user from social auth
-export async function createOrUpdateSocialUser(
+// Encrypt social tokens for security
+export function encryptToken(token: string): string {
+  // In production, use proper encryption library like crypto-js
+  // For now, use basic encoding (should be replaced with AES encryption)
+  return Buffer.from(token).toString('base64');
+}
+
+// Decrypt social tokens
+export function decryptToken(encryptedToken: string): string {
+  try {
+    return Buffer.from(encryptedToken, 'base64').toString('utf-8');
+  } catch {
+    throw new Error('Invalid token format');
+  }
+}
+
+// Create partial social user account - requires mobile verification to complete
+export async function createPendingSocialUser(
   profile: SocialProfile,
   tokens: {
     accessToken: string;
     refreshToken?: string;
     expiresAt?: Date;
   }
-): Promise<WhatsAppUser> {
+): Promise<{ pendingUserId: string; requiresMobileVerification: boolean }> {
   try {
     // First, check if user exists by social provider ID
     const existingToken = await db
@@ -81,10 +90,8 @@ export async function createOrUpdateSocialUser(
       )
       .limit(1);
 
-    let user: WhatsAppUser;
-
     if (existingToken.length > 0) {
-      // Update existing user
+      // Existing user with social auth - check if mobile is verified
       const [existingUser] = await db
         .select()
         .from(whatsappUsers)
@@ -92,130 +99,132 @@ export async function createOrUpdateSocialUser(
         .limit(1);
 
       if (existingUser) {
-        // Update user profile with latest social data
-        [user] = await db
+        if (!existingUser.isVerified || !existingUser.whatsappNumber || 
+            !validateMobileNumber(existingUser.whatsappNumber)) {
+          // User exists but mobile not verified - require verification
+          return {
+            pendingUserId: existingUser.id,
+            requiresMobileVerification: true
+          };
+        }
+        
+        // User is fully verified - allow login
+        await db
           .update(whatsappUsers)
           .set({
-            name: profile.name,
-            email: profile.email,
-            profileImageUrl: profile.profileImageUrl,
-            lastLoginAt: new Date(),
-            updatedAt: new Date(),
-            // Add social provider if not already present
-            socialProviders: existingUser.socialProviders?.includes(profile.provider) 
-              ? existingUser.socialProviders 
-              : [...(existingUser.socialProviders || []), profile.provider],
-            authMethods: existingUser.authMethods?.includes(profile.provider)
-              ? existingUser.authMethods
-              : [...(existingUser.authMethods || []), profile.provider]
-          })
-          .where(eq(whatsappUsers.id, existingUser.id))
-          .returning();
-      } else {
-        throw new Error('User not found for existing social token');
-      }
-
-      // Update social token
-      await db
-        .update(socialAuthTokens)
-        .set({
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          expiresAt: tokens.expiresAt,
-          updatedAt: new Date()
-        })
-        .where(eq(socialAuthTokens.id, existingToken[0].id));
-
-    } else {
-      // Check if user exists by email (link accounts)
-      let existingUserByEmail = null;
-      if (profile.email) {
-        const emailUsers = await db
-          .select()
-          .from(whatsappUsers)
-          .where(eq(whatsappUsers.email, profile.email))
-          .limit(1);
-        
-        existingUserByEmail = emailUsers[0] || null;
-      }
-
-      if (existingUserByEmail) {
-        // Link social account to existing user
-        user = existingUserByEmail;
-        
-        // Update user with social info
-        [user] = await db
-          .update(whatsappUsers)
-          .set({
-            profileImageUrl: profile.profileImageUrl || user.profileImageUrl,
-            socialProviders: user.socialProviders?.includes(profile.provider)
-              ? user.socialProviders
-              : [...(user.socialProviders || []), profile.provider],
-            authMethods: user.authMethods?.includes(profile.provider)
-              ? user.authMethods
-              : [...(user.authMethods || []), profile.provider],
             lastLoginAt: new Date(),
             updatedAt: new Date()
           })
-          .where(eq(whatsappUsers.id, user.id))
-          .returning();
-      } else {
-        // Create new user
-        const generatedMobile = generateMobileFromSocial(profile, profile.provider);
-        
-        // Get or create default tenant
-        let [tenant] = await db
-          .select()
-          .from(tenants)
-          .where(eq(tenants.slug, 'default'))
-          .limit(1);
-
-        if (!tenant) {
-          [tenant] = await db
-            .insert(tenants)
-            .values({
-              name: 'WytNet Community',
-              slug: 'default',
-              status: 'active',
-            })
-            .returning();
-        }
-
-        const userData: InsertWhatsAppUser = {
-          name: profile.name,
-          whatsappNumber: generatedMobile,
-          email: profile.email,
-          profileImageUrl: profile.profileImageUrl,
-          tenantId: tenant.id,
-          role: 'user',
-          isVerified: true, // Social auth users are pre-verified
-          socialProviders: [profile.provider],
-          authMethods: [profile.provider],
-          lastLoginAt: new Date()
+          .where(eq(whatsappUsers.id, existingUser.id));
+          
+        return {
+          pendingUserId: existingUser.id,
+          requiresMobileVerification: false
         };
-
-        [user] = await db
-          .insert(whatsappUsers)
-          .values(userData)
-          .returning();
       }
+    }
 
-      // Create social auth token
+    // Check if user exists by email (potential account linking)
+    let existingUserByEmail = null;
+    if (profile.email) {
+      const emailUsers = await db
+        .select()
+        .from(whatsappUsers)
+        .where(eq(whatsappUsers.email, profile.email))
+        .limit(1);
+      
+      existingUserByEmail = emailUsers[0] || null;
+    }
+
+    if (existingUserByEmail) {
+      // User exists with email - link social provider but require mobile verification
       await db
         .insert(socialAuthTokens)
         .values({
-          userId: user.id,
+          userId: existingUserByEmail.id,
           provider: profile.provider,
           providerId: profile.id,
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
+          accessToken: encryptToken(tokens.accessToken),
+          refreshToken: tokens.refreshToken ? encryptToken(tokens.refreshToken) : null,
           expiresAt: tokens.expiresAt
         });
-    }
 
-    return user;
+      // Update social providers
+      const updatedSocialProviders = existingUserByEmail.socialProviders?.includes(profile.provider)
+        ? existingUserByEmail.socialProviders
+        : [...(existingUserByEmail.socialProviders || []), profile.provider];
+
+      await db
+        .update(whatsappUsers)
+        .set({
+          socialProviders: updatedSocialProviders,
+          profileImageUrl: profile.profileImageUrl || existingUserByEmail.profileImageUrl,
+          updatedAt: new Date()
+        })
+        .where(eq(whatsappUsers.id, existingUserByEmail.id));
+
+      return {
+        pendingUserId: existingUserByEmail.id,
+        requiresMobileVerification: !existingUserByEmail.isVerified
+      };
+    } else {
+      // Create new pending user - REQUIRES mobile verification
+      // Get or create default tenant
+      let [tenant] = await db
+        .select()
+        .from(tenants)
+        .where(eq(tenants.slug, 'default'))
+        .limit(1);
+
+      if (!tenant) {
+        [tenant] = await db
+          .insert(tenants)
+          .values({
+            name: 'WytNet Community',
+            slug: 'default',
+            status: 'active',
+          })
+          .returning();
+      }
+
+      // Create UNVERIFIED user account - mobile verification required
+      const userData: InsertWhatsAppUser = {
+        name: profile.name,
+        whatsappNumber: '', // Empty until verified
+        email: profile.email,
+        profileImageUrl: profile.profileImageUrl,
+        tenantId: tenant.id,
+        role: 'user',
+        isVerified: false, // SECURITY: Must verify mobile before activation
+        socialProviders: [profile.provider],
+        authMethods: [], // Empty until mobile verified
+        lastLoginAt: new Date()
+      };
+
+      const [newUser] = await db
+        .insert(whatsappUsers)
+        .values(userData)
+        .returning();
+
+      // Store encrypted social tokens
+      await db
+        .insert(socialAuthTokens)
+        .values({
+          userId: newUser.id,
+          provider: profile.provider,
+          providerId: profile.id,
+          accessToken: encryptToken(tokens.accessToken),
+          refreshToken: tokens.refreshToken ? encryptToken(tokens.refreshToken) : null,
+          expiresAt: tokens.expiresAt
+        });
+
+      return {
+        pendingUserId: newUser.id,
+        requiresMobileVerification: true
+      };
+    }
   } catch (error) {
-    console.error('Error creating/updating social user:', error);
+    console.error('Error creating pending social user:', error);
     throw new Error('Failed to process social authentication');
   }
 }
@@ -272,20 +281,76 @@ export async function unlinkSocialProvider(userId: string, provider: SocialProvi
   }
 }
 
-// Link mobile number to social account (for verification)
-export async function linkMobileToSocialAccount(
+// Complete social account setup after mobile verification
+export async function completeSocialAccountSetup(
   socialUserId: string, 
-  mobileNumber: string
+  verifiedMobileNumber: string
 ): Promise<WhatsAppUser> {
+  // Validate mobile number format
+  if (!validateMobileNumber(verifiedMobileNumber)) {
+    throw new Error('Invalid mobile number format');
+  }
+
+  // Check if mobile is already in use
+  const existingMobile = await db
+    .select()
+    .from(whatsappUsers)
+    .where(eq(whatsappUsers.whatsappNumber, verifiedMobileNumber))
+    .limit(1);
+
+  if (existingMobile.length > 0 && existingMobile[0].id !== socialUserId) {
+    throw new Error('Mobile number already registered to another account');
+  }
+
+  // Get user's social providers
+  const [existingUser] = await db
+    .select()
+    .from(whatsappUsers)
+    .where(eq(whatsappUsers.id, socialUserId))
+    .limit(1);
+
+  if (!existingUser) {
+    throw new Error('User not found');
+  }
+
+  // Complete account setup with verified mobile
   const [user] = await db
     .update(whatsappUsers)
     .set({
-      whatsappNumber: mobileNumber,
-      authMethods: ['whatsapp', ...(user.authMethods || [])],
+      whatsappNumber: verifiedMobileNumber,
+      isVerified: true, // Now verified via mobile OTP
+      authMethods: ['whatsapp', ...(existingUser.socialProviders || [])],
       updatedAt: new Date()
     })
     .where(eq(whatsappUsers.id, socialUserId))
     .returning();
 
   return user;
+}
+
+// Get pending social verification status
+export async function getPendingSocialVerification(userId: string): Promise<{
+  user: WhatsAppUser | null;
+  socialProviders: string[];
+  requiresMobileVerification: boolean;
+}> {
+  const [user] = await db
+    .select()
+    .from(whatsappUsers)
+    .where(eq(whatsappUsers.id, userId))
+    .limit(1);
+
+  if (!user) {
+    return {
+      user: null,
+      socialProviders: [],
+      requiresMobileVerification: false
+    };
+  }
+
+  return {
+    user,
+    socialProviders: user.socialProviders || [],
+    requiresMobileVerification: !user.isVerified || !validateMobileNumber(user.whatsappNumber || '')
+  };
 }

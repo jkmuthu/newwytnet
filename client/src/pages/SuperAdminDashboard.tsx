@@ -21,7 +21,14 @@ import {
   Monitor,
   RefreshCw,
   UserCheck,
-  AlertTriangle
+  AlertTriangle,
+  Link,
+  Ban,
+  CheckCircle,
+  XCircle,
+  Key,
+  Eye,
+  RotateCcw
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -56,6 +63,40 @@ interface DashboardData {
     activeConnections: number;
     timestamp: string;
   };
+}
+
+interface SocialAuthData {
+  statistics: {
+    totalSocialUsers: number;
+    pendingVerifications: number;
+    linkedAccounts: number;
+    blockedProviders: number;
+  };
+  providers: Array<{
+    provider: string;
+    name: string;
+    enabled: boolean;
+    userCount: number;
+    lastActivity: string;
+  }>;
+  users: Array<{
+    id: string;
+    name: string;
+    email: string;
+    socialProviders: string[];
+    isVerified: boolean;
+    whatsappNumber: string;
+    lastLogin: string;
+    status: 'verified' | 'pending' | 'suspended';
+  }>;
+  auditLog: Array<{
+    id: string;
+    userId: string;
+    action: string;
+    provider: string;
+    timestamp: string;
+    details: string;
+  }>;
 }
 
 export default function SuperAdminDashboard() {
@@ -111,13 +152,24 @@ export default function SuperAdminDashboard() {
     enabled: selectedTab === 'tenants',
   });
 
+  // Load social auth data
+  const { data: socialAuthData, isLoading: socialAuthLoading } = useQuery<{
+    success: boolean;
+    socialAuth: SocialAuthData;
+  }>({
+    queryKey: ['/api/admin/social-auth'],
+    enabled: selectedTab === 'social-auth',
+    refetchInterval: 60000, // Refresh every minute for security monitoring
+  });
+
   // Platform module toggle mutation
   const toggleModuleMutation = useMutation({
     mutationFn: async ({ moduleId, enabled }: { moduleId: string; enabled: boolean }) => {
-      return apiRequest(`/api/platform-modules/${moduleId}`, {
+      return await fetch(`/api/platform-modules/${moduleId}`, {
         method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isEnabled: enabled }),
-      });
+      }).then(res => res.json());
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/dashboard'] });
@@ -126,6 +178,48 @@ export default function SuperAdminDashboard() {
     onError: () => {
       toast({ 
         title: 'Error updating platform module',
+        description: 'Please try again later',
+        variant: 'destructive'
+      });
+    },
+  });
+
+  // Social auth provider toggle mutation
+  const toggleSocialProviderMutation = useMutation({
+    mutationFn: async ({ provider, enabled }: { provider: string; enabled: boolean }) => {
+      return await apiRequest(`/api/admin/social-auth/provider/${provider}`, {
+        method: 'PUT',
+        body: { enabled },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/social-auth'] });
+      toast({ title: 'Social provider updated successfully' });
+    },
+    onError: () => {
+      toast({ 
+        title: 'Error updating social provider',
+        description: 'Please try again later',
+        variant: 'destructive'
+      });
+    },
+  });
+
+  // Unlink social account mutation
+  const unlinkSocialAccountMutation = useMutation({
+    mutationFn: async ({ userId, provider }: { userId: string; provider: string }) => {
+      return await apiRequest(`/api/admin/social-auth/unlink`, {
+        method: 'POST',
+        body: { userId, provider },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/social-auth'] });
+      toast({ title: 'Social account unlinked successfully' });
+    },
+    onError: () => {
+      toast({ 
+        title: 'Error unlinking social account',
         description: 'Please try again later',
         variant: 'destructive'
       });
@@ -192,7 +286,7 @@ export default function SuperAdminDashboard() {
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-fit lg:grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5 lg:w-fit lg:grid-cols-5">
           <TabsTrigger value="overview" data-testid="tab-overview">
             <TrendingUp className="h-4 w-4 mr-2" />
             Overview
@@ -208,6 +302,10 @@ export default function SuperAdminDashboard() {
           <TabsTrigger value="modules" data-testid="tab-modules">
             <Layers className="h-4 w-4 mr-2" />
             Modules
+          </TabsTrigger>
+          <TabsTrigger value="social-auth" data-testid="tab-social-auth">
+            <Link className="h-4 w-4 mr-2" />
+            Social Auth
           </TabsTrigger>
         </TabsList>
 
@@ -464,6 +562,339 @@ export default function SuperAdminDashboard() {
                   </Card>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="social-auth" className="space-y-6">
+          {/* Social Auth Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card data-testid="stat-social-users">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Social Users</CardTitle>
+                <Link className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{socialAuthData?.socialAuth?.statistics.totalSocialUsers || 0}</div>
+                <p className="text-xs text-muted-foreground">Total linked accounts</p>
+              </CardContent>
+            </Card>
+
+            <Card data-testid="stat-pending-verifications">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Pending</CardTitle>
+                <Clock className="h-4 w-4 text-yellow-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">
+                  {socialAuthData?.socialAuth?.statistics.pendingVerifications || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">Mobile verification required</p>
+              </CardContent>
+            </Card>
+
+            <Card data-testid="stat-verified-accounts">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Verified</CardTitle>
+                <CheckCircle className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {socialAuthData?.socialAuth?.statistics.linkedAccounts || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">Fully verified accounts</p>
+              </CardContent>
+            </Card>
+
+            <Card data-testid="stat-security-alerts">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Security</CardTitle>
+                <Shield className="h-4 w-4 text-red-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">
+                  {socialAuthData?.socialAuth?.statistics.blockedProviders || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">Blocked attempts</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Provider Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Social Provider Management
+              </CardTitle>
+              <CardDescription>
+                Control social authentication providers and their security policies
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {socialAuthLoading ? (
+                  <div className="flex items-center justify-center h-32">
+                    <RefreshCw className="h-6 w-6 animate-spin" />
+                    <span className="ml-2">Loading provider data...</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {socialAuthData?.socialAuth?.providers?.map((provider) => (
+                      <Card key={provider.provider} className="border-2" data-testid={`provider-${provider.provider}`}>
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                                <span className="text-sm font-semibold">
+                                  {provider.provider.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <CardTitle className="text-lg">{provider.name}</CardTitle>
+                            </div>
+                            <Switch
+                              checked={provider.enabled}
+                              onCheckedChange={(enabled) => 
+                                toggleSocialProviderMutation.mutate({ 
+                                  provider: provider.provider, 
+                                  enabled 
+                                })
+                              }
+                              disabled={toggleSocialProviderMutation.isPending}
+                              data-testid={`provider-toggle-${provider.provider}`}
+                            />
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Users:</span>
+                              <span className="font-medium">{provider.userCount}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Last Activity:</span>
+                              <span className="font-medium">
+                                {provider.lastActivity 
+                                  ? new Date(provider.lastActivity).toLocaleDateString()
+                                  : 'No activity'
+                                }
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Status:</span>
+                              <Badge variant={provider.enabled ? 'default' : 'secondary'}>
+                                {provider.enabled ? 'Active' : 'Disabled'}
+                              </Badge>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Security Policy */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Mobile-First Security Policy
+              </CardTitle>
+              <CardDescription>
+                WytNet enforces strict mobile verification for all social authentication
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Mobile-First Policy Active:</strong> All social authentication requires verified mobile numbers via OTP
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <h4 className="font-medium flex items-center gap-2">
+                      <Ban className="h-4 w-4 text-red-500" />
+                      Blocked Features
+                    </h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• Synthetic mobile number generation</li>
+                      <li>• Auto-verification without OTP</li>
+                      <li>• Provider-only authentication</li>
+                      <li>• Bypass mobile verification</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <h4 className="font-medium flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Security Features
+                    </h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• Real mobile number validation</li>
+                      <li>• WhatsApp OTP verification</li>
+                      <li>• Encrypted token storage</li>
+                      <li>• Account linking protection</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* User Account Audit */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                Social Account Audit
+              </CardTitle>
+              <CardDescription>
+                Monitor and manage user social authentication accounts
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {socialAuthLoading ? (
+                <div className="flex items-center justify-center h-32">
+                  <RefreshCw className="h-6 w-6 animate-spin" />
+                  <span className="ml-2">Loading user data...</span>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User</TableHead>
+                      <TableHead>Mobile</TableHead>
+                      <TableHead>Providers</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Last Login</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {socialAuthData?.socialAuth?.users?.map((user) => (
+                      <TableRow key={user.id} data-testid={`social-user-row-${user.id}`}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{user.name}</p>
+                            <p className="text-sm text-muted-foreground">{user.email}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm">{user.whatsappNumber || 'Not linked'}</span>
+                            {user.isVerified ? (
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <XCircle className="h-4 w-4 text-red-600" />
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            {user.socialProviders.map((provider) => (
+                              <Badge key={provider} variant="outline" className="text-xs">
+                                {provider}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={
+                              user.status === 'verified' ? 'default' : 
+                              user.status === 'pending' ? 'secondary' : 'destructive'
+                            }
+                            data-testid={`user-status-${user.id}`}
+                          >
+                            {user.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {user.lastLogin 
+                            ? new Date(user.lastLogin).toLocaleDateString()
+                            : 'Never'
+                          }
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            {user.socialProviders.map((provider) => (
+                              <Button
+                                key={provider}
+                                variant="outline"
+                                size="sm"
+                                onClick={() => 
+                                  unlinkSocialAccountMutation.mutate({ 
+                                    userId: user.id, 
+                                    provider 
+                                  })
+                                }
+                                disabled={unlinkSocialAccountMutation.isPending}
+                                data-testid={`unlink-${provider}-${user.id}`}
+                              >
+                                <RotateCcw className="h-3 w-3 mr-1" />
+                                Unlink {provider}
+                              </Button>
+                            ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Security Audit Log */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5" />
+                Security Audit Log
+              </CardTitle>
+              <CardDescription>
+                Real-time monitoring of social authentication activities
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {socialAuthLoading ? (
+                <div className="flex items-center justify-center h-32">
+                  <RefreshCw className="h-6 w-6 animate-spin" />
+                  <span className="ml-2">Loading audit log...</span>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {socialAuthData?.socialAuth?.auditLog?.map((entry) => (
+                    <div 
+                      key={entry.id} 
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                      data-testid={`audit-entry-${entry.id}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                        <div>
+                          <p className="text-sm font-medium">{entry.action}</p>
+                          <p className="text-xs text-muted-foreground">
+                            User: {entry.userId} • Provider: {entry.provider}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{entry.details}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(entry.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
