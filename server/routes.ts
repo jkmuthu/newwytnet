@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, RequestHandler } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth, isAuthenticated } from "./customAuth";
 import * as whatsappAuthService from "./services/whatsappAuth";
@@ -367,7 +367,7 @@ const isAuthenticatedUnified: RequestHandler = async (req, res, next) => {
         (req as any).user = {
           id: user.id,
           tenantId: user.tenantId,
-          email: user.email,
+          email: user.email || `${user.whatsappNumber}@wytnet.local`,
           whatsappNumber: user.whatsappNumber,
           isSuperAdmin: user.isSuperAdmin,
           role: user.role,
@@ -494,7 +494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertModelSchema.parse({
         ...req.body,
         tenantId: user.tenantId,
-        createdBy: userId,
+        createdBy: user.id,
       });
 
       const model = await storage.createModel(validatedData);
@@ -561,7 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertPageSchema.parse({
         ...req.body,
         tenantId: user.tenantId,
-        createdBy: userId,
+        createdBy: user.id,
       });
 
       const page = await storage.createPage(validatedData);
@@ -597,7 +597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertAppSchema.parse({
         ...req.body,
         tenantId: user?.tenantId,
-        createdBy: userId,
+        createdBy: user.id,
       });
 
       const app = await storage.createApp(validatedData);
@@ -626,6 +626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
 
+      const userId = req.user.claims.sub;
       const validatedData = insertHubSchema.parse({
         ...req.body,
         createdBy: userId,

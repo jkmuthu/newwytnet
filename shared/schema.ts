@@ -813,8 +813,8 @@ export const tmNumbers = pgTable("tm_numbers", {
   segmentKey: varchar("segment_key", { length: 100 }),
   status: varchar("status", { length: 20 }).notNull().default('active'), // active/deprecated
   
-  // Relationships and metadata
-  aliasOf: uuid("alias_of").references(() => tmNumbers.id), // For deprecation mapping
+  // Relationships and metadata  
+  aliasOf: uuid("alias_of"), // For deprecation mapping - self-reference will be added later
   tenantId: uuid("tenant_id").references(() => tenants.id),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
