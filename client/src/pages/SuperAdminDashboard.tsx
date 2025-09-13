@@ -187,10 +187,11 @@ export default function SuperAdminDashboard() {
   // Social auth provider toggle mutation
   const toggleSocialProviderMutation = useMutation({
     mutationFn: async ({ provider, enabled }: { provider: string; enabled: boolean }) => {
-      return await apiRequest(`/api/admin/social-auth/provider/${provider}`, {
+      return await fetch(`/api/admin/social-auth/provider/${provider}`, {
         method: 'PUT',
-        body: { enabled },
-      });
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }),
+      }).then(res => res.json());
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/social-auth'] });
@@ -208,10 +209,11 @@ export default function SuperAdminDashboard() {
   // Unlink social account mutation
   const unlinkSocialAccountMutation = useMutation({
     mutationFn: async ({ userId, provider }: { userId: string; provider: string }) => {
-      return await apiRequest(`/api/admin/social-auth/unlink`, {
+      return await fetch(`/api/admin/social-auth/unlink`, {
         method: 'POST',
-        body: { userId, provider },
-      });
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, provider }),
+      }).then(res => res.json());
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/social-auth'] });
