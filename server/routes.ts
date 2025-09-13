@@ -2046,7 +2046,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { categoryId, language = 'en' } = req.query;
       const questions = await assessmentService.getQuestions(
-        categoryId && categoryId !== 'null' ? categoryId as string : undefined, 
+        categoryId && categoryId !== 'null' && categoryId !== '' ? categoryId as string : undefined, 
         language as string
       );
       res.json(questions);
