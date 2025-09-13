@@ -24,38 +24,14 @@ export default function Home() {
       {/* Hero Section */}
       <section className={`relative px-4 sm:px-6 lg:px-8 ${isMobile ? 'py-8 pt-4' : 'py-20'}`}>
         <div className="max-w-7xl mx-auto text-center">
-          <div className="flex justify-center mb-6">
-            <Badge variant="secondary" className="px-6 py-2 text-sm font-medium animate-pulse">
-              🚀 Platform Launch - Free Tools Available
-            </Badge>
-          </div>
-          
-          {/* Stats Banner */}
-          <div className={`flex justify-center space-x-6 mb-6 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            <div className="flex items-center text-gray-600 dark:text-gray-300">
-              <Users className="h-4 w-4 mr-1" />
-              <span className="font-medium">1000+ Users</span>
-            </div>
-            <div className="flex items-center text-gray-600 dark:text-gray-300">
-              <Star className="h-4 w-4 mr-1 text-yellow-500" />
-              <span className="font-medium">4.9/5 Rating</span>
-            </div>
-            <div className="flex items-center text-gray-600 dark:text-gray-300">
-              <TrendingUp className="h-4 w-4 mr-1 text-green-500" />
-              <span className="font-medium">Growing Fast</span>
-            </div>
-          </div>
           
           <div className="flex justify-center mb-4">
             <div className="relative">
               <img 
                 src="/wytnet-logo.png" 
-                alt="WytNet - Multi-SaaS Engine" 
-                className={`${isMobile ? 'h-16' : 'h-20 md:h-24'} w-auto transition-transform hover:scale-105`}
+                alt="WytNet" 
+                className={`${isMobile ? 'h-12' : 'h-14'} w-auto`}
               />
-              <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full animate-bounce">
-                LIVE
-              </div>
             </div>
           </div>
           
@@ -64,27 +40,13 @@ export default function Home() {
             Get in .. Get Done
           </p>
           
-          <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl md:text-5xl'} font-bold text-gray-900 dark:text-white mb-8 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent leading-tight`}>
-            WytNet for Better Lifestyle and Best Workstyle
+          <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900 dark:text-white mb-6`}>
+            Free Tools to Boost Your Productivity
           </h1>
           
-          {/* Trust indicators */}
-          <div className={`flex justify-center items-center space-x-4 mb-8 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            <div className="flex items-center text-green-600 font-medium">
-              <Shield className="h-4 w-4 mr-1" />
-              100% Secure
-            </div>
-            <div className="text-gray-400">•</div>
-            <div className="flex items-center text-blue-600 font-medium">
-              <Zap className="h-4 w-4 mr-1" />
-              No Registration Required
-            </div>
-            <div className="text-gray-400">•</div>
-            <div className="flex items-center text-purple-600 font-medium">
-              <Rocket className="h-4 w-4 mr-1" />
-              Instant Access
-            </div>
-          </div>
+          <p className={`${isMobile ? 'text-sm' : 'text-base'} text-gray-600 dark:text-gray-300 mb-6`}>
+            No registration required - start using tools instantly
+          </p>
 
 
           <div className={`flex ${isMobile ? 'flex-col' : 'flex-col sm:flex-row'} gap-4 justify-center`}>
@@ -119,12 +81,9 @@ export default function Home() {
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              Free Public Modules
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Available Tools
             </h2>
-            <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Simple, powerful tools to boost your productivity. Start using them instantly - no sign-up needed.
-            </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">

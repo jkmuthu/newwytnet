@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
@@ -873,10 +873,10 @@ export default function AIDirectory() {
                           <Bot className="h-5 w-5 text-purple-600" />
                           Submit AI Tool
                         </DialogTitle>
-                        <div className="text-sm text-muted-foreground space-y-1">
+                        <DialogDescription className="text-sm text-muted-foreground space-y-1">
                           <p>Add your AI tool - we'll auto-fetch category, description, and other details from your links!</p>
                           <p className="text-xs">✅ Secure: Only accepts http/https URLs for safety</p>
-                        </div>
+                        </DialogDescription>
                       </DialogHeader>
                       
                       <div className="space-y-4">
