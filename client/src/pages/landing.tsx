@@ -11,9 +11,11 @@ export default function Landing() {
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
           <div className="flex items-center justify-center mb-6">
-            <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center">
-              <i className="fas fa-cube text-primary-foreground text-2xl"></i>
-            </div>
+            <img 
+              src="/wytnet-logo.png" 
+              alt="WytNet - Multi-Tenant SaaS Platform" 
+              className="h-16 w-auto transition-transform hover:scale-105"
+            />
           </div>
           <h1 className="text-5xl font-bold text-foreground mb-4">
             WytNet

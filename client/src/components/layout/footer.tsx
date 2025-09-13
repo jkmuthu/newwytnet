@@ -41,12 +41,11 @@ export default function Footer() {
           {/* Company info */}
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">W</span>
-              </div>
-              <span className="text-xl font-bold text-gray-900 dark:text-white" data-testid="footer-logo">
-                WytNet
-              </span>
+              <img 
+                src="/wytnet-logo.png" 
+                alt="WytNet" 
+                className="h-8 w-auto transition-transform hover:scale-105"
+              />
             </div>
             <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md" data-testid="footer-description">
               A comprehensive multi-tenant SaaS platform foundation with low-code capabilities, 
