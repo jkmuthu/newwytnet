@@ -58,12 +58,13 @@ export const genderEnum = pgEnum("gender", ["male", "female", "other", "prefer_n
 // User roles enum for WytPass system
 export const userRoleEnum = pgEnum("user_role", ["super_admin", "admin", "manager", "user", "guest"]);
 
-// WhatsApp OTP Authentication System (WytPass)
+// Enhanced User Authentication System (supports mobile + social auth)
 export const whatsappUsers = pgTable("whatsapp_users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name", { length: 255 }).notNull(),
   country: varchar("country", { length: 10 }).notNull().default('IN'),
   whatsappNumber: varchar("whatsapp_number", { length: 20 }).notNull().unique(),
+  email: varchar("email", { length: 255 }),
   gender: genderEnum("gender"),
   dateOfBirth: timestamp("date_of_birth"),
   role: userRoleEnum("role").notNull().default('user'),
@@ -71,6 +72,16 @@ export const whatsappUsers = pgTable("whatsapp_users", {
   isSuperAdmin: boolean("is_super_admin").default(false),
   tenantId: uuid("tenant_id").references(() => tenants.id),
   permissions: jsonb("permissions").default({}),
+  
+  // Social Auth Integration
+  socialProviders: jsonb("social_providers").default([]), // ['google', 'facebook', 'linkedin']
+  socialIds: jsonb("social_ids").default({}), // {google: 'id123', facebook: 'id456'}
+  profileImageUrl: varchar("profile_image_url", { length: 500 }),
+  
+  // Authentication Methods
+  authMethods: jsonb("auth_methods").default(['whatsapp']), // ['whatsapp', 'password', 'google', 'facebook']
+  passwordHash: varchar("password_hash", { length: 255 }),
+  
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -548,7 +559,9 @@ export const whatsappUsersRelations = relations(whatsappUsers, ({ one, many }) =
     references: [tenants.id],
   }),
   otpSessions: many(whatsappOtpSessions),
+  socialTokens: many(socialAuthTokens),
 }));
+
 
 export const whatsappOtpSessionsRelations = relations(whatsappOtpSessions, ({ one }) => ({
   tenant: one(tenants, {
@@ -590,6 +603,12 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs);
 export const insertWhatsAppUserSchema = createInsertSchema(whatsappUsers);
 export const selectWhatsAppUserSchema = createSelectSchema(whatsappUsers);
 export const insertWhatsAppOtpSessionSchema = createInsertSchema(whatsappOtpSessions);
+
+// Social Auth types
+export type SocialAuthToken = typeof socialAuthTokens.$inferSelect;
+export type InsertSocialAuthToken = typeof socialAuthTokens.$inferInsert;
+export type WhatsAppUser = typeof whatsappUsers.$inferSelect;
+export type InsertWhatsAppUser = typeof whatsappUsers.$inferInsert;
 export const selectWhatsAppOtpSessionSchema = createSelectSchema(whatsappOtpSessions);
 
 // Select schemas
@@ -827,6 +846,34 @@ export const tmNumbers = pgTable("tm_numbers", {
   index("idx_tm_numbers_status").on(table.status),
   index("idx_tm_numbers_tenant").on(table.tenantId),
 ]);
+
+// Social Authentication Tokens
+export const socialAuthTokens = pgTable("social_auth_tokens", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => whatsappUsers.id, { onDelete: 'cascade' }),
+  provider: varchar("provider", { length: 50 }).notNull(), // 'google', 'facebook', 'linkedin', 'instagram'
+  providerId: varchar("provider_id", { length: 255 }).notNull(),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  expiresAt: timestamp("expires_at"),
+  tokenMetadata: jsonb("token_metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_social_auth_user").on(table.userId),
+  index("idx_social_auth_provider").on(table.provider),
+]);
+
+export const socialAuthTokensRelations = relations(socialAuthTokens, ({ one }) => ({
+  user: one(whatsappUsers, {
+    fields: [socialAuthTokens.userId],
+    references: [whatsappUsers.id],
+  }),
+}));
+
+// Social Auth schemas
+export const insertSocialAuthTokenSchema = createInsertSchema(socialAuthTokens);
+export const selectSocialAuthTokenSchema = createSelectSchema(socialAuthTokens);
 
 // Enhanced search with classification categories
 export const niceClassifications = pgTable("nice_classifications", {
