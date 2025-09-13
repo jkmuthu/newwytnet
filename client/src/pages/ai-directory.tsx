@@ -129,7 +129,6 @@ export default function AIDirectory() {
   const [sourceFilter, setSourceFilter] = useState('all');
   const [sortBy, setSortBy] = useState('trending');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isSubmissionDialogOpen, setIsSubmissionDialogOpen] = useState(false);
   const [isAutoFetching, setIsAutoFetching] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date>(new Date());
   const [crawlSessions, setCrawlSessions] = useState<CrawlSession[]>([]);
@@ -152,24 +151,9 @@ export default function AIDirectory() {
     tags: [] as string[],
   });
 
-  // Community Submission Form
-  const [communityTool, setCommunityTool] = useState({
-    name: '',
-    description: '',
-    category: '',
-    url: '',
-    pricing: 'Free' as const,
-    features: [] as string[],
-    tags: [] as string[],
-    submitterName: '',
-    submitterEmail: '',
-    reason: '',
-  });
 
   const [featureInput, setFeatureInput] = useState('');
   const [tagInput, setTagInput] = useState('');
-  const [communityFeatureInput, setCommunityFeatureInput] = useState('');
-  const [communityTagInput, setCommunityTagInput] = useState('');
 
   // Initialize with sample data
   useEffect(() => {
@@ -876,149 +860,6 @@ export default function AIDirectory() {
                 </div>
                 
                 <div className="flex gap-2">
-                      <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2 text-xl">
-                          <Users className="h-5 w-5 text-purple-600" />
-                          Submit AI Tool to Community
-                        </DialogTitle>
-                        <p className="text-muted-foreground">
-                          Help grow our directory by submitting new AI tools for community review and approval.
-                        </p>
-                      </DialogHeader>
-                      
-                      <div className="space-y-6">
-                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                          <h4 className="font-medium text-blue-700 dark:text-blue-300 mb-2">Submission Guidelines</h4>
-                          <ul className="text-sm text-blue-600 dark:text-blue-400 space-y-1">
-                            <li>• Tool must be publicly accessible and functional</li>
-                            <li>• Provide accurate description and categorization</li>
-                            <li>• Include contact information for verification</li>
-                            <li>• Community will vote on your submission</li>
-                          </ul>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="community-tool-name">Tool Name *</Label>
-                            <Input
-                              id="community-tool-name"
-                              value={communityTool.name}
-                              onChange={(e) => setCommunityTool(prev => ({ ...prev, name: e.target.value }))}
-                              placeholder="AI Tool Name"
-                            />
-                          </div>
-                          
-                          <div>
-                            <Label htmlFor="community-tool-category">Category *</Label>
-                            <Select value={communityTool.category} onValueChange={(value) => setCommunityTool(prev => ({ ...prev, category: value }))}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select category" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {AI_CATEGORIES.filter(cat => cat.id !== 'all').map((category) => (
-                                  <SelectItem key={category.id} value={category.id}>
-                                    {category.icon} {category.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label htmlFor="community-tool-description">Description *</Label>
-                          <Textarea
-                            id="community-tool-description"
-                            value={communityTool.description}
-                            onChange={(e) => setCommunityTool(prev => ({ ...prev, description: e.target.value }))}
-                            placeholder="Detailed description of what this AI tool does and its main features..."
-                            rows={4}
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="community-tool-url">Website URL *</Label>
-                            <Input
-                              id="community-tool-url"
-                              value={communityTool.url}
-                              onChange={(e) => setCommunityTool(prev => ({ ...prev, url: e.target.value }))}
-                              placeholder="https://example.com"
-                            />
-                          </div>
-                          
-                          <div>
-                            <Label htmlFor="community-pricing">Pricing Model *</Label>
-                            <Select value={communityTool.pricing} onValueChange={(value: any) => setCommunityTool(prev => ({ ...prev, pricing: value }))}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Free">Free</SelectItem>
-                                <SelectItem value="Freemium">Freemium</SelectItem>
-                                <SelectItem value="Paid">Paid</SelectItem>
-                                <SelectItem value="Open Source">Open Source</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-
-                        <Separator />
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="submitter-name">Your Name *</Label>
-                            <Input
-                              id="submitter-name"
-                              value={communityTool.submitterName}
-                              onChange={(e) => setCommunityTool(prev => ({ ...prev, submitterName: e.target.value }))}
-                              placeholder="Your full name"
-                            />
-                          </div>
-                          
-                          <div>
-                            <Label htmlFor="submitter-email">Your Email</Label>
-                            <Input
-                              id="submitter-email"
-                              type="email"
-                              value={communityTool.submitterEmail}
-                              onChange={(e) => setCommunityTool(prev => ({ ...prev, submitterEmail: e.target.value }))}
-                              placeholder="your@email.com"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label htmlFor="submission-reason">Why should this tool be included?</Label>
-                          <Textarea
-                            id="submission-reason"
-                            value={communityTool.reason}
-                            onChange={(e) => setCommunityTool(prev => ({ ...prev, reason: e.target.value }))}
-                            placeholder="Explain why this tool would be valuable to the community..."
-                            rows={3}
-                          />
-                        </div>
-
-                        <div className="flex gap-3 pt-4">
-                          <Button 
-                            onClick={submitCommunityTool}
-                            className="flex-1 h-11 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                          >
-                            <Users className="h-4 w-4 mr-2" />
-                            Submit for Review
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            onClick={() => setIsSubmissionDialogOpen(false)}
-                            className="px-8"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-
                   <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
                       <Button variant="outline" data-testid="button-add-ai">
