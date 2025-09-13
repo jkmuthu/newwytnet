@@ -36,13 +36,10 @@ export default function MobileNavigation() {
 
   const publicNavItems = [
     { icon: Home, label: 'Home', href: '/', badge: null },
-    { icon: Activity, label: 'Assessment', href: '/assessment', badge: 'NEW' },
-    { icon: Building, label: 'RealBro', href: '/realbro', badge: null },
-    { icon: Briefcase, label: 'WytDuty', href: '/wytduty', badge: null },
-    { icon: QrCode, label: 'QR Generator', href: '/qr-generator', badge: null },
-    { icon: Bot, label: 'AI Directory', href: '/ai-directory', badge: 'HOT' },
-    { icon: Brain, label: 'WytAi Trademark', href: '/wytai-trademark', badge: 'PRO' },
-    { icon: Search, label: 'Search', href: '/search', badge: null },
+    { icon: Bot, label: 'AI Directory', href: '/ai-directory', badge: 'LIVE' },
+    { icon: QrCode, label: 'QR Generator', href: '/qr-generator', badge: 'LIVE' },
+    { icon: Activity, label: 'DISC Assessment', href: '/assessment', badge: 'LIVE' },
+    { icon: Briefcase, label: 'WytApps', href: '/wytapps', badge: null },
   ];
 
   const dashboardItems = isAuthenticated ? [

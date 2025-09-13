@@ -5,6 +5,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
+import MobileLayout from "@/components/layout/MobileLayout";
+import Header from "@/components/layout/header";
+import Footer from "@/components/layout/footer";
 import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import Assessment from "@/pages/assessment";
@@ -61,63 +64,81 @@ function Router() {
   const { isAuthenticated, isLoading } = useWhatsAppAuth();
   const { isMobile } = useDeviceDetection();
 
+  const LayoutWrapper = ({ children }: { children: React.ReactNode }) => {
+    if (isMobile) {
+      return <MobileLayout>{children}</MobileLayout>;
+    }
+    
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Header />
+        <main className="min-h-screen">
+          {children}
+        </main>
+        <Footer />
+      </div>
+    );
+  };
+
   return (
-    <Switch>
-      {/* Root route with role-based dashboards */}
-      <Route path="/" component={RoleBasedDashboard} />
-      
-      {/* Public routes - no authentication required */}
-      <Route path="/home" component={Home} />
-      <Route path="/assessment" component={Assessment} />
-      <Route path="/realbro" component={RealBro} />
-      <Route path="/realbro/enhanced" component={RealBroEnhanced} />
-      <Route path="/wytduty" component={WytDuty} />
-      <Route path="/wytduty/enhanced" component={WytDutyEnhanced} />
-      <Route path="/qr-generator" component={QRGenerator} />
-      <Route path="/ai-directory" component={AIDirectory} />
-      <Route path="/wytai-trademark" component={WytAiTrademark} />
-      <Route path="/tm-numbering" component={TMNumbering} />
-      <Route path="/auth/whatsapp" component={WhatsAppAuth} />
-      <Route path="/whatsapp-auth" component={WhatsAppAuth} />
-      <Route path="/search" component={SearchPage} />
-      
-      {/* Legacy route redirects to prevent 404s */}
-      <Route path="/astro-pre" component={() => { window.location.href = "/"; return null; }} />
-      <Route path="/business" component={() => { window.location.href = "/"; return null; }} />
-      <Route path="/invoice-c" component={() => { window.location.href = "/"; return null; }} />
-      
-      {/* Content pages */}
-      <Route path="/wytapps" component={WytApps} />
-      <Route path="/about" component={About} />
-      <Route path="/features" component={Features} />
-      <Route path="/pricing" component={Pricing} />
-      <Route path="/contact" component={Contact} />
-      <Route path="/privacy" component={Privacy} />
-      <Route path="/terms" component={Terms} />
-      <Route path="/help" component={Help} />
-      <Route path="/status" component={Status} />
-      
-      {/* Protected routes - authentication required */}
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/admin" component={Dashboard} />
-      <Route path="/analytics" component={AdminAnalytics} />
-      <Route path="/user-auth-methods" component={UserAuthMethods} />
-      <Route path="/landing" component={Landing} />
-      
-      {/* Admin routes */}
-      <Route path="/admin/cms" component={AdminCMS} />
-      <Route path="/admin/modules" component={AdminModules} />
-      <Route path="/admin/apps" component={AdminApps} />
-      <Route path="/admin/hubs" component={AdminHubs} />
-      <Route path="/admin/system-overview" component={AdminSystemOverview} />
-      <Route path="/admin/users" component={AdminUsers} />
-      <Route path="/admin/tenants" component={AdminTenants} />
-      
-      {/* Super Admin Dashboard */}
-      <Route path="/super-admin" component={SuperAdminDashboard} />
-      
-      <Route component={NotFound} />
-    </Switch>
+    <LayoutWrapper>
+      <Switch>
+        {/* Root route with role-based dashboards */}
+        <Route path="/" component={RoleBasedDashboard} />
+        
+        {/* Public routes - no authentication required */}
+        <Route path="/home" component={Home} />
+        <Route path="/assessment" component={Assessment} />
+        <Route path="/realbro" component={RealBro} />
+        <Route path="/realbro/enhanced" component={RealBroEnhanced} />
+        <Route path="/wytduty" component={WytDuty} />
+        <Route path="/wytduty/enhanced" component={WytDutyEnhanced} />
+        <Route path="/qr-generator" component={QRGenerator} />
+        <Route path="/ai-directory" component={AIDirectory} />
+        <Route path="/wytai-trademark" component={WytAiTrademark} />
+        <Route path="/tm-numbering" component={TMNumbering} />
+        <Route path="/auth/whatsapp" component={WhatsAppAuth} />
+        <Route path="/whatsapp-auth" component={WhatsAppAuth} />
+        <Route path="/search" component={SearchPage} />
+        
+        {/* Legacy route redirects to prevent 404s */}
+        <Route path="/astro-pre" component={() => { window.location.href = "/"; return null; }} />
+        <Route path="/business" component={() => { window.location.href = "/"; return null; }} />
+        <Route path="/invoice-c" component={() => { window.location.href = "/"; return null; }} />
+        
+        {/* Content pages */}
+        <Route path="/wytapps" component={WytApps} />
+        <Route path="/about" component={About} />
+        <Route path="/features" component={Features} />
+        <Route path="/pricing" component={Pricing} />
+        <Route path="/contact" component={Contact} />
+        <Route path="/privacy" component={Privacy} />
+        <Route path="/terms" component={Terms} />
+        <Route path="/help" component={Help} />
+        <Route path="/status" component={Status} />
+        
+        {/* Protected routes - authentication required */}
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/admin" component={Dashboard} />
+        <Route path="/analytics" component={AdminAnalytics} />
+        <Route path="/user-auth-methods" component={UserAuthMethods} />
+        <Route path="/landing" component={Landing} />
+        
+        {/* Admin routes */}
+        <Route path="/admin/cms" component={AdminCMS} />
+        <Route path="/admin/modules" component={AdminModules} />
+        <Route path="/admin/apps" component={AdminApps} />
+        <Route path="/admin/hubs" component={AdminHubs} />
+        <Route path="/admin/system-overview" component={AdminSystemOverview} />
+        <Route path="/admin/users" component={AdminUsers} />
+        <Route path="/admin/tenants" component={AdminTenants} />
+        
+        {/* Super Admin Dashboard */}
+        <Route path="/super-admin" component={SuperAdminDashboard} />
+        
+        <Route component={NotFound} />
+      </Switch>
+    </LayoutWrapper>
   );
 }
 

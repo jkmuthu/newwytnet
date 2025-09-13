@@ -3,9 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Brain, Zap, Shield, Rocket, CheckCircle, ArrowRight, Users, BarChart3, Star, TrendingUp } from "lucide-react";
-import Header from "@/components/layout/header";
-import MobileNavigation from "@/components/layout/MobileNavigation";
-import MobileBottomNavigation from "@/components/layout/MobileBottomNavigation";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
 import { useQuery } from "@tanstack/react-query";
 import { fetchEnabledPlatformModules } from "@/lib/api";
@@ -18,13 +15,11 @@ export default function Home() {
     queryKey: ['platform-modules', 'enabled'],
     queryFn: fetchEnabledPlatformModules,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 ${isMobile ? 'pb-20' : ''}`}>
-      {isMobile ? <MobileNavigation /> : <Header />}
-      {isMobile && <MobileBottomNavigation />}
+    <div className={`min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900`}>
       
       {/* Hero Section */}
       <section className={`relative px-4 sm:px-6 lg:px-8 ${isMobile ? 'py-8 pt-4' : 'py-20'}`}>
