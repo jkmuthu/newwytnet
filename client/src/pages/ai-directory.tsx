@@ -761,7 +761,7 @@ export default function AIDirectory() {
           {/* Navigation Tabs and Content */}
           <Tabs value={activeView} onValueChange={(value: any) => setActiveView(value)} className="w-full">
             <div className="mb-8">
-              <TabsList className="grid w-full grid-cols-3 lg:w-fit lg:grid-cols-3 mx-auto">
+              <TabsList className="grid w-full grid-cols-2 lg:w-fit lg:grid-cols-2 mx-auto">
                 <TabsTrigger value="directory" className="flex items-center gap-2">
                   <Globe className="h-4 w-4" />
                   Directory
@@ -775,10 +775,7 @@ export default function AIDirectory() {
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="admin" className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  Admin
-                </TabsTrigger>
+                {/* Admin tab removed from public frontend - only available in Super Admin Panel */}
               </TabsList>
             </div>
 
@@ -1402,26 +1399,7 @@ export default function AIDirectory() {
                             </div>
                           </div>
                         </div>
-                        {submission.status === 'pending' && (
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => approveSubmission(submission.id)}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Approve
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-red-200 text-red-600 hover:bg-red-50"
-                            >
-                              <XCircle className="h-4 w-4 mr-1" />
-                              Reject
-                            </Button>
-                          </div>
-                        )}
+                        {/* Admin approval buttons moved to Super Admin panel - not shown in public frontend */}
                       </div>
                     </div>
                   ))}
