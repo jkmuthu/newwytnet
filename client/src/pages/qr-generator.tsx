@@ -28,7 +28,7 @@ export default function QRGenerator() {
   const [history, setHistory] = useState<QRHistory[]>([]);
 
   // QR Code Options
-  const [qrType, setQrType] = useState('text');
+  const [qrType, setQrType] = useState('url');
   const [errorLevel, setErrorLevel] = useState('M');
   const [size, setSize] = useState(256);
   const [margin, setMargin] = useState(4);
@@ -44,6 +44,8 @@ export default function QRGenerator() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [smsNumber, setSmsNumber] = useState('');
   const [smsMessage, setSmsMessage] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [whatsappMessage, setWhatsappMessage] = useState('');
   const [wifiSSID, setWifiSSID] = useState('');
   const [wifiPassword, setWifiPassword] = useState('');
   const [wifiSecurity, setWifiSecurity] = useState('WPA');
@@ -72,6 +74,10 @@ export default function QRGenerator() {
           break;
         case 'wifi':
           content = `WIFI:T:${wifiSecurity};S:${wifiSSID};P:${wifiPassword};;`;
+          break;
+        case 'whatsapp':
+          const waNumber = whatsappNumber.replace(/[^0-9]/g, '');
+          content = `https://wa.me/${waNumber}${whatsappMessage ? `?text=${encodeURIComponent(whatsappMessage)}` : ''}`;
           break;
         default:
           content = textContent;
@@ -206,6 +212,7 @@ export default function QRGenerator() {
       email: Mail,
       phone: Smartphone,
       sms: Smartphone,
+      whatsapp: Smartphone,
       wifi: Wifi,
     };
     const Icon = icons[type as keyof typeof icons] || QrCode;
@@ -216,56 +223,34 @@ export default function QRGenerator() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-600 rounded-2xl mb-6">
-              <QrCode className="h-8 w-8 text-white" />
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl mb-4">
+              <QrCode className="h-6 w-6 text-white" />
             </div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               QR Code Generator
             </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Create stunning, professional QR codes with custom styling and advanced features. 
-              Perfect for business cards, marketing materials, and digital experiences.
+            <p className="text-sm text-muted-foreground">
+              Create QR codes instantly
             </p>
-            <div className="flex items-center justify-center gap-6 mt-6">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>Multiple Formats</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>Custom Styling</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>Instant Download</span>
-              </div>
-            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Content Input */}
             <div className="lg:col-span-2 space-y-6">
               <Card className="border-0 shadow-xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm">
-                <CardHeader className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-b border-gray-200/50 dark:border-gray-700/50">
-                  <CardTitle className="flex items-center gap-3 text-lg">
-                    <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg">
-                      <Zap className="h-5 w-5 text-white" />
-                    </div>
-                    QR Code Content & Type
-                  </CardTitle>
+                <CardHeader>
+                  <CardTitle className="text-lg">Create QR Code</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6 p-6">
                   <div>
-                    <Label htmlFor="qr-type" className="text-base font-semibold mb-3 block">Choose QR Code Type</Label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <Label htmlFor="qr-type" className="text-sm font-medium mb-3 block">Type</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {[
-                        { value: 'text', icon: '📝', label: 'Plain Text', desc: 'Simple text content' },
-                        { value: 'url', icon: '🌐', label: 'Website URL', desc: 'Direct web links' },
-                        { value: 'email', icon: '📧', label: 'Email', desc: 'Contact via email' },
-                        { value: 'phone', icon: '📞', label: 'Phone', desc: 'Call instantly' },
-                        { value: 'sms', icon: '💬', label: 'SMS', desc: 'Text messages' },
-                        { value: 'wifi', icon: '📶', label: 'WiFi', desc: 'Network access' },
+                        { value: 'url', icon: '🌐', label: 'Website', desc: 'Open links' },
+                        { value: 'whatsapp', icon: '💬', label: 'WhatsApp', desc: 'Send messages' },
+                        { value: 'phone', icon: '📞', label: 'Phone', desc: 'Call number' },
+                        { value: 'text', icon: '📝', label: 'Text', desc: 'Plain text' },
                       ].map((type) => (
                         <div
                           key={type.value}
@@ -389,149 +374,45 @@ export default function QRGenerator() {
                       </div>
                     </TabsContent>
 
-                    <TabsContent value="wifi" className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="wifi-ssid">Network Name (SSID)</Label>
-                          <Input
-                            id="wifi-ssid"
-                            data-testid="input-wifi-ssid"
-                            placeholder="MyWiFiNetwork"
-                            value={wifiSSID}
-                            onChange={(e) => setWifiSSID(e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="wifi-security">Security Type</Label>
-                          <Select value={wifiSecurity} onValueChange={setWifiSecurity}>
-                            <SelectTrigger data-testid="select-wifi-security">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="WPA">WPA/WPA2</SelectItem>
-                              <SelectItem value="WEP">WEP</SelectItem>
-                              <SelectItem value="nopass">Open (No Password)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                    <TabsContent value="whatsapp" className="space-y-4">
+                      <div>
+                        <Label htmlFor="whatsapp-number">WhatsApp Number</Label>
+                        <Input
+                          id="whatsapp-number"
+                          data-testid="input-whatsapp-number"
+                          placeholder="+1234567890 (with country code)"
+                          value={whatsappNumber}
+                          onChange={(e) => setWhatsappNumber(e.target.value)}
+                        />
                       </div>
                       <div>
-                        <Label htmlFor="wifi-password">Password</Label>
-                        <Input
-                          id="wifi-password"
-                          data-testid="input-wifi-password"
-                          type="password"
-                          placeholder="WiFi password"
-                          value={wifiPassword}
-                          onChange={(e) => setWifiPassword(e.target.value)}
+                        <Label htmlFor="whatsapp-message">Pre-filled Message (Optional)</Label>
+                        <Textarea
+                          id="whatsapp-message"
+                          data-testid="input-whatsapp-message"
+                          placeholder="Hello! I found your contact from..."
+                          value={whatsappMessage}
+                          onChange={(e) => setWhatsappMessage(e.target.value)}
+                          rows={3}
                         />
                       </div>
                     </TabsContent>
                   </Tabs>
 
-                  <Separator className="my-6" />
-                  
-                  <div>
-                    <div className="flex items-center gap-2 mb-4">
-                      <Palette className="h-5 w-5 text-purple-600" />
-                      <Label className="text-base font-semibold">Customization Options</Label>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="error-level" className="text-sm font-medium">Error Correction Level</Label>
-                          <Select value={errorLevel} onValueChange={setErrorLevel}>
-                            <SelectTrigger data-testid="select-error-level" className="mt-1">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="L">🟢 Low (7%) - Faster scan</SelectItem>
-                              <SelectItem value="M">🟡 Medium (15%) - Balanced</SelectItem>
-                              <SelectItem value="Q">🟠 Quartile (25%) - Reliable</SelectItem>
-                              <SelectItem value="H">🔴 High (30%) - Most durable</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="size" className="text-sm font-medium">Size (pixels)</Label>
-                          <div className="mt-1">
-                            <Input
-                              id="size"
-                              data-testid="input-size"
-                              type="range"
-                              min="128"
-                              max="1024"
-                              value={size}
-                              onChange={(e) => setSize(Number(e.target.value))}
-                              className="w-full"
-                            />
-                            <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                              <span>128px</span>
-                              <span className="font-medium">{size}px</span>
-                              <span>1024px</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <div>
-                          <Label htmlFor="dark-color" className="text-sm font-medium">Foreground Color</Label>
-                          <div className="flex gap-2 mt-1">
-                            <Input
-                              id="dark-color"
-                              data-testid="input-dark-color"
-                              type="color"
-                              value={darkColor}
-                              onChange={(e) => setDarkColor(e.target.value)}
-                              className="w-16 h-10 p-1 rounded-lg"
-                            />
-                            <Input
-                              value={darkColor}
-                              onChange={(e) => setDarkColor(e.target.value)}
-                              placeholder="#000000"
-                              className="flex-1"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <Label htmlFor="light-color" className="text-sm font-medium">Background Color</Label>
-                          <div className="flex gap-2 mt-1">
-                            <Input
-                              id="light-color"
-                              data-testid="input-light-color"
-                              type="color"
-                              value={lightColor}
-                              onChange={(e) => setLightColor(e.target.value)}
-                              className="w-16 h-10 p-1 rounded-lg"
-                            />
-                            <Input
-                              value={lightColor}
-                              onChange={(e) => setLightColor(e.target.value)}
-                              placeholder="#ffffff"
-                              className="flex-1"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
                   <Button 
                     onClick={generateQRCode} 
-                    className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                    className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
                     data-testid="button-generate-qr"
                     disabled={isGenerating}
                   >
                     {isGenerating ? (
                       <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         Generating...
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2">
-                        <Zap className="h-5 w-5" />
-                        Generate QR Code
-                      </div>
+                      "Generate QR Code"
                     )}
                   </Button>
                 </CardContent>
