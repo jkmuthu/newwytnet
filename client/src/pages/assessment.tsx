@@ -226,20 +226,16 @@ export default function Assessment() {
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-foreground mb-4">AssessDisc</h1>
-            <p className="text-xl text-muted-foreground">
-              Discover your DISC personality type and unlock insights about your work style, 
-              communication preferences, and career potential.
+            <h1 className="text-2xl font-bold text-foreground mb-2">DISC Assessment</h1>
+            <p className="text-sm text-muted-foreground">
+              Discover your personality type
             </p>
           </div>
 
           {currentStep === 'info' && (
             <Card className="w-full max-w-2xl mx-auto">
               <CardHeader>
-                <CardTitle>Personal Information</CardTitle>
-                <p className="text-muted-foreground">
-                  Tell us a bit about yourself to get personalized insights.
-                </p>
+                <CardTitle>Start Assessment</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -258,108 +254,32 @@ export default function Assessment() {
                     />
                   </div>
                   
+                  
                   <div>
-                    <Label htmlFor="email">Email (Optional)</Label>
-                    <Input
-                      id="email"
-                      data-testid="input-participant-email"
-                      type="email"
-                      value={participantInfo.participantEmail}
-                      onChange={(e) => setParticipantInfo(prev => ({
-                        ...prev,
-                        participantEmail: e.target.value
-                      }))}
-                      placeholder="your.email@example.com"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="age">Age (Optional)</Label>
-                    <Input
-                      id="age"
-                      data-testid="input-participant-age"
-                      type="number"
-                      value={participantInfo.age}
-                      onChange={(e) => setParticipantInfo(prev => ({
-                        ...prev,
-                        age: e.target.value
-                      }))}
-                      placeholder="25"
-                      min="16"
-                      max="100"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="gender">Gender (Optional)</Label>
+                    <Label htmlFor="category">Your Role</Label>
                     <Select
-                      value={participantInfo.gender}
+                      value={participantInfo.categoryId}
                       onValueChange={(value) => setParticipantInfo(prev => ({
                         ...prev,
-                        gender: value
+                        categoryId: value
                       }))}
                     >
-                      <SelectTrigger data-testid="select-gender">
-                        <SelectValue placeholder="Select gender" />
+                      <SelectTrigger data-testid="select-category">
+                        <SelectValue placeholder="Select your role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="non-binary">Non-binary</SelectItem>
-                        <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
+                        {categories?.map((category: AssessmentCategory) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.displayName}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
-
-                  <div>
-                    <Label htmlFor="country">Country (Optional)</Label>
-                    <Input
-                      id="country"
-                      data-testid="input-country"
-                      value={participantInfo.country}
-                      onChange={(e) => setParticipantInfo(prev => ({
-                        ...prev,
-                        country: e.target.value
-                      }))}
-                      placeholder="United States"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="city">City (Optional)</Label>
-                    <Input
-                      id="city"
-                      data-testid="input-city"
-                      value={participantInfo.city}
-                      onChange={(e) => setParticipantInfo(prev => ({
-                        ...prev,
-                        city: e.target.value
-                      }))}
-                      placeholder="New York"
-                    />
-                  </div>
                 </div>
 
-                <div>
-                  <Label htmlFor="category">I am a... (Optional)</Label>
-                  <Select
-                    value={participantInfo.categoryId}
-                    onValueChange={(value) => setParticipantInfo(prev => ({
-                      ...prev,
-                      categoryId: value
-                    }))}
-                  >
-                    <SelectTrigger data-testid="select-category">
-                      <SelectValue placeholder="Select your role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories?.map((category: AssessmentCategory) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.displayName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="text-xs text-muted-foreground text-center">
+                  Assessment takes about 5 minutes
                 </div>
 
                 <Button 

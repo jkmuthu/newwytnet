@@ -520,115 +520,11 @@ export default function AIDirectory() {
     });
   };
 
-  const submitCommunityTool = () => {
-    if (!communityTool.name || !communityTool.description || !communityTool.url || !communityTool.submitterName) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return;
-    }
+  // Community tool submission functionality removed since Community tab was removed
 
-    const submission: CommunitySubmission = {
-      id: `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      toolData: {
-        name: communityTool.name,
-        description: communityTool.description,
-        category: communityTool.category,
-        url: communityTool.url,
-        pricing: communityTool.pricing,
-        features: communityTool.features,
-        tags: communityTool.tags,
-      },
-      submittedBy: communityTool.submitterName,
-      submittedAt: new Date(),
-      status: 'pending',
-      votes: { up: 0, down: 0 }
-    };
+  // Approval functionality removed since Community tab was removed
 
-    setCommunitySubmissions(prev => [submission, ...prev]);
-    setCommunityTool({
-      name: '',
-      description: '',
-      category: '',
-      url: '',
-      pricing: 'Free',
-      features: [],
-      tags: [],
-      submitterName: '',
-      submitterEmail: '',
-      reason: '',
-    });
-    setIsSubmissionDialogOpen(false);
-
-    toast({
-      title: "🎉 Submission Received!",
-      description: "Your AI tool submission is now under community review. Thank you for contributing!",
-    });
-  };
-
-  const approveSubmission = (submissionId: string) => {
-    const submission = communitySubmissions.find(s => s.id === submissionId);
-    if (!submission) return;
-
-    const newTool: AITool = {
-      id: `community_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      name: submission.toolData.name!,
-      description: submission.toolData.description!,
-      category: submission.toolData.category!,
-      url: submission.toolData.url!,
-      pricing: submission.toolData.pricing!,
-      rating: 0,
-      features: submission.toolData.features || [],
-      tags: submission.toolData.tags || [],
-      lastUpdated: new Date(),
-      addedDate: new Date(),
-      isVerified: false,
-      usage: 0,
-      trending: false,
-      source: 'community',
-      status: 'active',
-      upvotes: submission.votes.up,
-      downvotes: submission.votes.down,
-      submittedBy: submission.submittedBy,
-      communityScore: 0,
-      autoCategories: [submission.toolData.category!],
-    };
-
-    setAiTools(prev => [newTool, ...prev]);
-    setCommunitySubmissions(prev => prev.map(s => 
-      s.id === submissionId ? { ...s, status: 'approved' as const } : s
-    ));
-
-    toast({
-      title: "✅ Submission Approved!",
-      description: `${newTool.name} has been added to the directory.`,
-    });
-  };
-
-  const voteOnTool = (toolId: string, voteType: 'up' | 'down') => {
-    setAiTools(prev => prev.map(tool => {
-      if (tool.id === toolId) {
-        const newUpvotes = voteType === 'up' ? tool.upvotes + 1 : tool.upvotes;
-        const newDownvotes = voteType === 'down' ? tool.downvotes + 1 : tool.downvotes;
-        const newCommunityScore = parseFloat(((newUpvotes / (newUpvotes + newDownvotes)) * 5).toFixed(1));
-        
-        return {
-          ...tool,
-          upvotes: newUpvotes,
-          downvotes: newDownvotes,
-          communityScore: newCommunityScore
-        };
-      }
-      return tool;
-    }));
-
-    toast({
-      title: voteType === 'up' ? "👍 Upvoted!" : "👎 Downvoted!",
-      description: "Thank you for your feedback!",
-    });
-  };
+  // Voting functionality removed since Community tab was removed
 
   const performAutoCrawl = useCallback(async () => {
     if (isAutoFetching) return;
@@ -783,26 +679,6 @@ export default function AIDirectory() {
             </p>
           </div>
 
-          {/* Navigation Tabs and Content */}
-          <Tabs value={activeView} onValueChange={(value: any) => setActiveView(value)} className="w-full">
-            <div className="mb-8">
-              <TabsList className="grid w-full grid-cols-2 lg:w-fit lg:grid-cols-2 mx-auto">
-                <TabsTrigger value="directory" className="flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
-                  Directory
-                </TabsTrigger>
-                <TabsTrigger value="community" className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Community
-                  {communitySubmissions.filter(s => s.status === 'pending').length > 0 && (
-                    <Badge variant="destructive" className="ml-1 h-5 min-w-5 text-xs">
-                      {communitySubmissions.filter(s => s.status === 'pending').length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-                {/* Admin tab removed from public frontend - only available in Super Admin Panel */}
-              </TabsList>
-            </div>
 
           {/* Auto-Sync Progress */}
           {crawlProgress > 0 && (
@@ -825,29 +701,29 @@ export default function AIDirectory() {
             </Card>
           )}
 
-          {/* Controls */}
-          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-xl p-6 mb-8">
-            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between mb-6">
-              <div className="flex flex-col sm:flex-row gap-4 flex-1">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Search AI tools..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                    data-testid="input-search-ai"
-                  />
-                </div>
-                
-                <div className="flex gap-2">
-                  <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm" data-testid="button-add-ai">
-                        <Plus className="h-4 w-4 mr-1" />
-                        Suggest
-                      </Button>
-                    </DialogTrigger>
+          {/* Compact Controls */}
+          <div className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg p-4 mb-6">
+            
+            {/* Search Bar and Suggest Button */}
+            <div className="flex gap-2 mb-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search AI tools..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                  data-testid="input-search-ai"
+                />
+              </div>
+              
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" data-testid="button-add-ai">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Suggest
+                  </Button>
+                </DialogTrigger>
                     <DialogContent className="max-w-md">
                       <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
@@ -957,43 +833,40 @@ export default function AIDirectory() {
               </div>
             </div>
 
-            {/* Simple Filters */}
-            <div className="flex gap-2 text-sm">
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-40" data-testid="select-category-filter">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {AI_CATEGORIES.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.icon} {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Compact Filters Row */}
+            <div className="flex items-center justify-between">
+              <Tabs defaultValue="all" className="w-fit">
+                <TabsList className="grid grid-cols-5 w-fit">
+                  <TabsTrigger value="all" className="text-xs px-2" onClick={() => setSelectedCategory('all')}>All</TabsTrigger>
+                  <TabsTrigger value="text-generation" className="text-xs px-2" onClick={() => setSelectedCategory('text-generation')}>Text</TabsTrigger>
+                  <TabsTrigger value="image-generation" className="text-xs px-2" onClick={() => setSelectedCategory('image-generation')}>Image</TabsTrigger>
+                  <TabsTrigger value="code-assistant" className="text-xs px-2" onClick={() => setSelectedCategory('code-assistant')}>Code</TabsTrigger>
+                  <TabsTrigger value="productivity" className="text-xs px-2" onClick={() => setSelectedCategory('productivity')}>Tools</TabsTrigger>
+                </TabsList>
+              </Tabs>
               
-              <Select value={pricingFilter} onValueChange={setPricingFilter}>
-                <SelectTrigger className="w-32" data-testid="select-pricing-filter">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Pricing</SelectItem>
-                  <SelectItem value="Free">Free</SelectItem>
-                  <SelectItem value="Freemium">Freemium</SelectItem>
-                  <SelectItem value="Paid">Paid</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <div className="ml-auto text-xs text-muted-foreground flex items-center">
-                {filteredTools.length} tools
+              <div className="flex items-center gap-2">
+                <Select value={pricingFilter} onValueChange={setPricingFilter}>
+                  <SelectTrigger className="w-20 h-8 text-xs" data-testid="select-pricing-filter">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="Free">Free</SelectItem>
+                    <SelectItem value="Freemium">Freemium</SelectItem>
+                    <SelectItem value="Paid">Paid</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <div className="text-xs text-muted-foreground">
+                  {filteredTools.length} tools
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Content Views */}
-          <TabsContent value="directory" className="space-y-6">
-            {/* AI Tools Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* AI Tools Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTools.map((tool) => (
                 <Card key={tool.id} className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
                   <CardHeader className="pb-3">
@@ -1097,168 +970,7 @@ export default function AIDirectory() {
                 </p>
               </div>
             )}
-          </TabsContent>
 
-          {/* Community Submissions View */}
-          <TabsContent value="community" className="space-y-6">
-            <div className="grid gap-6">
-              <Card className="border-0 shadow-xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <Users className="h-5 w-5 text-purple-600" />
-                    Community Submissions
-                    <Badge variant="secondary">{communitySubmissions.length}</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {communitySubmissions.map((submission) => (
-                    <div key={submission.id} className="border rounded-xl p-4 space-y-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-semibold">{submission.toolData.name}</h4>
-                            <Badge 
-                              variant={submission.status === 'pending' ? 'destructive' : submission.status === 'approved' ? 'default' : 'secondary'}
-                              className="text-xs"
-                            >
-                              {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-2">{submission.toolData.description}</p>
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <span>By: {submission.submittedBy}</span>
-                            <span>Submitted: {submission.submittedAt.toLocaleDateString()}</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-green-600">👍 {submission.votes.up}</span>
-                              <span className="text-red-600">👎 {submission.votes.down}</span>
-                            </div>
-                          </div>
-                        </div>
-                        {/* Admin approval buttons moved to Super Admin panel - not shown in public frontend */}
-                      </div>
-                    </div>
-                  ))}
-
-                  {communitySubmissions.length === 0 && (
-                    <div className="text-center py-8">
-                      <MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                      <h3 className="font-semibold mb-2">No submissions yet</h3>
-                      <p className="text-muted-foreground">Community submissions will appear here for review and voting.</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          {/* Admin Panel View */}
-          <TabsContent value="admin" className="space-y-6">
-            <div className="grid gap-6">
-              {/* Auto-Sync Settings */}
-              <Card className="border-0 shadow-xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <Settings className="h-5 w-5 text-blue-600" />
-                    Auto-Sync Configuration
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">Automatic Crawling</h4>
-                      <p className="text-sm text-muted-foreground">Enable periodic discovery of new AI tools</p>
-                    </div>
-                    <Switch checked={autoSyncEnabled} onCheckedChange={setAutoSyncEnabled} />
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                      <Database className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-blue-600">{aiTools.filter(t => t.source === 'auto-crawl').length}</div>
-                      <div className="text-sm text-muted-foreground">Auto-Crawled</div>
-                    </div>
-                    <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                      <Users className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-purple-600">{aiTools.filter(t => t.source === 'community').length}</div>
-                      <div className="text-sm text-muted-foreground">Community Added</div>
-                    </div>
-                    <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                      <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                      <div className="text-2xl font-bold text-green-600">{aiTools.filter(t => t.status === 'active').length}</div>
-                      <div className="text-sm text-muted-foreground">Active Tools</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Crawl Sessions */}
-              <Card className="border-0 shadow-xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <Activity className="h-5 w-5 text-green-600" />
-                    Recent Crawl Sessions
-                    <Badge variant="secondary">{crawlSessions.length}</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {crawlSessions.map((session) => (
-                      <div key={session.id} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Badge 
-                              variant={session.status === 'completed' ? 'default' : session.status === 'running' ? 'secondary' : 'destructive'}
-                            >
-                              {session.status === 'completed' && <CheckCircle className="h-3 w-3 mr-1" />}
-                              {session.status === 'running' && <RefreshCw className="h-3 w-3 mr-1 animate-spin" />}
-                              {session.status === 'failed' && <XCircle className="h-3 w-3 mr-1" />}
-                              {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
-                            </Badge>
-                            <span className="text-sm font-medium">Session {session.id.split('_')[1]}</span>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {session.startTime.toLocaleString()}
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">Sources:</span>
-                            <div className="font-medium">{session.sources.length}</div>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Found:</span>
-                            <div className="font-medium text-green-600">{session.toolsFound}</div>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Updated:</span>
-                            <div className="font-medium text-blue-600">{session.toolsUpdated}</div>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Duration:</span>
-                            <div className="font-medium">
-                              {session.endTime ? `${Math.round((session.endTime.getTime() - session.startTime.getTime()) / 1000)}s` : 'Running...'}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                    {crawlSessions.length === 0 && (
-                      <div className="text-center py-8">
-                        <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                        <h3 className="font-semibold mb-2">No crawl sessions yet</h3>
-                        <p className="text-muted-foreground">Crawl session logs will appear here when auto-sync runs.</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-          </Tabs>
         </div>
       </main>
     </div>
