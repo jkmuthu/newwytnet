@@ -830,8 +830,6 @@ export default function AIDirectory() {
                   </Dialog>
                   
                 </div>
-              </div>
-            </div>
 
             {/* Compact Filters Row */}
             <div className="flex items-center justify-between">
@@ -863,7 +861,7 @@ export default function AIDirectory() {
                 </div>
               </div>
             </div>
-          </div>
+              </div>
 
           {/* AI Tools Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
