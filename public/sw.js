@@ -9,7 +9,7 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
-  '/wytnet-logo-new.png',
+  '/wytnet-logo.png',
   // Add critical CSS and JS files when built
 ];
 
