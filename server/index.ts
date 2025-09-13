@@ -49,9 +49,11 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize search service in the background
+  // Initialize services in the background
   try {
-    console.log('Initializing search service...');
+    console.log('Initializing services...');
+    
+    // Initialize search service
     const { checkMeilisearchAvailability } = await import('./services/searchService');
     
     // Check if Meilisearch is available
@@ -69,9 +71,18 @@ app.use((req, res, next) => {
     } else {
       console.log('Using mock search service for development');
     }
+
+    // Initialize assessment service
+    console.log('Initializing assessment service...');
+    const { AssessmentService } = await import('./assessmentService');
+    const assessmentService = new AssessmentService();
+    
+    await assessmentService.initializeDefaultData();
+    console.log('Assessment service initialized with default data');
+    
   } catch (error) {
-    console.error('Failed to load search service:', error);
-    console.log('Server starting with limited search functionality');
+    console.error('Failed to initialize services:', error);
+    console.log('Server starting with limited functionality');
   }
 
   const server = await registerRoutes(app);
