@@ -46,8 +46,6 @@ import {
   Heart,
   MessageSquare
 } from "lucide-react";
-import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
 import { openExternalLink, UTMCampaigns } from "@/lib/utm";
 
 interface AITool {
@@ -726,7 +724,6 @@ export default function AIDirectory() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
-      <Header />
       
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
@@ -1551,8 +1548,6 @@ export default function AIDirectory() {
           </Tabs>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }
