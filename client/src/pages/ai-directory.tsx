@@ -771,35 +771,16 @@ export default function AIDirectory() {
       
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-purple-500 to-blue-600 rounded-3xl mb-6">
-              <Bot className="h-10 w-10 text-white" />
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-600 rounded-2xl mb-4">
+              <Bot className="h-8 w-8 text-white" />
             </div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               AI Tools Directory
             </h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              The most comprehensive, community-driven directory of AI tools with real-time discovery, 
-              automated categorization, and intelligent recommendations.
+            <p className="text-sm text-muted-foreground">
+              Discover and explore AI tools
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
-              <Badge variant="outline" className="flex items-center gap-2 px-4 py-2">
-                <Activity className="h-4 w-4 text-green-500" />
-                <span>Auto-Sync: {autoSyncEnabled ? 'ON' : 'OFF'}</span>
-              </Badge>
-              <Badge variant="outline" className="flex items-center gap-2 px-4 py-2">
-                <Clock className="h-4 w-4 text-blue-500" />
-                <span>Last sync: {lastSyncTime.toLocaleDateString()}</span>
-              </Badge>
-              <Badge variant="outline" className="flex items-center gap-2 px-4 py-2">
-                <Database className="h-4 w-4 text-purple-500" />
-                <span>{aiTools.filter(t => t.status === 'active').length} Active Tools</span>
-              </Badge>
-              <Badge variant="outline" className="flex items-center gap-2 px-4 py-2">
-                <Users className="h-4 w-4 text-orange-500" />
-                <span>{communitySubmissions.filter(s => s.status === 'pending').length} Pending Reviews</span>
-              </Badge>
-            </div>
           </div>
 
           {/* Navigation Tabs and Content */}
@@ -862,9 +843,9 @@ export default function AIDirectory() {
                 <div className="flex gap-2">
                   <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="outline" data-testid="button-add-ai">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Tool
+                      <Button variant="outline" size="sm" data-testid="button-add-ai">
+                        <Plus className="h-4 w-4 mr-1" />
+                        Suggest
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md">
@@ -976,78 +957,35 @@ export default function AIDirectory() {
               </div>
             </div>
 
-            {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <Label htmlFor="category-filter">Category</Label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger data-testid="select-category-filter">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {AI_CATEGORIES.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.icon} {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="pricing-filter">Pricing</Label>
-                <Select value={pricingFilter} onValueChange={setPricingFilter}>
-                  <SelectTrigger data-testid="select-pricing-filter">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Pricing</SelectItem>
-                    <SelectItem value="Free">Free</SelectItem>
-                    <SelectItem value="Freemium">Freemium</SelectItem>
-                    <SelectItem value="Paid">Paid</SelectItem>
-                    <SelectItem value="Open Source">Open Source</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="source-filter">Source</Label>
-                <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                  <SelectTrigger data-testid="select-source-filter">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Sources</SelectItem>
-                    <SelectItem value="auto-crawl">🤖 Auto-Crawled</SelectItem>
-                    <SelectItem value="community">👥 Community</SelectItem>
-                    <SelectItem value="manual">✏️ Manual</SelectItem>
-                    <SelectItem value="curator">👑 Curated</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="sort-filter">Sort By</Label>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger data-testid="select-sort-filter">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="trending">🔥 Trending</SelectItem>
-                    <SelectItem value="rating">⭐ Rating</SelectItem>
-                    <SelectItem value="community-score">💖 Community Score</SelectItem>
-                    <SelectItem value="upvotes">👍 Most Upvoted</SelectItem>
-                    <SelectItem value="newest">🆕 Newest</SelectItem>
-                    <SelectItem value="name">📝 Name</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex items-end">
-                <Button variant="outline" className="w-full">
-                  <Filter className="h-4 w-4 mr-2" />
-                  {filteredTools.length} Tools
-                </Button>
+            {/* Simple Filters */}
+            <div className="flex gap-2 text-sm">
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-40" data-testid="select-category-filter">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {AI_CATEGORIES.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.icon} {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={pricingFilter} onValueChange={setPricingFilter}>
+                <SelectTrigger className="w-32" data-testid="select-pricing-filter">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Pricing</SelectItem>
+                  <SelectItem value="Free">Free</SelectItem>
+                  <SelectItem value="Freemium">Freemium</SelectItem>
+                  <SelectItem value="Paid">Paid</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <div className="ml-auto text-xs text-muted-foreground flex items-center">
+                {filteredTools.length} tools
               </div>
             </div>
           </div>
@@ -1089,14 +1027,6 @@ export default function AIDirectory() {
                             {tool.pricing}
                           </Badge>
 
-                          {/* Source Badge */}
-                          <Badge variant="outline" className="text-xs">
-                            {tool.source === 'auto-crawl' && '🤖'}
-                            {tool.source === 'community' && '👥'}
-                            {tool.source === 'manual' && '✏️'}
-                            {tool.source === 'curator' && '👑'}
-                            {tool.source.charAt(0).toUpperCase() + tool.source.slice(1).replace('-', ' ')}
-                          </Badge>
                         </div>
                       </div>
                       
@@ -1108,7 +1038,7 @@ export default function AIDirectory() {
                           content: tool.name,
                           term: tool.category
                         })}
-                        className="hover:bg-purple-100 dark:hover:bg-purple-900/20"
+                        className="hover:bg-blue-100 dark:hover:bg-blue-900/20 text-blue-600"
                         data-testid={`button-visit-${tool.id}`}
                       >
                         <ExternalLink className="h-4 w-4" />
@@ -1149,45 +1079,6 @@ export default function AIDirectory() {
                             </Badge>
                           )}
                         </div>
-                      </div>
-                      
-                      {/* Community Voting */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Eye className="h-3 w-3" />
-                            {tool.usage.toLocaleString()}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Heart className="h-3 w-3 text-red-500" />
-                            {tool.communityScore.toFixed(1)}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => voteOnTool(tool.id, 'up')}
-                            className="h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
-                          >
-                            <span className="text-green-600">👍</span>
-                          </Button>
-                          <span className="text-xs font-medium text-green-600">{tool.upvotes}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => voteOnTool(tool.id, 'down')}
-                            className="h-7 w-7 p-0 hover:bg-red-100 dark:hover:bg-red-900/20 ml-2"
-                          >
-                            <span className="text-red-600">👎</span>
-                          </Button>
-                          <span className="text-xs font-medium text-red-600">{tool.downvotes}</span>
-                        </div>
-                      </div>
-
-                      <div className="text-xs text-muted-foreground">
-                        Updated {tool.lastUpdated.toLocaleDateString()}
                       </div>
                     </div>
                   </CardContent>
