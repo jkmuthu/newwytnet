@@ -101,7 +101,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 <SheetHeader>
                   <SheetTitle className="flex items-center gap-2">
                     <img 
-                      src="/wytnet-logo.png" 
+                      src="/wytnet-logo-new.png" 
                       alt="WytNet" 
                       className="h-6 w-auto"
                     />
@@ -192,7 +192,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
               <Link href="/" className="flex items-center" data-testid="link-logo">
                 <div className="flex items-center space-x-2">
                   <img 
-                    src="/wytnet-logo.png" 
+                    src="/wytnet-logo-new.png" 
                     alt="WytNet - Multi-SaaS Engine" 
                     className="h-8 w-auto transition-transform hover:scale-105"
                   />

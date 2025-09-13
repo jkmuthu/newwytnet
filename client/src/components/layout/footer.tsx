@@ -42,7 +42,7 @@ export default function Footer() {
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
               <img 
-                src="/wytnet-logo.png" 
+                src="/wytnet-logo-new.png" 
                 alt="WytNet" 
                 className="h-8 w-auto transition-transform hover:scale-105"
               />

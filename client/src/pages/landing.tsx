@@ -12,7 +12,7 @@ export default function Landing() {
         <div className="text-center mb-16">
           <div className="flex items-center justify-center mb-6">
             <img 
-              src="/wytnet-logo.png" 
+              src="/wytnet-logo-new.png" 
               alt="WytNet - Multi-Tenant SaaS Platform" 
               className="h-16 w-auto transition-transform hover:scale-105"
             />
