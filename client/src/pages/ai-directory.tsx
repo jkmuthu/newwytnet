@@ -876,14 +876,6 @@ export default function AIDirectory() {
                 </div>
                 
                 <div className="flex gap-2">
-                  <Dialog open={isSubmissionDialogOpen} onOpenChange={setIsSubmissionDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700" data-testid="button-submit-community">
-                        <Users className="h-4 w-4 mr-2" />
-                        Submit Tool
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-xl">
                           <Users className="h-5 w-5 text-purple-600" />
