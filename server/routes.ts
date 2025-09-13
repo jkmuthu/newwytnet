@@ -1985,6 +1985,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // AssessDisc DISC Assessment Routes (Public Access)
   
+  // Initialize assessment data (safe for production)
+  app.post('/api/assessments/initialize', async (req, res) => {
+    try {
+      // Force initialization of default data
+      await assessmentService.initializeDefaultData();
+      res.json({ success: true, message: 'Assessment data initialized successfully' });
+    } catch (error) {
+      console.error('Error initializing assessment data:', error);
+      res.status(500).json({ error: 'Failed to initialize assessment data' });
+    }
+  });
+
   // Reset assessment data (for development)
   app.delete('/api/assessments/reset', async (req, res) => {
     try {
