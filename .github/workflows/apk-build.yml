@@ -169,6 +169,7 @@ jobs:
     - name: Upload to Object Storage (if configured)
       env:
         REPLIT_DEPLOY_URL: ${{ secrets.REPLIT_DEPLOY_URL }}
+        CI_UPLOAD_TOKEN: ${{ secrets.CI_UPLOAD_TOKEN }}
       working-directory: twa-build
       run: |
         APK_PATH="app-release-signed.apk"
@@ -176,39 +177,56 @@ jobs:
           APK_PATH="app-release-unsigned.apk"
         fi
         
-        if [ -n "$REPLIT_DEPLOY_URL" ]; then
+        if [ -n "$REPLIT_DEPLOY_URL" ] && [ -n "$CI_UPLOAD_TOKEN" ]; then
           echo "📦 Uploading APK and metadata to Replit Object Storage..."
           
-          # Get signed upload URLs from Replit backend
-          APK_UPLOAD_URL=$(curl -s -X POST "${REPLIT_DEPLOY_URL}/api/ci/upload-urls" \
+          # Get signed upload URLs from Replit backend (with authentication)
+          UPLOAD_RESPONSE=$(curl -s -X POST "${REPLIT_DEPLOY_URL}/api/ci/upload-urls" \
             -H "Content-Type: application/json" \
-            -d '{"type":"apk"}' | jq -r '.apkUploadUrl')
-            
-          METADATA_UPLOAD_URL=$(curl -s -X POST "${REPLIT_DEPLOY_URL}/api/ci/upload-urls" \
-            -H "Content-Type: application/json" \
-            -d '{"type":"metadata"}' | jq -r '.metadataUploadUrl')
+            -H "Authorization: Bearer ${CI_UPLOAD_TOKEN}" \
+            -w "HTTPSTATUS:%{http_code}")
           
-          if [ "$APK_UPLOAD_URL" != "null" ] && [ "$METADATA_UPLOAD_URL" != "null" ]; then
-            # Upload APK
-            echo "📱 Uploading APK..."
-            curl -X PUT "$APK_UPLOAD_URL" \
-              -H "Content-Type: application/vnd.android.package-archive" \
-              --data-binary @"$APK_PATH"
+          HTTP_STATUS=$(echo "$UPLOAD_RESPONSE" | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
+          UPLOAD_BODY=$(echo "$UPLOAD_RESPONSE" | sed -e 's/HTTPSTATUS:.*//g')
+          
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            APK_UPLOAD_URL=$(echo "$UPLOAD_BODY" | jq -r '.apkUploadUrl')
+            METADATA_UPLOAD_URL=$(echo "$UPLOAD_BODY" | jq -r '.metadataUploadUrl')
             
-            # Upload metadata
-            echo "📄 Uploading metadata..."
-            curl -X PUT "$METADATA_UPLOAD_URL" \
-              -H "Content-Type: application/json" \
-              --data-binary @metadata.json
-            
-            echo "✅ Successfully uploaded APK and metadata to Object Storage"
+            if [ "$APK_UPLOAD_URL" != "null" ] && [ "$METADATA_UPLOAD_URL" != "null" ]; then
+              # Upload APK
+              echo "📱 Uploading APK..."
+              APK_STATUS=$(curl -s -X PUT "$APK_UPLOAD_URL" \
+                -H "Content-Type: application/vnd.android.package-archive" \
+                --data-binary @"$APK_PATH" \
+                -w "%{http_code}")
+              
+              # Upload metadata
+              echo "📄 Uploading metadata..."
+              META_STATUS=$(curl -s -X PUT "$METADATA_UPLOAD_URL" \
+                -H "Content-Type: application/json" \
+                --data-binary @metadata.json \
+                -w "%{http_code}")
+              
+              if [ "$APK_STATUS" -eq 200 ] && [ "$META_STATUS" -eq 200 ]; then
+                echo "✅ Successfully uploaded APK and metadata to Object Storage"
+              else
+                echo "❌ Upload failed - APK: $APK_STATUS, Metadata: $META_STATUS"
+                exit 1
+              fi
+            else
+              echo "❌ Invalid upload URLs received"
+              exit 1
+            fi
           else
-            echo "❌ Failed to get upload URLs from Replit backend"
-            echo "Response: APK=$APK_UPLOAD_URL, Metadata=$METADATA_UPLOAD_URL"
+            echo "❌ Failed to authenticate with backend (HTTP $HTTP_STATUS)"
+            echo "Response: $UPLOAD_BODY"
+            exit 1
           fi
         else
-          echo "⚠️ REPLIT_DEPLOY_URL not configured - APK will only be available as GitHub artifact"
-          echo "To enable automatic deployment, add REPLIT_DEPLOY_URL secret (e.g., https://your-app.replit.app)"
+          echo "⚠️ REPLIT_DEPLOY_URL or CI_UPLOAD_TOKEN not configured"
+          echo "To enable automatic deployment, add both secrets to GitHub repository"
+          echo "APK will only be available as GitHub artifact"
         fi
         
     - name: Upload artifacts

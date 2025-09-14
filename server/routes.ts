@@ -4355,16 +4355,45 @@ export async function registerRoutes(app: Express): Promise<void> {
     res.sendFile(path.join(process.cwd(), 'public', '.well-known', 'assetlinks.json'));
   });
 
-  // CI Upload endpoints for getting signed URLs
+  // CI Upload endpoints for getting signed URLs (secured)
   app.post('/api/ci/upload-urls', async (req, res) => {
     try {
-      // This endpoint is used by CI to get signed upload URLs
+      // Authenticate CI requests using secure token
+      const authHeader = req.headers.authorization;
+      const expectedToken = process.env.CI_UPLOAD_TOKEN;
+      
+      if (!expectedToken) {
+        console.error('CI_UPLOAD_TOKEN not configured - CI uploads disabled');
+        return res.status(503).json({
+          success: false,
+          error: 'CI upload service not configured'
+        });
+      }
+      
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({
+          success: false,
+          error: 'Missing or invalid authorization header'
+        });
+      }
+      
+      const token = authHeader.substring(7);
+      if (token !== expectedToken) {
+        console.warn('Unauthorized CI upload attempt from IP:', req.ip);
+        return res.status(401).json({
+          success: false,
+          error: 'Invalid authorization token'
+        });
+      }
+      
+      // Generate signed upload URLs
       const { ObjectStorageService } = await import('./objectStorage');
       const objectStorageService = new ObjectStorageService();
       
       const apkUploadUrl = await objectStorageService.getApkUploadURL();
       const metadataUploadUrl = await objectStorageService.getMetadataUploadURL();
       
+      console.log('Generated signed upload URLs for authorized CI request');
       res.json({
         success: true,
         apkUploadUrl,
