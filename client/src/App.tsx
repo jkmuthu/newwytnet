@@ -25,6 +25,7 @@ import WhatsAppAuth from "@/pages/whatsapp-auth";
 import UserAuthMethods from "@/pages/user-auth-methods";
 import SearchPage from "@/pages/search";
 import Landing from "@/pages/landing";
+import LoginPage from "@/pages/LoginPage";
 import NotFound from "@/pages/not-found";
 
 // New content pages
@@ -53,8 +54,8 @@ import AdminDashboard from "@/pages/AdminDashboard";
 function RoleBasedDashboard() {
   const { isAuthenticated, isLoading, isSuperAdmin, role } = useWhatsAppAuth();
   
-  // For authenticated users, show dashboard directly
-  // For non-authenticated users, show home page
+  // For authenticated users, show dashboard directly (already has its own layout)
+  // For non-authenticated users, show home page (needs LayoutWrapper)
   if (isAuthenticated) {
     return <Dashboard />;
   }
@@ -89,9 +90,14 @@ function Router() {
       <Route path="/super-admin" component={SuperAdminDashboard} />
       
       {/* Root route with role-based dashboards */}
-      <Route path="/">
+      <Route path="/" exact>
+        <RoleBasedDashboard />
+      </Route>
+      
+      {/* Login page */}
+      <Route path="/login">
         <LayoutWrapper>
-          <RoleBasedDashboard />
+          <LoginPage />
         </LayoutWrapper>
       </Route>
       

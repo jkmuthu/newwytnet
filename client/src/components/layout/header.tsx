@@ -100,7 +100,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => window.location.href = '/api/login'}
+              onClick={() => window.location.href = '/login'}
               className="hidden sm:inline-flex"
               data-testid="button-login"
             >
