@@ -67,12 +67,12 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    // Redirect to Google OAuth
+    // Redirect to Replit Auth for social login (includes Google)
     window.location.href = '/api/login';
   };
 
   const handleFacebookLogin = () => {
-    // Redirect to Facebook OAuth  
+    // Redirect to Replit Auth for social login (includes Facebook)
     window.location.href = '/api/login';
   };
 
