@@ -250,24 +250,6 @@ export default function AdminDashboard() {
               </Button>
             </form>
 
-            <div className="mt-6 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <div className="flex items-start space-x-2">
-                <Shield className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5" />
-                <div className="text-xs text-blue-700 dark:text-blue-300">
-                  <p className="font-medium">Admin Access:</p>
-                  <div className="mt-2 space-y-1">
-                    <div>
-                      <span className="font-medium">Super Admin:</span> 
-                      <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded ml-1">9345228184</code>
-                    </div>
-                    <div>
-                      <span className="font-medium">Admin:</span> 
-                      <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded ml-1">8220449933</code>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>
