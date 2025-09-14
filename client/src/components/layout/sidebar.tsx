@@ -66,6 +66,7 @@ export default function Sidebar({ open, onClose, isCollapsed, onToggleCollapse }
           section: "System",
           items: [
             { label: "Search", icon: "search", href: "/search", active: location === "/search" },
+            { label: "SEO Settings", icon: "globe", href: "/admin/seo-settings", active: location === "/admin/seo-settings" },
             { label: "Themes", icon: "palette", href: "/admin/themes", active: location === "/admin/themes" },
             { label: "Media", icon: "images", href: "/admin/media", active: location === "/admin/media" },
             { label: "APIs", icon: "plug", href: "/admin/apis", active: location === "/admin/apis" },
