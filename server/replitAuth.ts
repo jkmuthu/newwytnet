@@ -142,12 +142,23 @@ export async function setupReplitAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
-    // Find matching strategy based on hostname or use first available
+    // Robust strategy matching for development/production environments
     const hostname = req.hostname;
     const domains = process.env.REPLIT_DOMAINS!.split(",");
-    const strategyName = domains.includes(hostname) ? 
-      `replitauth:${hostname}` : 
-      `replitauth:${domains[0]}`;
+    
+    // Find exact match or similar domain pattern
+    let strategyName = `replitauth:${domains[0]}`; // Default fallback
+    
+    for (const domain of domains) {
+      if (hostname === domain || 
+          hostname.includes(domain.split('.')[0]) || 
+          domain.includes(hostname.split('.')[0])) {
+        strategyName = `replitauth:${domain}`;
+        break;
+      }
+    }
+    
+    console.log(`Using strategy: ${strategyName} for hostname: ${hostname}`);
     
     passport.authenticate(strategyName, {
       prompt: "login consent",
@@ -156,12 +167,23 @@ export async function setupReplitAuth(app: Express) {
   });
 
   app.get("/api/callback", (req, res, next) => {
-    // Find matching strategy based on hostname or use first available
+    // Robust strategy matching for development/production environments
     const hostname = req.hostname;
     const domains = process.env.REPLIT_DOMAINS!.split(",");
-    const strategyName = domains.includes(hostname) ? 
-      `replitauth:${hostname}` : 
-      `replitauth:${domains[0]}`;
+    
+    // Find exact match or similar domain pattern
+    let strategyName = `replitauth:${domains[0]}`; // Default fallback
+    
+    for (const domain of domains) {
+      if (hostname === domain || 
+          hostname.includes(domain.split('.')[0]) || 
+          domain.includes(hostname.split('.')[0])) {
+        strategyName = `replitauth:${domain}`;
+        break;
+      }
+    }
+    
+    console.log(`Using callback strategy: ${strategyName} for hostname: ${hostname}`);
     
     passport.authenticate(strategyName, {
       successReturnToOrRedirect: "/",
