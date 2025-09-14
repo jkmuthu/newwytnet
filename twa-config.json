@@ -1,0 +1,58 @@
+{
+  "packageId": "com.wytnet.twa",
+  "host": {
+    "scheme": "https",
+    "url": "wytnet.com"
+  },
+  "name": "WytNet",
+  "launcherName": "WytNet",
+  "display": "standalone", 
+  "orientation": "default",
+  "themeColor": "#3b82f6",
+  "navigationColor": "#ffffff",
+  "navigationColorDark": "#000000",
+  "backgroundColor": "#ffffff",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "https://wytnet.com/icon-512.png",
+  "maskableIconUrl": "https://wytnet.com/icon-512.png",
+  "monochromeIconUrl": "https://wytnet.com/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "wytnet-key"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "DISC Assessment",
+      "short_name": "Assessment", 
+      "url": "/assessment",
+      "iconUrl": "https://wytnet.com/icon-96.png"
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "url": "/dashboard", 
+      "iconUrl": "https://wytnet.com/icon-96.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://wytnet.com/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": true
+    },
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false
+}

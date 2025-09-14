@@ -1,6 +1,7 @@
 import type { Express, RequestHandler } from "express";
 import { setupAuth, isAuthenticated, Principal } from "./customAuth";
 import { setupReplitAuth, isReplitAuthenticated } from "./replitAuth";
+import path from "path";
 import * as whatsappAuthService from "./services/whatsappAuth";
 import * as socialAuthService from "./services/socialAuth";
 import { storage } from "./storage";
@@ -4347,5 +4348,10 @@ export async function registerRoutes(app: Express): Promise<void> {
         error: error.message || 'Failed to update SEO settings'
       });
     }
+  });
+
+  // Serve .well-known directory for TWA domain verification
+  app.get('/.well-known/assetlinks.json', (req, res) => {
+    res.sendFile(path.join(process.cwd(), 'public', '.well-known', 'assetlinks.json'));
   });
 }
