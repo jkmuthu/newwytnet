@@ -21,58 +21,86 @@ import { eq, and, desc, sql } from "drizzle-orm";
 export class AssessmentService {
   // Initialize default categories and questions
   async initializeDefaultData() {
-    // Check if data already exists
-    const existingCategories = await db.select().from(assessmentCategories).limit(1);
-    if (existingCategories.length > 0) {
-      return; // Data already initialized
+    // Check each data type independently to ensure complete seeding
+    const [existingCategories, existingQuestions, existingOptions] = await Promise.all([
+      db.select().from(assessmentCategories).limit(1),
+      db.select().from(assessmentQuestions).limit(1),
+      db.select().from(assessmentOptions).limit(1)
+    ]);
+
+    console.log('Assessment data check:', {
+      categories: existingCategories.length,
+      questions: existingQuestions.length,
+      options: existingOptions.length
+    });
+
+    // Create categories if they don't exist
+    let insertedCategories;
+    if (existingCategories.length === 0) {
+      const categories = [
+        { name: 'student', displayName: 'Student', description: 'Currently pursuing education' },
+        { name: 'job_seeker', displayName: 'Job Seeker', description: 'Looking for employment opportunities' },
+        { name: 'freelancer', displayName: 'Freelancer', description: 'Independent contractor or consultant' },
+        { name: 'volunteer', displayName: 'Volunteer', description: 'Community service and volunteer work' },
+        { name: 'self_employed', displayName: 'Self-Employed', description: 'Running own business' },
+        { name: 'parent', displayName: 'Parent', description: 'Parenting and family management' },
+        { name: 'startup_entrepreneur', displayName: 'Startup Entrepreneur', description: 'Building startup ventures' },
+        { name: 'corporate_leader', displayName: 'Corporate Leader', description: 'Management and leadership roles' },
+        { name: 'educator', displayName: 'Educator/Trainer', description: 'Teaching and training roles' },
+        { name: 'expert_consultant', displayName: 'Expert/Consultant', description: 'Subject matter expertise and consulting' },
+      ];
+      insertedCategories = await db.insert(assessmentCategories).values(categories).returning();
+      console.log('Inserted', insertedCategories.length, 'assessment categories');
     }
 
-    // Create default categories
-    const categories = [
-      { name: 'student', displayName: 'Student', description: 'Currently pursuing education' },
-      { name: 'job_seeker', displayName: 'Job Seeker', description: 'Looking for employment opportunities' },
-      { name: 'freelancer', displayName: 'Freelancer', description: 'Independent contractor or consultant' },
-      { name: 'volunteer', displayName: 'Volunteer', description: 'Community service and volunteer work' },
-      { name: 'self_employed', displayName: 'Self-Employed', description: 'Running own business' },
-      { name: 'parent', displayName: 'Parent', description: 'Parenting and family management' },
-      { name: 'startup_entrepreneur', displayName: 'Startup Entrepreneur', description: 'Building startup ventures' },
-      { name: 'corporate_leader', displayName: 'Corporate Leader', description: 'Management and leadership roles' },
-      { name: 'educator', displayName: 'Educator/Trainer', description: 'Teaching and training roles' },
-      { name: 'expert_consultant', displayName: 'Expert/Consultant', description: 'Subject matter expertise and consulting' },
-    ];
+    // Create questions if they don't exist
+    if (existingQuestions.length === 0) {
+      console.log('Seeding assessment questions...');
+      const questions = [
+        // General DISC questions
+        { categoryId: null, questionNumber: 1, questionText: "When facing a challenge, I tend to:", language: 'en', discType: 'D', weight: '1.00' },
+        { categoryId: null, questionNumber: 2, questionText: "In social situations, I usually:", language: 'en', discType: 'I', weight: '1.00' },
+        { categoryId: null, questionNumber: 3, questionText: "When working in a team, I prefer to:", language: 'en', discType: 'S', weight: '1.00' },
+        { categoryId: null, questionNumber: 4, questionText: "When making decisions, I:", language: 'en', discType: 'C', weight: '1.00' },
+        { categoryId: null, questionNumber: 5, questionText: "Under pressure, I tend to:", language: 'en', discType: 'D', weight: '1.00' },
+        { categoryId: null, questionNumber: 6, questionText: "When communicating with others, I:", language: 'en', discType: 'I', weight: '1.00' },
+        { categoryId: null, questionNumber: 7, questionText: "In my work environment, I prefer:", language: 'en', discType: 'S', weight: '1.00' },
+        { categoryId: null, questionNumber: 8, questionText: "When analyzing information, I:", language: 'en', discType: 'C', weight: '1.00' },
+        { categoryId: null, questionNumber: 9, questionText: "My approach to change is:", language: 'en', discType: 'D', weight: '1.00' },
+        { categoryId: null, questionNumber: 10, questionText: "When motivating others, I:", language: 'en', discType: 'I', weight: '1.00' },
+        { categoryId: null, questionNumber: 11, questionText: "In conflict situations, I:", language: 'en', discType: 'S', weight: '1.00' },
+        { categoryId: null, questionNumber: 12, questionText: "When setting standards, I:", language: 'en', discType: 'C', weight: '1.00' },
+        { categoryId: null, questionNumber: 13, questionText: "My leadership style is:", language: 'en', discType: 'D', weight: '1.00' },
+        { categoryId: null, questionNumber: 14, questionText: "When building relationships, I:", language: 'en', discType: 'I', weight: '1.00' },
+        { categoryId: null, questionNumber: 15, questionText: "My preferred pace of work is:", language: 'en', discType: 'S', weight: '1.00' },
+      ];
 
-    const insertedCategories = await db.insert(assessmentCategories).values(categories).returning();
+      const insertedQuestions = await db.insert(assessmentQuestions).values(questions).returning();
+      console.log('Inserted', insertedQuestions.length, 'assessment questions');
 
-    // Create sample DISC questions
-    const questions = [
-      // General DISC questions
-      { categoryId: null, questionNumber: 1, questionText: "When facing a challenge, I tend to:", language: 'en', discType: 'D', weight: '1.00' },
-      { categoryId: null, questionNumber: 2, questionText: "In social situations, I usually:", language: 'en', discType: 'I', weight: '1.00' },
-      { categoryId: null, questionNumber: 3, questionText: "When working in a team, I prefer to:", language: 'en', discType: 'S', weight: '1.00' },
-      { categoryId: null, questionNumber: 4, questionText: "When making decisions, I:", language: 'en', discType: 'C', weight: '1.00' },
-      { categoryId: null, questionNumber: 5, questionText: "Under pressure, I tend to:", language: 'en', discType: 'D', weight: '1.00' },
-      { categoryId: null, questionNumber: 6, questionText: "When communicating with others, I:", language: 'en', discType: 'I', weight: '1.00' },
-      { categoryId: null, questionNumber: 7, questionText: "In my work environment, I prefer:", language: 'en', discType: 'S', weight: '1.00' },
-      { categoryId: null, questionNumber: 8, questionText: "When analyzing information, I:", language: 'en', discType: 'C', weight: '1.00' },
-      { categoryId: null, questionNumber: 9, questionText: "My approach to change is:", language: 'en', discType: 'D', weight: '1.00' },
-      { categoryId: null, questionNumber: 10, questionText: "When motivating others, I:", language: 'en', discType: 'I', weight: '1.00' },
-      { categoryId: null, questionNumber: 11, questionText: "In conflict situations, I:", language: 'en', discType: 'S', weight: '1.00' },
-      { categoryId: null, questionNumber: 12, questionText: "When setting standards, I:", language: 'en', discType: 'C', weight: '1.00' },
-      { categoryId: null, questionNumber: 13, questionText: "My leadership style is:", language: 'en', discType: 'D', weight: '1.00' },
-      { categoryId: null, questionNumber: 14, questionText: "When building relationships, I:", language: 'en', discType: 'I', weight: '1.00' },
-      { categoryId: null, questionNumber: 15, questionText: "My preferred pace of work is:", language: 'en', discType: 'S', weight: '1.00' },
-    ];
+      // Create options for each question
+      const options = [];
+      for (const question of insertedQuestions) {
+        const questionOptions = this.getOptionsForQuestion(question.questionNumber, question.id);
+        options.push(...questionOptions);
+      }
 
-    const insertedQuestions = await db.insert(assessmentQuestions).values(questions).returning();
-
-    // Create options for each question
-    const options = [];
-    for (const question of insertedQuestions) {
-      const questionOptions = this.getOptionsForQuestion(question.questionNumber, question.id);
-      options.push(...questionOptions);
+      await db.insert(assessmentOptions).values(options);
+      console.log('Inserted', options.length, 'assessment options');
     }
 
-    await db.insert(assessmentOptions).values(options);
+    // Final count verification
+    const [finalCategories, finalQuestions, finalOptions] = await Promise.all([
+      db.select().from(assessmentCategories),
+      db.select().from(assessmentQuestions),
+      db.select().from(assessmentOptions)
+    ]);
+    
+    console.log('Assessment service initialized with:', {
+      categories: finalCategories.length,
+      questions: finalQuestions.length,
+      options: finalOptions.length
+    });
   }
 
   private getOptionsForQuestion(questionNumber: number, questionId: string) {
