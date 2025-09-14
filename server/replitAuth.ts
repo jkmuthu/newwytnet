@@ -4,10 +4,8 @@ import * as client from "openid-client";
 import { Strategy, type VerifyFunction } from "openid-client/passport";
 
 import passport from "passport";
-import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
-import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
 if (!process.env.REPLIT_DOMAINS) {
@@ -24,29 +22,6 @@ const getOidcConfig = memoize(
   { maxAge: 3600 * 1000 }
 );
 
-export function getReplitSession() {
-  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
-    ttl: sessionTtl,
-    tableName: "sessions",
-  });
-  return session({
-    secret: process.env.SESSION_SECRET!,
-    store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: sessionTtl,
-      domain: process.env.NODE_ENV === 'production' ? '.wytnet.com' : undefined,
-      sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'strict',
-    },
-  });
-}
 
 function updateUserSession(
   user: any,
@@ -61,18 +36,80 @@ function updateUserSession(
 async function upsertReplitUser(
   claims: any,
 ) {
+  // SECURITY FIX: Ensure OIDC users get proper tenant assignment
+  
+  // First check if user already exists (may have tenant)
+  let existingUser;
+  try {
+    existingUser = await storage.getUser(claims["sub"]);
+  } catch (error) {
+    // User doesn't exist, which is fine
+  }
+  
+  let tenantId = existingUser?.tenantId;
+  
+  // If user doesn't have a tenant, create/get default tenant
+  if (!tenantId) {
+    // For OIDC users, use email domain as tenant identifier
+    const emailDomain = claims["email"]?.split('@')[1] || 'default.com';
+    const defaultTenantId = `ten_oidc_${emailDomain.replace(/[^a-zA-Z0-9]/g, '_')}`;
+    
+    // Try to get existing tenant for this domain
+    try {
+      const existingTenant = await storage.getTenant(defaultTenantId);
+      
+      if (existingTenant) {
+        tenantId = existingTenant.id;
+      } else {
+        // Create new tenant for this domain
+        await storage.createTenant({
+          id: defaultTenantId,
+          name: `${emailDomain} Organization`,
+          domain: emailDomain,
+          settings: { source: 'oidc_auto_created' },
+          isActive: true,
+        });
+        tenantId = defaultTenantId;
+      }
+    } catch (error) {
+      console.error('Error creating tenant for OIDC user:', error);
+      // Fallback to a global default tenant
+      tenantId = 'ten_default_global';
+      
+      // Ensure global default tenant exists
+      try {
+        const globalTenant = await storage.getTenant(tenantId);
+        if (!globalTenant) {
+          await storage.createTenant({
+            id: tenantId,
+            name: 'Global Default Organization',
+            domain: 'default.wytnet.com',
+            settings: { source: 'global_default' },
+            isActive: true,
+          });
+        }
+      } catch (createError) {
+        // Tenant might already exist, which is fine
+        console.warn('Could not create global default tenant:', createError);
+      }
+    }
+  }
+  
+  // Now create/update user with proper tenant assignment
   await storage.upsertUser({
     id: claims["sub"],
     email: claims["email"],
     firstName: claims["first_name"],
     lastName: claims["last_name"],
     profileImageUrl: claims["profile_image_url"],
+    tenantId: tenantId, // CRITICAL: Assign tenant to prevent authorization failures
   });
 }
 
 export async function setupReplitAuth(app: Express) {
-  app.set("trust proxy", 1);
-  app.use(getReplitSession());
+  // CRITICAL FIX: Remove duplicate session middleware to prevent conflicts
+  // Session middleware is now handled centrally by customAuth.ts
+  // We only initialize passport here since session is already configured
   app.use(passport.initialize());
   app.use(passport.session());
 

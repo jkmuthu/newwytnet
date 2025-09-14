@@ -1,5 +1,5 @@
 import type { Express, RequestHandler } from "express";
-import { setupAuth, isAuthenticated } from "./customAuth";
+import { setupAuth, isAuthenticated, Principal } from "./customAuth";
 import { setupReplitAuth, isReplitAuthenticated } from "./replitAuth";
 import * as whatsappAuthService from "./services/whatsappAuth";
 import * as socialAuthService from "./services/socialAuth";
@@ -464,6 +464,94 @@ const isAuthenticatedUnified = async (req: any, res: any, next: any) => {
   return res.status(401).json({ message: "Unauthorized" });
 };
 
+// Unified Principal resolver for both authentication systems  
+async function getPrincipal(req: any): Promise<Principal | null> {
+  // First, try to resolve from custom auth session
+  const sessionUser = req.session?.user;
+  if (sessionUser) {
+    // Handle different session types
+    if (sessionUser.type === 'whatsapp') {
+      // WhatsApp user session
+      const whatsappAuthService = await import('./services/whatsappAuth');
+      const whatsappUser = await whatsappAuthService.findWhatsAppUserById(sessionUser.id);
+      if (whatsappUser) {
+        return {
+          id: whatsappUser.id,
+          tenantId: whatsappUser.tenantId!,
+          role: whatsappUser.role,
+          isSuperAdmin: whatsappUser.isSuperAdmin || false,
+          email: whatsappUser.email || undefined,
+          name: whatsappUser.name,
+          mobileNumber: whatsappUser.whatsappNumber,
+          profileImageUrl: whatsappUser.profileImageUrl || undefined,
+          provider: 'whatsapp' as const
+        };
+      }
+    } else {
+      // Legacy user session
+      const user = await storage.getUser(sessionUser.id);
+      if (user) {
+        return {
+          id: user.id,
+          tenantId: user.tenantId || '',
+          role: 'user',
+          isSuperAdmin: false,
+          email: user.email || undefined,
+          firstName: user.firstName || undefined,
+          lastName: user.lastName || undefined,
+          name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}`.trim() : undefined,
+          profileImageUrl: user.profileImageUrl || undefined,
+          provider: 'legacy' as const
+        };
+      }
+    }
+  }
+
+  // Fallback to Replit Auth (OIDC) session
+  if (req.isAuthenticated && req.isAuthenticated() && req.user?.claims) {
+    const claims = req.user.claims;
+    
+    // Try to get or create user from OIDC claims
+    let user = await storage.getUser(claims.sub);
+    if (!user) {
+      // Get or create default tenant for OIDC users
+      let defaultTenant = await storage.getTenantBySlug('default');
+      if (!defaultTenant) {
+        defaultTenant = await storage.createTenant({
+          id: `ten_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          name: 'Default Organization',
+          slug: 'default',
+          domain: 'wytnet.com',
+          settings: {},
+          isActive: true,
+        });
+      }
+
+      user = await storage.upsertUser({
+        id: claims.sub,
+        email: claims.email,
+        firstName: claims.first_name,
+        lastName: claims.last_name,
+        profileImageUrl: claims.profile_image_url,
+        tenantId: defaultTenant.id,
+      });
+    }
+
+    return {
+      id: user.id,
+      tenantId: user.tenantId || '',
+      email: user.email || undefined,
+      firstName: user.firstName || undefined,
+      lastName: user.lastName || undefined,
+      name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}`.trim() : undefined,
+      profileImageUrl: user.profileImageUrl || undefined,
+      provider: 'replit' as const
+    };
+  }
+
+  return null;
+}
+
 export async function registerRoutes(app: Express): Promise<void> {
   // Setup both authentication systems
   await setupAuth(app); // Custom mobile/WhatsApp auth
@@ -484,25 +572,26 @@ export async function registerRoutes(app: Express): Promise<void> {
   await tmNumberingService.initializeNiceClassifications();
   await tmNumberingService.seedSampleTMNumbers();
 
-  // Auth routes - this should not use isAuthenticated middleware as it checks auth status
+  // Auth routes - unified endpoint for both authentication systems
   app.get('/api/auth/user', async (req: any, res) => {
     try {
-      const sessionUser = req.session?.user;
-      if (!sessionUser) {
+      const principal = await getPrincipal(req);
+      if (!principal) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const user = await storage.getUser(sessionUser.id);
-      if (!user) {
-        return res.status(401).json({ message: "User not found" });
-      }
-
       res.json({
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        tenantId: user.tenantId
+        id: principal.id,
+        email: principal.email,
+        firstName: principal.firstName,
+        lastName: principal.lastName,
+        name: principal.name,
+        tenantId: principal.tenantId,
+        role: principal.role,
+        isSuperAdmin: principal.isSuperAdmin,
+        mobileNumber: principal.mobileNumber,
+        profileImageUrl: principal.profileImageUrl,
+        provider: principal.provider
       });
     } catch (error) {
       console.error("Error fetching user:", error);

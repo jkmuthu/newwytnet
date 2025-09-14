@@ -149,6 +149,19 @@ function resetRateLimit(key: string): void {
 // Simple session configuration
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  
+  // SECURITY FIX: Require SESSION_SECRET in production to prevent security vulnerabilities
+  if (!process.env.SESSION_SECRET) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('SESSION_SECRET environment variable is required in production. Set a strong random secret.');
+    } else {
+      // For development, generate a random secret (will invalidate sessions on restart)
+      console.warn('⚠️  SESSION_SECRET not set. Using temporary random secret for development.');
+      console.warn('   Sessions will be invalidated on server restart.');
+      console.warn('   Set SESSION_SECRET environment variable for persistent sessions.');
+    }
+  }
+  
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
@@ -156,8 +169,13 @@ export function getSession() {
     ttl: sessionTtl,
     tableName: "sessions",
   });
+  
+  // Use provided secret or generate secure random one for development
+  const sessionSecret = process.env.SESSION_SECRET || 
+    require('crypto').randomBytes(64).toString('hex');
+  
   return session({
-    secret: process.env.SESSION_SECRET || 'default-secret-key-change-in-production',
+    secret: sessionSecret,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
