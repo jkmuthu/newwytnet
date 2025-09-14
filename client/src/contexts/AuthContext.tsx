@@ -29,12 +29,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data, isLoading, isFetching, error } = useQuery<WhatsAppUser | null>({
     queryKey: ["/api/auth/whatsapp/user"],
     retry: false,
-    // Stop background churn and make the result stable for a while
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000,  // 10 minutes
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
+    // Force fresh auth checks (no stale cache)
+    staleTime: 0, // Always fresh
+    gcTime: 1000,  // 1 second cache only
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchOnMount: true,
     refetchInterval: false,
   });
 
