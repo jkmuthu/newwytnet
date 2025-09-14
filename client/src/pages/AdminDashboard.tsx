@@ -250,13 +250,21 @@ export default function AdminDashboard() {
               </Button>
             </form>
 
-            <div className="mt-6 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+            <div className="mt-6 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
               <div className="flex items-start space-x-2">
-                <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5" />
-                <div className="text-xs text-yellow-700 dark:text-yellow-300">
-                  <p className="font-medium">Development Access:</p>
-                  <p>Username: <code className="bg-yellow-100 dark:bg-yellow-800 px-1 rounded">admin</code></p>
-                  <p>Password: <code className="bg-yellow-100 dark:bg-yellow-800 px-1 rounded">WytNet@2025</code></p>
+                <Shield className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5" />
+                <div className="text-xs text-blue-700 dark:text-blue-300">
+                  <p className="font-medium">Admin Access:</p>
+                  <div className="mt-2 space-y-1">
+                    <div>
+                      <span className="font-medium">Super Admin:</span> 
+                      <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded ml-1">9345228184</code>
+                    </div>
+                    <div>
+                      <span className="font-medium">Admin:</span> 
+                      <code className="bg-blue-100 dark:bg-blue-800 px-1 rounded ml-1">8220449933</code>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -306,17 +314,38 @@ export default function AdminDashboard() {
                       </div>
                       
                       <nav className="space-y-2">
-                        {sidebarItems.map((item) => (
-                          <a
-                            key={item.href}
-                            href={item.href}
-                            className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                            onClick={() => setSidebarOpen(false)}
-                          >
-                            <item.icon className="h-5 w-5" />
-                            <span>{item.label}</span>
-                          </a>
-                        ))}
+                        {/* Show different navigation based on role */}
+                        {currentUser?.role === 'super_admin' ? (
+                          sidebarItems.map((item) => (
+                            <a
+                              key={item.href}
+                              href={item.href}
+                              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                              onClick={() => setSidebarOpen(false)}
+                            >
+                              <item.icon className="h-5 w-5" />
+                              <span>{item.label}</span>
+                            </a>
+                          ))
+                        ) : (
+                          /* Limited navigation for admins */
+                          [sidebarItems[0], sidebarItems[3], sidebarItems[4], sidebarItems[5]].map((item) => (
+                            <a
+                              key={item.href}
+                              href={item.href}
+                              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                              onClick={() => setSidebarOpen(false)}
+                            >
+                              <item.icon className="h-5 w-5" />
+                              <span>{item.label}</span>
+                              {item.label === 'All Users' && (
+                                <Badge variant="outline" className="ml-auto text-xs">
+                                  Limited
+                                </Badge>
+                              )}
+                            </a>
+                          ))
+                        )}
                         
                         <div className="pt-4 border-t">
                           <Button 
@@ -344,6 +373,7 @@ export default function AdminDashboard() {
             isMobile={true}
             onTabChange={setSelectedTab}
             selectedTab={selectedTab}
+            currentUser={currentUser}
           />
         </main>
       </div>
@@ -365,61 +395,100 @@ export default function AdminDashboard() {
             <div>
               <p className="text-sm font-medium">Admin Panel</p>
               <p className="text-xs text-gray-500">{currentUser?.username}</p>
+              <Badge 
+                variant={currentUser?.role === 'super_admin' ? 'default' : 'secondary'}
+                className="text-xs mt-1"
+              >
+                {currentUser?.role === 'super_admin' ? '🦸‍♂️ Super Admin' : '👨‍💼 Admin'}
+              </Badge>
             </div>
           </div>
         </div>
 
         <nav className="p-4 space-y-2">
-          <div className="mb-4">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Super Admin
-            </h3>
-          </div>
+          {/* Show different sections based on role */}
+          {currentUser?.role === 'super_admin' && (
+            <>
+              <div className="mb-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Super Admin
+                </h3>
+              </div>
 
-          {sidebarItems.slice(0, 3).map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-            >
-              <item.icon className="h-5 w-5" />
-              <span>{item.label}</span>
-            </a>
-          ))}
+              {sidebarItems.slice(0, 3).map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </a>
+              ))}
 
-          <div className="mt-6">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Core Platform
-            </h3>
-          </div>
+              <div className="mt-6">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Core Platform
+                </h3>
+              </div>
 
-          {sidebarItems.slice(3, 6).map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-            >
-              <item.icon className="h-5 w-5" />
-              <span>{item.label}</span>
-            </a>
-          ))}
+              {sidebarItems.slice(3, 6).map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </a>
+              ))}
 
-          <div className="mt-6">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Builders
-            </h3>
-          </div>
+              <div className="mt-6">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Builders
+                </h3>
+              </div>
 
-          {sidebarItems.slice(6).map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
-            >
-              <item.icon className="h-5 w-5" />
-              <span>{item.label}</span>
-            </a>
-          ))}
+              {sidebarItems.slice(6).map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </a>
+              ))}
+            </>
+          )}
+
+          {/* Limited admin navigation */}
+          {currentUser?.role === 'admin' && (
+            <>
+              <div className="mb-4">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Admin Access
+                </h3>
+              </div>
+
+              {/* Limited navigation for admins */}
+              {[sidebarItems[0], sidebarItems[3], sidebarItems[4], sidebarItems[5]].map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                  {item.label === 'All Users' && (
+                    <Badge variant="outline" className="ml-auto text-xs">
+                      Limited
+                    </Badge>
+                  )}
+                </a>
+              ))}
+            </>
+          )}
 
           <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
             <Button 
@@ -441,6 +510,7 @@ export default function AdminDashboard() {
           isMobile={false}
           onTabChange={setSelectedTab}
           selectedTab={selectedTab}
+          currentUser={currentUser}
         />
       </main>
     </div>
@@ -452,12 +522,14 @@ function AdminDashboardContent({
   dashboardData, 
   isMobile, 
   onTabChange, 
-  selectedTab 
+  selectedTab,
+  currentUser
 }: { 
   dashboardData: any; 
   isMobile: boolean; 
   onTabChange: (tab: string) => void;
   selectedTab: string;
+  currentUser: AdminUser | null;
 }) {
   return (
     <div className="space-y-6">
@@ -602,15 +674,15 @@ function AdminDashboardContent({
         </TabsContent>
 
         <TabsContent value="users">
-          <AdminUsersTab />
+          <AdminUsersTab currentUser={currentUser} />
         </TabsContent>
 
         <TabsContent value="modules">
-          <AdminModulesTab />
+          <AdminModulesTab currentUser={currentUser} />
         </TabsContent>
 
         <TabsContent value="system">
-          <AdminSystemTab />
+          <AdminSystemTab currentUser={currentUser} />
         </TabsContent>
       </Tabs>
     </div>
@@ -618,7 +690,8 @@ function AdminDashboardContent({
 }
 
 // Admin Users Tab Component
-function AdminUsersTab() {
+function AdminUsersTab({ currentUser }: { currentUser: AdminUser | null }) {
+  const canCreateUsers = currentUser?.role === 'super_admin';
   const [newUser, setNewUser] = useState({
     username: '',
     email: '',
@@ -683,10 +756,19 @@ function AdminUsersTab() {
               </select>
             </div>
           </div>
-          <Button className="w-full md:w-auto">
-            <UserPlus className="h-4 w-4 mr-2" />
-            Create Admin User
-          </Button>
+          {canCreateUsers ? (
+            <Button className="w-full md:w-auto">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Create Admin User
+            </Button>
+          ) : (
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Only Super Admins can create new admin users.
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
 
@@ -705,7 +787,8 @@ function AdminUsersTab() {
 }
 
 // Admin Modules Tab Component  
-function AdminModulesTab() {
+function AdminModulesTab({ currentUser }: { currentUser: AdminUser | null }) {
+  const canManageModules = currentUser?.role === 'super_admin';
   return (
     <div className="space-y-6">
       <Card>
@@ -748,7 +831,8 @@ function AdminModulesTab() {
 }
 
 // Admin System Tab Component
-function AdminSystemTab() {
+function AdminSystemTab({ currentUser }: { currentUser: AdminUser | null }) {
+  const canViewSystemInfo = currentUser?.permissions?.includes('all_access') || currentUser?.permissions?.includes('read_access');
   return (
     <div className="space-y-6">
       <Card>

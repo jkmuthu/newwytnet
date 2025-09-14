@@ -1557,6 +1557,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin login endpoint with fixed credentials
+  app.post('/api/auth/admin-login', async (req, res) => {
+    try {
+      const { username, password } = req.body;
+
+      if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password are required' });
+      }
+
+      // Fixed admin credentials
+      const adminCredentials = {
+        '9345228184': { password: 'sadmin12', role: 'super_admin', name: 'Super Administrator' },
+        '8220449933': { password: 'admin123', role: 'admin', name: 'Administrator' }
+      };
+
+      const admin = adminCredentials[username as keyof typeof adminCredentials];
+      
+      if (!admin || admin.password !== password) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+
+      // Create admin session
+      req.session.adminUserId = username;
+      req.session.adminRole = admin.role;
+      req.session.adminName = admin.name;
+
+      // Generate simple token for frontend
+      const token = Buffer.from(`${username}:${admin.role}:${Date.now()}`).toString('base64');
+
+      res.json({
+        success: true,
+        token,
+        user: {
+          id: username,
+          username,
+          name: admin.name,
+          role: admin.role,
+          permissions: admin.role === 'super_admin' 
+            ? ['all_access', 'user_management', 'system_settings', 'module_management', 'tenant_management']
+            : ['read_access', 'limited_user_management', 'module_viewing'],
+          isActive: true,
+          lastLoginAt: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      console.error('Error in admin login:', error);
+      res.status(500).json({ error: 'Admin login failed' });
+    }
+  });
+
   // Development login endpoint (only in development mode)
   app.post('/api/auth/whatsapp/dev-login', async (req, res) => {
     // Only allow in development mode

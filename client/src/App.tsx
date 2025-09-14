@@ -47,6 +47,7 @@ import AdminSystemOverview from "@/pages/admin/system-overview";
 import AdminUsers from "@/pages/admin/users";
 import AdminTenants from "@/pages/admin/tenants";
 import SuperAdminDashboard from "@/pages/SuperAdminDashboard";
+import AdminDashboard from "@/pages/AdminDashboard";
 
 // Role-based dashboard component
 function RoleBasedDashboard() {
@@ -120,7 +121,7 @@ function Router() {
         
         {/* Protected routes - authentication required */}
         <Route path="/dashboard" component={Dashboard} />
-        <Route path="/admin" component={Dashboard} />
+        <Route path="/admin" component={AdminDashboard} />
         <Route path="/analytics" component={AdminAnalytics} />
         <Route path="/user-auth-methods" component={UserAuthMethods} />
         <Route path="/landing" component={Landing} />
