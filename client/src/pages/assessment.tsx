@@ -73,19 +73,20 @@ export default function Assessment() {
     retry: false,
   });
 
-  // Fetch questions
+  // Fetch questions based on selected category
   const { data: questions, isLoading: loadingQuestions, isError, error } = useQuery<AssessmentQuestion[]>({
-    queryKey: ['/api/assessments/questions', participantInfo.language],
+    queryKey: ['/api/assessments/questions', participantInfo.categoryId, participantInfo.language],
     queryFn: async () => {
       const params = new URLSearchParams();
-      // Request general questions (categoryId = null) since that's what's seeded in the database
+      // Use the category ID from participant info for role-specific questions
+      if (participantInfo.categoryId) params.set('categoryId', participantInfo.categoryId);
       if (participantInfo.language) params.set('language', participantInfo.language);
       
       const response = await fetch(`/api/assessments/questions?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch questions');
       return response.json();
     },
-    enabled: currentStep === 'assessment' && !!sessionId,
+    enabled: currentStep === 'assessment' && !!sessionId && !!participantInfo.categoryId,
     retry: false,
   });
 

@@ -55,28 +55,87 @@ export class AssessmentService {
 
     // Create questions if they don't exist
     if (existingQuestions.length === 0) {
-      console.log('Seeding assessment questions...');
+      console.log('Seeding role-specific assessment questions...');
+      
+      // Get category IDs for role-specific questions
+      const categoryMap: Record<string, string> = insertedCategories ? 
+        insertedCategories.reduce((map, cat) => ({ ...map, [cat.name]: cat.id }), {} as Record<string, string>) :
+        (await db.select().from(assessmentCategories)).reduce((map, cat) => ({ ...map, [cat.name]: cat.id }), {} as Record<string, string>);
+
       const questions = [
-        // General DISC questions
-        { categoryId: null, questionNumber: 1, questionText: "When facing a challenge, I tend to:", language: 'en', discType: 'D', weight: '1.00' },
-        { categoryId: null, questionNumber: 2, questionText: "In social situations, I usually:", language: 'en', discType: 'I', weight: '1.00' },
-        { categoryId: null, questionNumber: 3, questionText: "When working in a team, I prefer to:", language: 'en', discType: 'S', weight: '1.00' },
-        { categoryId: null, questionNumber: 4, questionText: "When making decisions, I:", language: 'en', discType: 'C', weight: '1.00' },
-        { categoryId: null, questionNumber: 5, questionText: "Under pressure, I tend to:", language: 'en', discType: 'D', weight: '1.00' },
-        { categoryId: null, questionNumber: 6, questionText: "When communicating with others, I:", language: 'en', discType: 'I', weight: '1.00' },
-        { categoryId: null, questionNumber: 7, questionText: "In my work environment, I prefer:", language: 'en', discType: 'S', weight: '1.00' },
-        { categoryId: null, questionNumber: 8, questionText: "When analyzing information, I:", language: 'en', discType: 'C', weight: '1.00' },
-        { categoryId: null, questionNumber: 9, questionText: "My approach to change is:", language: 'en', discType: 'D', weight: '1.00' },
-        { categoryId: null, questionNumber: 10, questionText: "When motivating others, I:", language: 'en', discType: 'I', weight: '1.00' },
-        { categoryId: null, questionNumber: 11, questionText: "In conflict situations, I:", language: 'en', discType: 'S', weight: '1.00' },
-        { categoryId: null, questionNumber: 12, questionText: "When setting standards, I:", language: 'en', discType: 'C', weight: '1.00' },
-        { categoryId: null, questionNumber: 13, questionText: "My leadership style is:", language: 'en', discType: 'D', weight: '1.00' },
-        { categoryId: null, questionNumber: 14, questionText: "When building relationships, I:", language: 'en', discType: 'I', weight: '1.00' },
-        { categoryId: null, questionNumber: 15, questionText: "My preferred pace of work is:", language: 'en', discType: 'S', weight: '1.00' },
+        // Student questions (academic context)
+        { categoryId: categoryMap['student'], questionNumber: 1, questionText: "When facing a difficult exam or assignment, I:", language: 'en', discType: 'D', weight: '1.00' },
+        { categoryId: categoryMap['student'], questionNumber: 2, questionText: "In group study sessions, I usually:", language: 'en', discType: 'I', weight: '1.00' },
+        { categoryId: categoryMap['student'], questionNumber: 3, questionText: "When working on class projects, I prefer to:", language: 'en', discType: 'S', weight: '1.00' },
+        { categoryId: categoryMap['student'], questionNumber: 4, questionText: "When choosing my course schedule, I:", language: 'en', discType: 'C', weight: '1.00' },
+        { categoryId: categoryMap['student'], questionNumber: 5, questionText: "During exam periods, I tend to:", language: 'en', discType: 'D', weight: '1.00' },
+        
+        // Job Seeker questions (career-focused)
+        { categoryId: categoryMap['job_seeker'], questionNumber: 1, questionText: "When preparing for job interviews, I:", language: 'en', discType: 'C', weight: '1.00' },
+        { categoryId: categoryMap['job_seeker'], questionNumber: 2, questionText: "During networking events, I typically:", language: 'en', discType: 'I', weight: '1.00' },
+        { categoryId: categoryMap['job_seeker'], questionNumber: 3, questionText: "When receiving job rejection feedback, I:", language: 'en', discType: 'S', weight: '1.00' },
+        { categoryId: categoryMap['job_seeker'], questionNumber: 4, questionText: "In job interviews, I prefer to:", language: 'en', discType: 'D', weight: '1.00' },
+        { categoryId: categoryMap['job_seeker'], questionNumber: 5, questionText: "When researching potential employers, I:", language: 'en', discType: 'C', weight: '1.00' },
+        
+        // Freelancer questions (independence & client focus)
+        { categoryId: categoryMap['freelancer'], questionNumber: 1, questionText: "When negotiating project rates with clients, I:", language: 'en', discType: 'D', weight: '1.00' },
+        { categoryId: categoryMap['freelancer'], questionNumber: 2, questionText: "During client presentations, I tend to:", language: 'en', discType: 'I', weight: '1.00' },
+        { categoryId: categoryMap['freelancer'], questionNumber: 3, questionText: "When managing multiple client deadlines, I:", language: 'en', discType: 'S', weight: '1.00' },
+        { categoryId: categoryMap['freelancer'], questionNumber: 4, questionText: "Before starting a new project, I:", language: 'en', discType: 'C', weight: '1.00' },
+        { categoryId: categoryMap['freelancer'], questionNumber: 5, questionText: "When clients request scope changes, I:", language: 'en', discType: 'D', weight: '1.00' },
+        
+        // Volunteer questions (service & community)
+        { categoryId: categoryMap['volunteer'], questionNumber: 1, questionText: "When organizing community events, I:", language: 'en', discType: 'D', weight: '1.00' },
+        { categoryId: categoryMap['volunteer'], questionNumber: 2, questionText: "While helping at community gatherings, I:", language: 'en', discType: 'I', weight: '1.00' },
+        { categoryId: categoryMap['volunteer'], questionNumber: 3, questionText: "When supporting people in need, I prefer to:", language: 'en', discType: 'S', weight: '1.00' },
+        { categoryId: categoryMap['volunteer'], questionNumber: 4, questionText: "Before committing to volunteer work, I:", language: 'en', discType: 'C', weight: '1.00' },
+        { categoryId: categoryMap['volunteer'], questionNumber: 5, questionText: "When volunteer projects face challenges, I:", language: 'en', discType: 'D', weight: '1.00' },
+        
+        // Self-Employed questions (business & independence)
+        { categoryId: categoryMap['self_employed'], questionNumber: 1, questionText: "When making important business decisions, I:", language: 'en', discType: 'D', weight: '1.00' },
+        { categoryId: categoryMap['self_employed'], questionNumber: 2, questionText: "When marketing my business, I prefer to:", language: 'en', discType: 'I', weight: '1.00' },
+        { categoryId: categoryMap['self_employed'], questionNumber: 3, questionText: "When building customer relationships, I:", language: 'en', discType: 'S', weight: '1.00' },
+        { categoryId: categoryMap['self_employed'], questionNumber: 4, questionText: "When planning business strategy, I:", language: 'en', discType: 'C', weight: '1.00' },
+        { categoryId: categoryMap['self_employed'], questionNumber: 5, questionText: "During economic uncertainty, I tend to:", language: 'en', discType: 'D', weight: '1.00' },
+        
+        // Parent questions (family & care)
+        { categoryId: categoryMap['parent'], questionNumber: 1, questionText: "When my children face problems, I:", language: 'en', discType: 'S', weight: '1.00' },
+        { categoryId: categoryMap['parent'], questionNumber: 2, questionText: "At family gatherings, I usually:", language: 'en', discType: 'I', weight: '1.00' },
+        { categoryId: categoryMap['parent'], questionNumber: 3, questionText: "When planning family activities, I:", language: 'en', discType: 'C', weight: '1.00' },
+        { categoryId: categoryMap['parent'], questionNumber: 4, questionText: "In parenting challenges, I tend to:", language: 'en', discType: 'D', weight: '1.00' },
+        { categoryId: categoryMap['parent'], questionNumber: 5, questionText: "When managing household responsibilities, I:", language: 'en', discType: 'S', weight: '1.00' },
+        
+        // Startup Entrepreneur questions (innovation & risk)
+        { categoryId: categoryMap['startup_entrepreneur'], questionNumber: 1, questionText: "When pursuing new business opportunities, I:", language: 'en', discType: 'D', weight: '1.00' },
+        { categoryId: categoryMap['startup_entrepreneur'], questionNumber: 2, questionText: "When pitching to investors, I:", language: 'en', discType: 'I', weight: '1.00' },
+        { categoryId: categoryMap['startup_entrepreneur'], questionNumber: 3, questionText: "When building my startup team, I:", language: 'en', discType: 'S', weight: '1.00' },
+        { categoryId: categoryMap['startup_entrepreneur'], questionNumber: 4, questionText: "Before launching new products, I:", language: 'en', discType: 'C', weight: '1.00' },
+        { categoryId: categoryMap['startup_entrepreneur'], questionNumber: 5, questionText: "When facing startup setbacks, I:", language: 'en', discType: 'D', weight: '1.00' },
+        
+        // Corporate Leader questions (management & leadership)
+        { categoryId: categoryMap['corporate_leader'], questionNumber: 1, questionText: "When leading organizational change, I:", language: 'en', discType: 'D', weight: '1.00' },
+        { categoryId: categoryMap['corporate_leader'], questionNumber: 2, questionText: "During team meetings, I typically:", language: 'en', discType: 'I', weight: '1.00' },
+        { categoryId: categoryMap['corporate_leader'], questionNumber: 3, questionText: "When managing team conflicts, I:", language: 'en', discType: 'S', weight: '1.00' },
+        { categoryId: categoryMap['corporate_leader'], questionNumber: 4, questionText: "When setting departmental goals, I:", language: 'en', discType: 'C', weight: '1.00' },
+        { categoryId: categoryMap['corporate_leader'], questionNumber: 5, questionText: "Under executive pressure, I tend to:", language: 'en', discType: 'D', weight: '1.00' },
+        
+        // Educator questions (teaching & development)
+        { categoryId: categoryMap['educator'], questionNumber: 1, questionText: "When students struggle with concepts, I:", language: 'en', discType: 'S', weight: '1.00' },
+        { categoryId: categoryMap['educator'], questionNumber: 2, questionText: "During classroom discussions, I prefer to:", language: 'en', discType: 'I', weight: '1.00' },
+        { categoryId: categoryMap['educator'], questionNumber: 3, questionText: "When designing curriculum, I:", language: 'en', discType: 'C', weight: '1.00' },
+        { categoryId: categoryMap['educator'], questionNumber: 4, questionText: "When handling classroom disruptions, I:", language: 'en', discType: 'D', weight: '1.00' },
+        { categoryId: categoryMap['educator'], questionNumber: 5, questionText: "When evaluating student progress, I:", language: 'en', discType: 'C', weight: '1.00' },
+        
+        // Expert Consultant questions (expertise & consulting)
+        { categoryId: categoryMap['expert_consultant'], questionNumber: 1, questionText: "When presenting solutions to clients, I:", language: 'en', discType: 'D', weight: '1.00' },
+        { categoryId: categoryMap['expert_consultant'], questionNumber: 2, questionText: "During client workshops, I tend to:", language: 'en', discType: 'I', weight: '1.00' },
+        { categoryId: categoryMap['expert_consultant'], questionNumber: 3, questionText: "When building client relationships, I:", language: 'en', discType: 'S', weight: '1.00' },
+        { categoryId: categoryMap['expert_consultant'], questionNumber: 4, questionText: "Before providing recommendations, I:", language: 'en', discType: 'C', weight: '1.00' },
+        { categoryId: categoryMap['expert_consultant'], questionNumber: 5, questionText: "When clients challenge my expertise, I:", language: 'en', discType: 'D', weight: '1.00' },
       ];
 
       const insertedQuestions = await db.insert(assessmentQuestions).values(questions).returning();
-      console.log('Inserted', insertedQuestions.length, 'assessment questions');
+      console.log('Inserted', insertedQuestions.length, 'role-specific assessment questions');
 
       // Create options for each question
       const options = [];
@@ -86,7 +145,7 @@ export class AssessmentService {
       }
 
       await db.insert(assessmentOptions).values(options);
-      console.log('Inserted', options.length, 'assessment options');
+      console.log('Inserted', options.length, 'assessment options for all roles');
     }
 
     // Final count verification
@@ -215,11 +274,24 @@ export class AssessmentService {
 
   // Get questions for assessment with randomization
   async getQuestions(categoryId?: string, language = 'en'): Promise<(AssessmentQuestion & { options: AssessmentOption[] })[]> {
+    // For role-specific questions, we need to find the category by name first
+    let targetCategoryId = categoryId;
+    if (categoryId && categoryId !== 'null' && categoryId !== '') {
+      // Check if it's a category name instead of ID
+      const category = await db.select().from(assessmentCategories)
+        .where(eq(assessmentCategories.name, categoryId))
+        .limit(1);
+      
+      if (category.length > 0) {
+        targetCategoryId = category[0].id;
+      }
+    }
+
     const questionsQuery = db.select().from(assessmentQuestions)
       .where(and(
         eq(assessmentQuestions.isActive, true),
         eq(assessmentQuestions.language, language),
-        categoryId ? eq(assessmentQuestions.categoryId, categoryId) : sql`${assessmentQuestions.categoryId} IS NULL`
+        targetCategoryId ? eq(assessmentQuestions.categoryId, targetCategoryId) : sql`${assessmentQuestions.categoryId} IS NOT NULL`
       ))
       .orderBy(assessmentQuestions.questionNumber);
 
