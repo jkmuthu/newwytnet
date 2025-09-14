@@ -102,7 +102,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 variant="outline" 
                 size="sm"
                 onClick={() => window.location.href = '/login'}
-                className="hidden sm:inline-flex"
+                className="inline-flex"
                 data-testid="button-login"
               >
                 Login / Join
