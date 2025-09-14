@@ -1,5 +1,6 @@
 import type { Express, RequestHandler } from "express";
 import { setupAuth, isAuthenticated } from "./customAuth";
+import { setupReplitAuth, isReplitAuthenticated } from "./replitAuth";
 import * as whatsappAuthService from "./services/whatsappAuth";
 import * as socialAuthService from "./services/socialAuth";
 import { storage } from "./storage";
@@ -19,6 +20,13 @@ import {
   hubs,
   seoSettings,
   insertSeoSettingSchema,
+  whatsappUsers,
+  assessmentCategories,
+  assessmentQuestions,
+  assessmentOptions,
+  assessmentSessions,
+  assessmentResponses,
+  assessmentResults,
   type SeoSetting,
   type InsertSeoSetting
 } from "@shared/schema";
@@ -457,8 +465,9 @@ const isAuthenticatedUnified = async (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<void> {
-  // Auth middleware
-  await setupAuth(app);
+  // Setup both authentication systems
+  await setupAuth(app); // Custom mobile/WhatsApp auth
+  await setupReplitAuth(app); // Social auth (Google, Facebook, etc.)
 
   // Initialize services
   const wytidService = new WytIDService('mock');
