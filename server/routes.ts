@@ -4355,32 +4355,51 @@ export async function registerRoutes(app: Express): Promise<void> {
     res.sendFile(path.join(process.cwd(), 'public', '.well-known', 'assetlinks.json'));
   });
 
+  // CI Upload endpoints for getting signed URLs
+  app.post('/api/ci/upload-urls', async (req, res) => {
+    try {
+      // This endpoint is used by CI to get signed upload URLs
+      const { ObjectStorageService } = await import('./objectStorage');
+      const objectStorageService = new ObjectStorageService();
+      
+      const apkUploadUrl = await objectStorageService.getApkUploadURL();
+      const metadataUploadUrl = await objectStorageService.getMetadataUploadURL();
+      
+      res.json({
+        success: true,
+        apkUploadUrl,
+        metadataUploadUrl
+      });
+    } catch (error) {
+      console.error('Error generating upload URLs:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to generate upload URLs'
+      });
+    }
+  });
+
   // APK Download and Metadata APIs
   app.get('/downloads/wytnet-latest.apk', async (req, res) => {
     try {
       const { apkStorage } = await import('./services/apkStorage');
       
-      const exists = await apkStorage.apkExists();
-      if (!exists) {
+      const apkFile = await apkStorage.getAPKFile();
+      if (!apkFile) {
         return res.status(404).json({
           error: 'APK not available',
           message: 'APK is being built by CI. Please check back in a few minutes.'
         });
       }
 
-      const stream = await apkStorage.streamAPK();
-      if (!stream) {
-        return res.status(503).json({
-          error: 'APK temporarily unavailable',
-          message: 'Please try again later.'
-        });
-      }
-
+      // Use Object Storage service to properly stream the file
+      const { ObjectStorageService } = await import('./objectStorage');
+      const objectStorageService = new ObjectStorageService();
+      
       res.setHeader('Content-Type', 'application/vnd.android.package-archive');
       res.setHeader('Content-Disposition', 'attachment; filename="wytnet-latest.apk"');
-      res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
       
-      stream.pipe(res);
+      await objectStorageService.downloadObject(apkFile, res);
     } catch (error) {
       console.error('Error serving APK download:', error);
       res.status(500).json({
@@ -4416,9 +4435,17 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // APK Storage configuration (for debugging)
+  // APK Storage configuration (for debugging - admin only)
   app.get('/api/mobile/config', async (req, res) => {
     try {
+      // Basic security - only allow in development or for authenticated admin users
+      if (process.env.NODE_ENV === 'production') {
+        return res.status(403).json({
+          success: false,
+          error: 'Configuration endpoint not available in production'
+        });
+      }
+      
       const { apkStorage } = await import('./services/apkStorage');
       const config = apkStorage.getConfig();
       
@@ -4426,7 +4453,6 @@ export async function registerRoutes(app: Express): Promise<void> {
         success: true,
         data: {
           ...config,
-          // Don't expose sensitive bucket details in production
           bucketId: config.bucketId ? '***configured***' : 'not-configured'
         }
       });

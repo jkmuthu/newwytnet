@@ -1,4 +1,5 @@
-import { Readable } from 'stream';
+import { ObjectStorageService } from '../objectStorage';
+import { File } from "@google-cloud/storage";
 
 interface APKMetadata {
   version: string;
@@ -10,14 +11,10 @@ interface APKMetadata {
 }
 
 class APKStorageService {
-  private bucketId: string;
-  private publicPath: string;
-  private privatePath: string;
+  private objectStorageService: ObjectStorageService;
 
   constructor() {
-    this.bucketId = process.env.REPLIT_OBJECT_STORAGE_BUCKET_ID || '';
-    this.publicPath = process.env.PUBLIC_OBJECT_SEARCH_PATHS?.split(',')[0] || '';
-    this.privatePath = process.env.PRIVATE_OBJECT_DIR || '';
+    this.objectStorageService = new ObjectStorageService();
   }
 
   /**
@@ -25,13 +22,21 @@ class APKStorageService {
    */
   async getLatestMetadata(): Promise<APKMetadata | null> {
     try {
-      // In a real implementation, this would fetch from Object Storage
-      // For now, return mock data that will be replaced by actual CI-generated metadata
+      const metadataFile = await this.objectStorageService.getMetadataFile();
+      
+      if (metadataFile) {
+        // Download metadata content
+        const [buffer] = await metadataFile.download();
+        const metadata = JSON.parse(buffer.toString('utf-8'));
+        return metadata;
+      }
+
+      // Fallback to mock data for development
       const mockMetadata: APKMetadata = {
         version: '1.0.0',
         versionCode: 1,
         size: 5242880, // ~5MB typical TWA size
-        sha256: 'pending-ci-build',
+        sha256: 'pending-ci-build-no-metadata-found',
         buildTime: new Date().toISOString(),
         downloadUrl: '/downloads/wytnet-latest.apk'
       };
@@ -44,16 +49,13 @@ class APKStorageService {
   }
 
   /**
-   * Stream APK file from Object Storage
+   * Get APK file from Object Storage
    */
-  async streamAPK(): Promise<Readable | null> {
+  async getAPKFile(): Promise<File | null> {
     try {
-      // In a real implementation, this would stream from Object Storage
-      // For now, return null to indicate APK not yet available
-      console.log('APK streaming not yet implemented - awaiting CI build');
-      return null;
+      return await this.objectStorageService.getApkFile();
     } catch (error) {
-      console.error('Error streaming APK:', error);
+      console.error('Error getting APK file:', error);
       return null;
     }
   }
@@ -63,9 +65,8 @@ class APKStorageService {
    */
   async apkExists(): Promise<boolean> {
     try {
-      // In a real implementation, this would check Object Storage
-      // For now, return false until CI builds the first APK
-      return false;
+      const apkFile = await this.objectStorageService.getApkFile();
+      return apkFile !== null;
     } catch (error) {
       console.error('Error checking APK existence:', error);
       return false;

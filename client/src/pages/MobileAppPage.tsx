@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useQuery } from "@tanstack/react-query";
 import { 
   Download, 
   Smartphone, 
@@ -13,10 +14,31 @@ import {
   FileCode,
   Zap,
   Shield,
-  Share2
+  Share2,
+  Clock,
+  AlertCircle
 } from "lucide-react";
 
+interface APKMetadata {
+  version: string;
+  versionCode: number;
+  size: number;
+  sha256: string;
+  buildTime: string;
+  downloadUrl: string;
+}
+
 export default function MobileAppPage() {
+  // Fetch APK metadata
+  const { 
+    data: apkData, 
+    isLoading: isLoadingMetadata, 
+    error: metadataError 
+  } = useQuery<{ success: boolean; data: APKMetadata }>({
+    queryKey: ['/api/mobile/latest'],
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
   const handlePWAInstall = () => {
     // Check if running on mobile
     if (navigator.userAgent.match(/Android|iPhone|iPad/i)) {
@@ -24,6 +46,10 @@ export default function MobileAppPage() {
     } else {
       alert("Visit this page on your mobile device to install WytNet as an app!");
     }
+  };
+
+  const handleDirectAPKDownload = () => {
+    window.location.href = '/downloads/wytnet-latest.apk';
   };
 
   const downloadBuildInstructions = () => {
@@ -40,6 +66,28 @@ export default function MobileAppPage() {
     alert('Copied to clipboard!');
   };
 
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const formatDate = (isoString: string): string => {
+    try {
+      return new Date(isoString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return 'Unknown';
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
       <div className="text-center mb-8">
@@ -52,17 +100,106 @@ export default function MobileAppPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="instant" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-8">
+      <Tabs defaultValue="download" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsTrigger value="download" className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Direct Download
+          </TabsTrigger>
           <TabsTrigger value="instant" className="flex items-center gap-2">
             <Zap className="h-4 w-4" />
-            Instant Install (PWA)
+            PWA Install
           </TabsTrigger>
-          <TabsTrigger value="apk" className="flex items-center gap-2">
+          <TabsTrigger value="build" className="flex items-center gap-2">
             <Code2 className="h-4 w-4" />
-            Android APK Build
+            Build Yourself
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="download" className="space-y-6">
+          <Card className="border-2 border-blue-200 bg-blue-50/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-blue-700">
+                <Download className="h-5 w-5" />
+                Download Android APK
+              </CardTitle>
+              <CardDescription>
+                Ready-to-install APK file built automatically from the latest WytNet code
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isLoadingMetadata && (
+                <Alert>
+                  <Clock className="h-4 w-4" />
+                  <AlertDescription>
+                    Loading APK information...
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {metadataError && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    APK is being built by our automated system. Check back in a few minutes!
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {apkData?.success && apkData.data && (
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-blue-700">📦 APK Details:</h3>
+                    <div className="text-sm space-y-1 text-blue-600">
+                      <p><strong>Version:</strong> {apkData.data.version}</p>
+                      <p><strong>Size:</strong> {formatFileSize(apkData.data.size)}</p>
+                      <p><strong>Built:</strong> {formatDate(apkData.data.buildTime)}</p>
+                      <p><strong>SHA-256:</strong> <code className="text-xs">{apkData.data.sha256.substring(0, 16)}...</code></p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-blue-700">✅ What's Included:</h3>
+                    <ul className="text-sm space-y-1 text-blue-600">
+                      <li>• Complete authentication system</li>
+                      <li>• All WytNet platform features</li>
+                      <li>• Offline functionality</li>
+                      <li>• Native Android integration</li>
+                      <li>• Multi-tenant access</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+              
+              <Alert>
+                <CheckCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Ready to install!</strong> Use your existing WytNet account or create a new one after installation.
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex gap-3">
+                <Button 
+                  onClick={handleDirectAPKDownload}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                  data-testid="button-download-apk"
+                  disabled={!apkData?.success}
+                >
+                  <Download className="h-4 w-4" />
+                  {isLoadingMetadata ? "Loading..." : "Download APK"}
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => copyToClipboard(apkData?.data?.sha256 || '')}
+                  disabled={!apkData?.data?.sha256}
+                  data-testid="button-copy-checksum"
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Copy Checksum
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="instant" className="space-y-6">
           <Card className="border-2 border-green-200 bg-green-50/50">
@@ -129,7 +266,7 @@ export default function MobileAppPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="apk" className="space-y-6">
+        <TabsContent value="build" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

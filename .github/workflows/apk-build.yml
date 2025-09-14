@@ -10,6 +10,10 @@ on:
         description: 'Force build APK'
         required: false
         default: 'false'
+      debug_build:
+        description: 'Allow debug keystore for testing'
+        required: false
+        default: 'false'
 
 jobs:
   build-apk:
@@ -65,17 +69,25 @@ jobs:
         KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        DEBUG_BUILD: ${{ github.event.inputs.debug_build || 'false' }}
       run: |
         if [ -n "$KEYSTORE_BASE64" ]; then
           echo "$KEYSTORE_BASE64" | base64 -d > release-key.jks
           echo "Using provided release keystore"
-        else
-          # Generate debug keystore for testing (NOT for production)
+          echo "USING_RELEASE_KEYSTORE=true" >> $GITHUB_ENV
+        elif [ "$DEBUG_BUILD" = "true" ]; then
+          # Generate debug keystore ONLY for explicit debug builds
           keytool -genkey -v -keystore debug-key.jks -keyalg RSA -keysize 2048 -validity 10000 \
             -alias debugkey -keypass android -storepass android \
             -dname "CN=WytNet Debug, OU=Development, O=WytNet, L=Unknown, S=Unknown, C=US"
           mv debug-key.jks release-key.jks
           echo "Generated debug keystore (for testing only)"
+          echo "USING_RELEASE_KEYSTORE=false" >> $GITHUB_ENV
+        else
+          echo "❌ No release keystore provided and DEBUG_BUILD not set to true"
+          echo "❌ Cannot build production APK without proper signing certificate"
+          echo "Please add ANDROID_KEYSTORE secret or set DEBUG_BUILD=true for testing"
+          exit 1
         fi
         
     - name: Initialize TWA project
@@ -154,6 +166,51 @@ jobs:
           
         echo "Generated metadata for APK: $SIZE bytes, SHA256: $SHA256"
         
+    - name: Upload to Object Storage (if configured)
+      env:
+        REPLIT_DEPLOY_URL: ${{ secrets.REPLIT_DEPLOY_URL }}
+      working-directory: twa-build
+      run: |
+        APK_PATH="app-release-signed.apk"
+        if [ ! -f "$APK_PATH" ]; then
+          APK_PATH="app-release-unsigned.apk"
+        fi
+        
+        if [ -n "$REPLIT_DEPLOY_URL" ]; then
+          echo "📦 Uploading APK and metadata to Replit Object Storage..."
+          
+          # Get signed upload URLs from Replit backend
+          APK_UPLOAD_URL=$(curl -s -X POST "${REPLIT_DEPLOY_URL}/api/ci/upload-urls" \
+            -H "Content-Type: application/json" \
+            -d '{"type":"apk"}' | jq -r '.apkUploadUrl')
+            
+          METADATA_UPLOAD_URL=$(curl -s -X POST "${REPLIT_DEPLOY_URL}/api/ci/upload-urls" \
+            -H "Content-Type: application/json" \
+            -d '{"type":"metadata"}' | jq -r '.metadataUploadUrl')
+          
+          if [ "$APK_UPLOAD_URL" != "null" ] && [ "$METADATA_UPLOAD_URL" != "null" ]; then
+            # Upload APK
+            echo "📱 Uploading APK..."
+            curl -X PUT "$APK_UPLOAD_URL" \
+              -H "Content-Type: application/vnd.android.package-archive" \
+              --data-binary @"$APK_PATH"
+            
+            # Upload metadata
+            echo "📄 Uploading metadata..."
+            curl -X PUT "$METADATA_UPLOAD_URL" \
+              -H "Content-Type: application/json" \
+              --data-binary @metadata.json
+            
+            echo "✅ Successfully uploaded APK and metadata to Object Storage"
+          else
+            echo "❌ Failed to get upload URLs from Replit backend"
+            echo "Response: APK=$APK_UPLOAD_URL, Metadata=$METADATA_UPLOAD_URL"
+          fi
+        else
+          echo "⚠️ REPLIT_DEPLOY_URL not configured - APK will only be available as GitHub artifact"
+          echo "To enable automatic deployment, add REPLIT_DEPLOY_URL secret (e.g., https://your-app.replit.app)"
+        fi
+        
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -163,8 +220,8 @@ jobs:
           twa-build/metadata.json
         retention-days: 90
         
-    - name: Create release (on tag)
-      if: startsWith(github.ref, 'refs/tags/')
+    - name: Create release (on tag with release keystore only)
+      if: startsWith(github.ref, 'refs/tags/') && env.USING_RELEASE_KEYSTORE == 'true'
       uses: softprops/action-gh-release@v1
       with:
         files: |
@@ -174,7 +231,7 @@ jobs:
           ## WytNet Android APK Release v${{ steps.version.outputs.VERSION }}
           
           **Version Code:** ${{ steps.version.outputs.VERSION_CODE }}
-          **Build Date:** ${{ steps.build_date.outputs.date }}
+          **Build Date:** $(date -u +"%Y-%m-%d %H:%M UTC")
           
           ### Download Options:
           - 🔗 **Direct Download:** [wytnet-latest.apk](https://wytnet.com/downloads/wytnet-latest.apk)
