@@ -14,8 +14,10 @@ export default function MobileLayout({ children, isMobile }: MobileLayoutProps) 
 
   // Function to determine if bottom navigation should be shown
   const shouldShowBottomNav = (currentLocation: string) => {
-    const showBottomNavPages = ['/', '/login'];
-    return showBottomNavPages.includes(currentLocation);
+    // Hide bottom nav only on admin pages and specific pages
+    const hideBottomNavPages = ['/admin', '/dashboard', '/analytics'];
+    const isAdminPage = hideBottomNavPages.some(page => currentLocation.startsWith(page));
+    return !isAdminPage; // Show on all pages except admin pages
   };
 
   // Bottom navigation items (exactly 4 as requested)
