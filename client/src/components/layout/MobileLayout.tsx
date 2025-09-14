@@ -47,7 +47,8 @@ export default function MobileLayout({ children, isMobile }: MobileLayoutProps) 
     { icon: Activity, label: 'DISC Assessment', href: '/assessment' },
   ];
 
-  if (!isMobile) {
+  // Don't render mobile layout for admin routes or if not mobile
+  if (!isMobile || location.startsWith('/admin') || location.startsWith('/super-admin')) {
     return <>{children}</>;
   }
 

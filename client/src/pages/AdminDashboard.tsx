@@ -257,11 +257,11 @@ export default function AdminDashboard() {
     );
   }
 
-  // Mobile layout
+  // Mobile layout  
   if (isMobile) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 relative">
-        {/* Mobile Header */}
+        {/* Mobile Admin Header - SINGLE HEADER FOR ADMIN */}
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-[60]">
           <div className="px-4">
             <div className="flex justify-between items-center h-16 min-h-[4rem]">
