@@ -3,15 +3,13 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Home, Bot, Activity, QrCode, Briefcase, Wrench } from "lucide-react";
-import { useDeviceDetection } from "@/hooks/useDeviceDetection";
-
 interface MobileLayoutProps {
   children: React.ReactNode;
+  isMobile: boolean;
 }
 
-export default function MobileLayout({ children }: MobileLayoutProps) {
+export default function MobileLayout({ children, isMobile }: MobileLayoutProps) {
   const [location] = useLocation();
-  const { isMobile } = useDeviceDetection();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Bottom navigation items (exactly 4 as requested)
@@ -56,7 +54,7 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
   return (
     <>
       {/* Mobile Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 transform-gpu will-change-transform">
         <div className="px-4">
           <div className="flex justify-between items-center h-16">
             {/* Logo - Left */}
@@ -116,7 +114,7 @@ export default function MobileLayout({ children }: MobileLayoutProps) {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50 transform-gpu will-change-transform">
         <div className="flex items-center justify-around py-2">
           {bottomNavItems.map((item) => (
             <Link key={item.href} href={item.href}>

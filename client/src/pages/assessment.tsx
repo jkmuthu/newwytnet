@@ -75,7 +75,16 @@ export default function Assessment() {
 
   // Fetch questions
   const { data: questions, isLoading: loadingQuestions, isError, error } = useQuery<AssessmentQuestion[]>({
-    queryKey: ['/api/assessments/questions', { categoryId: participantInfo.categoryId || undefined, language: participantInfo.language }],
+    queryKey: ['/api/assessments/questions', participantInfo.language],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      // Request general questions (categoryId = null) since that's what's seeded in the database
+      if (participantInfo.language) params.set('language', participantInfo.language);
+      
+      const response = await fetch(`/api/assessments/questions?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch questions');
+      return response.json();
+    },
     enabled: currentStep === 'assessment' && !!sessionId,
     retry: false,
   });
@@ -83,7 +92,8 @@ export default function Assessment() {
   // Create session mutation
   const createSessionMutation = useMutation({
     mutationFn: async (sessionData: any) => {
-      return apiRequest("/api/assessments/sessions", "POST", sessionData);
+      const response = await apiRequest("/api/assessments/sessions", "POST", sessionData);
+      return response.json();
     },
     onSuccess: (session: AssessmentSession) => {
       setSessionId(session.id);
@@ -105,7 +115,8 @@ export default function Assessment() {
   // Submit response mutation
   const submitResponseMutation = useMutation({
     mutationFn: async (responseData: any) => {
-      return apiRequest("/api/assessments/responses", "POST", responseData);
+      const response = await apiRequest("/api/assessments/responses", "POST", responseData);
+      return response.json();
     },
     onSuccess: () => {
       if (currentQuestionIndex < (questions?.length || 0) - 1) {
@@ -268,7 +279,7 @@ export default function Assessment() {
                         <SelectValue placeholder="Select your role" />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories?.map((category: AssessmentCategory) => (
+                        {Array.isArray(categories) && categories.map((category: AssessmentCategory) => (
                           <SelectItem key={category.id} value={category.id}>
                             {category.displayName}
                           </SelectItem>

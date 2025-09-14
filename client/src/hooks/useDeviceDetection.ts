@@ -27,12 +27,14 @@ export function useDeviceDetection() {
   const [isDesktop, setIsDesktop] = useState(true);
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
     const detectDevice = () => {
       const width = window.innerWidth;
       const height = window.innerHeight;
       const userAgent = navigator.userAgent;
 
-      // Detect device type
+      // Detect device type based on width breakpoints
       let type: DeviceInfo['type'] = 'desktop';
       if (width < 768) {
         type = 'mobile';
@@ -42,63 +44,85 @@ export function useDeviceDetection() {
 
       // Override with user agent detection for better accuracy
       const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
-      const tabletRegex = /iPad|Android(?!.*Mobile)/i; // Fixed: Android tablets don't have "Mobile" in UA
+      const tabletRegex = /iPad|Android(?!.*Mobile)/i;
       
-      // Determine type by width first
       const widthType = type;
       
       if (mobileRegex.test(userAgent)) {
-        type = 'mobile'; // All mobile devices should be mobile
+        type = 'mobile';
       }
       
-      // Only override to tablet if width isn't already mobile and UA indicates tablet
       if (tabletRegex.test(userAgent) && widthType !== 'mobile') {
         type = 'tablet';
       }
 
-      // Detect OS
-      let os = 'unknown';
-      if (userAgent.includes('Windows')) os = 'Windows';
-      else if (userAgent.includes('Mac')) os = 'macOS';
-      else if (userAgent.includes('Linux')) os = 'Linux';
-      else if (userAgent.includes('Android')) os = 'Android';
-      else if (userAgent.includes('iOS') || userAgent.includes('iPhone') || userAgent.includes('iPad')) os = 'iOS';
+      // Only update if device type actually changed (prevent unnecessary re-renders)
+      const currentType = deviceInfo.type;
+      if (currentType !== type) {
+        // Detect OS
+        let os = 'unknown';
+        if (userAgent.includes('Windows')) os = 'Windows';
+        else if (userAgent.includes('Mac')) os = 'macOS';
+        else if (userAgent.includes('Linux')) os = 'Linux';
+        else if (userAgent.includes('Android')) os = 'Android';
+        else if (userAgent.includes('iOS') || userAgent.includes('iPhone') || userAgent.includes('iPad')) os = 'iOS';
 
-      // Detect browser
-      let browser = 'unknown';
-      if (userAgent.includes('Chrome')) browser = 'Chrome';
-      else if (userAgent.includes('Firefox')) browser = 'Firefox';
-      else if (userAgent.includes('Safari')) browser = 'Safari';
-      else if (userAgent.includes('Edge')) browser = 'Edge';
-      else if (userAgent.includes('Opera')) browser = 'Opera';
+        // Detect browser
+        let browser = 'unknown';
+        if (userAgent.includes('Chrome')) browser = 'Chrome';
+        else if (userAgent.includes('Firefox')) browser = 'Firefox';
+        else if (userAgent.includes('Safari')) browser = 'Safari';
+        else if (userAgent.includes('Edge')) browser = 'Edge';
+        else if (userAgent.includes('Opera')) browser = 'Opera';
 
-      const newDeviceInfo: DeviceInfo = {
-        type,
-        os,
-        browser,
-        screenSize: { width, height },
-        orientation: width > height ? 'landscape' : 'portrait',
-        touchEnabled: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
-      };
+        const newDeviceInfo: DeviceInfo = {
+          type,
+          os,
+          browser,
+          screenSize: { width, height },
+          orientation: width > height ? 'landscape' : 'portrait',
+          touchEnabled: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
+        };
 
-      setDeviceInfo(newDeviceInfo);
-      setIsMobile(type === 'mobile');
-      setIsTablet(type === 'tablet');
-      setIsDesktop(type === 'desktop');
+        setDeviceInfo(newDeviceInfo);
+        setIsMobile(type === 'mobile');
+        setIsTablet(type === 'tablet');
+        setIsDesktop(type === 'desktop');
+      }
+    };
+
+    // Debounced resize handler - only trigger after 150ms of no resize events
+    const debouncedDetectDevice = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(detectDevice, 150);
     };
 
     // Initial detection
     detectDevice();
 
-    // Listen for resize events
-    window.addEventListener('resize', detectDevice);
-    window.addEventListener('orientationchange', detectDevice);
+    // Use matchMedia for more efficient breakpoint detection
+    const mobileMediaQuery = window.matchMedia('(max-width: 767px)');
+    const tabletMediaQuery = window.matchMedia('(max-width: 1023px)');
+    
+    const handleMediaChange = () => {
+      // Only update on significant breakpoint changes
+      debouncedDetectDevice();
+    };
+
+    // Listen to media queries instead of resize for better performance
+    mobileMediaQuery.addEventListener('change', handleMediaChange);
+    tabletMediaQuery.addEventListener('change', handleMediaChange);
+    
+    // Fallback for orientation changes
+    window.addEventListener('orientationchange', debouncedDetectDevice);
 
     return () => {
-      window.removeEventListener('resize', detectDevice);
-      window.removeEventListener('orientationchange', detectDevice);
+      clearTimeout(timeoutId);
+      mobileMediaQuery.removeEventListener('change', handleMediaChange);
+      tabletMediaQuery.removeEventListener('change', handleMediaChange);
+      window.removeEventListener('orientationchange', debouncedDetectDevice);
     };
-  }, []);
+  }, [deviceInfo.type]);
 
   return {
     deviceInfo,

@@ -67,7 +67,7 @@ function Router() {
 
   const LayoutWrapper = ({ children }: { children: React.ReactNode }) => {
     if (isMobile) {
-      return <MobileLayout>{children}</MobileLayout>;
+      return <MobileLayout isMobile={isMobile}>{children}</MobileLayout>;
     }
     
     return (
