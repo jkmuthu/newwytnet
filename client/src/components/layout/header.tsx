@@ -94,29 +94,31 @@ export default function Header({ onMenuClick }: HeaderProps) {
             </Link>
           </div>
 
-          {/* Right section - Login Button & Hamburger Menu */}
+          {/* Right section - Conditional Login/Join OR User Menu */}
           <div className="flex items-center space-x-3">
-            {/* Login/Join Button */}
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => window.location.href = '/login'}
-              className="hidden sm:inline-flex"
-              data-testid="button-login"
-            >
-              Login / Join
-            </Button>
-            
-            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-              <SheetTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  data-testid="button-mobile-menu"
-                >
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
+            {!isAuthenticated ? (
+              /* Show Login/Join Button when NOT authenticated */
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => window.location.href = '/login'}
+                className="hidden sm:inline-flex"
+                data-testid="button-login"
+              >
+                Login / Join
+              </Button>
+            ) : (
+              /* Show User Panel Menu when AUTHENTICATED */
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    data-testid="button-user-menu"
+                  >
+                    <Menu className="h-6 w-6" />
+                  </Button>
+                </SheetTrigger>
               <SheetContent side="right" className="w-80">
                 <SheetHeader>
                   <SheetTitle className="flex items-center gap-2">
@@ -125,11 +127,42 @@ export default function Header({ onMenuClick }: HeaderProps) {
                       alt="WytNet" 
                       className="h-6 w-auto"
                     />
+                    <span>WytPanel</span>
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="mt-6 space-y-2">
+                  {/* User Info Section */}
+                  {user && (
+                    <div className="px-3 py-3 bg-gray-50 dark:bg-gray-800 rounded-lg mb-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="text-sm">
+                            {getUserInitials(user)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                            {user.name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {user.role || 'User'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400">
-                    WytPanel - All Tools
+                    User Dashboard
+                  </div>
+                  
+                  <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
+                    <Activity className="h-5 w-5" />
+                    <span>My Dashboard</span>
+                  </Link>
+                  
+                  <div className="px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400 mt-4">
+                    Available Tools
                   </div>
                   
                   <Link href="/" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
@@ -166,6 +199,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 </nav>
               </SheetContent>
             </Sheet>
+            )}
           </div>
         </div>
       </div>
