@@ -28,9 +28,16 @@ import {
   XCircle,
   Key,
   Eye,
-  RotateCcw
+  RotateCcw,
+  Plus,
+  Edit,
+  Trash2,
+  BarChart3
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useDeviceDetection } from '@/hooks/useDeviceDetection';
+import MobileAdminLayout from '@/components/admin/MobileAdminLayout';
+import { MobileAdminCard, QuickActionCard } from '@/components/admin/MobileAdminCard';
 
 interface DashboardData {
   statistics: {
@@ -102,6 +109,7 @@ interface SocialAuthData {
 export default function SuperAdminDashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isMobile } = useDeviceDetection();
   const [selectedTab, setSelectedTab] = useState('overview');
 
   // Load dashboard data

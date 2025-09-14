@@ -13,7 +13,11 @@ import {
   platformModules,
   insertPlatformModuleSchema,
   type PlatformModule,
-  type InsertPlatformModule
+  type InsertPlatformModule,
+  users,
+  tenants,
+  apps,
+  hubs
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -351,6 +355,50 @@ async function initializeSampleTrademarkData() {
     console.error('Error initializing sample trademark data:', error);
   }
 }
+
+// Enhanced auth middleware for admin routes
+const adminAuthMiddleware: RequestHandler = async (req, res, next) => {
+  try {
+    let user = req.user;
+
+    // If no OIDC user, check for WhatsApp authentication
+    if (!user && req.session?.whatsappUserId) {
+      const whatsappAuthService = await import('./services/whatsappAuth');
+      user = await whatsappAuthService.findWhatsAppUser(req.session.whatsappNumber);
+    }
+
+    // Return 401 if no authenticated user found
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required'
+      });
+    }
+
+    // Check if user is super admin (either OIDC or WhatsApp)
+    const isSuperAdmin = Boolean(user?.isSuperAdmin || 
+                        (user?.whatsappNumber === '+919345228184') ||
+                        (process.env.NODE_ENV === 'development' && user?.whatsappNumber));
+
+    // Return 403 if authenticated but not super admin
+    if (!isSuperAdmin) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Super Admin required'
+      });
+    }
+
+    // Attach user to request for downstream handlers
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error('Admin auth middleware error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Authentication error'
+    });
+  }
+};
 
 // Enhanced authentication middleware that supports both WhatsApp and custom auth
 const isAuthenticatedUnified: RequestHandler = async (req, res, next) => {
@@ -1486,7 +1534,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Security check: Ensure role matches the actual WhatsApp number
-      const isSuperAdmin = user.whatsappNumber === '+919345228184';
+      // Super Admin access control
+      const isSuperAdmin = Boolean(user.whatsappNumber === '+919345228184' || 
+                          (process.env.NODE_ENV === 'development' && user.whatsappNumber)); // Dev mode: any authenticated user can be super admin
       const correctRole = isSuperAdmin ? 'super_admin' : 'user';
 
       res.json({
@@ -1504,6 +1554,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error getting WhatsApp user:', error);
       res.status(500).json({ error: 'Failed to get user' });
+    }
+  });
+
+  // Development login endpoint (only in development mode)
+  app.post('/api/auth/whatsapp/dev-login', async (req, res) => {
+    // Only allow in development mode
+    if (process.env.NODE_ENV !== 'development') {
+      return res.status(403).json({ error: 'Development login not available in production' });
+    }
+
+    try {
+      const { name, whatsappNumber, country = 'India' } = req.body;
+
+      if (!name || !whatsappNumber) {
+        return res.status(400).json({ error: 'Name and WhatsApp number are required' });
+      }
+
+      const whatsappAuthService = await import('./services/whatsappAuth');
+      
+      // Find or create development user
+      let user = await whatsappAuthService.findWhatsAppUser(whatsappNumber);
+      
+      if (!user) {
+        // Create new user if doesn't exist
+        user = await whatsappAuthService.createWhatsAppUser({
+          name,
+          whatsappNumber,
+          country,
+          gender: undefined,
+          dateOfBirth: undefined,
+          role: 'user', // Role is determined by isSuperAdmin logic
+          isVerified: true,
+        });
+      }
+
+      // Set session
+      req.session.whatsappUserId = user.id;
+      req.session.whatsappNumber = user.whatsappNumber;
+
+      const isSuperAdmin = Boolean(user.whatsappNumber === '+919345228184' || 
+                          (process.env.NODE_ENV === 'development' && user.whatsappNumber));
+
+      res.json({
+        success: true,
+        message: 'Development login successful',
+        user: {
+          id: user.id,
+          name: user.name,
+          whatsappNumber: user.whatsappNumber,
+          country: user.country,
+          role: isSuperAdmin ? 'super_admin' : 'user',
+          isSuperAdmin: isSuperAdmin,
+          isVerified: true,
+        },
+      });
+    } catch (error) {
+      console.error('Error in development login:', error);
+      res.status(500).json({ error: 'Development login failed' });
     }
   });
 
@@ -3196,7 +3304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update platform module status (Super Admin only)
-  app.put('/api/platform-modules/:id', isAuthenticatedUnified, async (req: any, res) => {
+  app.put('/api/platform-modules/:id', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
       const { status, ...updateData } = req.body;
@@ -3250,7 +3358,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new platform module (Super Admin only)
-  app.post('/api/platform-modules', isAuthenticatedUnified, async (req: any, res) => {
+  app.post('/api/platform-modules', adminAuthMiddleware, async (req: any, res) => {
     try {
       const user = req.user;
 
@@ -3297,7 +3405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete platform module (Super Admin only)
-  app.delete('/api/platform-modules/:id', isAuthenticatedUnified, async (req: any, res) => {
+  app.delete('/api/platform-modules/:id', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
       const user = req.user;
@@ -3596,22 +3704,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
   // =============================================================================
   // SUPER ADMIN DASHBOARD ROUTES
   // =============================================================================
 
   // Super Admin dashboard data
-  app.get('/api/admin/dashboard', isAuthenticatedUnified, async (req: any, res) => {
+  app.get('/api/admin/dashboard', adminAuthMiddleware, async (req: any, res) => {
     try {
-      const user = req.user;
-
-      // Check if user is super admin
-      if (!user?.isSuperAdmin) {
-        return res.status(403).json({
-          success: false,
-          error: 'Access denied: Super Admin required'
-        });
-      }
 
       // Get comprehensive dashboard data
       const [
@@ -3619,7 +3719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalTenants,
         totalApps,
         totalHubs,
-        platformModules,
+        modulesList,
         recentUsers,
         systemMetrics
       ] = await Promise.all([
@@ -3638,13 +3738,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Platform modules status
         db.select().from(platformModules).orderBy(platformModules.name),
         
-        // Recent users (last 10)
+        // Recent users (last 10) - using correct column names
         db.select({
           id: users.id,
-          name: users.name,
+          firstName: users.firstName,
+          lastName: users.lastName,
           email: users.email,
           createdAt: users.createdAt,
-          role: users.role
+          tenantId: users.tenantId
         }).from(users).orderBy(desc(users.createdAt)).limit(10),
         
         // System metrics (placeholder)
@@ -3664,9 +3765,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             totalTenants: totalTenants[0]?.count || 0,
             totalApps: totalApps[0]?.count || 0,
             totalHubs: totalHubs[0]?.count || 0,
-            platformModules: platformModules.length
+            platformModules: modulesList.length
           },
-          platformModules: platformModules.map(module => ({
+          platformModules: modulesList.map(module => ({
             id: module.id,
             name: module.name,
             description: module.description,
@@ -3698,7 +3799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Super Admin user management
-  app.get('/api/admin/users', isAuthenticatedUnified, async (req: any, res) => {
+  app.get('/api/admin/users', adminAuthMiddleware, async (req: any, res) => {
     try {
       const user = req.user;
 
@@ -3747,7 +3848,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Super Admin tenant management
-  app.get('/api/admin/tenants', isAuthenticatedUnified, async (req: any, res) => {
+  app.get('/api/admin/tenants', adminAuthMiddleware, async (req: any, res) => {
     try {
       const user = req.user;
 
@@ -3785,7 +3886,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // =============================================================================
 
   // Social Auth dashboard data for Super Admin
-  app.get('/api/admin/social-auth', isAuthenticatedUnified, async (req: any, res) => {
+  app.get('/api/admin/social-auth', adminAuthMiddleware, async (req: any, res) => {
     try {
       const user = req.user;
 
@@ -3932,7 +4033,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Toggle social provider enable/disable
-  app.put('/api/admin/social-auth/provider/:provider', isAuthenticatedUnified, async (req: any, res) => {
+  app.put('/api/admin/social-auth/provider/:provider', adminAuthMiddleware, async (req: any, res) => {
     try {
       const user = req.user;
       
@@ -3965,7 +4066,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Unlink social account
-  app.post('/api/admin/social-auth/unlink', isAuthenticatedUnified, async (req: any, res) => {
+  app.post('/api/admin/social-auth/unlink', adminAuthMiddleware, async (req: any, res) => {
     try {
       const user = req.user;
       
