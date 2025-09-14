@@ -11,7 +11,6 @@ import { SiFacebook } from "react-icons/si";
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState("IN");
-  const [username, setUsername] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [password, setPassword] = useState("");
 
@@ -20,8 +19,12 @@ export default function LoginPage() {
   };
 
   const handleLogin = () => {
-    // Handle login logic here
-    console.log("Login attempt:", { username, country: selectedCountry, mobile: mobileNumber });
+    // Handle login logic here - mobile number is the username
+    console.log("Login attempt:", { 
+      mobileNumber: `${selectedCountryData.dialCode}${mobileNumber}`, 
+      country: selectedCountry,
+      password 
+    });
   };
 
   const handleGoogleLogin = () => {
@@ -61,22 +64,9 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Username Field */}
+          {/* Mobile Number with Country Selection - This IS the username */}
           <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
-            <Input
-              id="username"
-              type="text"
-              placeholder="Enter your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              data-testid="input-username"
-            />
-          </div>
-
-          {/* Mobile Number with Country Selection */}
-          <div className="space-y-2">
-            <Label htmlFor="mobile">Mobile Number</Label>
+            <Label htmlFor="mobile">Mobile Number (Username)</Label>
             <div className="flex space-x-2">
               <Select value={selectedCountry} onValueChange={setSelectedCountry}>
                 <SelectTrigger className="w-24" data-testid="select-country">
