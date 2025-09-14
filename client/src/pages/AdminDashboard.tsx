@@ -261,21 +261,17 @@ export default function AdminDashboard() {
   if (isMobile) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 relative">
-        {/* Mobile Admin Header - SINGLE HEADER FOR ADMIN */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-[60]">
-          <div className="px-4">
-            <div className="flex justify-between items-center h-16 min-h-[4rem]">
-              <div className="flex items-center space-x-3">
-                <img 
-                  src="/wytnet-logo.png" 
-                  alt="WytNet" 
-                  className="h-8 w-auto"
-                />
-                <div>
-                  <p className="text-sm font-medium">Admin Panel</p>
-                  <p className="text-xs text-gray-500">{currentUser?.username}</p>
-                </div>
+        {/* Mobile Content - Header is handled by MobileLayout */}
+        <main className="p-4 relative z-[5] overflow-y-auto min-h-screen pt-4">
+          <div className="mb-4">
+            <div className="flex items-center space-x-3 mb-2">
+              <Shield className="h-6 w-6 text-blue-600" />
+              <div>
+                <p className="text-lg font-semibold">Admin Panel</p>
+                <p className="text-sm text-gray-500">{currentUser?.username}</p>
               </div>
+            </div>
+          </div>
 
               <div className="flex items-center space-x-2">
                 <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -351,9 +347,7 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        {/* Mobile Content */}
-        <main className="p-4 relative z-[5] overflow-y-auto min-h-[calc(100vh-4rem)]">
-          <AdminDashboardContent 
+        <AdminDashboardContent 
             dashboardData={dashboardData} 
             isMobile={true}
             onTabChange={setSelectedTab}
