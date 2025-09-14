@@ -38,6 +38,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useDeviceDetection } from '@/hooks/useDeviceDetection';
 import MobileAdminLayout from '@/components/admin/MobileAdminLayout';
 import { MobileAdminCard, QuickActionCard } from '@/components/admin/MobileAdminCard';
+import DevAuthButton from '@/components/admin/DevAuthButton';
 
 interface DashboardData {
   statistics: {
@@ -260,6 +261,9 @@ export default function SuperAdminDashboard() {
             Access denied: Super Admin privileges required to view this dashboard.
           </AlertDescription>
         </Alert>
+        <div className="mt-4">
+          <DevAuthButton />
+        </div>
       </div>
     );
   }
