@@ -73,17 +73,42 @@ export default function MobileLayout({ children, isMobile }: MobileLayoutProps) 
               />
             </Link>
 
-            {/* Hamburger Menu - Right */}
-            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-              <SheetTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  data-testid="mobile-menu-trigger"
-                >
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
+            {/* Right side - Login/Join + Menu */}
+            <div className="flex items-center gap-2">
+              {/* Login/Join Buttons */}
+              <div className="flex items-center gap-1">
+                <Link href="/login">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="text-sm px-2 py-1"
+                    data-testid="mobile-login-button"
+                  >
+                    Login
+                  </Button>
+                </Link>
+                <Link href="/login">
+                  <Button 
+                    size="sm"
+                    className="text-sm px-2 py-1 bg-blue-600 hover:bg-blue-700"
+                    data-testid="mobile-join-button"
+                  >
+                    Join
+                  </Button>
+                </Link>
+              </div>
+              
+              {/* Hamburger Menu */}
+              <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                <SheetTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    data-testid="mobile-menu-trigger"
+                  >
+                    <Menu className="h-6 w-6" />
+                  </Button>
+                </SheetTrigger>
               <SheetContent side="right" className="w-80">
                 <SheetHeader>
                   <SheetTitle className="flex items-center gap-2">
@@ -111,6 +136,7 @@ export default function MobileLayout({ children, isMobile }: MobileLayoutProps) 
                 </nav>
               </SheetContent>
             </Sheet>
+            </div>
           </div>
         </div>
       </header>

@@ -454,59 +454,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-3 mb-4">
-                <img 
-                  src="/wytnet-logo.png" 
-                  alt="WytNet Logo" 
-                  className="h-8 w-auto"
-                />
-              </div>
-              <p className="text-gray-400 text-sm">
-                Smart tools and solutions to improve your lifestyle and boost workplace productivity.
-              </p>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Tools</h3>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li><Link href="/qr-generator">QR Code Generator</Link></li>
-                <li><Link href="/assessment">Personality Assessment</Link></li>
-                <li><Link href="/ai-directory">AI Directory</Link></li>
-                <li>Coming Soon...</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Benefits</h3>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li>Free to Use</li>
-                <li>No Registration Required</li>
-                <li>Secure & Private</li>
-                <li>Works on All Devices</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Company</h3>
-              <ul className="space-y-2 text-sm text-gray-400">
-                <li>About Us</li>
-                <li>Contact</li>
-                <li>Privacy Policy</li>
-                <li>Terms of Service</li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-            <p>&copy; 2025 WytNet. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      {/* Footer removed - handled by layout wrapper to prevent double footer */}
     </div>
   );
 }
