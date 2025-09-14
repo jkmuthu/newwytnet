@@ -4354,4 +4354,88 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/.well-known/assetlinks.json', (req, res) => {
     res.sendFile(path.join(process.cwd(), 'public', '.well-known', 'assetlinks.json'));
   });
+
+  // APK Download and Metadata APIs
+  app.get('/downloads/wytnet-latest.apk', async (req, res) => {
+    try {
+      const { apkStorage } = await import('./services/apkStorage');
+      
+      const exists = await apkStorage.apkExists();
+      if (!exists) {
+        return res.status(404).json({
+          error: 'APK not available',
+          message: 'APK is being built by CI. Please check back in a few minutes.'
+        });
+      }
+
+      const stream = await apkStorage.streamAPK();
+      if (!stream) {
+        return res.status(503).json({
+          error: 'APK temporarily unavailable',
+          message: 'Please try again later.'
+        });
+      }
+
+      res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+      res.setHeader('Content-Disposition', 'attachment; filename="wytnet-latest.apk"');
+      res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+      
+      stream.pipe(res);
+    } catch (error) {
+      console.error('Error serving APK download:', error);
+      res.status(500).json({
+        error: 'Download failed',
+        message: 'Unable to serve APK file.'
+      });
+    }
+  });
+
+  app.get('/api/mobile/latest', async (req, res) => {
+    try {
+      const { apkStorage } = await import('./services/apkStorage');
+      
+      const metadata = await apkStorage.getLatestMetadata();
+      if (!metadata) {
+        return res.status(404).json({
+          success: false,
+          error: 'No APK metadata available'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: metadata,
+        message: 'Latest APK metadata retrieved successfully'
+      });
+    } catch (error) {
+      console.error('Error fetching APK metadata:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch APK metadata'
+      });
+    }
+  });
+
+  // APK Storage configuration (for debugging)
+  app.get('/api/mobile/config', async (req, res) => {
+    try {
+      const { apkStorage } = await import('./services/apkStorage');
+      const config = apkStorage.getConfig();
+      
+      res.json({
+        success: true,
+        data: {
+          ...config,
+          // Don't expose sensitive bucket details in production
+          bucketId: config.bucketId ? '***configured***' : 'not-configured'
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching storage config:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch storage configuration'
+      });
+    }
+  });
 }
