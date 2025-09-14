@@ -1,21 +1,28 @@
 import { createContext, useContext } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
-export interface WhatsAppUser {
+// Unified Principal interface for all user types (matches backend exactly)
+export interface Principal {
   id: string;
-  name: string;
-  country: string;
+  tenantId: string;
+  role?: string;
+  isSuperAdmin?: boolean;
+  email?: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  mobileNumber?: string;
+  profileImageUrl?: string;
+  provider: 'whatsapp' | 'legacy';
+}
+
+// Legacy interface for backward compatibility
+export interface WhatsAppUser extends Principal {
   whatsappNumber: string;
-  gender?: string;
-  dateOfBirth?: string;
-  role: string;
-  isSuperAdmin: boolean;
-  isVerified: boolean;
-  lastLoginAt?: string;
 }
 
 interface AuthContextType {
-  user: WhatsAppUser | undefined;
+  user: Principal | undefined;
   isLoading: boolean;
   error: any;
   isAuthenticated: boolean;
@@ -26,8 +33,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { data, isLoading, isFetching, error } = useQuery<WhatsAppUser | null>({
-    queryKey: ["/api/auth/whatsapp/user"],
+  const { data, isLoading, isFetching, error } = useQuery<Principal | null>({
+    queryKey: ["/api/auth/user"],
     retry: false,
     // Force fresh auth checks (no stale cache)
     staleTime: 0, // Always fresh
