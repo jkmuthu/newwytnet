@@ -4,7 +4,7 @@
     "namespace": "android_app",
     "package_name": "com.wytnet.twa",
     "sha256_cert_fingerprints": [
-      "PLACEHOLDER_SHA256_FINGERPRINT"
+      "REPLACE_WITH_ACTUAL_SIGNING_CERTIFICATE_SHA256_FINGERPRINT_AFTER_GENERATING_KEYSTORE"
     ]
   }
 }]

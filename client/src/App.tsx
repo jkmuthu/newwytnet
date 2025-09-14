@@ -27,6 +27,7 @@ import SearchPage from "@/pages/search";
 import Landing from "@/pages/landing";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "@/pages/not-found";
+import MobileAppPage from "@/pages/MobileAppPage";
 
 // New content pages
 import WytApps from "@/pages/wytapps";
@@ -151,6 +152,7 @@ function Router() {
         
         {/* Content pages */}
         <Route path="/wytapps" component={WytApps} />
+        <Route path="/mobile-app" component={MobileAppPage} />
         <Route path="/about" component={About} />
         <Route path="/features" component={Features} />
         <Route path="/pricing" component={Pricing} />
