@@ -54,23 +54,35 @@ import AdminDashboard from "@/pages/AdminDashboard";
 // Role-based dashboard component
 function RoleBasedDashboard() {
   const { isAuthenticated, isLoading, isSuperAdmin, role } = useWhatsAppAuth();
+  const { isMobile } = useDeviceDetection();
   
   // For authenticated users, show dashboard directly (already has its own layout)
-  // For non-authenticated users, show home page (needs LayoutWrapper)
   if (isAuthenticated) {
     // Dashboard has its own complete layout including header - render it standalone
     return <Dashboard />;
   }
   
-  // For non-authenticated users, show home page with layout wrapper
+  // For non-authenticated users, show home page with proper layout wrapper
+  const LayoutWrapper = ({ children }: { children: React.ReactNode }) => {
+    if (isMobile) {
+      return <MobileLayout isMobile={isMobile}>{children}</MobileLayout>;
+    }
+    
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Header />
+        <main className="min-h-screen">
+          {children}
+        </main>
+        <Footer />
+      </div>
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header />
-      <main className="min-h-screen">
-        <Home />
-      </main>
-      <Footer />
-    </div>
+    <LayoutWrapper>
+      <Home />
+    </LayoutWrapper>
   );
 }
 
