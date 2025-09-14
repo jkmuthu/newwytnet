@@ -63,92 +63,42 @@ const sidebarItems: NavItem[] = [
 ];
 
 export default function AdminDashboard() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null);
   const [selectedTab, setSelectedTab] = useState('dashboard');
   
   const { isMobile } = useDeviceDetection();
   const { toast } = useToast();
+  const [location, setLocation] = useLocation();
 
-  // Check if already authenticated
+  // Check authentication - redirect to login if not authenticated
   useEffect(() => {
-    const adminToken = localStorage.getItem('wytnet_admin_token');
-    const adminUser = localStorage.getItem('wytnet_admin_user');
-    
-    if (adminToken && adminUser) {
-      setIsAuthenticated(true);
-      setCurrentUser(JSON.parse(adminUser));
-    }
-  }, []);
+    // TODO: Replace with unified auth check
+    // For now, redirect to centralized login
+    setLocation('/login');
+  }, [setLocation]);
 
-  // Load dashboard data
+  // Load dashboard data - will be enabled after auth integration
   const { data: dashboardData, isLoading: dashboardLoading } = useQuery({
     queryKey: ['/api/admin/dashboard'],
-    enabled: isAuthenticated,
+    enabled: false, // Disabled until unified auth is implemented
     refetchInterval: 30000,
   });
 
-  // Load admin users
+  // Load admin users - will be enabled after auth integration
   const { data: adminUsersData, isLoading: usersLoading } = useQuery<{
     success: boolean;
     users: AdminUser[];
   }>({
     queryKey: ['/api/admin/admin-users'],
-    enabled: isAuthenticated && selectedTab === 'users',
+    enabled: false, // Disabled until unified auth is implemented
   });
 
-  // Admin login with fixed password
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const response = await fetch('/api/auth/admin-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        localStorage.setItem('wytnet_admin_token', result.token);
-        localStorage.setItem('wytnet_admin_user', JSON.stringify(result.user));
-        setCurrentUser(result.user);
-        setIsAuthenticated(true);
-        toast({ title: 'Welcome back!', description: 'Admin login successful' });
-      } else {
-        toast({ 
-          title: 'Login Failed', 
-          description: result.error || 'Invalid credentials',
-          variant: 'destructive'
-        });
-      }
-    } catch (error) {
-      toast({ 
-        title: 'Login Error', 
-        description: 'Please try again',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Admin logout
+  // Admin logout - will be replaced with unified auth logout
   const handleLogout = () => {
-    localStorage.removeItem('wytnet_admin_token');
-    localStorage.removeItem('wytnet_admin_user');
-    setIsAuthenticated(false);
-    setCurrentUser(null);
-    setUsername('');
-    setPassword('');
+    // TODO: Implement unified logout
     toast({ title: 'Logged out successfully' });
+    setLocation('/login');
   };
 
   // Create admin user mutation
@@ -176,86 +126,8 @@ export default function AdminDashboard() {
     },
   });
 
-  // Login form for unauthenticated users
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4 relative z-[1]">
-        <Card className="w-full max-w-md shadow-xl border-0 relative z-[5]">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="bg-blue-100 p-3 rounded-full">
-                <Shield className="h-8 w-8 text-blue-600" />
-              </div>
-            </div>
-            <CardTitle className="text-2xl">WytNet Admin Access</CardTitle>
-            <CardDescription>
-              Secure administrator login for platform management
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter admin username"
-                  required
-                  data-testid="input-admin-username"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter admin password"
-                    required
-                    data-testid="input-admin-password"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full py-3 text-base touch-manipulation"
-                disabled={isLoading}
-                data-testid="button-admin-login"
-              >
-                {isLoading ? (
-                  <>
-                    <Shield className="h-4 w-4 mr-2 animate-spin" />
-                    Authenticating...
-                  </>
-                ) : (
-                  <>
-                    <Lock className="h-4 w-4 mr-2" />
-                    Admin Login
-                  </>
-                )}
-              </Button>
-            </form>
-
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Redirect to centralized login - no embedded login form needed
+  // This component will only render the dashboard UI for authenticated users
 
   // Mobile layout  
   if (isMobile) {
