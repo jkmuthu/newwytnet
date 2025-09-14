@@ -30,6 +30,7 @@ import {
 import { useDeviceDetection } from '@/hooks/useDeviceDetection';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
+import { Link, useLocation } from 'wouter';
 
 interface AdminUser {
   id: string;
@@ -52,7 +53,7 @@ interface NavItem {
 const sidebarItems: NavItem[] = [
   { label: 'Dashboard', href: '/admin', icon: Home },
   { label: 'System Overview', href: '/admin/system-overview', icon: Monitor },
-  { label: 'Global Settings', href: '/admin/settings', icon: Settings },
+  { label: 'Global Settings', href: '/admin/system-overview', icon: Settings },
   { label: 'Tenants', href: '/admin/tenants', icon: Building2 },
   { label: 'All Users', href: '/admin/users', icon: Users },
   { label: 'Modules (CRUD)', href: '/admin/modules', icon: Layers },
@@ -178,8 +179,8 @@ export default function AdminDashboard() {
   // Login form for unauthenticated users
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4 relative z-[1]">
+        <Card className="w-full max-w-md shadow-xl border-0 relative z-[5]">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <div className="bg-blue-100 p-3 rounded-full">
@@ -232,7 +233,7 @@ export default function AdminDashboard() {
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full py-3 text-base touch-manipulation"
                 disabled={isLoading}
                 data-testid="button-admin-login"
               >
@@ -259,11 +260,11 @@ export default function AdminDashboard() {
   // Mobile layout
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 relative">
         {/* Mobile Header */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-[60]">
           <div className="px-4">
-            <div className="flex justify-between items-center h-16">
+            <div className="flex justify-between items-center h-16 min-h-[4rem]">
               <div className="flex items-center space-x-3">
                 <img 
                   src="/wytnet-logo.png" 
@@ -279,11 +280,11 @@ export default function AdminDashboard() {
               <div className="flex items-center space-x-2">
                 <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
                   <SheetTrigger asChild>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" className="p-2 min-w-[2.5rem] min-h-[2.5rem]" data-testid="button-mobile-admin-menu">
                       <Menu className="h-6 w-6" />
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-80">
+                  <SheetContent side="right" className="w-80 z-[70]">
                     <div className="py-4">
                       <div className="flex items-center space-x-3 mb-6">
                         <div className="bg-blue-100 p-2 rounded-full">
@@ -299,24 +300,26 @@ export default function AdminDashboard() {
                         {/* Show different navigation based on role */}
                         {currentUser?.role === 'super_admin' ? (
                           sidebarItems.map((item) => (
-                            <a
+                            <Link
                               key={item.href}
                               href={item.href}
-                              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                              className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 touch-manipulation"
                               onClick={() => setSidebarOpen(false)}
+                              data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                             >
                               <item.icon className="h-5 w-5" />
                               <span>{item.label}</span>
-                            </a>
+                            </Link>
                           ))
                         ) : (
                           /* Limited navigation for admins */
                           [sidebarItems[0], sidebarItems[3], sidebarItems[4], sidebarItems[5]].map((item) => (
-                            <a
+                            <Link
                               key={item.href}
                               href={item.href}
-                              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                              className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 touch-manipulation"
                               onClick={() => setSidebarOpen(false)}
+                              data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                             >
                               <item.icon className="h-5 w-5" />
                               <span>{item.label}</span>
@@ -325,7 +328,7 @@ export default function AdminDashboard() {
                                   Limited
                                 </Badge>
                               )}
-                            </a>
+                            </Link>
                           ))
                         )}
                         
@@ -333,7 +336,7 @@ export default function AdminDashboard() {
                           <Button 
                             variant="outline" 
                             onClick={handleLogout}
-                            className="w-full justify-start"
+                            className="w-full justify-start py-3 touch-manipulation"
                           >
                             <LogOut className="h-4 w-4 mr-2" />
                             Logout
@@ -349,7 +352,7 @@ export default function AdminDashboard() {
         </header>
 
         {/* Mobile Content */}
-        <main className="p-4">
+        <main className="p-4 relative z-[5] overflow-y-auto min-h-[calc(100vh-4rem)]">
           <AdminDashboardContent 
             dashboardData={dashboardData} 
             isMobile={true}
@@ -364,9 +367,9 @@ export default function AdminDashboard() {
 
   // Desktop layout with sidebar
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex relative">
       {/* Desktop Sidebar */}
-      <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+      <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 relative z-[10]">
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-3">
             <img 
@@ -398,14 +401,15 @@ export default function AdminDashboard() {
               </div>
 
               {sidebarItems.slice(0, 3).map((item) => (
-                <a
+                <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors duration-200"
+                  data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                 >
                   <item.icon className="h-5 w-5" />
                   <span>{item.label}</span>
-                </a>
+                </Link>
               ))}
 
               <div className="mt-6">
@@ -415,14 +419,15 @@ export default function AdminDashboard() {
               </div>
 
               {sidebarItems.slice(3, 6).map((item) => (
-                <a
+                <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors duration-200"
+                  data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                 >
                   <item.icon className="h-5 w-5" />
                   <span>{item.label}</span>
-                </a>
+                </Link>
               ))}
 
               <div className="mt-6">
@@ -432,14 +437,15 @@ export default function AdminDashboard() {
               </div>
 
               {sidebarItems.slice(6).map((item) => (
-                <a
+                <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors duration-200"
+                  data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                 >
                   <item.icon className="h-5 w-5" />
                   <span>{item.label}</span>
-                </a>
+                </Link>
               ))}
             </>
           )}
@@ -455,10 +461,11 @@ export default function AdminDashboard() {
 
               {/* Limited navigation for admins */}
               {[sidebarItems[0], sidebarItems[3], sidebarItems[4], sidebarItems[5]].map((item) => (
-                <a
+                <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors duration-200"
+                  data-testid={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                 >
                   <item.icon className="h-5 w-5" />
                   <span>{item.label}</span>
@@ -467,7 +474,7 @@ export default function AdminDashboard() {
                       Limited
                     </Badge>
                   )}
-                </a>
+                </Link>
               ))}
             </>
           )}
@@ -486,7 +493,7 @@ export default function AdminDashboard() {
       </aside>
 
       {/* Desktop Main Content */}
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-6 relative z-[5] overflow-y-auto">
         <AdminDashboardContent 
           dashboardData={dashboardData} 
           isMobile={false}
@@ -532,7 +539,7 @@ function AdminDashboardContent({
       </div>
 
       <Tabs value={selectedTab} onValueChange={onTabChange} className="space-y-6">
-        <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'grid-cols-4'}`}>
+        <TabsList className={`grid w-full ${isMobile ? 'grid-cols-2' : 'md:grid-cols-4 grid-cols-2'} gap-1`}>
           <TabsTrigger value="dashboard">Overview</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="modules">Modules</TabsTrigger>
@@ -541,7 +548,7 @@ function AdminDashboardContent({
 
         <TabsContent value="dashboard" className="space-y-6">
           {/* Statistics Cards */}
-          <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'grid-cols-4'}`}>
+          <div className={`grid gap-4 ${isMobile ? 'grid-cols-2' : 'md:grid-cols-4 sm:grid-cols-2 grid-cols-1'}`}>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Active Tenants</CardTitle>
@@ -588,7 +595,7 @@ function AdminDashboardContent({
           </div>
 
           {/* Dashboard sections */}
-          <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-3'}`}>
+          <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'lg:grid-cols-3 md:grid-cols-2 grid-cols-1'}`}>
             <Card>
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>

@@ -83,8 +83,16 @@ function Router() {
   };
 
   return (
-    <LayoutWrapper>
-      <Switch>
+    <Switch>
+      {/* Admin routes - NO LayoutWrapper (self-contained) */}
+      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/super-admin" component={SuperAdminDashboard} />
+      
+      {/* All other routes - WITH LayoutWrapper */}
+      <Route>
+        {(params) => (
+          <LayoutWrapper>
+            <Switch>
         {/* Root route with role-based dashboards */}
         <Route path="/" component={RoleBasedDashboard} />
         
@@ -121,12 +129,11 @@ function Router() {
         
         {/* Protected routes - authentication required */}
         <Route path="/dashboard" component={Dashboard} />
-        <Route path="/admin" component={AdminDashboard} />
         <Route path="/analytics" component={AdminAnalytics} />
         <Route path="/user-auth-methods" component={UserAuthMethods} />
         <Route path="/landing" component={Landing} />
         
-        {/* Admin routes */}
+        {/* Admin sub-routes (with main layout) */}
         <Route path="/admin/cms" component={AdminCMS} />
         <Route path="/admin/modules" component={AdminModules} />
         <Route path="/admin/apps" component={AdminApps} />
@@ -135,12 +142,12 @@ function Router() {
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/tenants" component={AdminTenants} />
         
-        {/* Super Admin Dashboard */}
-        <Route path="/super-admin" component={SuperAdminDashboard} />
-        
-        <Route component={NotFound} />
-      </Switch>
-    </LayoutWrapper>
+              <Route component={NotFound} />
+            </Switch>
+          </LayoutWrapper>
+        )}
+      </Route>
+    </Switch>
   );
 }
 
