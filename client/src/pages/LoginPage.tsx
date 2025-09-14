@@ -18,13 +18,52 @@ export default function LoginPage() {
     window.location.href = '/';
   };
 
-  const handleLogin = () => {
-    // Handle login logic here - mobile number is the username
-    console.log("Login attempt:", { 
-      mobileNumber: `${selectedCountryData.dialCode}${mobileNumber}`, 
-      country: selectedCountry,
-      password 
-    });
+  const handleLogin = async () => {
+    if (!mobileNumber.trim() || !password.trim()) {
+      console.error("Please fill in all fields");
+      return;
+    }
+
+    try {
+      const fullMobileNumber = `${selectedCountryData.dialCode}${mobileNumber}`;
+      
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          mobileNumber: fullMobileNumber,
+          password: password
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log("✅ Login successful!", result);
+        
+        // Redirect based on user role
+        if (result.user.redirectUrl) {
+          window.location.href = result.user.redirectUrl;
+        } else {
+          // Fallback redirect logic
+          if (result.user.role === 'super_admin') {
+            window.location.href = '/super-admin';
+          } else if (result.user.role === 'admin') {
+            window.location.href = '/admin';
+          } else {
+            window.location.href = '/dashboard';
+          }
+        }
+      } else {
+        console.error("❌ Login failed:", result.message);
+        // TODO: Show user-friendly error message
+      }
+    } catch (error) {
+      console.error("❌ Login error:", error);
+      // TODO: Show user-friendly error message
+    }
   };
 
   const handleGoogleLogin = () => {

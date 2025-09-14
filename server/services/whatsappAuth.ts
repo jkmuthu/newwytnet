@@ -265,7 +265,7 @@ export async function cleanExpiredOTPSessions(): Promise<number> {
       .where(
         and(
           eq(whatsappOtpSessions.isUsed, false),
-          gt(new Date(), whatsappOtpSessions.expiresAt)
+          sql`${whatsappOtpSessions.expiresAt} < now()`
         )
       )
       .returning();

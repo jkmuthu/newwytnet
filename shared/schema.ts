@@ -47,6 +47,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  passwordHash: varchar("password_hash", { length: 255 }),
   tenantId: uuid("tenant_id").references(() => tenants.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -607,8 +608,6 @@ export const insertWhatsAppOtpSessionSchema = createInsertSchema(whatsappOtpSess
 // Social Auth types
 export type SocialAuthToken = typeof socialAuthTokens.$inferSelect;
 export type InsertSocialAuthToken = typeof socialAuthTokens.$inferInsert;
-export type WhatsAppUser = typeof whatsappUsers.$inferSelect;
-export type InsertWhatsAppUser = typeof whatsappUsers.$inferInsert;
 export const selectWhatsAppOtpSessionSchema = createSelectSchema(whatsappOtpSessions);
 
 // Select schemas

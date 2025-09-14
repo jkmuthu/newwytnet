@@ -100,7 +100,7 @@ function Router() {
       <Route path="/super-admin" component={SuperAdminDashboard} />
       
       {/* Root route with role-based dashboards */}
-      <Route path="/" exact>
+      <Route path="/">
         <RoleBasedDashboard />
       </Route>
       
