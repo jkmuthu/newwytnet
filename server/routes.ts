@@ -16,7 +16,11 @@ import {
   users,
   tenants,
   apps,
-  hubs
+  hubs,
+  seoSettings,
+  insertSeoSettingSchema,
+  type SeoSetting,
+  type InsertSeoSetting
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -4150,6 +4154,99 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.status(500).json({
         success: false,
         error: error.message || 'Failed to unlink social account'
+      });
+    }
+  });
+
+  // SEO Settings endpoints
+  
+  // Get SEO settings
+  app.get('/api/admin/seo-settings', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+      }
+
+      // Get current SEO settings for the tenant
+      const settings = await db
+        .select()
+        .from(seoSettings)
+        .where(eq(seoSettings.tenantId, user.tenantId))
+        .limit(1);
+
+      // Return settings or empty object if none exist
+      const currentSettings = settings[0] || null;
+
+      res.json(currentSettings);
+    } catch (error) {
+      console.error('Error fetching SEO settings:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch SEO settings'
+      });
+    }
+  });
+
+  // Update SEO settings
+  app.put('/api/admin/seo-settings', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+      }
+
+      // Validate request body
+      const validatedData = insertSeoSettingSchema.partial().parse(req.body);
+      
+      // Check if settings already exist
+      const existingSettings = await db
+        .select()
+        .from(seoSettings)
+        .where(eq(seoSettings.tenantId, user.tenantId))
+        .limit(1);
+
+      let updatedSettings;
+
+      if (existingSettings.length > 0) {
+        // Update existing settings
+        updatedSettings = await db
+          .update(seoSettings)
+          .set({
+            ...validatedData,
+            updatedAt: new Date()
+          })
+          .where(eq(seoSettings.tenantId, user.tenantId))
+          .returning();
+      } else {
+        // Create new settings
+        updatedSettings = await db
+          .insert(seoSettings)
+          .values({
+            tenantId: user.tenantId,
+            ...validatedData
+          })
+          .returning();
+      }
+
+      res.json({
+        success: true,
+        data: updatedSettings[0],
+        message: 'SEO settings updated successfully'
+      });
+    } catch (error) {
+      console.error('Error updating SEO settings:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to update SEO settings'
       });
     }
   });

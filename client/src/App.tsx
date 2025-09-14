@@ -47,6 +47,7 @@ import AdminHubs from "@/pages/admin/hubs";
 import AdminSystemOverview from "@/pages/admin/system-overview";
 import AdminUsers from "@/pages/admin/users";
 import AdminTenants from "@/pages/admin/tenants";
+import AdminSeoSettings from "@/pages/admin/seo-settings";
 import SuperAdminDashboard from "@/pages/SuperAdminDashboard";
 import AdminDashboard from "@/pages/AdminDashboard";
 
@@ -161,6 +162,7 @@ function Router() {
         <Route path="/admin/system-overview" component={AdminSystemOverview} />
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/tenants" component={AdminTenants} />
+        <Route path="/admin/seo-settings" component={AdminSeoSettings} />
         
               <Route component={NotFound} />
               </Switch>

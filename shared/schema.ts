@@ -279,6 +279,33 @@ export const auditLogs = pgTable("audit_logs", {
   index("idx_audit_logs_created_at").on(table.createdAt),
 ]);
 
+// SEO Settings
+export const seoSettings = pgTable("seo_settings", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: 'cascade' }),
+  siteName: varchar("site_name", { length: 255 }),
+  siteDescription: text("site_description"),
+  metaTitle: varchar("meta_title", { length: 255 }),
+  metaDescription: text("meta_description"),
+  metaKeywords: text("meta_keywords"),
+  faviconUrl: varchar("favicon_url", { length: 500 }),
+  ogImageUrl: varchar("og_image_url", { length: 500 }),
+  ogTitle: varchar("og_title", { length: 255 }),
+  ogDescription: text("og_description"),
+  twitterHandle: varchar("twitter_handle", { length: 100 }),
+  twitterCardType: varchar("twitter_card_type", { length: 50 }).default('summary_large_image'),
+  canonicalUrl: varchar("canonical_url", { length: 500 }),
+  robotsMeta: varchar("robots_meta", { length: 200 }).default('index, follow'),
+  structuredData: jsonb("structured_data").default({}),
+  customHeadTags: text("custom_head_tags"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_seo_settings_tenant_id").on(table.tenantId),
+  index("idx_seo_settings_is_active").on(table.isActive),
+]);
+
 // WytID - Universal Identity & Validation Kernel
 export const wytidEntityTypeEnum = pgEnum('wytid_entity_type', ['person', 'org', 'asset', 'document']);
 export const wytidProofTypeEnum = pgEnum('wytid_proof_type', ['hash', 'signature', 'blockchain_anchor', 'notary']);
@@ -496,6 +523,13 @@ export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   }),
 }));
 
+export const seoSettingsRelations = relations(seoSettings, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [seoSettings.tenantId],
+    references: [tenants.id],
+  }),
+}));
+
 // WytID Relations
 export const wytidEntitiesRelations = relations(wytidEntities, ({ one, many }) => ({
   owner: one(users, {
@@ -585,6 +619,7 @@ export type Hub = typeof hubs.$inferSelect;
 export type Plan = typeof plans.$inferSelect;
 export type Media = typeof media.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
+export type SeoSetting = typeof seoSettings.$inferSelect;
 
 // Insert schemas
 export const insertTenantSchema = createInsertSchema(tenants);
@@ -599,6 +634,7 @@ export const insertHubSchema = createInsertSchema(hubs);
 export const insertPlanSchema = createInsertSchema(plans);
 export const insertMediaSchema = createInsertSchema(media);
 export const insertAuditLogSchema = createInsertSchema(auditLogs);
+export const insertSeoSettingSchema = createInsertSchema(seoSettings);
 
 // WhatsApp OTP schemas
 export const insertWhatsAppUserSchema = createInsertSchema(whatsappUsers);
@@ -623,6 +659,7 @@ export const selectHubSchema = createSelectSchema(hubs);
 export const selectPlanSchema = createSelectSchema(plans);
 export const selectMediaSchema = createSelectSchema(media);
 export const selectAuditLogSchema = createSelectSchema(auditLogs);
+export const selectSeoSettingSchema = createSelectSchema(seoSettings);
 
 
 // Insert types
@@ -638,6 +675,7 @@ export type InsertHub = z.infer<typeof insertHubSchema>;
 export type InsertPlan = z.infer<typeof insertPlanSchema>;
 export type InsertMedia = z.infer<typeof insertMediaSchema>;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type InsertSeoSetting = z.infer<typeof insertSeoSettingSchema>;
 
 // WytAi Trademark types
 export type Trademark = typeof trademarks.$inferSelect;
