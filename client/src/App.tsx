@@ -89,10 +89,16 @@ function Router() {
       <Route path="/super-admin" component={SuperAdminDashboard} />
       
       {/* All other routes - WITH LayoutWrapper */}
-      <Route>
-        {(params) => (
-          <LayoutWrapper>
-            <Switch>
+      <Route path="*">
+        {(params) => {
+          // Double-check: Never wrap admin routes
+          if (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/super-admin')) {
+            return null;
+          }
+          
+          return (
+            <LayoutWrapper>
+              <Switch>
         {/* Root route with role-based dashboards */}
         <Route path="/" component={RoleBasedDashboard} />
         
@@ -143,9 +149,10 @@ function Router() {
         <Route path="/admin/tenants" component={AdminTenants} />
         
               <Route component={NotFound} />
-            </Switch>
-          </LayoutWrapper>
-        )}
+              </Switch>
+            </LayoutWrapper>
+          );
+        }}
       </Route>
     </Switch>
   );
