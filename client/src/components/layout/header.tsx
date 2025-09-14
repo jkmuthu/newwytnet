@@ -196,6 +196,26 @@ export default function Header({ onMenuClick }: HeaderProps) {
                       <span>Dashboard</span>
                     </Link>
                   )}
+                  
+                  {/* Logout Section */}
+                  {isAuthenticated && (
+                    <>
+                      <div className="px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400 mt-4 border-t pt-4">
+                        Account
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          handleLogout();
+                        }}
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 w-full text-left"
+                        data-testid="button-logout"
+                      >
+                        <LogOut className="h-5 w-5" />
+                        <span>Logout</span>
+                      </button>
+                    </>
+                  )}
                 </nav>
               </SheetContent>
             </Sheet>

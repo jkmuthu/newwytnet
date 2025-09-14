@@ -57,10 +57,20 @@ function RoleBasedDashboard() {
   // For authenticated users, show dashboard directly (already has its own layout)
   // For non-authenticated users, show home page (needs LayoutWrapper)
   if (isAuthenticated) {
+    // Dashboard has its own complete layout including header - render it standalone
     return <Dashboard />;
   }
   
-  return <Home />;
+  // For non-authenticated users, show home page with layout wrapper
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Header />
+      <main className="min-h-screen">
+        <Home />
+      </main>
+      <Footer />
+    </div>
+  );
 }
 
 function Router() {
