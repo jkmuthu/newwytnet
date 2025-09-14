@@ -94,8 +94,19 @@ export default function Header({ onMenuClick }: HeaderProps) {
             </Link>
           </div>
 
-          {/* Right section - Hamburger Menu */}
-          <div className="flex items-center">
+          {/* Right section - Login Button & Hamburger Menu */}
+          <div className="flex items-center space-x-3">
+            {/* Login/Join Button */}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => window.location.href = '/api/login'}
+              className="hidden sm:inline-flex"
+              data-testid="button-login"
+            >
+              Login / Join
+            </Button>
+            
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button 

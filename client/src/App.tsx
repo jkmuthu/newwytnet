@@ -88,20 +88,18 @@ function Router() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/super-admin" component={SuperAdminDashboard} />
       
+      {/* Root route with role-based dashboards */}
+      <Route path="/">
+        <LayoutWrapper>
+          <RoleBasedDashboard />
+        </LayoutWrapper>
+      </Route>
+      
       {/* All other routes - WITH LayoutWrapper */}
-      <Route path="*">
-        {(params) => {
-          // Double-check: Never wrap admin routes
-          if (window.location.pathname.startsWith('/admin') || window.location.pathname.startsWith('/super-admin')) {
-            return null;
-          }
-          
-          return (
-            <LayoutWrapper>
-              <Switch>
-        {/* Root route with role-based dashboards */}
-        <Route path="/" component={RoleBasedDashboard} />
-        
+      <Route>
+        {(params) => (
+          <LayoutWrapper>
+            <Switch>
         {/* Public routes - no authentication required */}
         <Route path="/home" component={Home} />
         <Route path="/assessment" component={Assessment} />
@@ -151,8 +149,7 @@ function Router() {
               <Route component={NotFound} />
               </Switch>
             </LayoutWrapper>
-          );
-        }}
+          )}
       </Route>
     </Switch>
   );

@@ -1,5 +1,4 @@
 import type { Express, RequestHandler } from "express";
-import { createServer, type Server } from "http";
 import { setupAuth, isAuthenticated } from "./customAuth";
 import * as whatsappAuthService from "./services/whatsappAuth";
 import * as socialAuthService from "./services/socialAuth";
@@ -356,8 +355,8 @@ async function initializeSampleTrademarkData() {
   }
 }
 
-// Enhanced auth middleware for admin routes
-const adminAuthMiddleware: RequestHandler = async (req, res, next) => {
+// Enhanced auth middleware for admin routes  
+const adminAuthMiddleware = async (req: any, res: any, next: any) => {
   try {
     let user = req.user;
 
@@ -401,7 +400,7 @@ const adminAuthMiddleware: RequestHandler = async (req, res, next) => {
 };
 
 // Enhanced authentication middleware that supports both WhatsApp and custom auth
-const isAuthenticatedUnified: RequestHandler = async (req, res, next) => {
+const isAuthenticatedUnified = async (req: any, res: any, next: any) => {
   let user = null;
   
   // First, try WhatsApp authentication by checking session
@@ -453,7 +452,7 @@ const isAuthenticatedUnified: RequestHandler = async (req, res, next) => {
   return res.status(401).json({ message: "Unauthorized" });
 };
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app: Express): Promise<void> {
   // Auth middleware
   await setupAuth(app);
 
@@ -4154,7 +4153,4 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
-
-  const httpServer = createServer(app);
-  return httpServer;
 }
