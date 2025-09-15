@@ -41,6 +41,7 @@ export default function MobileNavigation() {
     { icon: QrCode, label: 'QR Generator', href: '/qr-generator', badge: 'LIVE' },
     { icon: Activity, label: 'DISC Assessment', href: '/assessment', badge: 'LIVE' },
     { icon: Briefcase, label: 'WytApps', href: '/wytapps', badge: null },
+    { icon: Smartphone, label: 'Install App', href: '/mobile-app', badge: null },
   ];
 
   const dashboardItems = isAuthenticated ? [
@@ -182,6 +183,16 @@ export default function MobileNavigation() {
 
             {/* Footer */}
             <div className="border-t p-4 space-y-2">
+              <Link href="/mobile-app" onClick={() => setMenuOpen(false)}>
+                <Button 
+                  variant="outline" 
+                  className="w-full flex items-center gap-2 mb-3"
+                  data-testid="button-install-app-menu"
+                >
+                  <Smartphone className="h-4 w-4" />
+                  Install App
+                </Button>
+              </Link>
               <div className="text-center text-sm text-gray-500">
                 WytNet Multi-SaaS Platform
               </div>
