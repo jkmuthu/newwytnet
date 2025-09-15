@@ -24,10 +24,13 @@ import UserAuthMethods from "@/pages/user-auth-methods";
 import SearchPage from "@/pages/search";
 import Landing from "@/pages/landing";
 import LoginPage from "@/pages/LoginPage";
-import SuperAdminLogin from "@/pages/SuperAdminLogin";
 import NotFound from "@/pages/not-found";
 import MobileAppPage from "@/pages/MobileAppPage";
 import ComingSoon from "@/pages/coming-soon";
+
+// New Admin Portal
+import AdminLogin from "@/pages/admin/AdminLogin";
+import AdminDashboardNew from "@/pages/admin/AdminDashboard";
 
 // New content pages
 import WytApps from "@/pages/wytapps";
@@ -78,9 +81,12 @@ function Router() {
   return (
     <Switch>
       {/* Routes with their own layouts - NO LayoutWrapper (self-contained) */}
-      <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin" component={AdminDashboardNew} />
       <Route path="/super-admin" component={SuperAdminDashboard} />
       <Route path="/dashboard" component={Dashboard} />
+      
+      {/* Admin Login - No Layout (self-contained) */}
+      <Route path="/admin/login" component={AdminLogin} />
       
       {/* Login page */}
       <Route path="/login">
@@ -88,9 +94,6 @@ function Router() {
           <LoginPage />
         </LayoutWrapper>
       </Route>
-      
-      {/* Super Admin Login - No Layout */}
-      <Route path="/super-admin-login" component={SuperAdminLogin} />
       
       {/* All other routes - WITH LayoutWrapper */}
       <Route>
