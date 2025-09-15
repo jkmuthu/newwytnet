@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { UserAuthProvider, useUserAuth, type User } from './UserAuthContext';
 
-// Unified Principal interface for all user types (matches backend exactly)
+// Legacy Principal interface for backward compatibility (matches original)
 export interface Principal {
   id: string;
   tenantId: string;
@@ -13,7 +13,7 @@ export interface Principal {
   lastName?: string;
   mobileNumber?: string;
   profileImageUrl?: string;
-  provider: 'whatsapp' | 'legacy';
+  provider: 'whatsapp' | 'legacy' | 'replit';
 }
 
 // Legacy interface for backward compatibility
@@ -32,28 +32,34 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// AuthProvider wrapper that uses UserAuthContext internally
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { data, isLoading, isFetching, error } = useQuery<Principal | null>({
-    queryKey: ["/api/auth/user"],
-    retry: false,
-    // Force fresh auth checks (no stale cache)
-    staleTime: 0, // Always fresh
-    gcTime: 1000,  // 1 second cache only
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchOnMount: true,
-    refetchInterval: false,
-  });
+  return (
+    <UserAuthProvider>
+      <AuthContextWrapper>
+        {children}
+      </AuthContextWrapper>
+    </UserAuthProvider>
+  );
+}
 
-  const user = data ?? undefined;
+// Internal wrapper that provides the legacy interface
+function AuthContextWrapper({ children }: { children: React.ReactNode }) {
+  const { user, isLoading, error, isAuthenticated } = useUserAuth();
+
+  // Convert User to Principal for backward compatibility
+  const legacyUser: Principal | undefined = user ? {
+    ...user,
+    provider: user.provider as 'whatsapp' | 'legacy' | 'replit'
+  } : undefined;
 
   const value: AuthContextType = {
-    user,
-    isLoading: isLoading || isFetching,
+    user: legacyUser,
+    isLoading,
     error,
-    isAuthenticated: !!user,
-    isSuperAdmin: Boolean(user?.isSuperAdmin),
-    role: user?.role ?? "guest",
+    isAuthenticated,
+    isSuperAdmin: Boolean(legacyUser?.isSuperAdmin),
+    role: legacyUser?.role ?? "guest",
   };
 
   return (

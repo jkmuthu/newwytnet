@@ -20,14 +20,9 @@ interface AdminUserInfo {
 }
 
 export default function ProtectedAdminRoute({ children, requiredRole = 'admin' }: ProtectedAdminRouteProps) {
-  // EMERGENCY FIX: Temporarily disable authentication check to stop flickering
-  // TODO: Fix infinite polling issue properly
-  return <>{children}</>;
-  
-  /*
   const [, setLocation] = useLocation();
 
-  // Check admin authentication status
+  // Check admin authentication status with one-shot query (NO infinite polling)
   const { data: authData, isLoading, error } = useQuery<{
     success: boolean;
     user?: AdminUserInfo;
@@ -36,10 +31,12 @@ export default function ProtectedAdminRoute({ children, requiredRole = 'admin' }
     queryKey: ['/api/auth/admin/status'],
     retry: false,
     refetchOnWindowFocus: false,
-    refetchInterval: false, // DISABLE automatic polling to fix flickering!
+    refetchInterval: false, // NO automatic polling to prevent flickering
+    refetchOnReconnect: false,
+    refetchOnMount: true,
     staleTime: 5 * 60 * 1000, // 5 minutes before considering stale
     gcTime: 10 * 60 * 1000, // 10 minutes cache time
-  });*/
+  });
 
   // Redirect to login if not authenticated
   useEffect(() => {
