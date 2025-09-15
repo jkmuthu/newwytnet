@@ -22,10 +22,10 @@ export default function AdminLogin() {
   const { toast } = useToast();
   const { isMobile } = useDeviceDetection();
 
-  // Check if already authenticated
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
+  // Check if already authenticated - DISABLED TO STOP FLICKERING
+  // useEffect(() => {
+  //   checkAuthStatus();
+  // }, []);
 
   const checkAuthStatus = async () => {
     try {
