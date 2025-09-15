@@ -29,7 +29,11 @@ import {
   assessmentResponses,
   assessmentResults,
   type SeoSetting,
-  type InsertSeoSetting
+  type InsertSeoSetting,
+  apiIntegrations,
+  insertApiIntegrationSchema,
+  type ApiIntegration,
+  type InsertApiIntegration
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -4346,6 +4350,252 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.status(500).json({
         success: false,
         error: error.message || 'Failed to update SEO settings'
+      });
+    }
+  });
+
+  // API Integrations endpoints for Super Admin
+  
+  // Get all API integrations
+  app.get('/api/admin/api-integrations', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const user = req.user;
+      
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Super Admin required'
+        });
+      }
+
+      // Get all API integrations
+      const integrations = await db
+        .select()
+        .from(apiIntegrations)
+        .orderBy(apiIntegrations.category, apiIntegrations.displayName);
+
+      // Don't return actual credentials, just whether they exist
+      const safeIntegrations = integrations.map(integration => ({
+        ...integration,
+        credentials: Object.keys(integration.credentials).reduce((acc, key) => {
+          acc[key] = integration.credentials[key] ? '***configured***' : '';
+          return acc;
+        }, {} as any),
+      }));
+
+      res.json({
+        success: true,
+        data: safeIntegrations
+      });
+    } catch (error) {
+      console.error('Error fetching API integrations:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch API integrations'
+      });
+    }
+  });
+
+  // Update API integration settings
+  app.put('/api/admin/api-integrations/:provider', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { provider } = req.params;
+      
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Super Admin required'
+        });
+      }
+
+      const { credentials, isEnabled = false } = req.body;
+
+      if (!credentials || typeof credentials !== 'object') {
+        return res.status(400).json({
+          success: false,
+          error: 'Credentials object is required'
+        });
+      }
+
+      // Get provider display name and category
+      const providerConfig = {
+        google_auth: { displayName: 'Google OAuth', category: 'auth' },
+        facebook_auth: { displayName: 'Facebook OAuth', category: 'auth' },
+        linkedin_auth: { displayName: 'LinkedIn OAuth', category: 'auth' },
+        whatsapp_auth: { displayName: 'WhatsApp Business', category: 'auth' },
+        sms_otp: { displayName: 'SMS OTP Service', category: 'auth' },
+        razorpay: { displayName: 'Razorpay', category: 'payment' },
+        gpay_direct: { displayName: 'Google Pay Direct', category: 'payment' },
+        bhim_direct: { displayName: 'BHIM Pay Direct', category: 'payment' }
+      }[provider];
+
+      if (!providerConfig) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid provider'
+        });
+      }
+
+      // Encrypt sensitive credentials (in production, use proper encryption)
+      // For now, we'll store them as-is but in production should use crypto.encrypt
+      const encryptedCredentials = credentials;
+
+      // Check if integration already exists
+      const existing = await db
+        .select()
+        .from(apiIntegrations)
+        .where(eq(apiIntegrations.provider, provider as any))
+        .limit(1);
+
+      let result;
+      if (existing.length > 0) {
+        // Update existing
+        result = await db
+          .update(apiIntegrations)
+          .set({
+            credentials: encryptedCredentials,
+            isEnabled,
+            lastUpdatedBy: user.id,
+            updatedAt: new Date()
+          })
+          .where(eq(apiIntegrations.provider, provider as any))
+          .returning();
+      } else {
+        // Create new
+        result = await db
+          .insert(apiIntegrations)
+          .values({
+            provider: provider as any,
+            displayName: providerConfig.displayName,
+            category: providerConfig.category,
+            credentials: encryptedCredentials,
+            isEnabled,
+            lastUpdatedBy: user.id
+          })
+          .returning();
+      }
+
+      res.json({
+        success: true,
+        data: {
+          ...result[0],
+          credentials: Object.keys(result[0].credentials).reduce((acc, key) => {
+            acc[key] = result[0].credentials[key] ? '***configured***' : '';
+            return acc;
+          }, {} as any)
+        },
+        message: `${providerConfig.displayName} integration updated successfully`
+      });
+    } catch (error) {
+      console.error('Error updating API integration:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update API integration'
+      });
+    }
+  });
+
+  // Bulk save API integrations (for the form save)
+  app.post('/api/admin/api-integrations/bulk', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const user = req.user;
+      
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Super Admin required'
+        });
+      }
+
+      const { integrations } = req.body;
+
+      if (!Array.isArray(integrations)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Integrations array is required'
+        });
+      }
+
+      const results = [];
+      
+      // Process each integration
+      for (const integration of integrations) {
+        const { provider, credentials, isEnabled = false } = integration;
+        
+        if (!provider || !credentials) {
+          continue; // Skip invalid entries
+        }
+
+        // Get provider config
+        const providerConfig = {
+          google_auth: { displayName: 'Google OAuth', category: 'auth' },
+          facebook_auth: { displayName: 'Facebook OAuth', category: 'auth' },
+          linkedin_auth: { displayName: 'LinkedIn OAuth', category: 'auth' },
+          whatsapp_auth: { displayName: 'WhatsApp Business', category: 'auth' },
+          sms_otp: { displayName: 'SMS OTP Service', category: 'auth' },
+          razorpay: { displayName: 'Razorpay', category: 'payment' },
+          gpay_direct: { displayName: 'Google Pay Direct', category: 'payment' },
+          bhim_direct: { displayName: 'BHIM Pay Direct', category: 'payment' }
+        }[provider];
+
+        if (!providerConfig) {
+          continue; // Skip invalid providers
+        }
+
+        // Check if exists
+        const existing = await db
+          .select()
+          .from(apiIntegrations)
+          .where(eq(apiIntegrations.provider, provider as any))
+          .limit(1);
+
+        if (existing.length > 0) {
+          // Update existing
+          const result = await db
+            .update(apiIntegrations)
+            .set({
+              credentials,
+              isEnabled,
+              lastUpdatedBy: user.id,
+              updatedAt: new Date()
+            })
+            .where(eq(apiIntegrations.provider, provider as any))
+            .returning();
+          results.push(result[0]);
+        } else {
+          // Create new
+          const result = await db
+            .insert(apiIntegrations)
+            .values({
+              provider: provider as any,
+              displayName: providerConfig.displayName,
+              category: providerConfig.category,
+              credentials,
+              isEnabled,
+              lastUpdatedBy: user.id
+            })
+            .returning();
+          results.push(result[0]);
+        }
+      }
+
+      res.json({
+        success: true,
+        data: results.map(result => ({
+          ...result,
+          credentials: Object.keys(result.credentials).reduce((acc, key) => {
+            acc[key] = result.credentials[key] ? '***configured***' : '';
+            return acc;
+          }, {} as any)
+        })),
+        message: `Successfully updated ${results.length} API integrations`
+      });
+    } catch (error) {
+      console.error('Error bulk updating API integrations:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update API integrations'
       });
     }
   });

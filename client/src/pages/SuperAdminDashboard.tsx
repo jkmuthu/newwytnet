@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
@@ -32,7 +35,11 @@ import {
   Plus,
   Edit,
   Trash2,
-  BarChart3
+  BarChart3,
+  Plug,
+  CreditCard,
+  Save,
+  Lock
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useDeviceDetection } from '@/hooks/useDeviceDetection';
@@ -112,6 +119,21 @@ export default function SuperAdminDashboard() {
   const queryClient = useQueryClient();
   const { isMobile } = useDeviceDetection();
   const [selectedTab, setSelectedTab] = useState('overview');
+  
+  // API Integrations state
+  const [authSettings, setAuthSettings] = useState({
+    google: { clientId: '', clientSecret: '' },
+    facebook: { appId: '', appSecret: '' },
+    linkedin: { clientId: '', clientSecret: '' },
+    whatsapp: { token: '', phoneId: '' },
+    sms: { twilioSid: '', twilioToken: '' }
+  });
+  
+  const [paymentSettings, setPaymentSettings] = useState({
+    razorpay: { keyId: '', keySecret: '' },
+    gpay: { merchantId: '', apiKey: '' },
+    bhim: { merchantId: '', apiKey: '' }
+  });
 
   // Load dashboard data
   const { data: dashboardData, isLoading: dashboardLoading, error: dashboardError } = useQuery<{
@@ -169,6 +191,15 @@ export default function SuperAdminDashboard() {
     queryKey: ['/api/admin/social-auth'],
     enabled: selectedTab === 'social-auth',
     refetchInterval: 60000, // Refresh every minute for security monitoring
+  });
+  
+  // Load API integrations data
+  const { data: apiIntegrationsData, isLoading: apiIntegrationsLoading } = useQuery<{
+    success: boolean;
+    data: Array<any>;
+  }>({
+    queryKey: ['/api/admin/api-integrations'],
+    enabled: selectedTab === 'api-integrations',
   });
 
   // Platform module toggle mutation
@@ -236,9 +267,193 @@ export default function SuperAdminDashboard() {
       });
     },
   });
+  
+  // Save API integrations mutations
+  const saveAuthSettingsMutation = useMutation({
+    mutationFn: async (settings: any) => {
+      const integrations = [
+        {
+          provider: 'google_auth',
+          credentials: { clientId: settings.google.clientId, clientSecret: settings.google.clientSecret },
+          isEnabled: !!(settings.google.clientId && settings.google.clientSecret)
+        },
+        {
+          provider: 'facebook_auth',
+          credentials: { appId: settings.facebook.appId, appSecret: settings.facebook.appSecret },
+          isEnabled: !!(settings.facebook.appId && settings.facebook.appSecret)
+        },
+        {
+          provider: 'linkedin_auth',
+          credentials: { clientId: settings.linkedin.clientId, clientSecret: settings.linkedin.clientSecret },
+          isEnabled: !!(settings.linkedin.clientId && settings.linkedin.clientSecret)
+        },
+        {
+          provider: 'whatsapp_auth',
+          credentials: { token: settings.whatsapp.token, phoneId: settings.whatsapp.phoneId },
+          isEnabled: !!(settings.whatsapp.token && settings.whatsapp.phoneId)
+        },
+        {
+          provider: 'sms_otp',
+          credentials: { twilioSid: settings.sms.twilioSid, twilioToken: settings.sms.twilioToken },
+          isEnabled: !!(settings.sms.twilioSid && settings.sms.twilioToken)
+        }
+      ];
+      
+      return await fetch('/api/admin/api-integrations/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ integrations }),
+      }).then(res => res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/api-integrations'] });
+      toast({ title: 'Authentication settings saved successfully' });
+    },
+    onError: () => {
+      toast({ 
+        title: 'Error saving authentication settings',
+        description: 'Please try again later',
+        variant: 'destructive'
+      });
+    },
+  });
+  
+  const savePaymentSettingsMutation = useMutation({
+    mutationFn: async (settings: any) => {
+      const integrations = [
+        {
+          provider: 'razorpay',
+          credentials: { keyId: settings.razorpay.keyId, keySecret: settings.razorpay.keySecret },
+          isEnabled: !!(settings.razorpay.keyId && settings.razorpay.keySecret)
+        },
+        {
+          provider: 'gpay_direct',
+          credentials: { merchantId: settings.gpay.merchantId, apiKey: settings.gpay.apiKey },
+          isEnabled: !!(settings.gpay.merchantId && settings.gpay.apiKey)
+        },
+        {
+          provider: 'bhim_direct',
+          credentials: { merchantId: settings.bhim.merchantId, apiKey: settings.bhim.apiKey },
+          isEnabled: !!(settings.bhim.merchantId && settings.bhim.apiKey)
+        }
+      ];
+      
+      return await fetch('/api/admin/api-integrations/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ integrations }),
+      }).then(res => res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/api-integrations'] });
+      toast({ title: 'Payment settings saved successfully' });
+    },
+    onError: () => {
+      toast({ 
+        title: 'Error saving payment settings',
+        description: 'Please try again later',
+        variant: 'destructive'
+      });
+    },
+  });
 
   const handleModuleToggle = (moduleId: string, enabled: boolean) => {
     toggleModuleMutation.mutate({ moduleId, enabled });
+  };
+  
+  // Load existing API integrations data
+  useEffect(() => {
+    if (apiIntegrationsData?.data) {
+      const integrations = apiIntegrationsData.data;
+      
+      // Parse existing settings
+      integrations.forEach((integration: any) => {
+        const { provider, credentials } = integration;
+        
+        switch (provider) {
+          case 'google_auth':
+            setAuthSettings(prev => ({
+              ...prev,
+              google: {
+                clientId: credentials.clientId === '***configured***' ? '' : credentials.clientId || '',
+                clientSecret: credentials.clientSecret === '***configured***' ? '' : credentials.clientSecret || ''
+              }
+            }));
+            break;
+          case 'facebook_auth':
+            setAuthSettings(prev => ({
+              ...prev,
+              facebook: {
+                appId: credentials.appId === '***configured***' ? '' : credentials.appId || '',
+                appSecret: credentials.appSecret === '***configured***' ? '' : credentials.appSecret || ''
+              }
+            }));
+            break;
+          case 'linkedin_auth':
+            setAuthSettings(prev => ({
+              ...prev,
+              linkedin: {
+                clientId: credentials.clientId === '***configured***' ? '' : credentials.clientId || '',
+                clientSecret: credentials.clientSecret === '***configured***' ? '' : credentials.clientSecret || ''
+              }
+            }));
+            break;
+          case 'whatsapp_auth':
+            setAuthSettings(prev => ({
+              ...prev,
+              whatsapp: {
+                token: credentials.token === '***configured***' ? '' : credentials.token || '',
+                phoneId: credentials.phoneId === '***configured***' ? '' : credentials.phoneId || ''
+              }
+            }));
+            break;
+          case 'sms_otp':
+            setAuthSettings(prev => ({
+              ...prev,
+              sms: {
+                twilioSid: credentials.twilioSid === '***configured***' ? '' : credentials.twilioSid || '',
+                twilioToken: credentials.twilioToken === '***configured***' ? '' : credentials.twilioToken || ''
+              }
+            }));
+            break;
+          case 'razorpay':
+            setPaymentSettings(prev => ({
+              ...prev,
+              razorpay: {
+                keyId: credentials.keyId === '***configured***' ? '' : credentials.keyId || '',
+                keySecret: credentials.keySecret === '***configured***' ? '' : credentials.keySecret || ''
+              }
+            }));
+            break;
+          case 'gpay_direct':
+            setPaymentSettings(prev => ({
+              ...prev,
+              gpay: {
+                merchantId: credentials.merchantId === '***configured***' ? '' : credentials.merchantId || '',
+                apiKey: credentials.apiKey === '***configured***' ? '' : credentials.apiKey || ''
+              }
+            }));
+            break;
+          case 'bhim_direct':
+            setPaymentSettings(prev => ({
+              ...prev,
+              bhim: {
+                merchantId: credentials.merchantId === '***configured***' ? '' : credentials.merchantId || '',
+                apiKey: credentials.apiKey === '***configured***' ? '' : credentials.apiKey || ''
+              }
+            }));
+            break;
+        }
+      });
+    }
+  }, [apiIntegrationsData]);
+  
+  const handleSaveAuthSettings = () => {
+    saveAuthSettingsMutation.mutate(authSettings);
+  };
+  
+  const handleSavePaymentSettings = () => {
+    savePaymentSettingsMutation.mutate(paymentSettings);
   };
 
   const formatUptime = (seconds: number) => {
@@ -300,7 +515,7 @@ export default function SuperAdminDashboard() {
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:w-fit lg:grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6 lg:w-fit lg:grid-cols-6">
           <TabsTrigger value="overview" data-testid="tab-overview">
             <TrendingUp className="h-4 w-4 mr-2" />
             Overview
@@ -320,6 +535,10 @@ export default function SuperAdminDashboard() {
           <TabsTrigger value="social-auth" data-testid="tab-social-auth">
             <Link className="h-4 w-4 mr-2" />
             Social Auth
+          </TabsTrigger>
+          <TabsTrigger value="api-integrations" data-testid="tab-api-integrations">
+            <Plug className="h-4 w-4 mr-2" />
+            API Integrations
           </TabsTrigger>
         </TabsList>
 
@@ -911,6 +1130,331 @@ export default function SuperAdminDashboard() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="api-integrations" className="space-y-6">
+          {/* Authentication Services */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5" />
+                Authentication Services
+              </CardTitle>
+              <CardDescription>
+                Configure API keys for authentication providers
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Google Auth */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <div className="w-6 h-6 bg-red-100 rounded flex items-center justify-center">
+                      <span className="text-xs font-bold text-red-600">G</span>
+                    </div>
+                    Google OAuth
+                  </Label>
+                  <div className="space-y-2">
+                    <Input
+                      type="password"
+                      placeholder="Google Client ID"
+                      value={authSettings.google.clientId}
+                      onChange={(e) => setAuthSettings(prev => ({
+                        ...prev,
+                        google: { ...prev.google, clientId: e.target.value }
+                      }))}
+                      data-testid="input-google-client-id"
+                    />
+                    <Input
+                      type="password"
+                      placeholder="Google Client Secret"
+                      value={authSettings.google.clientSecret}
+                      onChange={(e) => setAuthSettings(prev => ({
+                        ...prev,
+                        google: { ...prev.google, clientSecret: e.target.value }
+                      }))}
+                      data-testid="input-google-client-secret"
+                    />
+                  </div>
+                </div>
+
+                {/* Facebook Auth */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <div className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center">
+                      <span className="text-xs font-bold text-blue-600">f</span>
+                    </div>
+                    Facebook OAuth
+                  </Label>
+                  <div className="space-y-2">
+                    <Input
+                      type="password"
+                      placeholder="Facebook App ID"
+                      value={authSettings.facebook.appId}
+                      onChange={(e) => setAuthSettings(prev => ({
+                        ...prev,
+                        facebook: { ...prev.facebook, appId: e.target.value }
+                      }))}
+                      data-testid="input-facebook-app-id"
+                    />
+                    <Input
+                      type="password"
+                      placeholder="Facebook App Secret"
+                      value={authSettings.facebook.appSecret}
+                      onChange={(e) => setAuthSettings(prev => ({
+                        ...prev,
+                        facebook: { ...prev.facebook, appSecret: e.target.value }
+                      }))}
+                      data-testid="input-facebook-app-secret"
+                    />
+                  </div>
+                </div>
+
+                {/* LinkedIn Auth */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <div className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center">
+                      <span className="text-xs font-bold text-blue-700">in</span>
+                    </div>
+                    LinkedIn OAuth
+                  </Label>
+                  <div className="space-y-2">
+                    <Input
+                      type="password"
+                      placeholder="LinkedIn Client ID"
+                      value={authSettings.linkedin.clientId}
+                      onChange={(e) => setAuthSettings(prev => ({
+                        ...prev,
+                        linkedin: { ...prev.linkedin, clientId: e.target.value }
+                      }))}
+                      data-testid="input-linkedin-client-id"
+                    />
+                    <Input
+                      type="password"
+                      placeholder="LinkedIn Client Secret"
+                      value={authSettings.linkedin.clientSecret}
+                      onChange={(e) => setAuthSettings(prev => ({
+                        ...prev,
+                        linkedin: { ...prev.linkedin, clientSecret: e.target.value }
+                      }))}
+                      data-testid="input-linkedin-client-secret"
+                    />
+                  </div>
+                </div>
+
+                {/* WhatsApp Auth */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <div className="w-6 h-6 bg-green-100 rounded flex items-center justify-center">
+                      <span className="text-xs font-bold text-green-600">W</span>
+                    </div>
+                    WhatsApp Business
+                  </Label>
+                  <div className="space-y-2">
+                    <Input
+                      type="password"
+                      placeholder="WhatsApp Business API Token"
+                      value={authSettings.whatsapp.token}
+                      onChange={(e) => setAuthSettings(prev => ({
+                        ...prev,
+                        whatsapp: { ...prev.whatsapp, token: e.target.value }
+                      }))}
+                      data-testid="input-whatsapp-token"
+                    />
+                    <Input
+                      type="text"
+                      placeholder="Phone Number ID"
+                      value={authSettings.whatsapp.phoneId}
+                      onChange={(e) => setAuthSettings(prev => ({
+                        ...prev,
+                        whatsapp: { ...prev.whatsapp, phoneId: e.target.value }
+                      }))}
+                      data-testid="input-whatsapp-phone-id"
+                    />
+                  </div>
+                </div>
+
+                {/* SMS OTP */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <div className="w-6 h-6 bg-purple-100 rounded flex items-center justify-center">
+                      <span className="text-xs font-bold text-purple-600">SMS</span>
+                    </div>
+                    SMS OTP Service
+                  </Label>
+                  <div className="space-y-2">
+                    <Input
+                      type="password"
+                      placeholder="Twilio Account SID"
+                      value={authSettings.sms.twilioSid}
+                      onChange={(e) => setAuthSettings(prev => ({
+                        ...prev,
+                        sms: { ...prev.sms, twilioSid: e.target.value }
+                      }))}
+                      data-testid="input-twilio-sid"
+                    />
+                    <Input
+                      type="password"
+                      placeholder="Twilio Auth Token"
+                      value={authSettings.sms.twilioToken}
+                      onChange={(e) => setAuthSettings(prev => ({
+                        ...prev,
+                        sms: { ...prev.sms, twilioToken: e.target.value }
+                      }))}
+                      data-testid="input-twilio-token"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end">
+                <Button 
+                  className="flex items-center gap-2" 
+                  onClick={handleSaveAuthSettings}
+                  disabled={saveAuthSettingsMutation.isPending}
+                  data-testid="button-save-auth-settings"
+                >
+                  <Save className="h-4 w-4" />
+                  {saveAuthSettingsMutation.isPending ? 'Saving...' : 'Save Authentication Settings'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Separator />
+
+          {/* Payment Services */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                Payment Services
+              </CardTitle>
+              <CardDescription>
+                Configure API keys for payment processing
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Razorpay */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <div className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center">
+                      <span className="text-xs font-bold text-blue-600">R</span>
+                    </div>
+                    Razorpay
+                  </Label>
+                  <div className="space-y-2">
+                    <Input
+                      type="password"
+                      placeholder="Razorpay Key ID"
+                      value={paymentSettings.razorpay.keyId}
+                      onChange={(e) => setPaymentSettings(prev => ({
+                        ...prev,
+                        razorpay: { ...prev.razorpay, keyId: e.target.value }
+                      }))}
+                      data-testid="input-razorpay-key-id"
+                    />
+                    <Input
+                      type="password"
+                      placeholder="Razorpay Key Secret"
+                      value={paymentSettings.razorpay.keySecret}
+                      onChange={(e) => setPaymentSettings(prev => ({
+                        ...prev,
+                        razorpay: { ...prev.razorpay, keySecret: e.target.value }
+                      }))}
+                      data-testid="input-razorpay-key-secret"
+                    />
+                  </div>
+                </div>
+
+                {/* GPay Direct */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <div className="w-6 h-6 bg-green-100 rounded flex items-center justify-center">
+                      <span className="text-xs font-bold text-green-600">G</span>
+                    </div>
+                    Google Pay (Direct)
+                  </Label>
+                  <div className="space-y-2">
+                    <Input
+                      type="password"
+                      placeholder="GPay Merchant ID"
+                      value={paymentSettings.gpay.merchantId}
+                      onChange={(e) => setPaymentSettings(prev => ({
+                        ...prev,
+                        gpay: { ...prev.gpay, merchantId: e.target.value }
+                      }))}
+                      data-testid="input-gpay-merchant-id"
+                    />
+                    <Input
+                      type="password"
+                      placeholder="GPay API Key"
+                      value={paymentSettings.gpay.apiKey}
+                      onChange={(e) => setPaymentSettings(prev => ({
+                        ...prev,
+                        gpay: { ...prev.gpay, apiKey: e.target.value }
+                      }))}
+                      data-testid="input-gpay-api-key"
+                    />
+                  </div>
+                </div>
+
+                {/* BHIM Pay Direct */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <div className="w-6 h-6 bg-orange-100 rounded flex items-center justify-center">
+                      <span className="text-xs font-bold text-orange-600">B</span>
+                    </div>
+                    BHIM Pay (Direct)
+                  </Label>
+                  <div className="space-y-2">
+                    <Input
+                      type="password"
+                      placeholder="BHIM Merchant ID"
+                      value={paymentSettings.bhim.merchantId}
+                      onChange={(e) => setPaymentSettings(prev => ({
+                        ...prev,
+                        bhim: { ...prev.bhim, merchantId: e.target.value }
+                      }))}
+                      data-testid="input-bhim-merchant-id"
+                    />
+                    <Input
+                      type="password"
+                      placeholder="BHIM API Key"
+                      value={paymentSettings.bhim.apiKey}
+                      onChange={(e) => setPaymentSettings(prev => ({
+                        ...prev,
+                        bhim: { ...prev.bhim, apiKey: e.target.value }
+                      }))}
+                      data-testid="input-bhim-api-key"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end">
+                <Button 
+                  className="flex items-center gap-2" 
+                  onClick={handleSavePaymentSettings}
+                  disabled={savePaymentSettingsMutation.isPending}
+                  data-testid="button-save-payment-settings"
+                >
+                  <Save className="h-4 w-4" />
+                  {savePaymentSettingsMutation.isPending ? 'Saving...' : 'Save Payment Settings'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Security Notice */}
+          <Alert>
+            <Lock className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Security Notice:</strong> All API keys are encrypted and stored securely. 
+              Only Super Admin users can view and modify these settings.
+            </AlertDescription>
+          </Alert>
         </TabsContent>
       </Tabs>
     </div>

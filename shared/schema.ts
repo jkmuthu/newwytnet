@@ -1223,6 +1223,26 @@ export const backups = pgTable("backups", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// API Integration service provider enum
+export const apiProviderEnum = pgEnum("api_provider", [
+  "google_auth", "facebook_auth", "linkedin_auth", "whatsapp_auth", "sms_otp",
+  "razorpay", "gpay_direct", "bhim_direct"
+]);
+
+// Platform API Integrations for Super Admin
+export const apiIntegrations = pgTable("api_integrations", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  provider: apiProviderEnum("provider").notNull().unique(),
+  displayName: varchar("display_name", { length: 255 }).notNull(),
+  category: varchar("category", { length: 50 }).notNull(), // 'auth' or 'payment'
+  isEnabled: boolean("is_enabled").default(false),
+  credentials: jsonb("credentials").notNull().default({}), // Encrypted JSON object
+  settings: jsonb("settings").default({}),
+  lastUpdatedBy: varchar("last_updated_by").references(() => whatsappUsers.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // WytDuty Relations
 export const dutyUsersRelations = relations(dutyUsers, ({ one }) => ({
   tenant: one(tenants, {
@@ -1286,6 +1306,13 @@ export const backupsRelations = relations(backups, ({ one }) => ({
   }),
 }));
 
+export const apiIntegrationsRelations = relations(apiIntegrations, ({ one }) => ({
+  lastUpdatedBy: one(whatsappUsers, {
+    fields: [apiIntegrations.lastUpdatedBy],
+    references: [whatsappUsers.id],
+  }),
+}));
+
 // Platform Modules Types
 export type PlatformModule = typeof platformModules.$inferSelect;
 export type InsertPlatformModule = typeof platformModules.$inferInsert;
@@ -1307,3 +1334,13 @@ export type Approval = typeof approvals.$inferSelect;
 export type InsertApproval = typeof approvals.$inferInsert;
 export type Backup = typeof backups.$inferSelect;
 export type InsertBackup = typeof backups.$inferInsert;
+
+// API Integrations Types
+export type ApiIntegration = typeof apiIntegrations.$inferSelect;
+export type InsertApiIntegration = typeof apiIntegrations.$inferInsert;
+
+// Zod schemas for API integrations
+export const insertApiIntegrationSchema = createInsertSchema(apiIntegrations);
+export const selectApiIntegrationSchema = createSelectSchema(apiIntegrations);
+export type InsertApiIntegrationType = z.infer<typeof insertApiIntegrationSchema>;
+export type SelectApiIntegrationType = z.infer<typeof selectApiIntegrationSchema>;
