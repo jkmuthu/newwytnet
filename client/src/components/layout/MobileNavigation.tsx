@@ -103,23 +103,25 @@ export default function MobileNavigation() {
               </Avatar>
             </Button>
           ) : (
-            <Link href="/whatsapp-auth">
+            <Link href="/login">
               <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
                 <MessageCircle className="h-4 w-4 mr-1" />
-                Login
+                Login / Join
               </Button>
             </Link>
           )}
 
-          {/* Menu Toggle */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setMenuOpen(true)}
-            data-testid="mobile-menu-trigger"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
+          {/* Menu Toggle - Only show when authenticated */}
+          {isAuthenticated && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMenuOpen(true)}
+              data-testid="mobile-menu-trigger"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          )}
         </div>
       </div>
 
