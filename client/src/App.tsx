@@ -6,9 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
-import MobileNavigation from "@/components/layout/MobileNavigation";
-import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
+import AppLayout from "@/components/layout/AppLayout";
 import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
 import Assessment from "@/pages/assessment";
@@ -63,23 +61,11 @@ function RoleBasedDashboard() {
     return <Dashboard />;
   }
   
-  // For non-authenticated users, show home page with proper layout wrapper
-  const LayoutWrapper = ({ children }: { children: React.ReactNode }) => {    
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Header />
-        <main className="min-h-screen">
-          {children}
-        </main>
-        <Footer />
-      </div>
-    );
-  };
-
+  // For non-authenticated users, show home page with AppLayout
   return (
-    <LayoutWrapper>
+    <AppLayout>
       <Home />
-    </LayoutWrapper>
+    </AppLayout>
   );
 }
 
@@ -88,27 +74,7 @@ function Router() {
   const { isMobile } = useDeviceDetection();
 
   const LayoutWrapper = ({ children }: { children: React.ReactNode }) => {
-    if (isMobile) {
-      return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-          <MobileNavigation />
-          <main className="min-h-screen pb-20">
-            {children}
-          </main>
-          <Footer />
-        </div>
-      );
-    }
-    
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Header />
-        <main className="min-h-screen">
-          {children}
-        </main>
-        <Footer />
-      </div>
-    );
+    return <AppLayout>{children}</AppLayout>;
   };
 
   return (
