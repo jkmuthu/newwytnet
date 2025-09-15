@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
-import MobileLayout from "@/components/layout/MobileLayout";
+import MobileNavigation from "@/components/layout/MobileNavigation";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import Home from "@/pages/home";
@@ -87,7 +87,19 @@ function Router() {
   const { isAuthenticated, isLoading } = useWhatsAppAuth();
   const { isMobile } = useDeviceDetection();
 
-  const LayoutWrapper = ({ children }: { children: React.ReactNode }) => {    
+  const LayoutWrapper = ({ children }: { children: React.ReactNode }) => {
+    if (isMobile) {
+      return (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+          <MobileNavigation />
+          <main className="min-h-screen pb-20">
+            {children}
+          </main>
+          <Footer />
+        </div>
+      );
+    }
+    
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Header />
