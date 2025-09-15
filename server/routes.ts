@@ -391,10 +391,14 @@ const adminAuthMiddleware = async (req: any, res: any, next: any) => {
       });
     }
 
-    // Check if user is super admin (either OIDC or WhatsApp)
-    const isSuperAdmin = Boolean(user?.isSuperAdmin || 
-                        (user?.whatsappNumber === '+919345228184') ||
-                        (process.env.NODE_ENV === 'development' && user?.whatsappNumber));
+    // Enhanced Super Admin check
+    const isSuperAdmin = Boolean(
+      user?.isSuperAdmin || 
+      user?.role === 'super_admin' ||
+      (user?.whatsappNumber === '+919345228184') ||
+      (req.session?.superAdminAuth && user?.whatsappNumber === '+919345228184') ||
+      (process.env.NODE_ENV === 'development' && user?.whatsappNumber)
+    );
 
     // Return 403 if authenticated but not super admin
     if (!isSuperAdmin) {
@@ -1664,6 +1668,56 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Admin login endpoint with fixed credentials
+  // Simple Super Admin Login Endpoint
+  app.post('/api/auth/super-admin-login', async (req, res) => {
+    try {
+      const { username, password } = req.body;
+
+      // Simple credentials check
+      if (username === '9345228184' && password === 'sadmin12') {
+        // Find the super admin user in database
+        const superAdminUser = await db
+          .select()
+          .from(whatsappUsers)
+          .where(eq(whatsappUsers.whatsappNumber, '+919345228184'))
+          .limit(1);
+
+        if (superAdminUser.length > 0) {
+          const user = superAdminUser[0];
+          
+          // Set session for Super Admin
+          (req.session as any).whatsappUserId = user.id;
+          (req.session as any).whatsappNumber = user.whatsappNumber;
+          (req.session as any).superAdminAuth = true;
+          
+          return res.json({
+            success: true,
+            message: 'Super Admin login successful',
+            user: {
+              id: user.id,
+              name: user.name,
+              role: user.role,
+              isSuperAdmin: user.isSuperAdmin,
+              redirectUrl: '/super-admin'
+            }
+          });
+        }
+      }
+
+      // Invalid credentials
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid username or password'
+      });
+    } catch (error) {
+      console.error('Super Admin login error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Login failed'
+      });
+    }
+  });
+
   app.post('/api/auth/admin-login', async (req, res) => {
     try {
       const { username, password } = req.body;

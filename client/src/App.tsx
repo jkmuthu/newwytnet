@@ -24,6 +24,7 @@ import UserAuthMethods from "@/pages/user-auth-methods";
 import SearchPage from "@/pages/search";
 import Landing from "@/pages/landing";
 import LoginPage from "@/pages/LoginPage";
+import SuperAdminLogin from "@/pages/SuperAdminLogin";
 import NotFound from "@/pages/not-found";
 import MobileAppPage from "@/pages/MobileAppPage";
 import ComingSoon from "@/pages/coming-soon";
@@ -87,6 +88,9 @@ function Router() {
           <LoginPage />
         </LayoutWrapper>
       </Route>
+      
+      {/* Super Admin Login - No Layout */}
+      <Route path="/super-admin-login" component={SuperAdminLogin} />
       
       {/* All other routes - WITH LayoutWrapper */}
       <Route>
