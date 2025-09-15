@@ -113,11 +113,6 @@ function Router() {
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/super-admin" component={SuperAdminDashboard} />
       
-      {/* Root route with role-based dashboards */}
-      <Route path="/">
-        <RoleBasedDashboard />
-      </Route>
-      
       {/* Login page */}
       <Route path="/login">
         <LayoutWrapper>
@@ -178,6 +173,11 @@ function Router() {
         <Route path="/admin/tenants" component={AdminTenants} />
         <Route path="/admin/seo-settings" component={AdminSeoSettings} />
         
+              {/* Root route with role-based dashboards - MOVED TO END */}
+              <Route path="/">
+                <RoleBasedDashboard />
+              </Route>
+              
               <Route component={NotFound} />
               </Switch>
             </LayoutWrapper>
