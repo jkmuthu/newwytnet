@@ -16,6 +16,7 @@ export default function Footer() {
   const productLinks = [
     { label: "Features", href: "/features" },
     { label: "Pricing", href: "/pricing" },
+    { label: "Install App", href: "/mobile-app" },
     { label: "Documentation", href: "/docs" },
     { label: "API Reference", href: "/api" },
   ];

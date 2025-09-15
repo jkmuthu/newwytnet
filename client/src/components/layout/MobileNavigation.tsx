@@ -22,7 +22,8 @@ import {
   MessageCircle,
   Shield,
   Users,
-  Database
+  Database,
+  Smartphone
 } from 'lucide-react';
 import { useWhatsAppAuth } from '@/hooks/useWhatsAppAuth';
 import { useDeviceDetection } from '@/hooks/useDeviceDetection';
@@ -221,6 +222,17 @@ export default function MobileNavigation() {
                 Settings
               </Button>
             </div>
+
+            <Link href="/mobile-app" onClick={() => setProfileOpen(false)}>
+              <Button 
+                variant="outline" 
+                className="w-full flex items-center gap-2 mb-2"
+                data-testid="button-install-app"
+              >
+                <Smartphone className="h-4 w-4" />
+                Install App
+              </Button>
+            </Link>
 
             <Button 
               variant="destructive" 

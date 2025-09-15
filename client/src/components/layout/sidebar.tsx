@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 
 interface SidebarProps {
   open: boolean;
@@ -194,7 +194,7 @@ export default function Sidebar({ open, onClose, isCollapsed, onToggleCollapse }
           </div>
         </div>
 
-        <nav className="p-2 space-y-2">
+        <nav className="p-2 space-y-2 flex-1">
           {menuItems.map((section) => (
             <div key={section.section} className="mb-4">
               {!isCollapsed && (
@@ -236,6 +236,33 @@ export default function Sidebar({ open, onClose, isCollapsed, onToggleCollapse }
             </div>
           ))}
         </nav>
+
+        {/* Install App Link - Fixed at bottom */}
+        <div className="p-2 border-t border-border">
+          <Link href="/mobile-app">
+            <a
+              onClick={() => {
+                onClose(); // Close sidebar on mobile after navigation
+              }}
+              className={cn(
+                "flex items-center rounded-md transition-colors group relative hover:bg-muted text-foreground",
+                isCollapsed ? "px-3 py-3 justify-center" : "px-3 py-2 space-x-3"
+              )}
+              data-testid="link-install-app"
+              title={isCollapsed ? "Install App" : undefined}
+            >
+              <i className={`fas fa-mobile-alt ${isCollapsed ? 'text-lg' : 'w-5'}`}></i>
+              {!isCollapsed && <span>Install App</span>}
+              
+              {/* Tooltip for collapsed mode */}
+              {isCollapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-sm rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                  Install App
+                </div>
+              )}
+            </a>
+          </Link>
+        </div>
       </aside>
     </>
   );
