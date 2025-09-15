@@ -4,9 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogIn, Eye, EyeOff } from "lucide-react";
-import { FcGoogle } from "react-icons/fc";
-import { SiFacebook } from "react-icons/si";
+import { LogIn, Eye, EyeOff, MessageCircle } from "lucide-react";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -66,14 +64,9 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Redirect to Replit Auth for social login (includes Google)
-    window.location.href = '/api/login';
-  };
-
-  const handleFacebookLogin = () => {
-    // Redirect to Replit Auth for social login (includes Facebook)
-    window.location.href = '/api/login';
+  const handleWhatsAppLogin = () => {
+    // Redirect to white-label WhatsApp OTP authentication
+    window.location.href = '/whatsapp-auth';
   };
 
   const countryOptions = [
@@ -187,32 +180,21 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Social Login Options */}
+          {/* WhatsApp Login Option */}
           <div className="space-y-3">
             <div className="text-center text-sm font-medium text-gray-600 dark:text-gray-400">
-              Login / Join with:
+              Or login with:
             </div>
             
-            <div className="grid grid-cols-2 gap-3">
-              <Button 
-                variant="outline" 
-                onClick={handleGoogleLogin}
-                className="w-full"
-                data-testid="button-google-login"
-              >
-                <FcGoogle className="h-5 w-5 mr-2" />
-                Google
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={handleFacebookLogin}
-                className="w-full"
-                data-testid="button-facebook-login"
-              >
-                <SiFacebook className="h-5 w-5 mr-2 text-blue-600" />
-                Facebook
-              </Button>
-            </div>
+            <Button 
+              variant="outline" 
+              onClick={handleWhatsAppLogin}
+              className="w-full bg-green-50 hover:bg-green-100 border-green-200 text-green-700"
+              data-testid="button-whatsapp-login"
+            >
+              <MessageCircle className="h-5 w-5 mr-2" />
+              WhatsApp OTP
+            </Button>
           </div>
           
           <div className="pt-4 border-t">
