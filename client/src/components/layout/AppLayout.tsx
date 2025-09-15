@@ -1,8 +1,8 @@
 import { useDeviceDetection } from '@/hooks/useDeviceDetection';
-import Header from './header';
-import Footer from './footer';
-import MobileNavigation from './MobileNavigation';
-import MobileBottomNavigation from './MobileBottomNavigation';
+import Header from '@/components/layout/header';
+import Footer from '@/components/layout/footer';
+import MobileNavigation from '@/components/layout/MobileNavigation';
+import MobileBottomNavigation from '@/components/layout/MobileBottomNavigation';
 
 interface AppLayoutProps {
   children: React.ReactNode;
