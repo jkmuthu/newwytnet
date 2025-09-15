@@ -64,11 +64,7 @@ function RoleBasedDashboard() {
   }
   
   // For non-authenticated users, show home page with proper layout wrapper
-  const LayoutWrapper = ({ children }: { children: React.ReactNode }) => {
-    if (isMobile) {
-      return <MobileLayout isMobile={isMobile}>{children}</MobileLayout>;
-    }
-    
+  const LayoutWrapper = ({ children }: { children: React.ReactNode }) => {    
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Header />
@@ -91,11 +87,7 @@ function Router() {
   const { isAuthenticated, isLoading } = useWhatsAppAuth();
   const { isMobile } = useDeviceDetection();
 
-  const LayoutWrapper = ({ children }: { children: React.ReactNode }) => {
-    if (isMobile) {
-      return <MobileLayout isMobile={isMobile}>{children}</MobileLayout>;
-    }
-    
+  const LayoutWrapper = ({ children }: { children: React.ReactNode }) => {    
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <Header />
