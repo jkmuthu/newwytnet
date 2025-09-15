@@ -1,38 +1,46 @@
-# Development & Testing Credentials
+# Standard User Credentials
 
-⚠️ **FOR DEVELOPMENT ENVIRONMENT ONLY** ⚠️
+⚠️ **FIXED STANDARD CREDENTIALS - DO NOT CHANGE** ⚠️
 
-## Demo User Accounts
+## Standard User Accounts
 
 ### 1. Super Admin
-- **Mobile:** +919345228184
-- **Password:** Use WhatsApp OTP authentication
+- **Username:** 9345228184
+- **Password:** sadmin12
 - **Access:** Full system access, all permissions
-- **Login Method:** WhatsApp OTP only (most secure)
+- **Can Change Password:** ✅ Yes (via WytPanel → My Account)
 
 ### 2. Admin User  
-- **Mobile:** Create via WhatsApp registration
-- **Password:** Set during registration
+- **Username:** 8220449933
+- **Password:** admin123
 - **Access:** Admin panel access
-- **Login Method:** WhatsApp OTP or Mobile + Password
+- **Can Change Password:** ✅ Yes (via WytPanel → My Account)
 
 ### 3. Demo User
-- **Mobile:** 9876543210
+- **Username:** 9876543210
 - **Password:** demo1234
-- **Access:** Standard user access
-- **Login Method:** Mobile + Password or WhatsApp OTP
+- **Access:** Standard user access (read-only)
+- **Can Change Password:** ❌ No (locked for demo purposes)
+
+## Login Instructions
+
+1. Go to `/login` page
+2. Select country code (default: India +91)
+3. Enter mobile number (username)
+4. Enter password
+5. Click "Sign In"
+
+## Alternative Login Methods
+
+- **WhatsApp OTP:** `/whatsapp-auth` (OTP-based authentication)
+- **Social Login:** Google/Facebook (requires API setup)
 
 ## Security Notes
 
-- **Production:** Never use these credentials in production
-- **WhatsApp OTP:** Most secure method - no password needed
-- **Mobile Numbers:** Always the username across all auth methods
-- **Password Reset:** Use WhatsApp OTP for secure password reset
-
-## Login URLs
-
-- **Main Login:** `/login` (mobile + password or social login)
-- **WhatsApp Auth:** `/whatsapp-auth` (OTP-based, most secure)
+- Mobile numbers are always the username
+- Super Admin & Admin can change passwords from WytPanel
+- Demo User password is locked (cannot be changed)
+- All passwords are securely hashed with bcrypt
 
 ---
-*Last Updated: September 2025*
+*Standard Instructions - Do Not Modify*
