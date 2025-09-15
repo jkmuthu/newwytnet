@@ -61,12 +61,8 @@ function RoleBasedDashboard() {
     return <Dashboard />;
   }
   
-  // For non-authenticated users, show home page with AppLayout
-  return (
-    <AppLayout>
-      <Home />
-    </AppLayout>
-  );
+  // For non-authenticated users, show home page (AppLayout applied by LayoutWrapper)
+  return <Home />;
 }
 
 function Router() {
@@ -79,9 +75,10 @@ function Router() {
 
   return (
     <Switch>
-      {/* Admin routes - NO LayoutWrapper (self-contained) */}
+      {/* Routes with their own layouts - NO LayoutWrapper (self-contained) */}
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/super-admin" component={SuperAdminDashboard} />
+      <Route path="/dashboard" component={Dashboard} />
       
       {/* Login page */}
       <Route path="/login">
@@ -127,8 +124,7 @@ function Router() {
         <Route path="/help" component={Help} />
         <Route path="/status" component={Status} />
         
-        {/* Protected routes - authentication required */}
-        <Route path="/dashboard" component={Dashboard} />
+        {/* Protected routes - authentication required (dashboard has its own layout) */}
         <Route path="/analytics" component={AdminAnalytics} />
         <Route path="/user-auth-methods" component={UserAuthMethods} />
         <Route path="/landing" component={Landing} />
