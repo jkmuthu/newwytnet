@@ -194,7 +194,7 @@ export default function MobileNavigation() {
                 <div className="font-semibold">
                   {isSuperAdmin ? '🦸‍♂️ ' : ''}{user.name}
                 </div>
-                <div className="text-sm text-gray-500">{user.phone || user.email || 'User'}</div>
+                <div className="text-sm text-gray-500">{user.mobileNumber || user.email || 'User'}</div>
                 <div className="text-xs text-gray-400">{user.role?.toUpperCase()}</div>
               </div>
             </div>

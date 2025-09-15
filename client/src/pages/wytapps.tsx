@@ -4,8 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle, Zap, Brain, QrCode, Calculator, CreditCard, Target, RotateCcw, Quote, Star } from "lucide-react";
 import { Link } from "wouter";
-import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
 import { fetchEnabledPlatformModules } from "@/lib/api";
 
 export default function WytApps() {
@@ -14,7 +12,7 @@ export default function WytApps() {
     queryKey: ['platform-modules', 'enabled'],
     queryFn: fetchEnabledPlatformModules,
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
   // Filter only WytApps
@@ -54,7 +52,6 @@ export default function WytApps() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <Header />
       
       {/* Hero Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
@@ -234,7 +231,6 @@ export default function WytApps() {
         </div>
       </section>
 
-      <Footer />
     </div>
   );
 }
