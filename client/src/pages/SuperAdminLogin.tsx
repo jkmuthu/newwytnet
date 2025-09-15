@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ export default function SuperAdminLogin() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { isMobile } = useDeviceDetection();
 
@@ -42,7 +42,7 @@ export default function SuperAdminLogin() {
           title: "Login Successful",
           description: "Welcome, Super Admin!",
         });
-        navigate('/super-admin');
+        setLocation('/super-admin');
       } else {
         setError(data.error || 'Invalid credentials');
       }
