@@ -213,7 +213,7 @@ export default function Sidebar({ open, onClose, isCollapsed, onToggleCollapse }
                       className={cn(
                         "flex items-center rounded-md transition-colors group relative",
                         isCollapsed ? "px-3 py-3 justify-center" : "px-3 py-2 space-x-3",
-                        item.active 
+                        item.active === true
                           ? "bg-primary text-primary-foreground" 
                           : "hover:bg-muted text-foreground"
                       )}

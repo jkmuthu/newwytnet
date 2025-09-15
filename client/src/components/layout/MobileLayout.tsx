@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Home, Bot, Activity, QrCode, Briefcase, Wrench } from "lucide-react";
+import { Menu, Home, Bot, Activity, QrCode, Briefcase, Wrench, Smartphone } from "lucide-react";
 interface MobileLayoutProps {
   children: React.ReactNode;
   isMobile: boolean;
@@ -48,11 +48,12 @@ export default function MobileLayout({ children, isMobile }: MobileLayoutProps) 
     }
   ];
 
-  // Sidebar items (only 3 working tools as requested)
+  // Sidebar items (tools + install app)
   const sidebarItems = [
     { icon: Bot, label: 'AI Directory', href: '/ai-directory' },
     { icon: QrCode, label: 'QR Generator', href: '/qr-generator' },
     { icon: Activity, label: 'DISC Assessment', href: '/assessment' },
+    { icon: Smartphone, label: 'Install App', href: '/mobile-app' },
   ];
 
   // Don't render mobile layout for admin routes or if not mobile
