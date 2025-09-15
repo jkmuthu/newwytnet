@@ -7,8 +7,33 @@ import { findWhatsAppUser, formatPhoneNumber, findWhatsAppUserById } from "./ser
 import { verifyPassword, hashPassword } from "./services/socialAuth";
 import bcrypt from "bcryptjs";
 import type { WhatsAppUser } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import { whatsappUsers } from "@shared/schema";
+import type { RequestHandler } from "express";
 
-// Unified Principal DTO for consistent user representation
+// Extended session interface to support additional session properties
+declare module 'express-session' {
+  interface SessionData {
+    user?: {
+      type: 'whatsapp' | 'legacy' | 'replit';
+      id: string;
+      tenantId: string;
+      role?: string;
+      isSuperAdmin?: boolean;
+      provider?: string;
+    };
+    whatsappUserId?: string;
+    whatsappNumber?: string;
+    isWhatsAppAuth?: boolean;
+    superAdminAuth?: boolean;
+    adminUserId?: string;
+    adminRole?: string;
+    adminName?: string;
+  }
+}
+
+// Extended Principal interface to support all provider types
 export interface Principal {
   id: string;
   tenantId: string;
@@ -20,7 +45,28 @@ export interface Principal {
   lastName?: string;
   mobileNumber?: string;
   profileImageUrl?: string;
-  provider: 'whatsapp' | 'legacy';
+  provider: 'whatsapp' | 'legacy' | 'replit';
+  claims?: { sub: string; [key: string]: any };
+}
+
+// Request interface extension for authenticated requests
+export interface AuthenticatedRequest extends Express.Request {
+  user?: Principal;
+}
+
+// Unified Principal DTO for consistent user representation (keeping for backward compatibility)
+export interface Principal {
+  id: string;
+  tenantId: string;
+  role?: string;
+  isSuperAdmin?: boolean;
+  email?: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  mobileNumber?: string;
+  profileImageUrl?: string;
+  provider: 'whatsapp' | 'legacy' | 'replit';
 }
 
 // Session structure with provider type for unified handling
@@ -33,7 +79,7 @@ export interface SessionUser {
 }
 
 // Helper function to normalize user data into Principal DTO
-function createPrincipal(user: any, provider: 'whatsapp' | 'legacy'): Principal {
+function createPrincipal(user: any, provider: 'whatsapp' | 'legacy' | 'replit'): Principal {
   if (provider === 'whatsapp') {
     const whatsappUser = user as WhatsAppUser;
     return {
@@ -65,7 +111,7 @@ function createPrincipal(user: any, provider: 'whatsapp' | 'legacy'): Principal 
 }
 
 // Helper function to resolve user from session
-async function resolveUserFromSession(sessionUser: any): Promise<Principal | null> {
+export async function resolveUserFromSession(sessionUser: any): Promise<Principal | null> {
   try {
     // Handle new session format with type
     if (sessionUser.type) {
@@ -513,3 +559,235 @@ export const optionalAuth: RequestHandler = async (req, res, next) => {
   
   next();
 };
+
+// Enhanced auth middleware for admin routes - checks all admin session patterns
+export const adminAuthMiddleware: RequestHandler = async (req, res, next) => {
+  try {
+    console.log('DEBUG: adminAuthMiddleware called');
+    
+    // Method 1: Check unified session structure (new pattern)
+    const sessionUser = req.session?.user;
+    console.log('DEBUG: sessionUser exists:', !!sessionUser);
+    
+    if (sessionUser?.isSuperAdmin) {
+      console.log('DEBUG: Found unified session with isSuperAdmin');
+      (req as AuthenticatedRequest).user = {
+        id: sessionUser.id,
+        tenantId: sessionUser.tenantId || 'admin_tenant',
+        role: sessionUser.role || 'super_admin',
+        isSuperAdmin: sessionUser.isSuperAdmin,
+        provider: (sessionUser.provider as any) || 'unified',
+        claims: { sub: sessionUser.id }
+      };
+      console.log('DEBUG: Setting req.user from unified session:', (req as AuthenticatedRequest).user);
+      return next();
+    }
+
+    // Method 2: Check WhatsApp-based super admin session (legacy pattern)
+    const whatsappUserId = req.session?.whatsappUserId;
+    const superAdminAuth = req.session?.superAdminAuth;
+    const whatsappNumber = req.session?.whatsappNumber;
+    
+    console.log('DEBUG: WhatsApp session - userId:', !!whatsappUserId, 'superAuth:', !!superAdminAuth);
+    
+    if (whatsappUserId && superAdminAuth) {
+      console.log('DEBUG: Found WhatsApp super admin session');
+      try {
+        // Verify this is actually a super admin user
+        const adminUser = await db
+          .select()
+          .from(whatsappUsers)
+          .where(eq(whatsappUsers.id, whatsappUserId))
+          .limit(1);
+
+        if (adminUser.length > 0) {
+          const user = adminUser[0];
+          const isSuperAdmin = Boolean(user.isSuperAdmin || user.whatsappNumber === '+919345228184');
+          
+          if (isSuperAdmin) {
+            (req as AuthenticatedRequest).user = {
+              id: user.id,
+              tenantId: user.tenantId || 'admin_tenant',
+              role: user.role || 'super_admin',
+              isSuperAdmin: true,
+              provider: 'whatsapp',
+              claims: { sub: user.id }
+            };
+            console.log('DEBUG: Setting req.user from WhatsApp session:', (req as AuthenticatedRequest).user);
+            return next();
+          }
+        }
+      } catch (dbError) {
+        console.error('DEBUG: Database error checking WhatsApp admin:', dbError);
+      }
+    }
+
+    // Method 3: Check legacy admin session structure
+    const adminUserId = req.session?.adminUserId;
+    const adminRole = req.session?.adminRole;
+    
+    console.log('DEBUG: Legacy admin session - userId:', !!adminUserId, 'role:', adminRole);
+    
+    if (adminUserId && adminRole) {
+      console.log('DEBUG: Found legacy admin session');
+      (req as AuthenticatedRequest).user = {
+        id: adminUserId,
+        tenantId: 'admin_tenant',
+        role: adminRole,
+        isSuperAdmin: true,
+        provider: 'legacy',
+        claims: { sub: adminUserId }
+      };
+      console.log('DEBUG: Setting req.user from legacy session:', (req as AuthenticatedRequest).user);
+      return next();
+    }
+
+    // No valid admin session found
+    console.log('DEBUG: No valid admin session found');
+    return res.status(401).json({
+      success: false,
+      error: 'Authentication required'
+    });
+    
+  } catch (error) {
+    console.error('Admin auth middleware error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Authentication error'
+    });
+  }
+};
+
+// Enhanced authentication middleware that supports both WhatsApp and custom auth
+export const isAuthenticatedUnified: RequestHandler = async (req, res, next) => {
+  let user = null;
+  
+  // First, try WhatsApp authentication by checking session
+  const whatsappUserId = req.session?.whatsappUserId;
+  const whatsappNumber = req.session?.whatsappNumber;
+  
+  if (whatsappUserId && whatsappNumber) {
+    try {
+      const whatsappAuthService = await import('./services/whatsappAuth');
+      user = await whatsappAuthService.findWhatsAppUser(whatsappNumber);
+      if (user && user.isVerified && user.id === whatsappUserId) {
+        // Attach WhatsApp user to request with proper structure
+        (req as AuthenticatedRequest).user = {
+          id: user.id,
+          tenantId: user.tenantId!,
+          email: user.email || `${user.whatsappNumber}@wytnet.local`,
+          mobileNumber: user.whatsappNumber,
+          isSuperAdmin: user.isSuperAdmin,
+          role: user.role,
+          provider: 'whatsapp',
+          claims: { sub: user.id }
+        };
+        return next();
+      }
+    } catch (error) {
+      console.error("WhatsApp auth error:", error);
+    }
+  }
+  
+  // Fallback to custom authentication
+  const sessionUser = req.session?.user;
+  if (sessionUser) {
+    try {
+      const customUser = await storage.getUser(sessionUser.id);
+      if (customUser) {
+        (req as AuthenticatedRequest).user = { 
+          id: customUser.id,
+          tenantId: customUser.tenantId || '',
+          email: customUser.email || undefined,
+          isSuperAdmin: false, // Custom auth users are not super admin
+          provider: 'legacy',
+          claims: { sub: customUser.id }
+        };
+        return next();
+      }
+    } catch (error) {
+      console.error("Custom auth error:", error);
+    }
+  }
+  
+  // No authentication found
+  return res.status(401).json({ message: "Unauthorized" });
+};
+
+// Unified Principal resolver for both authentication systems  
+export async function getPrincipal(req: AuthenticatedRequest): Promise<Principal | null> {
+  // First, try to resolve from custom auth session
+  const sessionUser = req.session?.user;
+  if (sessionUser) {
+    // Handle different session types
+    if (sessionUser.type === 'whatsapp') {
+      // WhatsApp user session
+      const whatsappAuthService = await import('./services/whatsappAuth');
+      const whatsappUser = await whatsappAuthService.findWhatsAppUserById(sessionUser.id);
+      if (whatsappUser) {
+        return {
+          id: whatsappUser.id,
+          tenantId: whatsappUser.tenantId!,
+          role: whatsappUser.role,
+          isSuperAdmin: whatsappUser.isSuperAdmin || false,
+          email: whatsappUser.email || undefined,
+          name: whatsappUser.name,
+          mobileNumber: whatsappUser.whatsappNumber,
+          profileImageUrl: whatsappUser.profileImageUrl || undefined,
+          provider: 'whatsapp'
+        };
+      }
+    } else {
+      // Legacy user session
+      const user = await storage.getUser(sessionUser.id);
+      if (user) {
+        return {
+          id: user.id,
+          tenantId: user.tenantId || '',
+          role: 'user',
+          isSuperAdmin: false,
+          email: user.email || undefined,
+          firstName: user.firstName || undefined,
+          lastName: user.lastName || undefined,
+          name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}`.trim() : undefined,
+          profileImageUrl: user.profileImageUrl || undefined,
+          provider: 'legacy'
+        };
+      }
+    }
+  }
+
+  // Return existing user from middleware if available
+  if (req.user) {
+    return req.user;
+  }
+
+  return null;
+}
+
+// Helper function to get admin principal from session data
+export function getAdminPrincipal(session: any): Principal | null {
+  if (session?.user?.isSuperAdmin) {
+    return {
+      id: session.user.id,
+      tenantId: session.user.tenantId || 'admin_tenant',
+      role: session.user.role || 'super_admin',
+      isSuperAdmin: session.user.isSuperAdmin,
+      provider: session.user.provider || 'unified'
+    };
+  }
+  return null;
+}
+
+// Helper function to check if principal is super admin
+export function isSuperAdmin(principal: Principal | null): boolean {
+  return Boolean(principal?.isSuperAdmin);
+}
+
+// Helper function to require super admin access
+export function requireSuperAdmin(principal: Principal | null): boolean {
+  if (!isSuperAdmin(principal)) {
+    throw new Error('Access denied: Super Admin required');
+  }
+  return true;
+}

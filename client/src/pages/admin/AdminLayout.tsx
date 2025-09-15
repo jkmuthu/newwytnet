@@ -206,26 +206,31 @@ export default function AdminLayout({ children, user }: AdminLayoutProps) {
                   {visibleNavItems.map((item) => {
                     const Icon = item.icon;
                     return (
-                      <Link key={item.id} href={item.path}>
-                        <a
-                          className={cn(
-                            "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                            location === item.path
-                              ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
-                              : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-                          )}
-                          onClick={() => setIsSidebarOpen(false)}
-                          data-testid={`nav-${item.id}`}
-                        >
-                          <Icon className="h-5 w-5" />
-                          <span>{item.label}</span>
-                          {item.badge && (
-                            <Badge variant="secondary" className="ml-auto">
-                              {item.badge}
-                            </Badge>
-                          )}
-                        </a>
-                      </Link>
+                      <Button
+                        key={item.id}
+                        variant="ghost"
+                        asChild
+                        className={cn(
+                          "w-full justify-start h-auto px-3 py-2 text-sm font-medium",
+                          location === item.path
+                            ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                            : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                        )}
+                        onClick={() => setIsSidebarOpen(false)}
+                        data-testid={`nav-${item.id}`}
+                      >
+                        <Link href={item.path}>
+                          <div className="flex items-center space-x-3 w-full">
+                            <Icon className="h-5 w-5" />
+                            <span>{item.label}</span>
+                            {item.badge && (
+                              <Badge variant="secondary" className="ml-auto">
+                                {item.badge}
+                              </Badge>
+                            )}
+                          </div>
+                        </Link>
+                      </Button>
                     );
                   })}
                 </nav>
@@ -258,20 +263,25 @@ export default function AdminLayout({ children, user }: AdminLayoutProps) {
             {visibleNavItems.slice(0, 4).map((item) => {
               const Icon = item.icon;
               return (
-                <Link key={item.id} href={item.path}>
-                  <a
-                    className={cn(
-                      "flex flex-col items-center p-2 rounded-lg transition-colors",
-                      location === item.path
-                        ? "text-blue-600"
-                        : "text-gray-400 hover:text-gray-600"
-                    )}
-                    data-testid={`bottom-nav-${item.id}`}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span className="text-xs mt-1">{item.label.split(' ')[0]}</span>
-                  </a>
-                </Link>
+                <Button
+                  key={item.id}
+                  variant="ghost"
+                  asChild
+                  className={cn(
+                    "flex flex-col items-center p-2 h-auto min-h-[3rem] rounded-lg transition-colors",
+                    location === item.path
+                      ? "text-blue-600"
+                      : "text-gray-400 hover:text-gray-600"
+                  )}
+                  data-testid={`bottom-nav-${item.id}`}
+                >
+                  <Link href={item.path}>
+                    <div className="flex flex-col items-center">
+                      <Icon className="h-5 w-5" />
+                      <span className="text-xs mt-1">{item.label.split(' ')[0]}</span>
+                    </div>
+                  </Link>
+                </Button>
               );
             })}
           </div>
@@ -316,30 +326,37 @@ export default function AdminLayout({ children, user }: AdminLayoutProps) {
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
-                <Link key={item.id} href={item.path}>
-                  <a
-                    className={cn(
-                      "flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors",
-                      location === item.path
-                        ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
-                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-                    )}
-                    data-testid={`nav-${item.id}`}
-                  >
-                    <Icon className="h-5 w-5" />
-                    <span>{item.label}</span>
-                    {item.badge && (
-                      <Badge variant="secondary" className="ml-auto">
-                        {item.badge}
-                      </Badge>
-                    )}
-                    {item.desktopOnly && (
-                      <Badge variant="outline" className="ml-auto text-xs">
-                        Desktop
-                      </Badge>
-                    )}
-                  </a>
-                </Link>
+                <Button
+                  key={item.id}
+                  variant="ghost"
+                  asChild
+                  className={cn(
+                    "w-full justify-start h-auto px-4 py-3 font-medium",
+                    location === item.path
+                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  )}
+                  data-testid={`nav-${item.id}`}
+                >
+                  <Link href={item.path}>
+                    <div className="flex items-center space-x-3 w-full">
+                      <Icon className="h-5 w-5" />
+                      <span>{item.label}</span>
+                      <div className="ml-auto flex items-center space-x-2">
+                        {item.badge && (
+                          <Badge variant="secondary">
+                            {item.badge}
+                          </Badge>
+                        )}
+                        {item.desktopOnly && (
+                          <Badge variant="outline" className="text-xs">
+                            Desktop
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                </Button>
               );
             })}
           </nav>

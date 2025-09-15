@@ -31,6 +31,7 @@ import ComingSoon from "@/pages/coming-soon";
 // New Admin Portal
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboardNew from "@/pages/admin/AdminDashboard";
+import ProtectedAdminRoute from "@/components/admin/ProtectedAdminRoute";
 
 // New content pages
 import WytApps from "@/pages/wytapps";
@@ -52,8 +53,6 @@ import AdminSystemOverview from "@/pages/admin/system-overview";
 import AdminUsers from "@/pages/admin/users";
 import AdminTenants from "@/pages/admin/tenants";
 import AdminSeoSettings from "@/pages/admin/seo-settings";
-import SuperAdminDashboard from "@/pages/SuperAdminDashboard";
-import AdminDashboard from "@/pages/AdminDashboard";
 
 // Role-based dashboard component
 function RoleBasedDashboard() {
@@ -81,8 +80,11 @@ function Router() {
   return (
     <Switch>
       {/* Routes with their own layouts - NO LayoutWrapper (self-contained) */}
-      <Route path="/admin" component={AdminDashboardNew} />
-      <Route path="/super-admin" component={SuperAdminDashboard} />
+      <Route path="/admin">
+        <ProtectedAdminRoute>
+          <AdminDashboardNew />
+        </ProtectedAdminRoute>
+      </Route>
       <Route path="/dashboard" component={Dashboard} />
       
       {/* Admin Login - No Layout (self-contained) */}
@@ -147,14 +149,46 @@ function Router() {
         <Route path="/landing" component={Landing} />
         
         {/* Admin sub-routes (with main layout) */}
-        <Route path="/admin/cms" component={AdminCMS} />
-        <Route path="/admin/modules" component={AdminModules} />
-        <Route path="/admin/apps" component={AdminApps} />
-        <Route path="/admin/hubs" component={AdminHubs} />
-        <Route path="/admin/system-overview" component={AdminSystemOverview} />
-        <Route path="/admin/users" component={AdminUsers} />
-        <Route path="/admin/tenants" component={AdminTenants} />
-        <Route path="/admin/seo-settings" component={AdminSeoSettings} />
+        <Route path="/admin/cms">
+          <ProtectedAdminRoute>
+            <AdminCMS />
+          </ProtectedAdminRoute>
+        </Route>
+        <Route path="/admin/modules">
+          <ProtectedAdminRoute>
+            <AdminModules />
+          </ProtectedAdminRoute>
+        </Route>
+        <Route path="/admin/apps">
+          <ProtectedAdminRoute>
+            <AdminApps />
+          </ProtectedAdminRoute>
+        </Route>
+        <Route path="/admin/hubs">
+          <ProtectedAdminRoute>
+            <AdminHubs />
+          </ProtectedAdminRoute>
+        </Route>
+        <Route path="/admin/system-overview">
+          <ProtectedAdminRoute>
+            <AdminSystemOverview />
+          </ProtectedAdminRoute>
+        </Route>
+        <Route path="/admin/users">
+          <ProtectedAdminRoute>
+            <AdminUsers />
+          </ProtectedAdminRoute>
+        </Route>
+        <Route path="/admin/tenants">
+          <ProtectedAdminRoute>
+            <AdminTenants />
+          </ProtectedAdminRoute>
+        </Route>
+        <Route path="/admin/seo-settings">
+          <ProtectedAdminRoute>
+            <AdminSeoSettings />
+          </ProtectedAdminRoute>
+        </Route>
         
               {/* Root route with role-based dashboards - MOVED TO END */}
               <Route path="/">

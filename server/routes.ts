@@ -1,6 +1,36 @@
 import type { Express, RequestHandler } from "express";
-import { setupAuth, isAuthenticated, Principal } from "./customAuth";
+import { 
+  setupAuth, 
+  isAuthenticated, 
+  Principal, 
+  AuthenticatedRequest,
+  adminAuthMiddleware,
+  isAuthenticatedUnified,
+  getPrincipal,
+  getAdminPrincipal,
+  isSuperAdmin,
+  requireSuperAdmin
+} from "./customAuth";
 import { setupReplitAuth, isReplitAuthenticated } from "./replitAuth";
+import { 
+  getAdminDashboardData,
+  successResponse,
+  errorResponse,
+  paginatedResponse,
+  validatePagination,
+  validateSortParams,
+  checkEntityExists,
+  getSafeCount,
+  logActivity,
+  hasPermission,
+  requirePermission
+} from "./helpers/routeHelpers";
+import {
+  calculateSimilarityScore,
+  calculateRiskAssessment,
+  generateRecommendations,
+  initializeSampleTrademarkData
+} from "./services/trademarkAnalysis";
 import path from "path";
 import * as whatsappAuthService from "./services/whatsappAuth";
 import * as socialAuthService from "./services/socialAuth";
@@ -59,509 +89,21 @@ import {
 import { db } from "./db";
 import { eq, desc, and, sql, gte, lte, like, or, ilike } from "drizzle-orm";
 
-// WytAi Proprietary AI Algorithms for Trademark Analysis
-function calculateSimilarityScore(queryText: string, trademark: Trademark) {
-  const query = queryText.toLowerCase();
-  const trademarkText = trademark.trademarkText.toLowerCase();
-  
-  // Text similarity (Levenshtein-based)
-  const textSimilarity = 1 - (levenshteinDistance(query, trademarkText) / Math.max(query.length, trademarkText.length));
-  
-  // Phonetic similarity (Soundex-based)
-  const phoneticSimilarity = soundexSimilarity(query, trademarkText);
-  
-  // Semantic similarity (keyword overlap + context)
-  const semanticSimilarity = calculateSemanticSimilarity(query, trademarkText);
-  
-  // Visual similarity (character pattern analysis)
-  const visualSimilarity = calculateVisualSimilarity(query, trademarkText);
-  
-  // WytAi Combined Score (proprietary algorithm)
-  const overall = (textSimilarity * 0.3) + (phoneticSimilarity * 0.25) + (semanticSimilarity * 0.3) + (visualSimilarity * 0.15);
-  
-  // Legal conflict probability
-  const conflictProbability = calculateConflictProbability(overall, trademark);
-  
-  // Opposition risk assessment
-  let oppositionRisk = 'minimal';
-  if (overall > 0.8) oppositionRisk = 'critical';
-  else if (overall > 0.6) oppositionRisk = 'high';
-  else if (overall > 0.4) oppositionRisk = 'moderate';
-  else if (overall > 0.2) oppositionRisk = 'low';
-  
-  return {
-    overall: parseFloat(overall.toFixed(4)),
-    text: parseFloat(textSimilarity.toFixed(4)),
-    phonetic: parseFloat(phoneticSimilarity.toFixed(4)),
-    semantic: parseFloat(semanticSimilarity.toFixed(4)),
-    visual: parseFloat(visualSimilarity.toFixed(4)),
-    conflictProbability: parseFloat(conflictProbability.toFixed(4)),
-    oppositionRisk,
-    reasons: generateSimilarityReasons(overall, textSimilarity, phoneticSimilarity, semanticSimilarity),
-    breakdown: {
-      textWeight: 0.3,
-      phoneticWeight: 0.25,
-      semanticWeight: 0.3,
-      visualWeight: 0.15,
-      algorithm: 'WytAi Proprietary v1.0'
-    },
-    confidence: parseFloat((0.85 + Math.random() * 0.1).toFixed(4))
-  };
-}
+// Trademark analysis functions now imported from services/trademarkAnalysis.ts
 
-function calculateRiskAssessment(results: Trademark[], queryText: string) {
-  if (results.length === 0) {
-    return {
-      level: 'low' as const,
-      confidence: 0.95,
-      summary: 'No similar trademarks found in our database.'
-    };
-  }
-  
-  const highSimilarityCount = results.filter(t => 
-    calculateSimilarityScore(queryText, t).overall > 0.7
-  ).length;
-  
-  const registeredCount = results.filter(t => t.status === 'registered').length;
-  
-  let level: 'low' | 'medium' | 'high' | 'critical' = 'low';
-  let summary = '';
-  
-  if (highSimilarityCount > 0 && registeredCount > 0) {
-    level = 'critical';
-    summary = `Found ${highSimilarityCount} highly similar registered trademarks. High risk of opposition.`;
-  } else if (highSimilarityCount > 0) {
-    level = 'high';
-    summary = `Found ${highSimilarityCount} highly similar trademarks. Moderate risk of conflicts.`;
-  } else if (results.length > 10) {
-    level = 'medium';
-    summary = `Found ${results.length} potentially similar trademarks. Review recommended.`;
-  } else {
-    level = 'low';
-    summary = `Found ${results.length} loosely similar trademarks. Low risk of conflicts.`;
-  }
-  
-  return {
-    level,
-    confidence: parseFloat((0.8 + Math.random() * 0.15).toFixed(4)),
-    summary
-  };
-}
+// Risk assessment function now imported from services/trademarkAnalysis.ts
 
-function generateRecommendations(riskAssessment: any, results: Trademark[]) {
-  const recommendations = [];
-  
-  if (riskAssessment.level === 'critical') {
-    recommendations.push('Strongly consider alternative trademark options');
-    recommendations.push('Consult with IP attorney before proceeding');
-    recommendations.push('Conduct detailed legal analysis of similar marks');
-  } else if (riskAssessment.level === 'high') {
-    recommendations.push('Review similar trademarks carefully');
-    recommendations.push('Consider modifications to reduce similarity');
-    recommendations.push('Prepare stronger distinctiveness arguments');
-  } else if (riskAssessment.level === 'medium') {
-    recommendations.push('Monitor similar trademarks for any changes');
-    recommendations.push('Ensure clear differentiation in application');
-  } else {
-    recommendations.push('Proceed with normal trademark application process');
-    recommendations.push('Maintain monitoring for future conflicts');
-  }
-  
-  return recommendations;
-}
+// Recommendations function now imported from services/trademarkAnalysis.ts
 
-// Basic similarity algorithms (simplified versions)
-function levenshteinDistance(str1: string, str2: string): number {
-  const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
-  
-  for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
-  for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
-  
-  for (let j = 1; j <= str2.length; j++) {
-    for (let i = 1; i <= str1.length; i++) {
-      const substitutionCost = str1[i - 1] === str2[j - 1] ? 0 : 1;
-      matrix[j][i] = Math.min(
-        matrix[j][i - 1] + 1,
-        matrix[j - 1][i] + 1,
-        matrix[j - 1][i - 1] + substitutionCost
-      );
-    }
-  }
-  
-  return matrix[str2.length][str1.length];
-}
+// All similarity algorithms now imported from services/trademarkAnalysis.ts
 
-function soundexSimilarity(str1: string, str2: string): number {
-  const soundex1 = soundex(str1);
-  const soundex2 = soundex(str2);
-  return soundex1 === soundex2 ? 0.9 : 0.1;
-}
+// Sample trademark data initialization now imported from services/trademarkAnalysis.ts
 
-function soundex(str: string): string {
-  const a = str.toLowerCase().split('');
-  const firstLetter = a.shift() || '';
-  const codes: { [key: string]: string } = {
-    a: '', e: '', i: '', o: '', u: '', h: '', w: '', y: '',
-    b: '1', f: '1', p: '1', v: '1',
-    c: '2', g: '2', j: '2', k: '2', q: '2', s: '2', x: '2', z: '2',
-    d: '3', t: '3',
-    l: '4',
-    m: '5', n: '5',
-    r: '6'
-  };
-  
-  return (firstLetter + a.map(letter => codes[letter] || '').join('').replace(/(.)\1+/g, '$1').substring(0, 3)).padEnd(4, '0');
-}
+// Admin auth middleware now imported from customAuth.ts
 
-function calculateSemanticSimilarity(str1: string, str2: string): number {
-  const words1 = str1.split(/\s+/);
-  const words2 = str2.split(/\s+/);
-  const allWords = [...new Set([...words1, ...words2])];
-  
-  const vector1 = allWords.map(word => words1.includes(word) ? 1 : 0);
-  const vector2 = allWords.map(word => words2.includes(word) ? 1 : 0);
-  
-  const dotProduct = vector1.reduce((sum, a, i) => sum + a * vector2[i], 0);
-  const magnitude1 = Math.sqrt(vector1.reduce((sum, a) => sum + a * a, 0));
-  const magnitude2 = Math.sqrt(vector2.reduce((sum, a) => sum + a * a, 0));
-  
-  return magnitude1 && magnitude2 ? dotProduct / (magnitude1 * magnitude2) : 0;
-}
+// Unified authentication middleware now imported from customAuth.ts
 
-function calculateVisualSimilarity(str1: string, str2: string): number {
-  const chars1 = str1.split('').sort();
-  const chars2 = str2.split('').sort();
-  const commonChars = chars1.filter(char => chars2.includes(char)).length;
-  return commonChars / Math.max(chars1.length, chars2.length);
-}
-
-function calculateConflictProbability(similarity: number, trademark: Trademark): number {
-  let baseProbability = similarity;
-  
-  // Increase probability for registered trademarks
-  if (trademark.status === 'registered') baseProbability *= 1.3;
-  
-  // Increase probability for same classification
-  baseProbability *= 1.1;
-  
-  return Math.min(baseProbability, 1.0);
-}
-
-function generateSimilarityReasons(overall: number, text: number, phonetic: number, semantic: number): string[] {
-  const reasons = [];
-  
-  if (text > 0.6) reasons.push('High textual similarity detected');
-  if (phonetic > 0.6) reasons.push('Similar pronunciation patterns');
-  if (semantic > 0.6) reasons.push('Overlapping semantic meaning');
-  if (overall > 0.8) reasons.push('Critical similarity threshold exceeded');
-  
-  return reasons;
-}
-
-// Initialize sample trademark data for demonstration
-async function initializeSampleTrademarkData() {
-  try {
-    // Check if data already exists
-    const existingCount = await db.select({ count: sql<number>`count(*)` }).from(trademarks);
-    if (existingCount[0].count > 0) {
-      console.log('Sample trademark data already exists, skipping initialization');
-      return;
-    }
-
-    const sampleTrademarks = [
-      {
-        applicationNumber: 'TM-2024-001',
-        registrationNumber: 'REG-2024-001',
-        trademarkText: 'TechVision',
-        trademarkType: 'word' as const,
-        applicantName: 'TechVision Technologies Pvt Ltd',
-        applicantAddress: 'Bangalore, Karnataka, India',
-        applicantCountry: 'India',
-        niceClassification: 'class_9' as const,
-        goodsServices: 'Computer software, mobile applications, electronic devices',
-        status: 'registered' as const,
-        filingDate: new Date('2024-01-15'),
-        registrationDate: new Date('2024-06-15'),
-        dataSource: 'ipo_official',
-        searchKeywords: ['tech', 'vision', 'technology', 'software'],
-      },
-      {
-        applicationNumber: 'TM-2024-002',
-        registrationNumber: null,
-        trademarkText: 'SmartFlow',
-        trademarkType: 'word' as const,
-        applicantName: 'FlowTech Solutions India Ltd',
-        applicantAddress: 'Mumbai, Maharashtra, India',
-        applicantCountry: 'India',
-        niceClassification: 'class_35' as const,
-        goodsServices: 'Business management, business administration, office functions',
-        status: 'pending' as const,
-        filingDate: new Date('2024-03-20'),
-        dataSource: 'ipo_official',
-        searchKeywords: ['smart', 'flow', 'business', 'management'],
-      },
-      {
-        applicationNumber: 'TM-2024-003',
-        registrationNumber: 'REG-2024-003',
-        trademarkText: 'AyurHealth',
-        trademarkType: 'word' as const,
-        applicantName: 'Ayurveda Health Care Pvt Ltd',
-        applicantAddress: 'Kerala, India',
-        applicantCountry: 'India',
-        niceClassification: 'class_5' as const,
-        goodsServices: 'Pharmaceutical preparations, herbal medicines, dietary supplements',
-        status: 'registered' as const,
-        filingDate: new Date('2023-08-10'),
-        registrationDate: new Date('2024-02-10'),
-        dataSource: 'ipo_official',
-        searchKeywords: ['ayur', 'health', 'ayurveda', 'medicine'],
-      },
-      {
-        applicationNumber: 'TM-2024-004',
-        registrationNumber: null,
-        trademarkText: 'EcoGreen',
-        trademarkType: 'word' as const,
-        applicantName: 'Green Energy Solutions Pvt Ltd',
-        applicantAddress: 'Pune, Maharashtra, India',
-        applicantCountry: 'India',
-        niceClassification: 'class_4' as const,
-        goodsServices: 'Industrial oils and greases, fuels, illuminants, candles',
-        status: 'opposed' as const,
-        filingDate: new Date('2024-02-28'),
-        dataSource: 'ipo_official',
-        searchKeywords: ['eco', 'green', 'energy', 'environment'],
-        oppositions: [{ reason: 'Similar existing trademark', date: '2024-05-15' }],
-      },
-      {
-        applicationNumber: 'TM-2024-005',
-        registrationNumber: 'REG-2024-005',
-        trademarkText: 'FoodieExpress',
-        trademarkType: 'word' as const,
-        applicantName: 'Express Food Delivery Pvt Ltd',
-        applicantAddress: 'Delhi, India',
-        applicantCountry: 'India',
-        niceClassification: 'class_43' as const,
-        goodsServices: 'Services for providing food and drink; temporary accommodation',
-        status: 'registered' as const,
-        filingDate: new Date('2023-11-05'),
-        registrationDate: new Date('2024-04-05'),
-        dataSource: 'ipo_official',
-        searchKeywords: ['foodie', 'express', 'food', 'delivery'],
-      },
-      {
-        applicationNumber: 'TM-2024-006',
-        registrationNumber: null,
-        trademarkText: 'TechFlow',
-        trademarkType: 'word' as const,
-        applicantName: 'Tech Flow Innovations Ltd',
-        applicantAddress: 'Hyderabad, Telangana, India',
-        applicantCountry: 'India',
-        niceClassification: 'class_9' as const,
-        goodsServices: 'Computer software, IT services, cloud computing',
-        status: 'pending' as const,
-        filingDate: new Date('2024-04-10'),
-        dataSource: 'ipo_official',
-        searchKeywords: ['tech', 'flow', 'technology', 'innovation'],
-      }
-    ];
-
-    await db.insert(trademarks).values(sampleTrademarks);
-    console.log('Sample trademark data initialized successfully');
-  } catch (error) {
-    console.error('Error initializing sample trademark data:', error);
-  }
-}
-
-// Enhanced auth middleware for admin routes  
-const adminAuthMiddleware = async (req: any, res: any, next: any) => {
-  try {
-    let user = req.user;
-
-    // If no OIDC user, check for WhatsApp authentication
-    if (!user && req.session?.whatsappUserId) {
-      const whatsappAuthService = await import('./services/whatsappAuth');
-      user = await whatsappAuthService.findWhatsAppUser(req.session.whatsappNumber);
-    }
-
-    // Return 401 if no authenticated user found
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Authentication required'
-      });
-    }
-
-    // Enhanced Super Admin check including new admin auth
-    const isAdminAuthenticated = Boolean((req.session as any)?.adminAuth && (req.session as any)?.adminUserId);
-    const isSuperAdmin = Boolean(
-      user?.isSuperAdmin || 
-      user?.role === 'super_admin' ||
-      (user?.whatsappNumber === '+919345228184') ||
-      (req.session?.superAdminAuth && user?.whatsappNumber === '+919345228184') ||
-      (isAdminAuthenticated && user?.whatsappNumber === '+919345228184') ||
-      (process.env.NODE_ENV === 'development' && user?.whatsappNumber)
-    );
-
-    // Return 403 if authenticated but not super admin
-    if (!isSuperAdmin) {
-      return res.status(403).json({
-        success: false,
-        error: 'Access denied: Super Admin required'
-      });
-    }
-
-    // Attach user to request for downstream handlers
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error('Admin auth middleware error:', error);
-    return res.status(500).json({
-      success: false,
-      error: 'Authentication error'
-    });
-  }
-};
-
-// Enhanced authentication middleware that supports both WhatsApp and custom auth
-const isAuthenticatedUnified = async (req: any, res: any, next: any) => {
-  let user = null;
-  
-  // First, try WhatsApp authentication by checking session
-  const whatsappUserId = (req.session as any)?.whatsappUserId;
-  const whatsappNumber = (req.session as any)?.whatsappNumber;
-  
-  if (whatsappUserId && whatsappNumber) {
-    try {
-      user = await whatsappAuthService.findWhatsAppUser(whatsappNumber);
-      if (user && user.isVerified && user.id === whatsappUserId) {
-        // Attach WhatsApp user to request with proper structure
-        (req as any).user = {
-          id: user.id,
-          tenantId: user.tenantId,
-          email: user.email || `${user.whatsappNumber}@wytnet.local`,
-          whatsappNumber: user.whatsappNumber,
-          isSuperAdmin: user.isSuperAdmin,
-          role: user.role,
-          claims: { sub: user.id }
-        };
-        return next();
-      }
-    } catch (error) {
-      console.error("WhatsApp auth error:", error);
-    }
-  }
-  
-  // Fallback to custom authentication
-  const sessionUser = (req.session as any)?.user;
-  if (sessionUser) {
-    try {
-      const customUser = await storage.getUser(sessionUser.id);
-      if (customUser) {
-        (req as any).user = { 
-          id: customUser.id,
-          tenantId: customUser.tenantId,
-          email: customUser.email,
-          isSuperAdmin: false, // Custom auth users are not super admin
-          claims: { sub: customUser.id }
-        };
-        return next();
-      }
-    } catch (error) {
-      console.error("Custom auth error:", error);
-    }
-  }
-  
-  // No authentication found
-  return res.status(401).json({ message: "Unauthorized" });
-};
-
-// Unified Principal resolver for both authentication systems  
-async function getPrincipal(req: any): Promise<Principal | null> {
-  // First, try to resolve from custom auth session
-  const sessionUser = req.session?.user;
-  if (sessionUser) {
-    // Handle different session types
-    if (sessionUser.type === 'whatsapp') {
-      // WhatsApp user session
-      const whatsappAuthService = await import('./services/whatsappAuth');
-      const whatsappUser = await whatsappAuthService.findWhatsAppUserById(sessionUser.id);
-      if (whatsappUser) {
-        return {
-          id: whatsappUser.id,
-          tenantId: whatsappUser.tenantId!,
-          role: whatsappUser.role,
-          isSuperAdmin: whatsappUser.isSuperAdmin || false,
-          email: whatsappUser.email || undefined,
-          name: whatsappUser.name,
-          mobileNumber: whatsappUser.whatsappNumber,
-          profileImageUrl: whatsappUser.profileImageUrl || undefined,
-          provider: 'whatsapp' as const
-        };
-      }
-    } else {
-      // Legacy user session
-      const user = await storage.getUser(sessionUser.id);
-      if (user) {
-        return {
-          id: user.id,
-          tenantId: user.tenantId || '',
-          role: 'user',
-          isSuperAdmin: false,
-          email: user.email || undefined,
-          firstName: user.firstName || undefined,
-          lastName: user.lastName || undefined,
-          name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}`.trim() : undefined,
-          profileImageUrl: user.profileImageUrl || undefined,
-          provider: 'legacy' as const
-        };
-      }
-    }
-  }
-
-  // Fallback to Replit Auth (OIDC) session
-  if (req.isAuthenticated && req.isAuthenticated() && req.user?.claims) {
-    const claims = req.user.claims;
-    
-    // Try to get or create user from OIDC claims
-    let user = await storage.getUser(claims.sub);
-    if (!user) {
-      // Get or create default tenant for OIDC users
-      let defaultTenant = await storage.getTenantBySlug('default');
-      if (!defaultTenant) {
-        defaultTenant = await storage.createTenant({
-          id: `ten_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          name: 'Default Organization',
-          slug: 'default',
-          domain: 'wytnet.com',
-          settings: {},
-          isActive: true,
-        });
-      }
-
-      user = await storage.upsertUser({
-        id: claims.sub,
-        email: claims.email,
-        firstName: claims.first_name,
-        lastName: claims.last_name,
-        profileImageUrl: claims.profile_image_url,
-        tenantId: defaultTenant.id,
-      });
-    }
-
-    return {
-      id: user.id,
-      tenantId: user.tenantId || '',
-      email: user.email || undefined,
-      firstName: user.firstName || undefined,
-      lastName: user.lastName || undefined,
-      name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}`.trim() : undefined,
-      profileImageUrl: user.profileImageUrl || undefined,
-      provider: 'replit' as const
-    };
-  }
-
-  return null;
-}
+// Principal resolver now imported from customAuth.ts
 
 export async function registerRoutes(app: Express): Promise<void> {
   // Setup both authentication systems
@@ -742,7 +284,10 @@ export async function registerRoutes(app: Express): Promise<void> {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
 
-      const apps = await storage.getAppsByTenant(user?.tenantId);
+      if (!user?.tenantId) {
+        return res.status(403).json({ message: "No tenant access" });
+      }
+      const apps = await storage.getAppsByTenant(user.tenantId);
       res.json(apps);
     } catch (error) {
       console.error("Error fetching apps:", error);
@@ -755,9 +300,12 @@ export async function registerRoutes(app: Express): Promise<void> {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
 
+      if (!user?.tenantId) {
+        return res.status(403).json({ message: "No tenant access" });
+      }
       const validatedData = insertAppSchema.parse({
         ...req.body,
-        tenantId: user?.tenantId,
+        tenantId: user.tenantId,
         createdBy: user.id,
       });
 
@@ -1165,7 +713,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         searchType,
         filters,
         totalResults: results.length,
-        aiConfidenceScore: riskAssessment.confidence,
+        aiConfidenceScore: riskAssessment.confidence.toString(),
         riskAssessment: riskAssessment.level,
         recommendedActions,
         searchDuration,
@@ -1194,7 +742,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             confidence: similarity.confidence,
           };
 
-          await db.insert(trademarkSimilarities).values(similarityRecord);
+          await db.insert(trademarkSimilarities).values([similarityRecord]);
           
           return {
             trademark,
@@ -1687,11 +1235,14 @@ export async function registerRoutes(app: Express): Promise<void> {
         if (superAdminUser.length > 0) {
           const user = superAdminUser[0];
           
-          // Set hardened admin session
-          (req.session as any).adminUserId = user.id;
-          (req.session as any).adminNumber = user.whatsappNumber;
-          (req.session as any).adminRole = user.role;
-          (req.session as any).adminAuth = true;
+          // Set unified session structure for admin users
+          (req.session as any).user = {
+            type: 'whatsapp' as const,
+            id: user.id,
+            tenantId: user.tenantId || 'admin_tenant',
+            role: user.role || 'super_admin',
+            isSuperAdmin: true
+          };
           
           // Check if MFA is required (for future implementation)
           const requiresMFA = false; // Set to true when MFA is implemented
@@ -1749,12 +1300,14 @@ export async function registerRoutes(app: Express): Promise<void> {
         if (superAdminUser.length > 0) {
           const user = superAdminUser[0];
           
-          // Set complete admin session
-          (req.session as any).adminUserId = user.id;
-          (req.session as any).adminNumber = user.whatsappNumber;
-          (req.session as any).adminRole = user.role;
-          (req.session as any).adminAuth = true;
-          (req.session as any).adminMFAVerified = true;
+          // Set unified session structure for admin users
+          (req.session as any).user = {
+            type: 'whatsapp' as const,
+            id: user.id,
+            tenantId: user.tenantId || 'admin_tenant',
+            role: user.role || 'super_admin',
+            isSuperAdmin: true
+          };
           
           return res.json({
             success: true,
@@ -1785,15 +1338,15 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Check admin authentication status
   app.get('/api/auth/admin/status', async (req, res) => {
     try {
-      const adminAuth = (req.session as any)?.adminAuth;
-      const adminUserId = (req.session as any)?.adminUserId;
+      const sessionUser = (req.session as any)?.user;
       
-      if (adminAuth && adminUserId) {
+      if (sessionUser && sessionUser.isSuperAdmin) {
         return res.json({
           authenticated: true,
           user: {
-            id: adminUserId,
-            role: (req.session as any)?.adminRole || 'admin'
+            id: sessionUser.id,
+            role: sessionUser.role || 'super_admin',
+            isSuperAdmin: sessionUser.isSuperAdmin
           }
         });
       }
@@ -1807,10 +1360,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Get current admin user info
   app.get('/api/auth/admin/user', async (req, res) => {
     try {
-      const adminAuth = (req.session as any)?.adminAuth;
-      const adminUserId = (req.session as any)?.adminUserId;
+      const sessionUser = (req.session as any)?.user;
       
-      if (!adminAuth || !adminUserId) {
+      if (!sessionUser || !sessionUser.isSuperAdmin) {
         return res.status(401).json({ error: 'Not authenticated' });
       }
       
@@ -1818,7 +1370,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const adminUser = await db
         .select()
         .from(whatsappUsers)
-        .where(eq(whatsappUsers.id, adminUserId))
+        .where(eq(whatsappUsers.id, sessionUser.id))
         .limit(1);
 
       if (adminUser.length > 0) {
@@ -1841,12 +1393,8 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Admin logout
   app.post('/api/auth/admin/logout', async (req, res) => {
     try {
-      // Clear admin session
-      delete (req.session as any).adminUserId;
-      delete (req.session as any).adminNumber;
-      delete (req.session as any).adminRole;
-      delete (req.session as any).adminAuth;
-      delete (req.session as any).adminMFAVerified;
+      // Clear unified session
+      delete (req.session as any).user;
       
       return res.json({
         success: true,
@@ -1988,7 +1536,6 @@ export async function registerRoutes(app: Express): Promise<void> {
           country,
           gender: undefined,
           dateOfBirth: undefined,
-          role: 'user', // Role is determined by isSuperAdmin logic
           isVerified: true,
         });
       }
@@ -3879,7 +3426,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
 
       // Verify OTP first using WhatsApp auth service
-      const otpVerification = await whatsappAuthService.verifyOtp(verifiedMobileNumber, otpToken);
+      const otpVerification = await whatsappAuthService.verifyOTP(verifiedMobileNumber, otpToken);
       if (!otpVerification.success) {
         return res.status(400).json({
           success: false,
