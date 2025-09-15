@@ -36,11 +36,9 @@ export default function MobileNavigation() {
   const [profileOpen, setProfileOpen] = useState(false);
 
   const publicNavItems = [
-    { icon: Home, label: 'Home', href: '/', badge: null },
     { icon: Bot, label: 'AI Directory', href: '/ai-directory', badge: 'LIVE' },
     { icon: QrCode, label: 'QR Generator', href: '/qr-generator', badge: 'LIVE' },
     { icon: Activity, label: 'DISC Assessment', href: '/assessment', badge: 'LIVE' },
-    { icon: Briefcase, label: 'WytApps', href: '/wytapps', badge: null },
     { icon: Smartphone, label: 'Install App', href: '/mobile-app', badge: null },
   ];
 
@@ -125,30 +123,6 @@ export default function MobileNavigation() {
         </div>
       </div>
 
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-2 flex items-center justify-around z-40 md:hidden">
-        {[
-          { icon: Home, label: 'Home', href: '/' },
-          { icon: Search, label: 'Search', href: '/search' },
-          { icon: Brain, label: 'WytAi', href: '/wytai-trademark' },
-          isAuthenticated 
-            ? { icon: BarChart3, label: 'Dashboard', href: '/dashboard' }
-            : { icon: MessageCircle, label: 'Login', href: '/whatsapp-auth' }
-        ].map((item, index) => (
-          <Link key={index} href={item.href} className="flex-1">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className={`w-full h-12 flex flex-col items-center justify-center p-1 ${
-                location === item.href ? 'text-blue-600 bg-blue-50' : 'text-gray-600'
-              }`}
-            >
-              <item.icon className="h-5 w-5" />
-              <span className="text-xs mt-1 leading-none">{item.label}</span>
-            </Button>
-          </Link>
-        ))}
-      </div>
 
       {/* Mobile Menu Sheet */}
       <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
@@ -259,8 +233,6 @@ export default function MobileNavigation() {
         </BottomSheet>
       )}
 
-      {/* Bottom padding to prevent content from being hidden behind bottom nav */}
-      <div className="h-16 md:hidden" />
     </>
   );
 }

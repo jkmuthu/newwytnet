@@ -1,37 +1,15 @@
 import { Link, useLocation } from "wouter";
-import { Home, Bot, Wrench, Globe, Briefcase, LogIn } from "lucide-react";
 import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
+import { bottomNavItems } from "./nav.config";
 
 export default function MobileBottomNavigation() {
   const [location] = useLocation();
   const { isAuthenticated } = useWhatsAppAuth();
 
-  const navItems = [
-    {
-      href: "/",
-      icon: Home,
-      label: "Home",
-      active: location === "/"
-    },
-    {
-      href: "/ai-directory", 
-      icon: Bot,
-      label: "AI Directory",
-      active: location === "/ai-directory"
-    },
-    {
-      href: "/qr-generator",
-      icon: Wrench,
-      label: "WytTools",
-      active: location === "/qr-generator" || location === "/assessment"
-    },
-    {
-      href: "/wytapps",
-      icon: Briefcase,
-      label: "WytApps",
-      active: location === "/wytapps"
-    }
-  ];
+  const navItems = bottomNavItems.map(item => ({
+    ...item,
+    active: item.activeRoutes.includes(location)
+  }));
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50 md:hidden">
