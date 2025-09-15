@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LogIn, Eye, EyeOff, MessageCircle } from "lucide-react";
+import { FcGoogle } from "react-icons/fc";
+import { SiFacebook } from "react-icons/si";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -67,6 +69,20 @@ export default function LoginPage() {
   const handleWhatsAppLogin = () => {
     // Redirect to white-label WhatsApp OTP authentication
     window.location.href = '/whatsapp-auth';
+  };
+
+  const handleGoogleLogin = () => {
+    // TODO: Implement white-label Google OAuth
+    // User will provide Google API credentials
+    console.log("Google login - waiting for API credentials");
+    alert("Google login will be available once you provide Google API credentials");
+  };
+
+  const handleFacebookLogin = () => {
+    // TODO: Implement white-label Facebook OAuth
+    // User will provide Facebook API credentials
+    console.log("Facebook login - waiting for API credentials");
+    alert("Facebook login will be available once you provide Facebook API credentials");
   };
 
   const countryOptions = [
@@ -180,21 +196,47 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* WhatsApp Login Option */}
+          {/* Social Login Options */}
           <div className="space-y-3">
             <div className="text-center text-sm font-medium text-gray-600 dark:text-gray-400">
-              Or login with:
+              Login / Join with
             </div>
             
-            <Button 
-              variant="outline" 
-              onClick={handleWhatsAppLogin}
-              className="w-full bg-green-50 hover:bg-green-100 border-green-200 text-green-700"
-              data-testid="button-whatsapp-login"
-            >
-              <MessageCircle className="h-5 w-5 mr-2" />
-              WhatsApp OTP
-            </Button>
+            <div className="grid grid-cols-3 gap-3">
+              <Button 
+                variant="outline" 
+                onClick={handleWhatsAppLogin}
+                className="w-full bg-green-50 hover:bg-green-100 border-green-200 text-green-700"
+                data-testid="button-whatsapp-login"
+              >
+                <MessageCircle className="h-4 w-4 mr-1" />
+                WhatsApp
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={handleGoogleLogin}
+                className="w-full"
+                data-testid="button-google-login"
+              >
+                <FcGoogle className="h-4 w-4 mr-1" />
+                Google
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={handleFacebookLogin}
+                className="w-full"
+                data-testid="button-facebook-login"
+              >
+                <SiFacebook className="h-4 w-4 mr-1 text-blue-600" />
+                Facebook
+              </Button>
+            </div>
+            
+            <div className="text-center text-xs text-gray-500 dark:text-gray-400">
+              Note: Mobile number will be your username across all login methods
+            </div>
           </div>
           
           <div className="pt-4 border-t">
