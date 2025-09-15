@@ -26,6 +26,7 @@ import Landing from "@/pages/landing";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "@/pages/not-found";
 import MobileAppPage from "@/pages/MobileAppPage";
+import ComingSoon from "@/pages/coming-soon";
 
 // New content pages
 import WytApps from "@/pages/wytapps";
@@ -123,6 +124,15 @@ function Router() {
         <Route path="/terms" component={Terms} />
         <Route path="/help" component={Help} />
         <Route path="/status" component={Status} />
+        
+        {/* Coming Soon routes for tools in development */}
+        <Route path="/business-card-designer" component={ComingSoon} />
+        <Route path="/expense-calculator" component={ComingSoon} />
+        <Route path="/habit-tracker" component={ComingSoon} />
+        <Route path="/invoice-generator" component={ComingSoon} />
+        <Route path="/astro-predictor" component={ComingSoon} />
+        <Route path="/quote-generator" component={ComingSoon} />
+        <Route path="/unit-converter" component={ComingSoon} />
         
         {/* Protected routes - authentication required (dashboard has its own layout) */}
         <Route path="/analytics" component={AdminAnalytics} />
