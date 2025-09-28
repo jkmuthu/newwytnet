@@ -11,6 +11,13 @@ import {
   plans,
   media,
   auditLogs,
+  marketplaceApps,
+  appPricing,
+  userAppSubscriptions,
+  appUsage,
+  userAppData,
+  marketplaceHubs,
+  hubItems,
   wytidEntities,
   wytidProofs,
   wytidTransfers,
@@ -49,6 +56,14 @@ import {
   type InsertAssessmentSession,
   type InsertAssessmentResponse,
   type InsertAssessmentResult,
+  type MarketplaceApp,
+  type InsertMarketplaceApp,
+  type AppPricing,
+  type InsertAppPricing,
+  type MarketplaceHub,
+  type InsertMarketplaceHub,
+  type HubItem,
+  type InsertHubItem,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, like, count, sql } from "drizzle-orm";
@@ -156,6 +171,31 @@ export interface IStorage {
     totalTransfers: number;
     recentActivity: number;
   }>;
+
+  // Marketplace Apps operations
+  getMarketplaceApps(): Promise<(MarketplaceApp & { pricing: AppPricing[] })[]>;
+  getMarketplaceApp(id: string): Promise<(MarketplaceApp & { pricing: AppPricing[] }) | undefined>;
+  createMarketplaceApp(appData: InsertMarketplaceApp, pricingData: InsertAppPricing[]): Promise<MarketplaceApp>;
+  updateMarketplaceApp(id: string, data: Partial<InsertMarketplaceApp>): Promise<MarketplaceApp | undefined>;
+  deleteMarketplaceApp(id: string): Promise<boolean>;
+
+  // User App Subscriptions operations
+  getUserAppSubscriptions(userId: string): Promise<any[]>;
+  createAppPurchase(purchaseData: { appId: string; userId: string; pricingType: string; amount: number; paymentId?: string }): Promise<any>;
+  checkUserAppOwnership(userId: string, appId: string): Promise<boolean>;
+
+  // Marketplace Hubs operations
+  getMarketplaceHubs(): Promise<(MarketplaceHub & { items: HubItem[] })[]>;
+  getMarketplaceHub(id: string): Promise<(MarketplaceHub & { items: HubItem[] }) | undefined>;
+  createMarketplaceHub(hubData: InsertMarketplaceHub): Promise<MarketplaceHub>;
+  updateMarketplaceHub(id: string, data: Partial<InsertMarketplaceHub>): Promise<MarketplaceHub | undefined>;
+  deleteMarketplaceHub(id: string): Promise<boolean>;
+
+  // Hub Items operations
+  getHubItems(hubId: string): Promise<HubItem[]>;
+  createHubItem(itemData: InsertHubItem): Promise<HubItem>;
+  updateHubItem(id: string, data: Partial<InsertHubItem>): Promise<HubItem | undefined>;
+  deleteHubItem(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -924,6 +964,156 @@ export class DatabaseStorage implements IStorage {
       totalTransfers: transfersCount.count,
       recentActivity: recentActivity.count,
     };
+  }
+
+  // Marketplace Apps operations
+  async getMarketplaceApps(): Promise<(MarketplaceApp & { pricing: AppPricing[] })[]> {
+    const apps = await db.select().from(marketplaceApps).where(eq(marketplaceApps.isActive, true));
+    
+    const appsWithPricing = await Promise.all(
+      apps.map(async (app) => {
+        const pricing = await db.select().from(appPricing).where(eq(appPricing.appId, app.id));
+        return { ...app, pricing };
+      })
+    );
+    
+    return appsWithPricing;
+  }
+
+  async getMarketplaceApp(id: string): Promise<(MarketplaceApp & { pricing: AppPricing[] }) | undefined> {
+    const [app] = await db.select().from(marketplaceApps).where(eq(marketplaceApps.id, id));
+    if (!app) return undefined;
+    
+    const pricing = await db.select().from(appPricing).where(eq(appPricing.appId, app.id));
+    return { ...app, pricing };
+  }
+
+  async createMarketplaceApp(appData: InsertMarketplaceApp, pricingData: InsertAppPricing[]): Promise<MarketplaceApp> {
+    const [app] = await db.insert(marketplaceApps).values(appData).returning();
+    
+    // Add pricing for the app
+    if (pricingData.length > 0) {
+      const pricingWithAppId = pricingData.map(p => ({ ...p, appId: app.id }));
+      await db.insert(appPricing).values(pricingWithAppId);
+    }
+    
+    return app;
+  }
+
+  async updateMarketplaceApp(id: string, data: Partial<InsertMarketplaceApp>): Promise<MarketplaceApp | undefined> {
+    const [app] = await db.update(marketplaceApps)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(marketplaceApps.id, id))
+      .returning();
+    
+    return app;
+  }
+
+  async deleteMarketplaceApp(id: string): Promise<boolean> {
+    const result = await db.delete(marketplaceApps).where(eq(marketplaceApps.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // User App Subscriptions operations
+  async getUserAppSubscriptions(userId: string): Promise<any[]> {
+    return await db.select().from(userAppSubscriptions).where(eq(userAppSubscriptions.userId, userId));
+  }
+
+  async createAppPurchase(purchaseData: { appId: string; userId: string; pricingType: string; amount: number; paymentId?: string }): Promise<any> {
+    // First, find the pricing record for this app and pricing type
+    const [pricing] = await db.select().from(appPricing)
+      .where(and(eq(appPricing.appId, purchaseData.appId), eq(appPricing.pricingType, purchaseData.pricingType)));
+    
+    if (!pricing) {
+      throw new Error(`Pricing not found for app ${purchaseData.appId} with type ${purchaseData.pricingType}`);
+    }
+
+    const [subscription] = await db.insert(userAppSubscriptions).values({
+      userId: purchaseData.userId,
+      appId: purchaseData.appId,
+      pricingId: pricing.id,
+      status: 'active',
+      startDate: new Date(),
+      usageRemaining: pricing.usageLimit,
+      endDate: pricing.pricingType === 'monthly' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) :
+               pricing.pricingType === 'yearly' ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) : 
+               null
+    }).returning();
+    
+    return subscription;
+  }
+
+  async checkUserAppOwnership(userId: string, appId: string): Promise<boolean> {
+    const [subscription] = await db.select()
+      .from(userAppSubscriptions)
+      .where(and(eq(userAppSubscriptions.userId, userId), eq(userAppSubscriptions.appId, appId)));
+    
+    return !!subscription;
+  }
+
+  // Marketplace Hubs operations
+  async getMarketplaceHubs(): Promise<(MarketplaceHub & { items: HubItem[] })[]> {
+    const hubs = await db.select().from(marketplaceHubs).where(eq(marketplaceHubs.isActive, true));
+    
+    const hubsWithItems = await Promise.all(
+      hubs.map(async (hub) => {
+        const items = await db.select().from(hubItems).where(eq(hubItems.hubId, hub.id));
+        return { ...hub, items };
+      })
+    );
+    
+    return hubsWithItems;
+  }
+
+  async getMarketplaceHub(id: string): Promise<(MarketplaceHub & { items: HubItem[] }) | undefined> {
+    const [hub] = await db.select().from(marketplaceHubs).where(eq(marketplaceHubs.id, id));
+    if (!hub) return undefined;
+    
+    const items = await db.select().from(hubItems).where(eq(hubItems.hubId, hub.id));
+    return { ...hub, items };
+  }
+
+  async createMarketplaceHub(hubData: InsertMarketplaceHub): Promise<MarketplaceHub> {
+    const [hub] = await db.insert(marketplaceHubs).values(hubData).returning();
+    return hub;
+  }
+
+  async updateMarketplaceHub(id: string, data: Partial<InsertMarketplaceHub>): Promise<MarketplaceHub | undefined> {
+    const [hub] = await db.update(marketplaceHubs)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(marketplaceHubs.id, id))
+      .returning();
+    
+    return hub;
+  }
+
+  async deleteMarketplaceHub(id: string): Promise<boolean> {
+    const result = await db.delete(marketplaceHubs).where(eq(marketplaceHubs.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Hub Items operations
+  async getHubItems(hubId: string): Promise<HubItem[]> {
+    return await db.select().from(hubItems).where(eq(hubItems.hubId, hubId));
+  }
+
+  async createHubItem(itemData: InsertHubItem): Promise<HubItem> {
+    const [item] = await db.insert(hubItems).values(itemData).returning();
+    return item;
+  }
+
+  async updateHubItem(id: string, data: Partial<InsertHubItem>): Promise<HubItem | undefined> {
+    const [item] = await db.update(hubItems)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(hubItems.id, id))
+      .returning();
+    
+    return item;
+  }
+
+  async deleteHubItem(id: string): Promise<boolean> {
+    const result = await db.delete(hubItems).where(eq(hubItems.id, id));
+    return (result.rowCount || 0) > 0;
   }
 }
 

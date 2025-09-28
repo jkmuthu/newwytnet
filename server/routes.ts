@@ -396,6 +396,123 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Marketplace API Routes
+  
+  // Get marketplace apps with pricing
+  app.get('/api/marketplace/apps', async (req: any, res) => {
+    try {
+      const apps = await storage.getMarketplaceApps();
+      
+      // Check user ownership if authenticated
+      let appsWithOwnership = apps;
+      if (req.user) {
+        const userId = req.user.claims?.sub || req.user.id;
+        appsWithOwnership = await Promise.all(
+          apps.map(async (app) => {
+            const owned = await storage.checkUserAppOwnership(userId, app.id);
+            return { ...app, owned };
+          })
+        );
+      } else {
+        appsWithOwnership = apps.map(app => ({ ...app, owned: false }));
+      }
+      
+      res.json(appsWithOwnership);
+    } catch (error) {
+      console.error("Error fetching marketplace apps:", error);
+      res.status(500).json({ message: "Failed to fetch marketplace apps" });
+    }
+  });
+
+  // Get single marketplace app
+  app.get('/api/marketplace/apps/:id', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const app = await storage.getMarketplaceApp(id);
+      
+      if (!app) {
+        return res.status(404).json({ message: "App not found" });
+      }
+
+      // Check user ownership if authenticated
+      let owned = false;
+      if (req.user) {
+        const userId = req.user.claims?.sub || req.user.id;
+        owned = await storage.checkUserAppOwnership(userId, app.id);
+      }
+      
+      res.json({ ...app, owned });
+    } catch (error) {
+      console.error("Error fetching marketplace app:", error);
+      res.status(500).json({ message: "Failed to fetch marketplace app" });
+    }
+  });
+
+  // Purchase marketplace app
+  app.post('/api/marketplace/purchase', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims?.sub || req.user.id;
+      const { appId, pricingType, amount, paymentId, orderId, signature } = req.body;
+
+      // Validate the purchase data
+      if (!appId || !pricingType) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Check if user already owns this app
+      const alreadyOwned = await storage.checkUserAppOwnership(userId, appId);
+      if (alreadyOwned) {
+        return res.status(400).json({ message: "You already own this app" });
+      }
+
+      // Create the purchase record
+      const purchase = await storage.createAppPurchase({
+        appId,
+        userId,
+        pricingType,
+        amount: amount || 0,
+        paymentId
+      });
+
+      res.json({ 
+        success: true, 
+        message: "Purchase successful",
+        purchase 
+      });
+    } catch (error) {
+      console.error("Error processing purchase:", error);
+      res.status(500).json({ message: "Failed to process purchase" });
+    }
+  });
+
+  // Get marketplace hubs
+  app.get('/api/marketplace/hubs', async (req: any, res) => {
+    try {
+      const hubs = await storage.getMarketplaceHubs();
+      res.json(hubs);
+    } catch (error) {
+      console.error("Error fetching marketplace hubs:", error);
+      res.status(500).json({ message: "Failed to fetch marketplace hubs" });
+    }
+  });
+
+  // Get single marketplace hub
+  app.get('/api/marketplace/hubs/:id', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const hub = await storage.getMarketplaceHub(id);
+      
+      if (!hub) {
+        return res.status(404).json({ message: "Hub not found" });
+      }
+      
+      res.json(hub);
+    } catch (error) {
+      console.error("Error fetching marketplace hub:", error);
+      res.status(500).json({ message: "Failed to fetch marketplace hub" });
+    }
+  });
+
   // WytID API Routes
   
   // Get WytID stats for dashboard
