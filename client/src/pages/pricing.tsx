@@ -1,28 +1,38 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CheckCircle, Heart, Zap, Crown, Star, Gift, Users } from "lucide-react";
+import { ArrowRight, CheckCircle, Heart, Zap, Crown, Star, Gift, Users, Globe } from "lucide-react";
 import { Link } from "wouter";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function Pricing() {
+  const currencies = {
+    INR: { symbol: '₹', name: 'Indian Rupee', flag: '🇮🇳' },
+    USD: { symbol: '$', name: 'US Dollar', flag: '🇺🇸' },
+    EUR: { symbol: '€', name: 'Euro', flag: '🇪🇺' },
+    GBP: { symbol: '£', name: 'British Pound', flag: '🇬🇧' }
+  } as const;
+  
+  type CurrencyCode = keyof typeof currencies;
+  const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('INR');
+  
   // Set page-specific SEO meta tags
   useEffect(() => {
-    document.title = "Pricing - 100% Free Professional Tools | WytNet";
+    document.title = "Pricing - From ₹0 to Industry's Lowest Cost | WytNet";
     
     // Update meta description
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
-      metaDescription.setAttribute('content', 'WytNet offers 100% free professional productivity tools forever. No subscriptions, no hidden fees, no premium tiers. Access all features instantly.');
+      metaDescription.setAttribute('content', 'WytNet pricing starts from ₹0 with industry\'s lowest cost. Multi-currency support with professional productivity tools. No hidden fees, transparent pricing.');
     }
     
     // Update OG tags
     const ogTitle = document.querySelector('meta[property="og:title"]');
     const ogDescription = document.querySelector('meta[property="og:description"]');
-    if (ogTitle) ogTitle.setAttribute('content', 'WytNet Pricing - 100% Free Forever');
-    if (ogDescription) ogDescription.setAttribute('content', 'Professional productivity tools completely free. No subscriptions, no hidden costs, unlimited usage.');
+    if (ogTitle) ogTitle.setAttribute('content', 'WytNet Pricing - From ₹0 to Industry\'s Lowest Cost');
+    if (ogDescription) ogDescription.setAttribute('content', 'Transparent pricing from ₹0 with multi-currency support. Industry\'s lowest cost for professional productivity tools.');
     
     return () => {
       // Reset to default meta tags on cleanup
@@ -111,26 +121,49 @@ export default function Pricing() {
           </div>
           
           <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6 bg-gradient-to-r from-green-600 via-blue-600 to-purple-600 bg-clip-text text-transparent leading-tight">
-            Simple, Transparent Pricing
+            From ₹0 to Industry's Lowest Cost
           </h1>
           
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-4xl mx-auto leading-relaxed">
-            Professional productivity tools shouldn't break the bank. That's why <strong>everything is free</strong> - 
-            no hidden costs, no premium tiers, no subscriptions. Just powerful tools when you need them.
+            Professional productivity tools starting from <strong>₹0 with industry's most competitive pricing</strong>. 
+            Multi-currency support, transparent costs, no hidden fees. Scale from free tools to enterprise solutions.
           </p>
+          
+          {/* Currency Selector */}
+          <div className="flex justify-center mb-8">
+            <div className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center space-x-1">
+                <Globe className="h-4 w-4 text-gray-500 mr-2" />
+                {(Object.entries(currencies) as [CurrencyCode, typeof currencies[CurrencyCode]][]).map(([code, currency]) => (
+                  <button
+                    key={code}
+                    onClick={() => setSelectedCurrency(code)}
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      selectedCurrency === code
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                    data-testid={`currency-${code.toLowerCase()}`}
+                  >
+                    {currency.flag} {currency.symbol}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
 
           <div className="flex items-center justify-center space-x-8 mb-8 text-lg">
             <div className="flex items-center text-green-600 font-bold">
               <Heart className="h-6 w-6 mr-2" />
-              100% Free
+              From {currencies[selectedCurrency].symbol}0
             </div>
             <div className="flex items-center text-blue-600 font-bold">
               <Zap className="h-6 w-6 mr-2" />
-              No Signup Needed
+              Industry's Lowest Cost
             </div>
             <div className="flex items-center text-purple-600 font-bold">
               <CheckCircle className="h-6 w-6 mr-2" />
-              Unlimited Usage
+              Multi-Currency Support
             </div>
           </div>
         </div>
@@ -152,8 +185,12 @@ export default function Pricing() {
               <CardTitle className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
                 All WytApps
               </CardTitle>
-              <div className="text-6xl font-bold text-green-600 mb-2">$0</div>
-              <p className="text-gray-600 dark:text-gray-300 text-lg">Forever • No limits • No catches</p>
+              <div className="text-6xl font-bold text-green-600 mb-2">
+                {currencies[selectedCurrency].symbol}0
+              </div>
+              <p className="text-gray-600 dark:text-gray-300 text-lg">
+                Forever Free • Industry's Lowest Cost • {currencies[selectedCurrency].name}
+              </p>
             </CardHeader>
             
             <CardContent className="px-8 pb-8">
@@ -190,11 +227,101 @@ export default function Pricing() {
                   </Button>
                 </Link>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
-                  No credit card • No email required • Instant access
+                  From {currencies[selectedCurrency].symbol}0 • Industry's best value • Instant access
                 </p>
               </div>
             </CardContent>
           </Card>
+        </div>
+      </section>
+
+      {/* Cost Comparison Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-900">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+              Industry's Most Competitive Pricing
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-lg">
+              Compare our pricing with competitors. We offer the lowest cost in the industry while maintaining premium quality.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 mb-16">
+            <Card className="text-center border-2 border-red-200 relative">
+              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-red-500 text-white px-4 py-1 rounded-full text-sm font-bold">
+                Competitors
+              </div>
+              <CardHeader className="pt-8">
+                <CardTitle className="text-2xl text-gray-900 dark:text-white">Traditional Tools</CardTitle>
+                <div className="text-4xl font-bold text-red-600 mb-2">
+                  {currencies[selectedCurrency].symbol}29-99/month
+                </div>
+                <p className="text-gray-600 dark:text-gray-300">Per tool subscription</p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                  <p>• Limited features</p>
+                  <p>• Monthly commitments</p>
+                  <p>• Multiple subscriptions</p>
+                  <p>• Setup complexity</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center border-2 border-green-200 shadow-xl relative scale-105">
+              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-green-500 text-white px-4 py-1 rounded-full text-sm font-bold">
+                WytNet
+              </div>
+              <CardHeader className="pt-8">
+                <CardTitle className="text-2xl text-gray-900 dark:text-white">All WytApps</CardTitle>
+                <div className="text-4xl font-bold text-green-600 mb-2">
+                  {currencies[selectedCurrency].symbol}0
+                </div>
+                <p className="text-gray-600 dark:text-gray-300">Forever free with premium quality</p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-green-600 font-medium">• All features included</p>
+                  <p className="text-green-600 font-medium">• No time limits</p>
+                  <p className="text-green-600 font-medium">• Single platform</p>
+                  <p className="text-green-600 font-medium">• Instant access</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center border-2 border-yellow-200 relative">
+              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-yellow-500 text-white px-4 py-1 rounded-full text-sm font-bold">
+                Enterprise
+              </div>
+              <CardHeader className="pt-8">
+                <CardTitle className="text-2xl text-gray-900 dark:text-white">Custom Solutions</CardTitle>
+                <div className="text-4xl font-bold text-blue-600 mb-2">
+                  {currencies[selectedCurrency].symbol}999+/month
+                </div>
+                <p className="text-gray-600 dark:text-gray-300">Complex enterprise packages</p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                  <p>• High setup costs</p>
+                  <p>• Long contracts</p>
+                  <p>• Training required</p>
+                  <p>• Maintenance fees</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="text-center">
+            <div className="bg-green-100 dark:bg-green-900 p-6 rounded-lg inline-block">
+              <p className="text-green-800 dark:text-green-200 font-bold text-lg">
+                💰 Save {currencies[selectedCurrency].symbol}348+ per year by choosing WytNet
+              </p>
+              <p className="text-green-700 dark:text-green-300 text-sm mt-2">
+                Based on average competitor pricing for similar tool suites
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -203,10 +330,10 @@ export default function Pricing() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              What's Coming Next
+              Scaling with Your Needs
             </h2>
             <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-lg">
-              While all current tools remain free, we're working on advanced features for power users and businesses.
+              Start free and scale up. We're building premium features that maintain our industry-leading cost efficiency.
             </p>
           </div>
 
