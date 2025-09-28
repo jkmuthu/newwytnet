@@ -107,9 +107,21 @@ export function setupWytPassAuth(app: Express) {
   // Google OAuth Strategy
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     // Determine the correct callback URL based on environment
-    const baseUrl = process.env.NODE_ENV === "production" 
-      ? "https://wytnet.com" 
-      : `${process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : "http://localhost:5000"}`;
+    let baseUrl;
+    if (process.env.NODE_ENV === "production") {
+      baseUrl = "https://wytnet.com";
+    } else if (process.env.REPLIT_DEV_DOMAIN) {
+      // Use the actual Replit development domain
+      baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+    } else if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+      // Fallback to old repl.co format
+      baseUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+    } else {
+      // Local development fallback
+      baseUrl = "http://localhost:5000";
+    }
+    
+    console.log(`🔧 WytPass OAuth Callback URL: ${baseUrl}/api/auth/google/callback`);
     
     passport.use(
       new GoogleStrategy(
