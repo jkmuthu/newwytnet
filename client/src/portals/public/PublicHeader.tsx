@@ -22,7 +22,6 @@ export default function PublicHeader() {
     { label: "AI Directory", href: "/ai-directory" },
     { label: "QR Generator", href: "/qr-generator" },
     { label: "DISC Assessment", href: "/assessment" },
-    { label: "Property Tools", href: "/realbro" },
   ];
 
   const resourcesNavItems = [
