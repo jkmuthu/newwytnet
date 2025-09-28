@@ -246,6 +246,125 @@ export const plans = pgTable("plans", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Payment Status Enum
+export const paymentStatusEnum = pgEnum("payment_status", [
+  "pending", "processing", "completed", "failed", "cancelled", "refunded"
+]);
+
+// Order Status Enum  
+export const orderStatusEnum = pgEnum("order_status", [
+  "draft", "pending", "confirmed", "processing", "shipped", "delivered", "cancelled", "refunded"
+]);
+
+// Orders table for payment processing
+export const orders = pgTable("orders", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  userId: varchar("user_id").references(() => whatsappUsers.id),
+  planId: uuid("plan_id").references(() => plans.id),
+  
+  // Order details
+  orderNumber: varchar("order_number", { length: 50 }).notNull().unique(),
+  status: orderStatusEnum("status").notNull().default('draft'),
+  
+  // Pricing
+  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
+  tax: decimal("tax", { precision: 10, scale: 2 }).default('0'),
+  discount: decimal("discount", { precision: 10, scale: 2 }).default('0'),
+  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default('INR'),
+  
+  // Metadata
+  items: jsonb("items").default([]), // Array of order items
+  billingAddress: jsonb("billing_address").default({}),
+  metadata: jsonb("metadata").default({}),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_orders_user_id").on(table.userId),
+  index("idx_orders_status").on(table.status),
+  index("idx_orders_created_at").on(table.createdAt),
+]);
+
+// Payments table for transaction tracking
+export const payments = pgTable("payments", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  userId: varchar("user_id").references(() => whatsappUsers.id),
+  orderId: uuid("order_id").references(() => orders.id),
+  
+  // Payment gateway details
+  provider: varchar("provider", { length: 50 }).notNull().default('razorpay'),
+  providerPaymentId: varchar("provider_payment_id", { length: 100 }), // Razorpay payment ID
+  providerOrderId: varchar("provider_order_id", { length: 100 }), // Razorpay order ID
+  
+  // Payment details
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default('INR'),
+  status: paymentStatusEnum("status").notNull().default('pending'),
+  
+  // Payment method
+  method: varchar("method", { length: 50 }), // card, netbanking, wallet, upi
+  paymentMethod: jsonb("payment_method").default({}), // Detailed payment method info
+  
+  // Timestamps
+  paidAt: timestamp("paid_at"),
+  failedAt: timestamp("failed_at"),
+  refundedAt: timestamp("refunded_at"),
+  
+  // Additional details
+  failureReason: text("failure_reason"),
+  receipt: varchar("receipt", { length: 100 }),
+  notes: jsonb("notes").default({}),
+  metadata: jsonb("metadata").default({}),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_payments_user_id").on(table.userId),
+  index("idx_payments_order_id").on(table.orderId),
+  index("idx_payments_status").on(table.status),
+  index("idx_payments_provider_payment_id").on(table.providerPaymentId),
+  index("idx_payments_created_at").on(table.createdAt),
+]);
+
+// Subscriptions table for recurring payments
+export const subscriptions = pgTable("subscriptions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  userId: varchar("user_id").references(() => whatsappUsers.id),
+  planId: uuid("plan_id").references(() => plans.id),
+  
+  // Subscription details
+  status: varchar("status", { length: 20 }).notNull().default('active'), // active, cancelled, expired, paused
+  
+  // Billing
+  currentPeriodStart: timestamp("current_period_start").notNull(),
+  currentPeriodEnd: timestamp("current_period_end").notNull(),
+  nextBillingDate: timestamp("next_billing_date"),
+  
+  // Pricing
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).notNull().default('INR'),
+  
+  // Gateway details
+  providerSubscriptionId: varchar("provider_subscription_id", { length: 100 }),
+  
+  // Metadata
+  cancelledAt: timestamp("cancelled_at"),
+  cancelReason: text("cancel_reason"),
+  metadata: jsonb("metadata").default({}),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_subscriptions_user_id").on(table.userId),
+  index("idx_subscriptions_plan_id").on(table.planId),
+  index("idx_subscriptions_status").on(table.status),
+  index("idx_subscriptions_next_billing").on(table.nextBillingDate),
+]);
+
 // Media files
 export const media = pgTable("media", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -632,6 +751,12 @@ export const insertAppSchema = createInsertSchema(apps);
 export const insertAppInstallSchema = createInsertSchema(appInstalls);
 export const insertHubSchema = createInsertSchema(hubs);
 export const insertPlanSchema = createInsertSchema(plans);
+
+// Payment schemas
+export const insertOrderSchema = createInsertSchema(orders);
+export const insertPaymentSchema = createInsertSchema(payments);
+export const insertSubscriptionSchema = createInsertSchema(subscriptions);
+
 export const insertMediaSchema = createInsertSchema(media);
 export const insertAuditLogSchema = createInsertSchema(auditLogs);
 export const insertSeoSettingSchema = createInsertSchema(seoSettings);

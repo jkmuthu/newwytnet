@@ -31,6 +31,7 @@ import {
   generateRecommendations,
   initializeSampleTrademarkData
 } from "./services/trademarkAnalysis";
+import { razorpayService } from "./services/razorpayService";
 import path from "path";
 import * as whatsappAuthService from "./services/whatsappAuth";
 import * as socialAuthService from "./services/socialAuth";
@@ -4534,6 +4535,299 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.status(500).json({
         success: false,
         error: 'Failed to fetch storage configuration'
+      });
+    }
+  });
+
+  // ==========================================
+  // PAYMENT ROUTES (Razorpay Integration)
+  // ==========================================
+
+  // Get available plans
+  app.get('/api/payments/plans', async (req, res) => {
+    try {
+      const result = await razorpayService.getPlans();
+      
+      if (result.success) {
+        res.json({
+          success: true,
+          data: result.data
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: result.error
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching plans:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch plans'
+      });
+    }
+  });
+
+  // Create payment order
+  app.post('/api/payments/create-order', isAuthenticatedUnified, async (req, res) => {
+    try {
+      const principal = getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+      }
+
+      const { amount, currency, planId, receipt, notes, items } = req.body;
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Valid amount is required'
+        });
+      }
+
+      const result = await razorpayService.createOrder(principal.id, {
+        amount,
+        currency,
+        planId,
+        receipt,
+        notes,
+        items
+      });
+
+      if (result.success) {
+        res.json({
+          success: true,
+          data: result.data
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: result.error
+        });
+      }
+    } catch (error) {
+      console.error('Error creating payment order:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create payment order'
+      });
+    }
+  });
+
+  // Verify payment
+  app.post('/api/payments/verify', isAuthenticatedUnified, async (req, res) => {
+    try {
+      const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
+
+      if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+        return res.status(400).json({
+          success: false,
+          error: 'Payment verification data is required'
+        });
+      }
+
+      const result = await razorpayService.handlePaymentSuccess({
+        razorpay_payment_id,
+        razorpay_order_id,
+        razorpay_signature
+      });
+
+      if (result.success) {
+        res.json({
+          success: true,
+          message: 'Payment verified successfully',
+          data: result.data
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error
+        });
+      }
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to verify payment'
+      });
+    }
+  });
+
+  // Handle payment failure
+  app.post('/api/payments/failure', isAuthenticatedUnified, async (req, res) => {
+    try {
+      const { payment_id, reason } = req.body;
+
+      if (!payment_id) {
+        return res.status(400).json({
+          success: false,
+          error: 'Payment ID is required'
+        });
+      }
+
+      const result = await razorpayService.handlePaymentFailure(payment_id, reason);
+
+      if (result.success) {
+        res.json({
+          success: true,
+          message: 'Payment failure recorded'
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: result.error
+        });
+      }
+    } catch (error) {
+      console.error('Error handling payment failure:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to handle payment failure'
+      });
+    }
+  });
+
+  // Get payment history
+  app.get('/api/payments/history', isAuthenticatedUnified, async (req, res) => {
+    try {
+      const principal = getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({
+          success: false,
+          error: 'Authentication required'
+        });
+      }
+
+      const result = await razorpayService.getPaymentHistory(principal.id);
+
+      if (result.success) {
+        res.json({
+          success: true,
+          data: result.data
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: result.error
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching payment history:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch payment history'
+      });
+    }
+  });
+
+  // Get payment details
+  app.get('/api/payments/:paymentId', isAuthenticatedUnified, async (req, res) => {
+    try {
+      const { paymentId } = req.params;
+
+      const result = await razorpayService.getPayment(paymentId);
+
+      if (result.success) {
+        res.json({
+          success: true,
+          data: result.data
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          error: result.error
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching payment details:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch payment details'
+      });
+    }
+  });
+
+  // Razorpay webhook endpoint (for handling payment status updates)
+  app.post('/api/payments/webhook', async (req, res) => {
+    try {
+      // Verify webhook signature (implement webhook signature verification)
+      const webhookSignature = req.headers['x-razorpay-signature'] as string;
+      
+      // Handle different webhook events
+      const { event, payload } = req.body;
+      
+      console.log('📩 Razorpay Webhook received:', event);
+      
+      switch (event) {
+        case 'payment.captured':
+          // Handle successful payment
+          await razorpayService.handlePaymentSuccess({
+            razorpay_payment_id: payload.payment.entity.id,
+            razorpay_order_id: payload.payment.entity.order_id,
+            razorpay_signature: '' // Webhook doesn't provide signature
+          });
+          break;
+          
+        case 'payment.failed':
+          // Handle failed payment
+          await razorpayService.handlePaymentFailure(
+            payload.payment.entity.id,
+            payload.payment.entity.error_description
+          );
+          break;
+          
+        default:
+          console.log('Unhandled webhook event:', event);
+      }
+
+      res.status(200).json({ status: 'ok' });
+    } catch (error) {
+      console.error('Error handling Razorpay webhook:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to handle webhook'
+      });
+    }
+  });
+
+  // Refund payment (admin only)
+  app.post('/api/payments/:paymentId/refund', isAuthenticatedUnified, async (req, res) => {
+    try {
+      const principal = getPrincipal(req);
+      const adminPrincipal = getAdminPrincipal(req);
+      
+      if (!adminPrincipal && !isSuperAdmin(principal)) {
+        return res.status(403).json({
+          success: false,
+          error: 'Admin access required'
+        });
+      }
+
+      const { paymentId } = req.params;
+      const { amount, reason } = req.body;
+
+      const result = await razorpayService.refundPayment(paymentId, amount, reason);
+
+      if (result.success) {
+        res.json({
+          success: true,
+          message: 'Refund processed successfully',
+          data: result.data
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: result.error
+        });
+      }
+    } catch (error) {
+      console.error('Error processing refund:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to process refund'
       });
     }
   });
