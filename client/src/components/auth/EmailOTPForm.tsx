@@ -65,7 +65,7 @@ export default function EmailOTPForm({ onBack, onSuccess }: EmailOTPFormProps) {
   const onSendOTP = async (data: EmailFormData) => {
     setIsLoading(true);
     try {
-      await apiRequest("POST", "/api/auth/send-email-otp", {
+      await apiRequest("/api/auth/send-email-otp", "POST", {
         email: data.email,
         name: data.name || data.email.split("@")[0],
       });
@@ -93,7 +93,7 @@ export default function EmailOTPForm({ onBack, onSuccess }: EmailOTPFormProps) {
   const onVerifyOTP = async (data: OTPFormData) => {
     setIsLoading(true);
     try {
-      await apiRequest("POST", "/api/auth/verify-email-otp", {
+      await apiRequest("/api/auth/verify-email-otp", "POST", {
         email,
         otp: data.otp,
       });
@@ -130,7 +130,7 @@ export default function EmailOTPForm({ onBack, onSuccess }: EmailOTPFormProps) {
     
     setIsLoading(true);
     try {
-      await apiRequest("POST", "/api/auth/resend-email-otp", {
+      await apiRequest("/api/auth/resend-email-otp", "POST", {
         email,
       });
       
