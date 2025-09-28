@@ -129,25 +129,39 @@ export default function Pricing() {
             Multi-currency support, transparent costs, no hidden fees. Scale from free tools to enterprise solutions.
           </p>
           
-          {/* Currency Selector */}
+          {/* Currency Selector with INR prominence */}
           <div className="flex justify-center mb-8">
-            <div className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border-2 border-blue-200 dark:border-blue-700">
+              <div className="text-center mb-2">
+                <span className="text-xs font-medium text-blue-600 dark:text-blue-400">💰 Multi-Currency Pricing</span>
+              </div>
               <div className="flex items-center space-x-1">
                 <Globe className="h-4 w-4 text-gray-500 mr-2" />
                 {(Object.entries(currencies) as [CurrencyCode, typeof currencies[CurrencyCode]][]).map(([code, currency]) => (
                   <button
                     key={code}
                     onClick={() => setSelectedCurrency(code)}
-                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors relative ${
                       selectedCurrency === code
-                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 shadow-md'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
                     }`}
                     data-testid={`currency-${code.toLowerCase()}`}
                   >
+                    {code === 'INR' && (
+                      <div className="absolute -top-1 -right-1 bg-green-500 text-white text-xs px-1 rounded-full">
+                        ★
+                      </div>
+                    )}
                     {currency.flag} {currency.symbol}
+                    {code === 'INR' && (
+                      <span className="block text-xs text-green-600 dark:text-green-400 font-bold">Default</span>
+                    )}
                   </button>
                 ))}
+              </div>
+              <div className="text-center mt-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400">★ Indian Rupee (INR) - Primary currency</span>
               </div>
             </div>
           </div>
