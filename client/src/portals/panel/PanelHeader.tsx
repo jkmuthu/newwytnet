@@ -64,12 +64,13 @@ export default function PanelHeader({
   };
 
   const getUserInitials = (user: any) => {
-    if (!user?.name) return 'U';
-    const nameParts = user.name.split(' ');
+    const name = user?.name;
+    if (!name || typeof name !== 'string') return 'U';
+    const nameParts = name.split(' ');
     if (nameParts.length >= 2) {
       return `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase();
     }
-    return user.name[0]?.toUpperCase() || 'U';
+    return name[0]?.toUpperCase() || 'U';
   };
 
   const workspaceOptions = [
@@ -171,8 +172,12 @@ export default function PanelHeader({
                   data-testid="user-menu"
                 >
                   <Avatar className="h-10 w-10">
-                    {user?.profileImageUrl && (
-                      <AvatarImage src={user.profileImageUrl} alt={user.name || "User"} />
+                    {user && typeof user === 'object' && 'profileImageUrl' in user && user.profileImageUrl && 
+                     typeof user.profileImageUrl === 'string' && (
+                      <AvatarImage 
+                        src={user.profileImageUrl} 
+                        alt={(user && 'name' in user && typeof user.name === 'string' ? user.name : "User")} 
+                      />
                     )}
                     <AvatarFallback className="bg-blue-600 text-white">
                       {getUserInitials(user)}
@@ -183,8 +188,12 @@ export default function PanelHeader({
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <div className="flex items-center justify-start gap-2 p-2">
                   <Avatar className="h-8 w-8">
-                    {user?.profileImageUrl && (
-                      <AvatarImage src={user.profileImageUrl} alt={user.name || "User"} />
+                    {user && typeof user === 'object' && 'profileImageUrl' in user && user.profileImageUrl && 
+                     typeof user.profileImageUrl === 'string' && (
+                      <AvatarImage 
+                        src={user.profileImageUrl} 
+                        alt={(user && 'name' in user && typeof user.name === 'string' ? user.name : "User")} 
+                      />
                     )}
                     <AvatarFallback className="bg-blue-600 text-white text-xs">
                       {getUserInitials(user)}
@@ -192,10 +201,10 @@ export default function PanelHeader({
                   </Avatar>
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">
-                      {user?.name || "User"}
+                      {(user && typeof user === 'object' && 'name' in user ? user.name as string : '') || "User"}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {user?.email || ""}
+                      {user && typeof user === 'object' && 'email' in user ? user.email as string : ''}
                     </p>
                   </div>
                 </div>
