@@ -1471,81 +1471,142 @@ export type InsertApiIntegrationType = z.infer<typeof insertApiIntegrationSchema
 export type SelectApiIntegrationType = z.infer<typeof selectApiIntegrationSchema>;
 
 // ============================================
-// MARKETPLACE SYSTEM - Tool Marketplace with Multi-tenant Storage
+// MARKETPLACE SYSTEM - WytApps Marketplace with Multi-tenant Storage
 // ============================================
 
-// Marketplace Tools - Available tools in the platform
-export const marketplaceTools = pgTable("marketplace_tools", {
+// Marketplace Apps - Available apps in the platform
+export const marketplaceApps = pgTable("marketplace_apps", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name", { length: 255 }).notNull(),
-  slug: varchar("slug", { length: 100 }).notNull().unique(), // qr-generator, ai-directory, etc.
+  slug: varchar("slug", { length: 100 }).notNull().unique(), // qr-generator, disc-assessment, etc.
   description: text("description").notNull(),
-  category: varchar("category", { length: 100 }).notNull(), // utilities, ai-tools, assessment, etc.
+  category: varchar("category", { length: 100 }).notNull(), // utilities, assessment, business, etc.
   icon: varchar("icon", { length: 50 }), // lucide icon name
+  features: jsonb("features").default([]), // Array of feature strings
+  rating: decimal("rating", { precision: 3, scale: 2 }).default('4.5'), // Average rating
+  users: integer("users").default(0), // Total user count
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Tool Pricing Models - Pricing for each tool
-export const toolPricing = pgTable("tool_pricing", {
+// App Pricing Models - Pricing for each app
+export const appPricing = pgTable("app_pricing", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  toolId: uuid("tool_id").notNull().references(() => marketplaceTools.id, { onDelete: 'cascade' }),
+  appId: uuid("app_id").notNull().references(() => marketplaceApps.id, { onDelete: 'cascade' }),
   pricingType: varchar("pricing_type", { length: 20 }).notNull(), // free, one_time, monthly, yearly, pay_per_use
   price: decimal("price", { precision: 10, scale: 2 }).notNull().default('0.00'),
   currency: varchar("currency", { length: 3 }).notNull().default('INR'),
   usageLimit: integer("usage_limit"), // For pay-per-use, how many uses per purchase
+  label: varchar("label", { length: 100 }).notNull(), // Display label like "Free - 5 uses"
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// User Tool Subscriptions - What tools users have access to
-export const userToolSubscriptions = pgTable("user_tool_subscriptions", {
+// User App Subscriptions - What apps users have access to
+export const userAppSubscriptions = pgTable("user_app_subscriptions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => whatsappUsers.id, { onDelete: 'cascade' }),
-  toolId: uuid("tool_id").notNull().references(() => marketplaceTools.id),
-  pricingId: uuid("pricing_id").notNull().references(() => toolPricing.id),
+  appId: uuid("app_id").notNull().references(() => marketplaceApps.id),
+  pricingId: uuid("pricing_id").notNull().references(() => appPricing.id),
   status: varchar("status", { length: 20 }).notNull().default('active'), // active, expired, cancelled
-  usageRemaining: integer("usage_remaining"), // For pay-per-use tools
+  usageRemaining: integer("usage_remaining"), // For pay-per-use apps
   startDate: timestamp("start_date").notNull().defaultNow(),
   endDate: timestamp("end_date"), // For time-based subscriptions
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Tool Usage Tracking - Track usage for pay-per-use tools
-export const toolUsage = pgTable("tool_usage", {
+// App Usage Tracking - Track usage for pay-per-use apps
+export const appUsage = pgTable("app_usage", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => whatsappUsers.id, { onDelete: 'cascade' }),
-  toolId: uuid("tool_id").notNull().references(() => marketplaceTools.id),
-  subscriptionId: uuid("subscription_id").notNull().references(() => userToolSubscriptions.id),
+  appId: uuid("app_id").notNull().references(() => marketplaceApps.id),
+  subscriptionId: uuid("subscription_id").notNull().references(() => userAppSubscriptions.id),
   usageType: varchar("usage_type", { length: 50 }).notNull(), // generation, scan, assessment, etc.
-  metadata: jsonb("metadata"), // Tool-specific data
+  metadata: jsonb("metadata"), // App-specific data
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// User Tool Data - Multi-tenant storage for user-specific tool data
-export const userToolData = pgTable("user_tool_data", {
+// User App Data - Multi-tenant storage for user-specific app data
+export const userAppData = pgTable("user_app_data", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => whatsappUsers.id, { onDelete: 'cascade' }),
-  toolId: uuid("tool_id").notNull().references(() => marketplaceTools.id),
+  appId: uuid("app_id").notNull().references(() => marketplaceApps.id),
   dataType: varchar("data_type", { length: 50 }).notNull(), // qr_code, assessment_result, bookmark, etc.
   title: varchar("title", { length: 255 }), // User-friendly title
-  data: jsonb("data").notNull(), // Tool-specific data structure
+  data: jsonb("data").notNull(), // App-specific data structure
   metadata: jsonb("metadata"), // Additional metadata
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Marketplace schema exports
-export const insertMarketplaceToolSchema = createInsertSchema(marketplaceTools);
-export const selectMarketplaceToolSchema = createSelectSchema(marketplaceTools);
-export const insertToolPricingSchema = createInsertSchema(toolPricing);
-export const selectToolPricingSchema = createSelectSchema(toolPricing);
-export const insertUserToolSubscriptionSchema = createInsertSchema(userToolSubscriptions);
-export const selectUserToolSubscriptionSchema = createSelectSchema(userToolSubscriptions);
-export const insertToolUsageSchema = createInsertSchema(toolUsage);
-export const selectToolUsageSchema = createSelectSchema(toolUsage);
-export const insertUserToolDataSchema = createInsertSchema(userToolData);
-export const selectUserToolDataSchema = createSelectSchema(userToolData);
+// ============================================
+// WYTHUBS SYSTEM - Curated Content Hubs
+// ============================================
+
+// Marketplace Hubs - Curated collections like AI Directory
+export const marketplaceHubs = pgTable("marketplace_hubs", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(), // ai-directory, design-resources, etc.
+  description: text("description").notNull(),
+  category: varchar("category", { length: 100 }).notNull(), // ai-tools, resources, directories, etc.
+  icon: varchar("icon", { length: 50 }), // lucide icon name
+  coverImage: varchar("cover_image", { length: 500 }), // Hub cover image URL
+  isActive: boolean("is_active").notNull().default(true),
+  isFeatured: boolean("is_featured").default(false),
+  itemCount: integer("item_count").default(0), // Total items in hub
+  createdBy: varchar("created_by").references(() => whatsappUsers.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Hub Items - Individual items within hubs (external links, apps, resources)
+export const hubItems = pgTable("hub_items", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  hubId: uuid("hub_id").notNull().references(() => marketplaceHubs.id, { onDelete: 'cascade' }),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  url: varchar("url", { length: 1000 }), // External URL for hub items
+  category: varchar("category", { length: 100 }),
+  tags: jsonb("tags").default([]), // Array of tag strings
+  metadata: jsonb("metadata").default({}), // Additional item data
+  isActive: boolean("is_active").notNull().default(true),
+  order: integer("order").default(0), // For sorting items
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Marketplace Apps schema exports
+export const insertMarketplaceAppSchema = createInsertSchema(marketplaceApps);
+export const selectMarketplaceAppSchema = createSelectSchema(marketplaceApps);
+export const insertAppPricingSchema = createInsertSchema(appPricing);
+export const selectAppPricingSchema = createSelectSchema(appPricing);
+export const insertUserAppSubscriptionSchema = createInsertSchema(userAppSubscriptions);
+export const selectUserAppSubscriptionSchema = createSelectSchema(userAppSubscriptions);
+export const insertAppUsageSchema = createInsertSchema(appUsage);
+export const selectAppUsageSchema = createSelectSchema(appUsage);
+export const insertUserAppDataSchema = createInsertSchema(userAppData);
+export const selectUserAppDataSchema = createSelectSchema(userAppData);
+
+// Marketplace Hubs schema exports
+export const insertMarketplaceHubSchema = createInsertSchema(marketplaceHubs);
+export const selectMarketplaceHubSchema = createSelectSchema(marketplaceHubs);
+export const insertHubItemSchema = createInsertSchema(hubItems);
+export const selectHubItemSchema = createSelectSchema(hubItems);
+
+// Type exports for marketplace apps
+export type MarketplaceApp = typeof marketplaceApps.$inferSelect;
+export type InsertMarketplaceApp = typeof marketplaceApps.$inferInsert;
+export type AppPricing = typeof appPricing.$inferSelect;
+export type InsertAppPricing = typeof appPricing.$inferInsert;
+export type UserAppSubscription = typeof userAppSubscriptions.$inferSelect;
+export type InsertUserAppSubscription = typeof userAppSubscriptions.$inferInsert;
+
+// Type exports for marketplace hubs
+export type MarketplaceHub = typeof marketplaceHubs.$inferSelect;
+export type InsertMarketplaceHub = typeof marketplaceHubs.$inferInsert;
+export type HubItem = typeof hubItems.$inferSelect;
+export type InsertHubItem = typeof hubItems.$inferInsert;
