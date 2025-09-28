@@ -11,6 +11,8 @@ import About from "@/pages/about";
 import Help from "@/pages/help";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
+import RefundPolicy from "@/pages/refund";
+import ShippingPolicy from "@/pages/shipping";
 import Status from "@/pages/status";
 import LoginPage from "@/pages/LoginPage";
 import WhatsAppAuth from "@/pages/whatsapp-auth";
@@ -56,6 +58,8 @@ export default function PublicRouter() {
       {/* Legal pages */}
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
+      <Route path="/refund" component={RefundPolicy} />
+      <Route path="/shipping" component={ShippingPolicy} />
 
       {/* Authentication routes */}
       <Route path="/login" component={LoginPage} />
