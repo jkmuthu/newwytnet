@@ -25,7 +25,8 @@ import {
   FileImage,
   List,
   Server,
-  Eye
+  Eye,
+  Wrench
 } from "lucide-react";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
@@ -115,6 +116,12 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
             icon: FileText, 
             href: "/admin/cms", 
             active: location === "/admin/cms"
+          },
+          { 
+            label: "Tool Management", 
+            icon: Wrench, 
+            href: "/admin/tools", 
+            active: location === "/admin/tools"
           },
         ]
       },
