@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { FaGoogle, FaFacebook } from "react-icons/fa";
+import { FaGoogle } from "react-icons/fa";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
@@ -9,7 +9,6 @@ interface WytPassAuthButtonsProps {
   title?: string;
   description?: string;
   onGoogleLogin?: () => void;
-  onFacebookLogin?: () => void;
   showEmailLogin?: boolean;
 }
 
@@ -25,10 +24,6 @@ export default function WytPassAuthButtons({
     window.location.href = "/api/auth/google";
   };
 
-  const handleFacebookLogin = () => {
-    setIsLoading("facebook");
-    window.location.href = "/api/auth/facebook";
-  };
 
   return (
     <Card className="w-full max-w-md mx-auto" data-testid="wytpass-auth-card">
@@ -54,20 +49,17 @@ export default function WytPassAuthButtons({
           Continue with Google
         </Button>
 
-        {/* Facebook Login Button */}
+        {/* Facebook Login - Disabled until setup */}
+        {/* 
         <Button 
-          onClick={handleFacebookLogin}
-          disabled={isLoading !== null}
-          className="w-full h-11 bg-[#1877f2] hover:bg-[#166fe5] text-white shadow-sm transition-all duration-200 hover:shadow-md"
-          data-testid="button-facebook-login"
+          disabled
+          className="w-full h-11 bg-gray-300 text-gray-500 cursor-not-allowed"
+          data-testid="button-facebook-login-disabled"
         >
-          {isLoading === "facebook" ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <FaFacebook className="h-4 w-4 mr-2" />
-          )}
-          Continue with Facebook
+          <FaFacebook className="h-4 w-4 mr-2" />
+          Facebook Login (Coming Soon)
         </Button>
+        */}
 
         {showEmailLogin && (
           <>

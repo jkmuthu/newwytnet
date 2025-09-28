@@ -1,7 +1,7 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import { Strategy as FacebookStrategy } from "passport-facebook";
+// import { Strategy as FacebookStrategy } from "passport-facebook"; // DISABLED until setup
 import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
@@ -211,7 +211,9 @@ export function setupWytPassAuth(app: Express) {
     );
   }
 
-  // Facebook OAuth Strategy
+  // Facebook OAuth Strategy - DISABLED until setup complete
+  // Uncomment when Facebook App ID and App Secret are configured
+  /*
   if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
     passport.use(
       new FacebookStrategy(
@@ -300,6 +302,7 @@ export function setupWytPassAuth(app: Express) {
       )
     );
   }
+  */
 
   // Passport serialization
   passport.serializeUser((user: Express.User, cb) => cb(null, user.id));
@@ -409,7 +412,8 @@ export function setupWytPassAuth(app: Express) {
     }
   );
 
-  // Facebook OAuth routes
+  // Facebook OAuth routes - DISABLED until setup complete
+  /*
   app.get("/api/auth/facebook",
     passport.authenticate("facebook", { scope: ["email"] })
   );
@@ -420,6 +424,7 @@ export function setupWytPassAuth(app: Express) {
       res.redirect("/"); // Redirect to dashboard after successful login
     }
   );
+  */
 
   // Get current user
   app.get("/api/auth/user", (req, res) => {
