@@ -106,12 +106,17 @@ export function setupWytPassAuth(app: Express) {
 
   // Google OAuth Strategy
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+    // Determine the correct callback URL based on environment
+    const baseUrl = process.env.NODE_ENV === "production" 
+      ? "https://wytnet.com" 
+      : `${process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : "http://localhost:5000"}`;
+    
     passport.use(
       new GoogleStrategy(
         {
           clientID: process.env.GOOGLE_CLIENT_ID,
           clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-          callbackURL: "/api/auth/google/callback",
+          callbackURL: `${baseUrl}/api/auth/google/callback`,
           scope: ["profile", "email"],
         },
         async (accessToken, refreshToken, profile, done) => {
