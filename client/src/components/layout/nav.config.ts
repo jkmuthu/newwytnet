@@ -33,6 +33,10 @@ export const bottomNavItems = [
 
 export const sidebarNavItems = [
   { icon: Bot, label: 'AI Directory', href: '/ai-directory' },
+];
+
+// WytTools submenu items
+export const wytToolsItems = [
   { icon: QrCode, label: 'QR Generator', href: '/qr-generator' },
   { icon: Activity, label: 'DISC Assessment', href: '/assessment' },
 ];

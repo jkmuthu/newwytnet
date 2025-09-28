@@ -28,7 +28,6 @@ export default function PublicHeader() {
   ];
 
   const wytToolsNavItems = [
-    { label: "AI Directory", href: "/ai-directory" },
     { label: "QR Generator", href: "/qr-generator" },
     { label: "DISC Assessment", href: "/assessment" },
   ];
@@ -121,6 +120,15 @@ export default function PublicHeader() {
                 </NavigationMenuContent>
               </NavigationMenuItem>
 
+              {/* AI Directory - Direct Link */}
+              <NavigationMenuItem>
+                <Link href="/ai-directory">
+                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
+                    AI Directory
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+
               {/* WytApps - Direct Link */}
               <NavigationMenuItem>
                 <Link href="/wytapps">
@@ -205,12 +213,12 @@ export default function PublicHeader() {
                   >
                     <Avatar className="h-8 w-8">
                       {user && typeof user === 'object' && 'profileImageUrl' in user && user.profileImageUrl && 
-                       typeof user.profileImageUrl === 'string' && (
+                       typeof user.profileImageUrl === 'string' ? (
                         <AvatarImage 
                           src={user.profileImageUrl} 
                           alt={(user && 'name' in user && typeof user.name === 'string' ? user.name : "User")} 
                         />
-                      )}
+                      ) : null}
                       <AvatarFallback className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-semibold">
                         {getUserInitials(user)}
                       </AvatarFallback>
