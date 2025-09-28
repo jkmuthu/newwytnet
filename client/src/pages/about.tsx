@@ -3,8 +3,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Users, Target, Zap, Globe, Heart, Shield, Rocket, Award, CheckCircle } from "lucide-react";
 import { Link } from "wouter";
-import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
 
 export default function About() {
   const stats = [
@@ -51,7 +49,6 @@ export default function About() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <Header />
       
       {/* Hero Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
@@ -256,8 +253,6 @@ export default function About() {
           </div>
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 }

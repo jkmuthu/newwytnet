@@ -3,8 +3,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Code, Server, Key, Book, Zap, Shield, Database, ArrowRight, Copy, CheckCircle } from "lucide-react";
 import { Link } from "wouter";
-import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
 import { useEffect, useState } from "react";
 
 export default function APIReference() {
@@ -164,7 +162,6 @@ console.log('Search results:', results.hits);`
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <Header />
       
       {/* Hero Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
@@ -368,8 +365,6 @@ console.log('Search results:', results.hits);`
           </div>
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 }
