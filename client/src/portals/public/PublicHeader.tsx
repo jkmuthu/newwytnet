@@ -22,9 +22,7 @@ export default function PublicHeader() {
     { label: "AI Directory", href: "/ai-directory" },
     { label: "QR Generator", href: "/qr-generator" },
     { label: "DISC Assessment", href: "/assessment" },
-    { label: "Trademark Tools", href: "/wytai-trademark" },
     { label: "Property Tools", href: "/realbro" },
-    { label: "TM Numbering", href: "/tm-numbering" },
   ];
 
   const resourcesNavItems = [

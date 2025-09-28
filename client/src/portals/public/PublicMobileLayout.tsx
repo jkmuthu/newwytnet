@@ -55,7 +55,6 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
         { icon: Bot, label: 'AI Directory', href: '/ai-directory' },
         { icon: QrCode, label: 'QR Generator', href: '/qr-generator' },
         { icon: Activity, label: 'DISC Assessment', href: '/assessment' },
-        { icon: Briefcase, label: 'Trademark Tools', href: '/wytai-trademark' },
         { icon: Smartphone, label: 'Property Tools', href: '/realbro' },
       ]
     },
