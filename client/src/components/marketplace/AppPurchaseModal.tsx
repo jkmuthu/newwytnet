@@ -20,7 +20,7 @@ import {
   Info
 } from 'lucide-react';
 
-interface Tool {
+interface App {
   id: string;
   name: string;
   description: string;
@@ -38,20 +38,20 @@ interface Tool {
   owned: boolean;
 }
 
-interface ToolPurchaseModalProps {
-  tool: Tool;
+interface AppPurchaseModalProps {
+  app: App;
   isOpen: boolean;
   onClose: () => void;
   onPurchaseSuccess?: () => void;
 }
 
-export default function ToolPurchaseModal({ 
-  tool, 
+export default function AppPurchaseModal({ 
+  app, 
   isOpen, 
   onClose, 
   onPurchaseSuccess 
-}: ToolPurchaseModalProps) {
-  const [selectedPricing, setSelectedPricing] = useState(tool.pricing[0]);
+}: AppPurchaseModalProps) {
+  const [selectedPricing, setSelectedPricing] = useState(app.pricing[0]);
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -64,9 +64,9 @@ export default function ToolPurchaseModal({
     onSuccess: () => {
       toast({
         title: "Purchase successful!",
-        description: `${tool.name} has been added to your collection.`,
+        description: `${app.name} has been added to your collection.`,
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/marketplace/tools'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/marketplace/apps'] });
       onPurchaseSuccess?.();
       onClose();
     },
@@ -85,7 +85,7 @@ export default function ToolPurchaseModal({
     setIsProcessing(true);
     try {
       await purchaseMutation.mutateAsync({
-        toolId: tool.id,
+        appId: app.id,
         pricingType: 'free',
         amount: 0,
         currency: 'INR',
@@ -99,7 +99,7 @@ export default function ToolPurchaseModal({
     setIsProcessing(true);
     try {
       await purchaseMutation.mutateAsync({
-        toolId: tool.id,
+        appId: app.id,
         pricingType: selectedPricing.type,
         amount: selectedPricing.price,
         currency: 'INR',
@@ -145,7 +145,7 @@ export default function ToolPurchaseModal({
     return iconMap[iconName] || CreditCard;
   };
 
-  const IconComponent = getIconComponent(tool.icon);
+  const IconComponent = getIconComponent(app.icon);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -156,30 +156,30 @@ export default function ToolPurchaseModal({
               <IconComponent className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <span>Purchase {tool.name}</span>
+              <span>Purchase {app.name}</span>
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 font-normal">
                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                <span>{tool.rating}</span>
+                <span>{app.rating}</span>
                 <span>•</span>
                 <Users className="h-4 w-4" />
-                <span>{tool.users} users</span>
+                <span>{app.users} users</span>
               </div>
             </div>
           </DialogTitle>
           <DialogDescription>
-            {tool.description}
+            {app.description}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Tool Features */}
+          {/* App Features */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">What's Included</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {tool.features.map((feature, index) => (
+                {app.features.map((feature, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-green-600" />
                     <span className="text-sm">{feature}</span>
@@ -193,9 +193,9 @@ export default function ToolPurchaseModal({
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Choose Your Plan</h3>
             
-            <Tabs defaultValue={tool.pricing[0].type} className="w-full">
+            <Tabs defaultValue={app.pricing[0].type} className="w-full">
               <TabsList className="grid w-full grid-cols-1 md:grid-cols-2 lg:grid-cols-3 h-auto p-1">
-                {tool.pricing.map((pricing) => {
+                {app.pricing.map((pricing) => {
                   const PricingIcon = getPricingIcon(pricing.type);
                   return (
                     <TabsTrigger
@@ -211,7 +211,7 @@ export default function ToolPurchaseModal({
                 })}
               </TabsList>
 
-              {tool.pricing.map((pricing) => (
+              {app.pricing.map((pricing) => (
                 <TabsContent key={pricing.type} value={pricing.type} className="mt-4">
                   <Card>
                     <CardHeader>
@@ -223,7 +223,7 @@ export default function ToolPurchaseModal({
                           </CardTitle>
                           <CardDescription>
                             {pricing.type === 'free' && 'Get started with basic features'}
-                            {pricing.type === 'pay_per_use' && 'Pay only when you use the tool'}
+                            {pricing.type === 'pay_per_use' && 'Pay only when you use the app'}
                             {pricing.type === 'monthly' && 'Unlimited access for one month'}
                             {pricing.type === 'yearly' && 'Best value - unlimited access for one year'}
                             {pricing.type === 'one_time' && 'Lifetime access with one-time payment'}
@@ -290,7 +290,7 @@ export default function ToolPurchaseModal({
                                 // Will integrate with existing RazorpayCheckout component
                                 toast({
                                   title: "Purchase initiated",
-                                  description: `Proceeding to payment for ${tool.name}`,
+                                  description: `Proceeding to payment for ${app.name}`,
                                 });
                                 
                                 // Simulate successful purchase for development

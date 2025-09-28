@@ -3,7 +3,7 @@ import { Switch, Route, Redirect } from "wouter";
 import PanelLayout from "./PanelLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import ToolPurchaseModal from "@/components/marketplace/ToolPurchaseModal";
+import AppPurchaseModal from "@/components/marketplace/AppPurchaseModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -521,8 +521,8 @@ function MyPanelWytTools() {
       
       {/* Purchase Modal */}
       {purchaseModalTool && (
-        <ToolPurchaseModal
-          tool={purchaseModalTool}
+        <AppPurchaseModal
+          app={purchaseModalTool}
           isOpen={!!purchaseModalTool}
           onClose={() => setPurchaseModalTool(null)}
           onPurchaseSuccess={() => {

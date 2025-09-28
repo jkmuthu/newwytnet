@@ -12,7 +12,7 @@ import AdminHubs from "@/pages/admin/hubs";
 import AdminCMS from "@/pages/admin/cms";
 import AdminSystemOverview from "@/pages/admin/system-overview";
 import AdminSeoSettings from "@/pages/admin/seo-settings";
-import ToolManagement from "@/pages/admin/ToolManagement";
+import AppManagement from "@/pages/admin/AppManagement";
 
 // Import admin analytics (legacy)
 import AdminAnalytics from "@/pages/admin-analytics";
@@ -117,7 +117,7 @@ export default function AdminRouter() {
       
       {/* Configuration routes */}
       <Route path="/admin/seo-settings" component={AdminSeoSettings} />
-      <Route path="/admin/tools" component={ToolManagement} />
+      <Route path="/admin/apps" component={AppManagement} />
       <Route path="/admin/billing" component={AdminBilling} />
       
               {/* Legacy analytics route */}

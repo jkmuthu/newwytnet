@@ -19,7 +19,7 @@ import {
   BarChart3
 } from 'lucide-react';
 
-interface MarketplaceTool {
+interface MarketplaceApp {
   id: string;
   name: string;
   slug: string;
@@ -30,9 +30,9 @@ interface MarketplaceTool {
   createdAt: string;
 }
 
-interface ToolPricing {
+interface AppPricing {
   id: string;
-  toolId: string;
+  appId: string;
   pricingType: string;
   price: string;
   currency: string;
@@ -40,22 +40,22 @@ interface ToolPricing {
   isActive: boolean;
 }
 
-interface ExtendedTool extends MarketplaceTool {
-  pricing: ToolPricing[];
+interface ExtendedApp extends MarketplaceApp {
+  pricing: AppPricing[];
   subscriberCount?: number;
   totalRevenue?: number;
   usageCount?: number;
 }
 
-export default function ToolManagement() {
-  const [selectedTool, setSelectedTool] = useState<ExtendedTool | null>(null);
+export default function AppManagement() {
+  const [selectedApp, setSelectedApp] = useState<ExtendedApp | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Mock data for now - will be replaced with real API calls
-  const mockTools: ExtendedTool[] = [
+  const mockApps: ExtendedApp[] = [
     {
       id: '1',
       name: 'QR Generator',
@@ -66,8 +66,8 @@ export default function ToolManagement() {
       isActive: true,
       createdAt: '2025-09-28',
       pricing: [
-        { id: '1', toolId: '1', pricingType: 'free', price: '0.00', currency: 'INR', usageLimit: 5, isActive: true },
-        { id: '2', toolId: '1', pricingType: 'pay_per_use', price: '2.00', currency: 'INR', usageLimit: 1, isActive: true }
+        { id: '1', appId: '1', pricingType: 'free', price: '0.00', currency: 'INR', usageLimit: 5, isActive: true },
+        { id: '2', appId: '1', pricingType: 'pay_per_use', price: '2.00', currency: 'INR', usageLimit: 1, isActive: true }
       ]
     },
     {
@@ -80,7 +80,7 @@ export default function ToolManagement() {
       isActive: true,
       createdAt: '2025-09-28',
       pricing: [
-        { id: '3', toolId: '2', pricingType: 'free', price: '0.00', currency: 'INR', usageLimit: null, isActive: true }
+        { id: '3', appId: '2', pricingType: 'free', price: '0.00', currency: 'INR', usageLimit: null, isActive: true }
       ]
     },
     {
@@ -93,12 +93,12 @@ export default function ToolManagement() {
       isActive: true,
       createdAt: '2025-09-28',
       pricing: [
-        { id: '4', toolId: '3', pricingType: 'one_time', price: '299.00', currency: 'INR', usageLimit: null, isActive: true }
+        { id: '4', appId: '3', pricingType: 'one_time', price: '299.00', currency: 'INR', usageLimit: null, isActive: true }
       ]
     }
   ];
 
-  const tools = mockTools;
+  const apps = mockApps;
   const isLoading = false;
 
   const formatPrice = (price: string, currency: string) => {
@@ -118,8 +118,8 @@ export default function ToolManagement() {
   };
 
   const mockStats = {
-    totalTools: tools.length,
-    activeTools: tools.filter(t => t.isActive).length,
+    totalApps: apps.length,
+    activeApps: apps.filter(t => t.isActive).length,
     totalSubscribers: 156,
     totalRevenue: 45678,
   };
@@ -128,14 +128,14 @@ export default function ToolManagement() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Tool Management</h1>
+          <h1 className="text-3xl font-bold">App Management</h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Manage marketplace tools, pricing, and availability
+            Manage marketplace apps, pricing, and availability
           </p>
         </div>
         <Button onClick={() => setIsCreating(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Add New Tool
+          Add New App
         </Button>
       </div>
 
@@ -147,8 +147,8 @@ export default function ToolManagement() {
                 <Settings className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Tools</p>
-                <p className="text-2xl font-bold">{mockStats.totalTools}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Apps</p>
+                <p className="text-2xl font-bold">{mockStats.totalApps}</p>
               </div>
             </div>
           </CardContent>
@@ -161,8 +161,8 @@ export default function ToolManagement() {
                 <Activity className="h-4 w-4 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Active Tools</p>
-                <p className="text-2xl font-bold">{mockStats.activeTools}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Active Apps</p>
+                <p className="text-2xl font-bold">{mockStats.activeApps}</p>
               </div>
             </div>
           </CardContent>
@@ -199,29 +199,29 @@ export default function ToolManagement() {
 
       <Tabs defaultValue="tools" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="tools">Tools</TabsTrigger>
+          <TabsTrigger value="apps">Apps</TabsTrigger>
           <TabsTrigger value="pricing">Pricing Management</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="tools">
+        <TabsContent value="apps">
           <Card>
             <CardHeader>
-              <CardTitle>Marketplace Tools</CardTitle>
+              <CardTitle>Marketplace Apps</CardTitle>
               <CardDescription>
-                Manage tools available in the marketplace
+                Manage apps available in the marketplace
               </CardDescription>
             </CardHeader>
             <CardContent>
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="text-gray-500">Loading tools...</div>
+                  <div className="text-gray-500">Loading apps...</div>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {tools.map((tool: ExtendedTool) => (
+                  {apps.map((app: ExtendedApp) => (
                     <div
-                      key={tool.id}
+                      key={app.id}
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                     >
                       <div className="flex items-center gap-4">
@@ -229,12 +229,12 @@ export default function ToolManagement() {
                           <Settings className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
-                          <h3 className="font-medium">{tool.name}</h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{tool.description}</p>
+                          <h3 className="font-medium">{app.name}</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">{app.description}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="secondary">{tool.category}</Badge>
-                            <Badge variant={tool.isActive ? 'default' : 'secondary'}>
-                              {tool.isActive ? 'Active' : 'Inactive'}
+                            <Badge variant="secondary">{app.category}</Badge>
+                            <Badge variant={app.isActive ? 'default' : 'secondary'}>
+                              {app.isActive ? 'Active' : 'Inactive'}
                             </Badge>
                           </div>
                         </div>
@@ -242,7 +242,7 @@ export default function ToolManagement() {
                       
                       <div className="flex items-center gap-2">
                         <Button variant="ghost" size="sm">
-                          {tool.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          {app.isActive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </Button>
                         <Button variant="ghost" size="sm">
                           <Edit className="h-4 w-4" />
@@ -261,15 +261,15 @@ export default function ToolManagement() {
             <CardHeader>
               <CardTitle>Pricing Management</CardTitle>
               <CardDescription>
-                Configure pricing models for each tool
+                Configure pricing models for each app
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {tools.map((tool: ExtendedTool) => (
-                  <div key={tool.id} className="border rounded-lg p-4">
+                {apps.map((app: ExtendedApp) => (
+                  <div key={app.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-medium">{tool.name}</h3>
+                      <h3 className="font-medium">{app.name}</h3>
                       <Button variant="outline" size="sm">
                         <Plus className="h-4 w-4 mr-2" />
                         Add Pricing
@@ -277,7 +277,7 @@ export default function ToolManagement() {
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {(tool.pricing || []).map((pricing: ToolPricing) => (
+                      {(app.pricing || []).map((pricing: AppPricing) => (
                         <div key={pricing.id} className="border rounded-lg p-3">
                           <div className="flex items-center justify-between mb-2">
                             <Badge className={getPricingTypeColor(pricing.pricingType)}>
@@ -306,16 +306,16 @@ export default function ToolManagement() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" />
-                  Tool Performance
+                  App Performance
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {tools.slice(0, 3).map((tool: ExtendedTool, index: number) => (
-                    <div key={tool.id} className="flex items-center justify-between">
+                  {apps.slice(0, 3).map((app: ExtendedApp, index: number) => (
+                    <div key={app.id} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-medium text-gray-500">#{index + 1}</span>
-                        <span className="font-medium">{tool.name}</span>
+                        <span className="font-medium">{app.name}</span>
                       </div>
                       <div className="text-right">
                         <p className="font-medium">{45 - index * 8} users</p>
