@@ -3,6 +3,7 @@ import { Switch, Route, Redirect } from "wouter";
 import PanelLayout from "./PanelLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
+import ToolPurchaseModal from "@/components/marketplace/ToolPurchaseModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -227,6 +228,7 @@ function MyPanelDashboard() {
 function MyPanelWytTools() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [purchaseModalTool, setPurchaseModalTool] = useState<any>(null);
   
   // Mock marketplace data - will be replaced with API calls
   const marketplaceTools = [
@@ -484,6 +486,7 @@ function MyPanelWytTools() {
                               size="sm" 
                               variant={pricing.type === 'free' ? 'outline' : 'default'}
                               className="ml-2"
+                              onClick={() => setPurchaseModalTool(tool)}
                             >
                               {pricing.type === 'free' ? 'Get Free' : 'Purchase'}
                             </Button>
@@ -514,6 +517,19 @@ function MyPanelWytTools() {
           <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No tools found</h3>
           <p className="text-gray-600 dark:text-gray-400">Try adjusting your search or filters</p>
         </div>
+      )}
+      
+      {/* Purchase Modal */}
+      {purchaseModalTool && (
+        <ToolPurchaseModal
+          tool={purchaseModalTool}
+          isOpen={!!purchaseModalTool}
+          onClose={() => setPurchaseModalTool(null)}
+          onPurchaseSuccess={() => {
+            // Refresh the tools data
+            window.location.reload(); // Simple refresh for now
+          }}
+        />
       )}
     </div>
   );
