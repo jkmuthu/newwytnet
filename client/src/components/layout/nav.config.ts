@@ -1,4 +1,4 @@
-import { Bot, Home, QrCode, Briefcase, Activity } from "lucide-react";
+import { Bot, Home, QrCode, Briefcase, Activity, Network } from "lucide-react";
 
 export const bottomNavItems = [
   { 
@@ -9,11 +9,11 @@ export const bottomNavItems = [
     activeRoutes: ['/']
   },
   { 
-    icon: Bot, 
-    label: 'AI Directory', 
+    icon: Network, 
+    label: 'WytHubs', 
     href: '/ai-directory', 
     badge: 'LIVE',
-    activeRoutes: ['/ai-directory']
+    activeRoutes: ['/ai-directory', '/hubs']
   },
   { 
     icon: QrCode, 
@@ -32,6 +32,11 @@ export const bottomNavItems = [
 ];
 
 export const sidebarNavItems = [
+  { icon: Network, label: 'WytHubs', href: '/ai-directory' },
+];
+
+// WytHubs submenu items
+export const wytHubsItems = [
   { icon: Bot, label: 'AI Directory', href: '/ai-directory' },
 ];
 

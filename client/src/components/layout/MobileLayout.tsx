@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Home, Bot, Activity, QrCode, Briefcase, Wrench, Smartphone } from "lucide-react";
+import { Menu, Home, Bot, Activity, QrCode, Briefcase, Wrench, Smartphone, Network } from "lucide-react";
 interface MobileLayoutProps {
   children: React.ReactNode;
   isMobile: boolean;
@@ -30,9 +30,9 @@ export default function MobileLayout({ children, isMobile }: MobileLayoutProps) 
     },
     {
       href: "/ai-directory", 
-      icon: Bot,
-      label: "AI Directory",
-      active: location === "/ai-directory"
+      icon: Network,
+      label: "WytHubs",
+      active: location === "/ai-directory" || location.startsWith("/hubs")
     },
     {
       href: "/qr-generator",
@@ -48,11 +48,13 @@ export default function MobileLayout({ children, isMobile }: MobileLayoutProps) 
     }
   ];
 
-  // Sidebar items (tools + install app)
+  // Sidebar items (grouped by category + install app)
   const sidebarItems = [
-    { icon: Bot, label: 'AI Directory', href: '/ai-directory' },
-    { icon: QrCode, label: 'QR Generator', href: '/qr-generator' },
-    { icon: Activity, label: 'DISC Assessment', href: '/assessment' },
+    { icon: Network, label: 'WytHubs', href: '/ai-directory', isCategory: true },
+    { icon: Bot, label: '• AI Directory', href: '/ai-directory', indent: true },
+    { icon: Wrench, label: 'WytTools', href: '/qr-generator', isCategory: true },
+    { icon: QrCode, label: '• QR Generator', href: '/qr-generator', indent: true },
+    { icon: Activity, label: '• DISC Assessment', href: '/assessment', indent: true },
     { icon: Smartphone, label: 'Install App', href: '/mobile-app' },
   ];
 
@@ -128,9 +130,11 @@ export default function MobileLayout({ children, isMobile }: MobileLayoutProps) 
                     <Link 
                       key={item.href}
                       href={item.href} 
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" 
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                        item.isCategory ? 'font-semibold text-gray-900 dark:text-white' : ''
+                      } ${item.indent ? 'ml-4 text-gray-600 dark:text-gray-400' : ''}`}
                       onClick={() => setSidebarOpen(false)}
-                      data-testid={`sidebar-${item.label.toLowerCase().replace(' ', '-')}`}
+                      data-testid={`sidebar-${item.label.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
                     >
                       <item.icon className="h-5 w-5" />
                       <span>{item.label}</span>
