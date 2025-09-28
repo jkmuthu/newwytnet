@@ -42,7 +42,7 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
     {
       href: "/wytapps",
       icon: Briefcase,
-      label: "Apps",
+      label: "WytApps",
       active: location === "/wytapps"
     }
   ];
@@ -50,20 +50,21 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
   // Sidebar items for mobile menu
   const sidebarItems = [
     { 
-      section: "Tools & Apps",
+      section: "WytTools",
       items: [
         { icon: Bot, label: 'AI Directory', href: '/ai-directory' },
         { icon: QrCode, label: 'QR Generator', href: '/qr-generator' },
         { icon: Activity, label: 'DISC Assessment', href: '/assessment' },
-        { icon: Briefcase, label: 'WytApps', href: '/wytapps' },
-        { icon: Smartphone, label: 'Install App', href: '/mobile-app' },
+        { icon: Briefcase, label: 'Trademark Tools', href: '/wytai-trademark' },
+        { icon: Smartphone, label: 'Property Tools', href: '/realbro' },
       ]
     },
     { 
-      section: "Company",
+      section: "WytApps & More",
       items: [
+        { icon: Briefcase, label: 'WytApps', href: '/wytapps' },
+        { icon: Smartphone, label: 'Install App', href: '/mobile-app' },
         { icon: Info, label: 'About Us', href: '/about' },
-        { icon: HelpCircle, label: 'Features', href: '/features' },
         { icon: Phone, label: 'Contact', href: '/contact' },
         { icon: HelpCircle, label: 'Help', href: '/help' },
       ]
@@ -94,25 +95,25 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
 
             {/* Right side - Login/Join + Menu */}
             <div className="flex items-center gap-2">
-              {/* Login/Join Buttons */}
+              {/* Access Buttons */}
               <div className="flex items-center gap-1">
-                <Link href="/login">
+                <Link href="/panel">
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    className="text-sm px-2 py-1 text-gray-700 dark:text-gray-200"
-                    data-testid="mobile-login-button"
+                    className="text-xs px-2 py-1 text-gray-700 dark:text-gray-200"
+                    data-testid="mobile-access-panel-button"
                   >
-                    Login
+                    WytPanel
                   </Button>
                 </Link>
                 <Link href="/login">
                   <Button 
                     size="sm"
-                    className="text-sm px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white"
-                    data-testid="mobile-join-button"
+                    className="text-xs px-2 py-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                    data-testid="mobile-get-wytpass-button"
                   >
-                    Join
+                    WytPass
                   </Button>
                 </Link>
               </div>

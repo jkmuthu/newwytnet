@@ -8,24 +8,23 @@ export default function Footer() {
 
   const companyLinks = [
     { label: "About", href: "/about" },
-    { label: "Careers", href: "/careers" },
-    { label: "Press", href: "/press" },
-    { label: "Blog", href: "/blog" },
-  ];
-
-  const productLinks = [
     { label: "Features", href: "/features" },
     { label: "Pricing", href: "/pricing" },
-    { label: "Install App", href: "/mobile-app" },
-    { label: "Documentation", href: "/docs" },
-    { label: "API Reference", href: "/api" },
+    { label: "Contact", href: "/contact" },
   ];
 
-  const supportLinks = [
+  const resourcesLinks = [
     { label: "Help Center", href: "/help" },
-    { label: "Contact Us", href: "/contact" },
+    { label: "Documentation", href: "/docs" },
+    { label: "API Reference", href: "/api" },
     { label: "Status", href: "/status" },
-    { label: "Community", href: "/community" },
+  ];
+
+  const wytToolsLinks = [
+    { label: "AI Directory", href: "/ai-directory" },
+    { label: "QR Generator", href: "/qr-generator" },
+    { label: "DISC Assessment", href: "/assessment" },
+    { label: "WytApps", href: "/wytapps" },
   ];
 
   const legalLinks = [
@@ -80,7 +79,7 @@ export default function Footer() {
         </div>
 
         {/* Links grid - optimized for mobile */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-6 lg:gap-8">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {/* Company links */}
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm sm:text-base" data-testid="footer-heading-company">
@@ -101,13 +100,13 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Product links */}
+          {/* WytTools links */}
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm sm:text-base" data-testid="footer-heading-product">
-              Product
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm sm:text-base" data-testid="footer-heading-wyttools">
+              WytTools
             </h3>
             <ul className="space-y-2">
-              {productLinks.map((link) => (
+              {wytToolsLinks.map((link) => (
                 <li key={link.label}>
                   <a 
                     href={link.href} 
@@ -121,13 +120,13 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Support links */}
-          <div className="col-span-2 sm:col-span-1">
-            <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm sm:text-base" data-testid="footer-heading-support">
-              Support
+          {/* Resources links */}
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm sm:text-base" data-testid="footer-heading-resources">
+              Resources
             </h3>
             <ul className="space-y-2">
-              {supportLinks.map((link) => (
+              {resourcesLinks.map((link) => (
                 <li key={link.label}>
                   <a 
                     href={link.href} 
@@ -138,6 +137,42 @@ export default function Footer() {
                   </a>
                 </li>
               ))}
+            </ul>
+          </div>
+
+          {/* Platform Access */}
+          <div className="col-span-2 sm:col-span-2 lg:col-span-1">
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm sm:text-base" data-testid="footer-heading-platform">
+              Platform Access
+            </h3>
+            <ul className="space-y-2">
+              <li>
+                <a 
+                  href="/panel" 
+                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm"
+                  data-testid="footer-link-wytpanel"
+                >
+                  Access WytPanel
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="/login" 
+                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm"
+                  data-testid="footer-link-wytpass"
+                >
+                  Get WytPass
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="/mobile-app" 
+                  className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm"
+                  data-testid="footer-link-mobile-app"
+                >
+                  Install Mobile App
+                </a>
+              </li>
             </ul>
           </div>
         </div>

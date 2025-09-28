@@ -18,13 +18,13 @@ export default function PublicHeader() {
     { label: "Contact", href: "/contact" },
   ];
 
-  const toolsNavItems = [
+  const wytToolsNavItems = [
     { label: "AI Directory", href: "/ai-directory" },
     { label: "QR Generator", href: "/qr-generator" },
     { label: "DISC Assessment", href: "/assessment" },
     { label: "Trademark Tools", href: "/wytai-trademark" },
     { label: "Property Tools", href: "/realbro" },
-    { label: "All Apps", href: "/wytapps" },
+    { label: "TM Numbering", href: "/tm-numbering" },
   ];
 
   const resourcesNavItems = [
@@ -50,29 +50,14 @@ export default function PublicHeader() {
           {/* Desktop Navigation */}
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
-              {/* Company Menu */}
+              {/* WytTools Menu */}
               <NavigationMenuItem>
-                <NavigationMenuTrigger className="text-gray-700 dark:text-gray-200">
-                  Company
+                <NavigationMenuTrigger className="text-gray-700 dark:text-gray-200 font-medium">
+                  WytTools
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <ul className="grid gap-3 p-6 w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
-                    <li className="row-span-3">
-                      <NavigationMenuLink asChild>
-                        <Link
-                          href="/"
-                          className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md"
-                        >
-                          <div className="mb-2 mt-4 text-lg font-medium">
-                            WytNet
-                          </div>
-                          <p className="text-sm leading-tight text-muted-foreground">
-                            Your all-in-one digital platform for a better lifestyle and smarter workstyle.
-                          </p>
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                    {companyNavItems.map((item) => (
+                  <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                    {wytToolsNavItems.map((item) => (
                       <li key={item.href}>
                         <NavigationMenuLink asChild>
                           <Link
@@ -88,71 +73,34 @@ export default function PublicHeader() {
                 </NavigationMenuContent>
               </NavigationMenuItem>
 
-              {/* Tools Menu */}
+              {/* WytApps - Direct Link */}
               <NavigationMenuItem>
-                <NavigationMenuTrigger className="text-gray-700 dark:text-gray-200">
-                  Tools
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                    {toolsNavItems.map((item) => (
-                      <li key={item.href}>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href={item.href}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                          >
-                            <div className="text-sm font-medium leading-none">{item.label}</div>
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                    ))}
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-
-              {/* Resources Menu */}
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="text-gray-700 dark:text-gray-200">
-                  Resources
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                    {resourcesNavItems.map((item) => (
-                      <li key={item.href}>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href={item.href}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                          >
-                            <div className="text-sm font-medium leading-none">{item.label}</div>
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                    ))}
-                  </ul>
-                </NavigationMenuContent>
+                <Link href="/wytapps">
+                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
+                    WytApps
+                  </NavigationMenuLink>
+                </Link>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
 
-          {/* Right side - Login/Join Buttons */}
+          {/* Right side - Access Buttons */}
           <div className="flex items-center space-x-2">
-            <Link href="/login">
+            <Link href="/panel">
               <Button 
-                variant="ghost" 
-                className="text-gray-700 dark:text-gray-200"
-                data-testid="button-login"
+                variant="outline" 
+                className="text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+                data-testid="button-access-panel"
               >
-                Login
+                Access WytPanel
               </Button>
             </Link>
             <Link href="/login">
               <Button 
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                data-testid="button-join"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md"
+                data-testid="button-get-wytpass"
               >
-                Get Started
+                Get WytPass
               </Button>
             </Link>
           </div>
