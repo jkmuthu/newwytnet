@@ -2,15 +2,11 @@ import { db } from "../db";
 import { whatsappUsers } from "../../shared/schema";
 import { eq } from "drizzle-orm";
 
-interface SendOTPResponse {
-  type: string;
-  message: string;
+interface EmailSendResponse {
+  type?: string;
+  message?: string;
+  data?: any;
   request_id?: string;
-}
-
-interface VerifyOTPResponse {
-  type: string;
-  message: string;
 }
 
 interface OTPData {
@@ -26,11 +22,15 @@ const otpStorage = new Map<string, OTPData>();
 class MSG91Service {
   private authKey: string;
   private templateId: string;
+  private domain: string;
+  private fromEmail: string;
   private baseUrl = "https://control.msg91.com/api/v5";
 
   constructor() {
-    this.authKey = process.env.MSG91_AUTH_KEY || "";
+    this.authKey = process.env.MSG91_AUTH_KEY || "464667ALFYbnq3689f001dP1";
     this.templateId = process.env.MSG91_EMAIL_TEMPLATE_ID || "";
+    this.domain = "wytnet.com";
+    this.fromEmail = "no-reply@wytnet.com";
   }
 
   /**
@@ -41,7 +41,7 @@ class MSG91Service {
   }
 
   /**
-   * Send OTP via Email using MSG91 API
+   * Send OTP via Email using MSG91 Email Template API
    */
   async sendEmailOTP(email: string, userName?: string): Promise<{ success: boolean; message: string; requestId?: string }> {
     if (!this.isConfigured()) {
@@ -53,42 +53,54 @@ class MSG91Service {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-      // For email OTP, we use email address instead of mobile
-      const url = `${this.baseUrl}/otp`;
-      const params = new URLSearchParams({
-        template_id: this.templateId,
-        mobile: email, // MSG91 uses 'mobile' parameter but it can be email for email OTP
-        authkey: this.authKey,
-        otp_expiry: "10", // 10 minutes
-        realTimeResponse: "1"
-      });
-
+      // Use MSG91 Email Template API
+      const url = `${this.baseUrl}/email/send`;
+      
       const body = {
-        OTP: otp,
-        NAME: userName || "User",
-        EMAIL: email
+        recipients: [
+          {
+            to: [
+              {
+                email: email,
+                name: userName || email.split("@")[0]
+              }
+            ],
+            variables: {
+              "OTP": otp,
+              "NAME": userName || email.split("@")[0],
+              "EMAIL": email,
+              "COMPANY": "WytNet"
+            }
+          }
+        ],
+        from: {
+          email: this.fromEmail
+        },
+        domain: this.domain,
+        template_id: this.templateId
       };
 
-      console.log(`🔧 MSG91: Sending email OTP to ${email}`);
+      console.log(`🔧 MSG91: Sending email OTP to ${email} using template ${this.templateId}`);
 
-      const response = await fetch(`${url}?${params}`, {
+      const response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "authkey": this.authKey,
           "Accept": "application/json"
         },
         body: JSON.stringify(body)
       });
 
-      const result: SendOTPResponse = await response.json();
+      const result: EmailSendResponse = await response.json();
 
-      if (response.ok && result.type === "success") {
+      if (response.ok) {
         // Store OTP for verification (in production, use database/Redis)
         otpStorage.set(email, {
           email,
           otp,
           expiresAt,
-          requestId: result.request_id
+          requestId: result.request_id || `email_${Date.now()}`
         });
 
         console.log(`✅ MSG91: Email OTP sent successfully to ${email}`);
@@ -99,7 +111,7 @@ class MSG91Service {
         };
       } else {
         console.error("❌ MSG91: Failed to send email OTP:", result);
-        return { success: false, message: result.message || "Failed to send OTP" };
+        return { success: false, message: result.message || "Failed to send OTP. Please check your email template configuration." };
       }
     } catch (error) {
       console.error("❌ MSG91: Error sending email OTP:", error);
@@ -108,15 +120,11 @@ class MSG91Service {
   }
 
   /**
-   * Verify OTP using MSG91 API
+   * Verify OTP (Local verification since we're using email templates)
    */
   async verifyEmailOTP(email: string, userOTP: string): Promise<{ success: boolean; message: string }> {
-    if (!this.isConfigured()) {
-      return { success: false, message: "MSG91 not configured" };
-    }
-
     try {
-      // First check our local storage for immediate validation
+      // Check our local storage for OTP validation
       const storedOTP = otpStorage.get(email);
       
       if (!storedOTP) {
@@ -132,32 +140,10 @@ class MSG91Service {
         return { success: false, message: "Invalid OTP. Please check and try again." };
       }
 
-      // Verify with MSG91 API as well (optional double verification)
-      const url = `${this.baseUrl}/otp/verify`;
-      const params = new URLSearchParams({
-        otp: userOTP,
-        mobile: email // Using email instead of mobile for email OTP
-      });
-
-      const response = await fetch(`${url}?${params}`, {
-        method: "GET",
-        headers: {
-          "authkey": this.authKey,
-          "Accept": "application/json"
-        }
-      });
-
-      const result: VerifyOTPResponse = await response.json();
-
-      if (response.ok && result.type === "success") {
-        // Clean up stored OTP after successful verification
-        otpStorage.delete(email);
-        console.log(`✅ MSG91: Email OTP verified successfully for ${email}`);
-        return { success: true, message: "OTP verified successfully" };
-      } else {
-        console.error("❌ MSG91: OTP verification failed:", result);
-        return { success: false, message: result.message || "Invalid OTP" };
-      }
+      // Clean up stored OTP after successful verification
+      otpStorage.delete(email);
+      console.log(`✅ MSG91: Email OTP verified successfully for ${email}`);
+      return { success: true, message: "OTP verified successfully" };
     } catch (error) {
       console.error("❌ MSG91: Error verifying email OTP:", error);
       return { success: false, message: "Failed to verify OTP. Please try again." };
