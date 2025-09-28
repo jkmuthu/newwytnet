@@ -28,7 +28,8 @@ import {
   Monitor,
   QrCode,
   Bot,
-  Briefcase
+  Briefcase,
+  Calendar
 } from "lucide-react";
 
 // My Dash - Comprehensive Dashboard
@@ -57,7 +58,7 @@ function MyPanelDashboard() {
       {/* Welcome Header */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 rounded-lg">
         <h1 className="text-2xl font-bold mb-2">
-          Welcome back, {user?.email?.split('@')[0] || 'User'}!
+          Welcome back, {(user as any)?.email?.split('@')[0] || 'User'}!
         </h1>
         <p className="opacity-90">
           Manage your WytNet experience from your personal dashboard
@@ -74,7 +75,7 @@ function MyPanelDashboard() {
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Tools Used</p>
-                <p className="text-2xl font-bold">{stats?.toolsUsed || 12}</p>
+                <p className="text-2xl font-bold">{(stats as any)?.toolsUsed || 12}</p>
               </div>
             </div>
           </CardContent>
@@ -88,7 +89,7 @@ function MyPanelDashboard() {
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Apps Created</p>
-                <p className="text-2xl font-bold">{stats?.appsCreated || 3}</p>
+                <p className="text-2xl font-bold">{(stats as any)?.appsCreated || 3}</p>
               </div>
             </div>
           </CardContent>
@@ -102,7 +103,7 @@ function MyPanelDashboard() {
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Monthly Usage</p>
-                <p className="text-2xl font-bold">{stats?.monthlyUsage || 47}%</p>
+                <p className="text-2xl font-bold">{(stats as any)?.monthlyUsage || 47}%</p>
               </div>
             </div>
           </CardContent>
@@ -116,7 +117,7 @@ function MyPanelDashboard() {
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Plan</p>
-                <p className="text-sm font-bold">{stats?.plan || 'Starter'}</p>
+                <p className="text-sm font-bold">{(stats as any)?.plan || 'Starter'}</p>
                 <Badge variant="outline" className="text-xs">Active</Badge>
               </div>
             </div>
@@ -162,7 +163,7 @@ function MyPanelDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {(recentActivity?.data || [
+              {((recentActivity as any)?.data || [
                 { action: 'Generated QR Code', time: '2 hours ago', status: 'success' },
                 { action: 'Created WytApp Project', time: '1 day ago', status: 'success' },
                 { action: 'Used AI Directory', time: '2 days ago', status: 'success' },
@@ -584,8 +585,8 @@ function MyPanelAccount() {
                     <User className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="font-medium">{user?.email?.split('@')[0] || 'User'}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{user?.email}</p>
+                    <h3 className="font-medium">{(user as any)?.email?.split('@')[0] || 'User'}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{(user as any)?.email}</p>
                     <Badge variant="outline">Verified</Badge>
                   </div>
                 </div>
@@ -593,11 +594,11 @@ function MyPanelAccount() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium">Full Name</label>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{user?.email?.split('@')[0] || 'Not set'}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{(user as any)?.email?.split('@')[0] || 'Not set'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium">Email</label>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{user?.email}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{(user as any)?.email}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium">Member Since</label>
