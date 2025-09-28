@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Switch, Route, Redirect } from "wouter";
 import PanelLayout from "./PanelLayout";
 import { useAuth } from "@/hooks/useAuth";
@@ -222,37 +223,167 @@ function MyPanelDashboard() {
   );
 }
 
-// My WytTools - Tools Management
+// My WytTools - Marketplace where users can browse and purchase tools
 function MyPanelWytTools() {
-  const toolsUsage = [
-    { name: 'QR Generator', usage: 24, lastUsed: '2 hours ago', category: 'Utilities', active: true },
-    { name: 'AI Directory', usage: 18, lastUsed: '1 day ago', category: 'AI Tools', active: true },
-    { name: 'DISC Assessment', usage: 7, lastUsed: '3 days ago', category: 'Assessment', active: true },
-    { name: 'Business Card Designer', usage: 0, lastUsed: 'Never', category: 'Design', active: false },
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Mock marketplace data - will be replaced with API calls
+  const marketplaceTools = [
+    {
+      id: 'qr-generator',
+      name: 'QR Generator',
+      description: 'Generate QR codes for URLs, text, and more with advanced customization',
+      category: 'utilities',
+      icon: 'QrCode',
+      pricing: [
+        { type: 'free', price: 0, usageLimit: 5, label: 'Free - 5 uses' },
+        { type: 'pay_per_use', price: 2, usageLimit: 1, label: '₹2 per generation' }
+      ],
+      features: ['Custom colors', 'Multiple formats', 'Bulk generation'],
+      rating: 4.8,
+      users: 1247,
+      owned: false
+    },
+    {
+      id: 'ai-directory',
+      name: 'AI Directory',
+      description: 'Curated collection of 500+ AI tools and services',
+      category: 'ai-tools',
+      icon: 'Bot',
+      pricing: [
+        { type: 'free', price: 0, usageLimit: null, label: 'Free forever' }
+      ],
+      features: ['500+ AI tools', 'Regular updates', 'Category filters'],
+      rating: 4.9,
+      users: 3456,
+      owned: true
+    },
+    {
+      id: 'disc-assessment',
+      name: 'DISC Assessment',
+      description: 'Professional personality assessment with detailed reports',
+      category: 'assessment',
+      icon: 'Activity',
+      pricing: [
+        { type: 'one_time', price: 299, usageLimit: null, label: '₹299 one-time' }
+      ],
+      features: ['Detailed report', 'PDF export', '24/7 access'],
+      rating: 4.7,
+      users: 892,
+      owned: false
+    },
+    {
+      id: 'business-card-designer',
+      name: 'Business Card Designer',
+      description: 'Create professional business cards with AI assistance',
+      category: 'design',
+      icon: 'Briefcase',
+      pricing: [
+        { type: 'monthly', price: 99, usageLimit: null, label: '₹99/month' },
+        { type: 'yearly', price: 999, usageLimit: null, label: '₹999/year' }
+      ],
+      features: ['AI templates', 'Print-ready files', 'Brand consistency'],
+      rating: 4.6,
+      users: 567,
+      owned: false
+    },
+    {
+      id: 'invoice-generator',
+      name: 'Invoice Generator',
+      description: 'Professional invoicing with payment tracking',
+      category: 'business',
+      icon: 'CreditCard',
+      pricing: [
+        { type: 'pay_per_use', price: 5, usageLimit: 1, label: '₹5 per invoice' },
+        { type: 'monthly', price: 199, usageLimit: null, label: '₹199/month unlimited' }
+      ],
+      features: ['Payment tracking', 'Tax compliance', 'Client portal'],
+      rating: 4.5,
+      users: 234,
+      owned: false
+    }
   ];
+  
+  const categories = [
+    { id: 'all', label: 'All Tools', count: marketplaceTools.length },
+    { id: 'utilities', label: 'Utilities', count: marketplaceTools.filter(t => t.category === 'utilities').length },
+    { id: 'ai-tools', label: 'AI Tools', count: marketplaceTools.filter(t => t.category === 'ai-tools').length },
+    { id: 'assessment', label: 'Assessment', count: marketplaceTools.filter(t => t.category === 'assessment').length },
+    { id: 'design', label: 'Design', count: marketplaceTools.filter(t => t.category === 'design').length },
+    { id: 'business', label: 'Business', count: marketplaceTools.filter(t => t.category === 'business').length }
+  ];
+  
+  const filteredTools = marketplaceTools
+    .filter(tool => selectedCategory === 'all' || tool.category === selectedCategory)
+    .filter(tool => tool.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                   tool.description.toLowerCase().includes(searchQuery.toLowerCase()));
+  
+  const getIconComponent = (iconName: string) => {
+    const iconMap: { [key: string]: any } = {
+      QrCode, Bot, Activity, Briefcase, CreditCard
+    };
+    return iconMap[iconName] || QrCode;
+  };
+  
+  const getPricingColor = (type: string) => {
+    switch (type) {
+      case 'free': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'pay_per_use': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case 'monthly': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      case 'yearly': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+      case 'one_time': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+    }
+  };
   
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold mb-2">My WytTools</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage your tools usage and preferences</p>
+          <h1 className="text-2xl font-bold mb-2">WytTools Marketplace</h1>
+          <p className="text-gray-600 dark:text-gray-400">Browse and purchase tools to enhance your workflow</p>
         </div>
-        <Button>
-          <QrCode className="h-4 w-4 mr-2" />
-          Explore Tools
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search tools..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-64 px-3 py-2 border rounded-lg text-sm"
+            />
+          </div>
+        </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Categories Filter */}
+      <div className="flex flex-wrap gap-2">
+        {categories.map((category) => (
+          <button
+            key={category.id}
+            onClick={() => setSelectedCategory(category.id)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              selectedCategory === category.id
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+            }`}
+          >
+            {category.label} ({category.count})
+          </button>
+        ))}
+      </div>
+      
+      {/* Marketplace Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="text-center">
               <div className="bg-blue-100 dark:bg-blue-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
                 <Zap className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
-              <p className="text-2xl font-bold">{toolsUsage.filter(t => t.active).length}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Active Tools</p>
+              <p className="text-2xl font-bold">{marketplaceTools.length}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Available Tools</p>
             </div>
           </CardContent>
         </Card>
@@ -261,10 +392,10 @@ function MyPanelWytTools() {
           <CardContent className="p-4">
             <div className="text-center">
               <div className="bg-green-100 dark:bg-green-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
-                <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400" />
+                <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
-              <p className="text-2xl font-bold">{toolsUsage.reduce((sum, tool) => sum + tool.usage, 0)}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Usage</p>
+              <p className="text-2xl font-bold">{marketplaceTools.filter(t => t.owned).length}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Owned Tools</p>
             </div>
           </CardContent>
         </Card>
@@ -273,50 +404,117 @@ function MyPanelWytTools() {
           <CardContent className="p-4">
             <div className="text-center">
               <div className="bg-purple-100 dark:bg-purple-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
-                <Clock className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                <Crown className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
-              <p className="text-2xl font-bold">QR Gen</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Most Used</p>
+              <p className="text-2xl font-bold">{marketplaceTools.filter(t => t.pricing.some(p => p.type === 'free')).length}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Free Tools</p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="bg-orange-100 dark:bg-orange-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
+                <TrendingUp className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+              </div>
+              <p className="text-2xl font-bold">{Math.round(marketplaceTools.reduce((acc, t) => acc + t.rating, 0) / marketplaceTools.length * 10) / 10}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Avg Rating</p>
             </div>
           </CardContent>
         </Card>
       </div>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Tools Usage Overview</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {toolsUsage.map((tool, index) => (
-              <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    tool.active ? 'bg-green-100 dark:bg-green-900' : 'bg-gray-100 dark:bg-gray-900'
-                  }`}>
-                    <QrCode className={`h-5 w-5 ${
-                      tool.active ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'
-                    }`} />
+      {/* Tools Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {filteredTools.map((tool) => {
+          const IconComponent = getIconComponent(tool.icon);
+          const cheapestPrice = tool.pricing.reduce((min, p) => p.price < min.price ? p : min);
+          
+          return (
+            <Card key={tool.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                      <IconComponent className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{tool.name}</CardTitle>
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <span>⭐ {tool.rating}</span>
+                        <span>•</span>
+                        <span>{tool.users} users</span>
+                      </div>
+                    </div>
                   </div>
+                  {tool.owned && (
+                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      Owned
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              
+              <CardContent className="pt-0">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">{tool.description}</p>
+                
+                <div className="space-y-3">
                   <div>
-                    <p className="font-medium">{tool.name}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{tool.category}</p>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">FEATURES</p>
+                    <div className="flex flex-wrap gap-1">
+                      {tool.features.slice(0, 3).map((feature, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          {feature}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">PRICING</p>
+                    <div className="space-y-2">
+                      {tool.pricing.map((pricing, index) => (
+                        <div key={index} className="flex items-center justify-between">
+                          <Badge className={getPricingColor(pricing.type)}>
+                            {pricing.label}
+                          </Badge>
+                          {!tool.owned && (
+                            <Button 
+                              size="sm" 
+                              variant={pricing.type === 'free' ? 'outline' : 'default'}
+                              className="ml-2"
+                            >
+                              {pricing.type === 'free' ? 'Get Free' : 'Purchase'}
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="font-medium">{tool.usage} uses</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Last: {tool.lastUsed}</p>
-                  </div>
-                  <Badge variant={tool.active ? 'default' : 'secondary'}>
-                    {tool.active ? 'Active' : 'Coming Soon'}
-                  </Badge>
-                </div>
-              </div>
-            ))}
+                
+                {tool.owned && (
+                  <Button className="w-full mt-4" variant="default">
+                    <AppWindow className="h-4 w-4 mr-2" />
+                    Open Tool
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+      
+      {filteredTools.length === 0 && (
+        <div className="text-center py-12">
+          <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <QrCode className="h-12 w-12 text-gray-400" />
           </div>
-        </CardContent>
-      </Card>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No tools found</h3>
+          <p className="text-gray-600 dark:text-gray-400">Try adjusting your search or filters</p>
+        </div>
+      )}
     </div>
   );
 }
