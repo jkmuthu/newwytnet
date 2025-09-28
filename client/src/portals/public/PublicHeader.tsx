@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from "@/components/ui/navigation-menu";
-import { Menu, Bell, User, Settings, LogOut } from "lucide-react";
+import { Menu, Bell, User, Settings, LogOut, LayoutDashboard, Wrench, Smartphone, Wallet, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -84,8 +84,8 @@ export default function PublicHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-gray-900/60">
-      <div className="container mx-auto px-4">
-        <div className="flex h-16 items-center justify-between">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex h-14 sm:h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2" data-testid="link-logo">
             <img 
@@ -96,7 +96,7 @@ export default function PublicHeader() {
           </Link>
 
           {/* Desktop Navigation */}
-          <NavigationMenu className="hidden md:flex">
+          <NavigationMenu className="hidden lg:flex">
             <NavigationMenuList>
               {/* WytTools Menu */}
               <NavigationMenuItem>
@@ -133,33 +133,55 @@ export default function PublicHeader() {
           </NavigationMenu>
 
           {/* Right side - Conditional Based on Auth Status */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 md:space-x-3">
             {isAuthenticated ? (
-              // Authenticated: Hamburger menu, User DP, Notification Icon (left to right)
+              // Authenticated: Right to Left order - Hamburger menu, User DP, Notification Icon
               <>
-                {/* Hamburger Menu */}
+                {/* Hamburger Menu - WytPanel Navigation */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      className="text-gray-700 dark:text-gray-200"
+                      className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                       data-testid="button-hamburger-menu"
                     >
                       <Menu className="h-5 w-5" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <Link href="/panel/me">
+                    <div className="px-2 py-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      WytPanel
+                    </div>
+                    <DropdownMenuSeparator />
+                    <Link href="/panel/me/dashboard">
                       <DropdownMenuItem className="cursor-pointer">
-                        <User className="mr-2 h-4 w-4" />
-                        <span>My Panel</span>
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        <span>My Dash</span>
                       </DropdownMenuItem>
                     </Link>
-                    <Link href="/panel/me/settings">
+                    <Link href="/panel/me/wyttools">
                       <DropdownMenuItem className="cursor-pointer">
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>Settings</span>
+                        <Wrench className="mr-2 h-4 w-4" />
+                        <span>My WytTools</span>
+                      </DropdownMenuItem>
+                    </Link>
+                    <Link href="/panel/me/wytapps">
+                      <DropdownMenuItem className="cursor-pointer">
+                        <Smartphone className="mr-2 h-4 w-4" />
+                        <span>My WytApps</span>
+                      </DropdownMenuItem>
+                    </Link>
+                    <Link href="/panel/me/wallet">
+                      <DropdownMenuItem className="cursor-pointer">
+                        <Wallet className="mr-2 h-4 w-4" />
+                        <span>My Wallet</span>
+                      </DropdownMenuItem>
+                    </Link>
+                    <Link href="/panel/me/account">
+                      <DropdownMenuItem className="cursor-pointer">
+                        <UserCircle className="mr-2 h-4 w-4" />
+                        <span>My Account</span>
                       </DropdownMenuItem>
                     </Link>
                     <DropdownMenuSeparator />
@@ -169,26 +191,16 @@ export default function PublicHeader() {
                       disabled={logoutMutation.isPending}
                     >
                       <LogOut className="mr-2 h-4 w-4" />
-                      <span>{logoutMutation.isPending ? "Signing out..." : "Sign out"}</span>
+                      <span>{logoutMutation.isPending ? "Signing out..." : "Logout"}</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-
-                {/* Notification Icon */}
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="text-gray-700 dark:text-gray-200"
-                  data-testid="button-notifications"
-                >
-                  <Bell className="h-5 w-5" />
-                </Button>
 
                 {/* User Display Picture */}
                 <Link href="/panel/me/profile">
                   <Button 
                     variant="ghost" 
-                    className="relative h-8 w-8 rounded-full p-0"
+                    className="relative h-8 w-8 rounded-full p-0 hover:scale-105 transition-transform"
                     data-testid="user-avatar"
                   >
                     <Avatar className="h-8 w-8">
@@ -199,31 +211,49 @@ export default function PublicHeader() {
                           alt={(user && 'name' in user && typeof user.name === 'string' ? user.name : "User")} 
                         />
                       )}
-                      <AvatarFallback className="bg-blue-600 text-white text-xs">
+                      <AvatarFallback className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-semibold">
                         {getUserInitials(user)}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
                 </Link>
+
+                {/* Notification Icon */}
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 relative"
+                  data-testid="button-notifications"
+                >
+                  <Bell className="h-5 w-5" />
+                  {/* Notification Badge */}
+                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full flex items-center justify-center">
+                    <span className="text-xs text-white font-bold">3</span>
+                  </span>
+                </Button>
               </>
             ) : (
               // Not Authenticated: Get WytPass Button, Access WytPanel
               <>
-                <Link href="/panel">
+                <Link href="/panel" className="hidden sm:block">
                   <Button 
                     variant="outline" 
+                    size="sm"
                     className="text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
                     data-testid="button-access-panel"
                   >
-                    Access WytPanel
+                    <span className="hidden md:inline">Access WytPanel</span>
+                    <span className="md:hidden">Panel</span>
                   </Button>
                 </Link>
                 <Link href="/wytpass-login">
                   <Button 
+                    size="sm"
                     className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md"
                     data-testid="button-get-wytpass"
                   >
-                    Get WytPass
+                    <span className="hidden md:inline">Get WytPass</span>
+                    <span className="md:hidden">WytPass</span>
                   </Button>
                 </Link>
               </>
