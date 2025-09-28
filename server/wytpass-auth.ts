@@ -6,6 +6,7 @@ import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
+import MSG91Service from "./services/msg91Service";
 import { whatsappUsers } from "@shared/schema";
 import { db } from "./db";
 import { eq, or } from "drizzle-orm";
@@ -453,6 +454,97 @@ export function setupWytPassAuth(app: Express) {
         res.sendStatus(200);
       });
     });
+  });
+
+  // MSG91 Email OTP Authentication Routes
+  
+  // Send Email OTP
+  app.post("/api/auth/send-email-otp", async (req, res) => {
+    try {
+      const { email, name } = req.body;
+      
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ message: "Valid email address is required" });
+      }
+
+      const result = await MSG91Service.sendEmailOTP(email, name);
+      
+      if (result.success) {
+        res.status(200).json({ 
+          message: result.message,
+          requestId: result.requestId 
+        });
+      } else {
+        res.status(400).json({ message: result.message });
+      }
+    } catch (error) {
+      console.error("Send email OTP error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Verify Email OTP and Login
+  app.post("/api/auth/verify-email-otp", async (req, res) => {
+    try {
+      const { email, otp, name } = req.body;
+      
+      if (!email || !otp) {
+        return res.status(400).json({ message: "Email and OTP are required" });
+      }
+
+      const verifyResult = await MSG91Service.verifyEmailOTP(email, otp);
+      
+      if (verifyResult.success) {
+        // Find or create user
+        const user = await MSG91Service.findOrCreateUserForOTP(email, name);
+        
+        // Log the user in using Passport
+        req.login(user, (err) => {
+          if (err) {
+            console.error("Login error:", err);
+            return res.status(500).json({ message: "Login failed" });
+          }
+          
+          res.status(200).json({
+            message: "Login successful",
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              profileImageUrl: user.profileImageUrl,
+              role: user.role,
+            }
+          });
+        });
+      } else {
+        res.status(400).json({ message: verifyResult.message });
+      }
+    } catch (error) {
+      console.error("Verify email OTP error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // Resend Email OTP
+  app.post("/api/auth/resend-email-otp", async (req, res) => {
+    try {
+      const { email, name } = req.body;
+      
+      if (!email || !email.includes("@")) {
+        return res.status(400).json({ message: "Valid email address is required" });
+      }
+
+      const result = await MSG91Service.resendEmailOTP(email, name);
+      
+      if (result.success) {
+        res.status(200).json({ message: result.message });
+      } else {
+        res.status(400).json({ message: result.message });
+      }
+    } catch (error) {
+      console.error("Resend email OTP error:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   // Admin status check

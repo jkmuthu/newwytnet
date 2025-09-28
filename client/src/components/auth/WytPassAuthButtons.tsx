@@ -3,18 +3,20 @@ import { FaGoogle } from "react-icons/fa";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 
 interface WytPassAuthButtonsProps {
   title?: string;
   description?: string;
   onGoogleLogin?: () => void;
+  onEmailOTPLogin?: () => void;
   showEmailLogin?: boolean;
 }
 
 export default function WytPassAuthButtons({ 
   title = "Access WytNet with WytPass", 
   description = "Choose your preferred sign-in method",
+  onEmailOTPLogin,
   showEmailLogin = true 
 }: WytPassAuthButtonsProps) {
   const [isLoading, setIsLoading] = useState<string | null>(null);
@@ -61,6 +63,17 @@ export default function WytPassAuthButtons({
         </Button>
         */}
 
+        {/* Email OTP Login Button */}
+        <Button 
+          onClick={onEmailOTPLogin}
+          variant="outline"
+          className="w-full h-11 text-gray-900 border border-gray-300 hover:bg-gray-50"
+          data-testid="button-email-otp-login"
+        >
+          <Mail className="h-4 w-4 mr-2 text-blue-500" />
+          Continue with Email OTP
+        </Button>
+
         {showEmailLogin && (
           <>
             <div className="flex items-center space-x-2">
@@ -78,7 +91,7 @@ export default function WytPassAuthButtons({
               className="w-full h-11"
               data-testid="button-email-login"
             >
-              Continue with Email
+              Continue with Email & Password
             </Button>
           </>
         )}

@@ -127,6 +127,7 @@ export default function WytPassLoginForm() {
         <WytPassAuthButtons 
           title="Quick Access"
           description="Sign in with your preferred method"
+          onEmailOTPLogin={() => window.location.href = "/email-otp-login"}
           showEmailLogin={false}
         />
 
