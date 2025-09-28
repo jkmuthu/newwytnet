@@ -7,6 +7,11 @@ interface EmailSendResponse {
   message?: string;
   data?: any;
   request_id?: string;
+  status?: string;
+  hasError?: boolean;
+  errors?: string;
+  code?: string;
+  apiError?: string;
 }
 
 interface OTPData {
@@ -89,7 +94,7 @@ class MSG91Service {
    * Send OTP via MSG91 Email Template API
    */
   private async sendViaTemplateAPI(email: string, userName?: string, otp?: string): Promise<{ success: boolean; message: string; requestId?: string }> {
-    const url = `${this.baseUrl}/email/send`;
+    const url = `https://control.msg91.com/api/v5/email/send`;
     
     const body = {
       recipients: [
@@ -131,7 +136,7 @@ class MSG91Service {
     console.log(`🔧 MSG91: Template API Response status: ${response.status}`);
     console.log(`🔧 MSG91: Template API Response body:`, JSON.stringify(result, null, 2));
 
-    if (response.ok) {
+    if (response.ok && result.status !== "fail") {
       console.log(`✅ MSG91: Email OTP sent successfully via template API to ${email}`);
       return { 
         success: true, 
@@ -145,50 +150,64 @@ class MSG91Service {
   }
 
   /**
-   * Fallback: Send OTP via MSG91 Simple OTP API
+   * Fallback: Send simple email without template
    */
   private async sendViaOTPAPI(email: string, userName?: string, otp?: string): Promise<{ success: boolean; message: string; requestId?: string }> {
-    const url = `${this.baseUrl}/otp`;
-    const params = new URLSearchParams({
-      template_id: this.templateId,
-      mobile: email, // MSG91 can use email for email OTP
-      authkey: this.authKey,
-      otp_expiry: "10", // 10 minutes
-      realTimeResponse: "1"
-    });
-
+    const url = `https://control.msg91.com/api/v5/email/send`;
+    
+    // Fallback: Send a simple email without template
     const body = {
-      OTP: otp,
-      NAME: userName || email.split("@")[0],
-      EMAIL: email,
-      COMPANY: "WytNet"
+      recipients: [
+        {
+          to: [
+            {
+              email: email,
+              name: userName || email.split("@")[0]
+            }
+          ]
+        }
+      ],
+      from: {
+        email: this.fromEmail
+      },
+      subject: "Your WytNet Login Code",
+      body: `
+        <h2>Your WytNet Login Code</h2>
+        <p>Hi ${userName || email.split("@")[0]},</p>
+        <p>Your verification code is: <strong style="font-size: 24px; color: #4F46E5;">${otp}</strong></p>
+        <p>This code will expire in 10 minutes.</p>
+        <p>If you didn't request this code, please ignore this email.</p>
+        <br>
+        <p>Best regards,<br>WytNet Team</p>
+      `
     };
 
-    console.log(`🔧 MSG91: Sending email OTP via OTP API to ${email}`);
+    console.log(`🔧 MSG91: Sending simple email OTP to ${email} (no template)`);
 
-    const response = await fetch(`${url}?${params}`, {
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "authkey": this.authKey,
         "Accept": "application/json"
       },
       body: JSON.stringify(body)
     });
 
     const result: any = await response.json();
-    console.log(`🔧 MSG91: OTP API Response status: ${response.status}`);
-    console.log(`🔧 MSG91: OTP API Response body:`, JSON.stringify(result, null, 2));
+    console.log(`🔧 MSG91: Simple Email API Response status: ${response.status}`);
+    console.log(`🔧 MSG91: Simple Email API Response body:`, JSON.stringify(result, null, 2));
 
-    if (response.ok && result.type === "success") {
-      console.log(`✅ MSG91: Email OTP sent successfully via OTP API to ${email}`);
+    if (response.ok && result.status !== "fail") {
+      console.log(`✅ MSG91: Email OTP sent successfully via simple email to ${email}`);
       return { 
         success: true, 
         message: "OTP sent successfully to your email address", 
-        requestId: result.request_id 
+        requestId: result.request_id || `simple_${Date.now()}`
       };
     } else {
-      console.error("❌ MSG91: OTP API also failed:", result);
-      return { success: false, message: result.message || "Both API methods failed. Please check MSG91 configuration." };
+      console.error("❌ MSG91: Simple email API also failed:", result);
+      return { success: false, message: result.message || "Email sending failed. Please check your MSG91 configuration." };
     }
   }
 
