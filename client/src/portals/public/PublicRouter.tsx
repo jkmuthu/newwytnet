@@ -35,6 +35,7 @@ import RealBroEnhanced from "@/pages/realbro-enhanced";
 import WytDuty from "@/pages/wytduty";
 import WytDutyEnhanced from "@/pages/wytduty-enhanced";
 import WytApps from "@/pages/wytapps";
+import AppDetail from "@/pages/app-detail";
 import MobileAppPage from "@/pages/MobileAppPage";
 import SearchPage from "@/pages/search";
 import PaymentsPage from "@/pages/payments";
@@ -93,6 +94,7 @@ export default function PublicRouter() {
       <Route path="/wytduty" component={WytDuty} />
       <Route path="/wytduty/enhanced" component={WytDutyEnhanced} />
       <Route path="/wytapps" component={WytApps} />
+      <Route path="/app/:id" component={AppDetail} />
       <Route path="/mobile-app" component={MobileAppPage} />
       <Route path="/search" component={SearchPage} />
 
