@@ -5,8 +5,33 @@ import { ArrowRight, CheckCircle, Heart, Zap, Crown, Star, Gift, Users } from "l
 import { Link } from "wouter";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
+import { useEffect } from "react";
 
 export default function Pricing() {
+  // Set page-specific SEO meta tags
+  useEffect(() => {
+    document.title = "Pricing - 100% Free Professional Tools | WytNet";
+    
+    // Update meta description
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'WytNet offers 100% free professional productivity tools forever. No subscriptions, no hidden fees, no premium tiers. Access all features instantly.');
+    }
+    
+    // Update OG tags
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    const ogDescription = document.querySelector('meta[property="og:description"]');
+    if (ogTitle) ogTitle.setAttribute('content', 'WytNet Pricing - 100% Free Forever');
+    if (ogDescription) ogDescription.setAttribute('content', 'Professional productivity tools completely free. No subscriptions, no hidden costs, unlimited usage.');
+    
+    return () => {
+      // Reset to default meta tags on cleanup
+      document.title = "WytNet - Multi-Tenant SaaS Platform | Free Assessment Tools";
+      if (metaDescription) {
+        metaDescription.setAttribute('content', 'Build scalable SaaS applications with WytNet\'s multi-tenant platform. Start with free assessment tools, productivity suites, and specialized business utilities.');
+      }
+    };
+  }, []);
   const freeFeatures = [
     "All 10+ WytApps completely free",
     "No registration or signup required", 

@@ -5,13 +5,38 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Mail, MessageCircle, Globe, Clock, Send, Heart, Users, Zap } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
 export default function Contact() {
   const { toast } = useToast();
+  
+  // Set page-specific SEO meta tags
+  useEffect(() => {
+    document.title = "Contact Us - Get Support & Help | WytNet";
+    
+    // Update meta description
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Contact WytNet for support, questions, or feedback. Get help with our productivity tools, technical support, or business partnerships.');
+    }
+    
+    // Update OG tags
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    const ogDescription = document.querySelector('meta[property="og:description"]');
+    if (ogTitle) ogTitle.setAttribute('content', 'Contact WytNet - Support & Help');
+    if (ogDescription) ogDescription.setAttribute('content', 'Get support and help with WytNet productivity tools. Contact us for technical support, partnerships, or questions.');
+    
+    return () => {
+      // Reset to default meta tags on cleanup
+      document.title = "WytNet - Multi-Tenant SaaS Platform | Free Assessment Tools";
+      if (metaDescription) {
+        metaDescription.setAttribute('content', 'Build scalable SaaS applications with WytNet\'s multi-tenant platform. Start with free assessment tools, productivity suites, and specialized business utilities.');
+      }
+    };
+  }, []);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -241,13 +266,14 @@ export default function Contact() {
                   <Button
                     type="submit"
                     size="lg"
-                    disabled={isSubmitting}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-12"
+                    disabled={isSubmitting || !formData.name || !formData.email || !formData.message}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-12 disabled:opacity-50 disabled:cursor-not-allowed"
+                    data-testid="button-submit-contact"
                   >
                     {isSubmitting ? (
                       <>
                         <div className="animate-spin h-5 w-5 mr-2 border-2 border-white border-t-transparent rounded-full" />
-                        Sending...
+                        Sending Message...
                       </>
                     ) : (
                       <>
@@ -256,6 +282,14 @@ export default function Contact() {
                       </>
                     )}
                   </Button>
+                  
+                  {/* Form validation hints */}
+                  {(!formData.name || !formData.email || !formData.message) && !isSubmitting && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                      Please fill in all required fields (*) to send your message
+                    </p>
+                  )}
+                  
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
                     We'll respond within 24 hours during business days
                   </p>
