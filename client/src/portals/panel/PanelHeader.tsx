@@ -5,7 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Menu, User, Settings, LogOut, Building, ChevronDown, Search, Bell, HelpCircle } from "lucide-react";
 import { Link } from "wouter";
-import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { WorkspaceContext } from "./PanelLayout";
@@ -27,13 +27,13 @@ export default function PanelHeader({
   onToggleSidebar,
   sidebarCollapsed 
 }: PanelHeaderProps) {
-  const { user } = useWhatsAppAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/auth/whatsapp/logout', {
+      const response = await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
       });
@@ -47,7 +47,7 @@ export default function PanelHeader({
         title: "Success",
         description: "Logged out successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/whatsapp/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       window.location.href = '/';
     },
     onError: () => {
@@ -195,7 +195,7 @@ export default function PanelHeader({
                       {user?.name || "User"}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {user?.email || user?.mobileNumber || ""}
+                      {user?.email || ""}
                     </p>
                   </div>
                 </div>

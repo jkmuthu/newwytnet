@@ -1,7 +1,7 @@
 import { ReactNode, useState } from "react";
 import { Redirect } from "wouter";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
-import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
+import { useAuth } from "@/hooks/useAuth";
 import PanelHeader from "./PanelHeader";
 import PanelSidebar from "./PanelSidebar";
 import PanelMobileLayout from "./PanelMobileLayout";
@@ -25,7 +25,7 @@ export interface WorkspaceContext {
  */
 export default function PanelLayout({ children }: PanelLayoutProps) {
   const { isMobile } = useDeviceDetection();
-  const { isAuthenticated, isLoading } = useWhatsAppAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [currentWorkspace, setCurrentWorkspace] = useState<WorkspaceContext>({
     type: 'personal',
@@ -45,9 +45,9 @@ export default function PanelLayout({ children }: PanelLayoutProps) {
     );
   }
 
-  // Redirect to login if not authenticated
+  // Redirect to WytPass login if not authenticated
   if (!isAuthenticated) {
-    return <Redirect to="/login" />;
+    return <Redirect to="/wytpass-login" />;
   }
 
   // Use mobile-specific layout for small screens
