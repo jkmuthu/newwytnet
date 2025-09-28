@@ -53,69 +53,142 @@ class MSG91Service {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-      // Use MSG91 Email Template API
-      const url = `${this.baseUrl}/email/send`;
-      
-      const body = {
-        recipients: [
-          {
-            to: [
-              {
-                email: email,
-                name: userName || email.split("@")[0]
-              }
-            ],
-            variables: {
-              "OTP": otp,
-              "NAME": userName || email.split("@")[0],
-              "EMAIL": email,
-              "COMPANY": "WytNet"
-            }
-          }
-        ],
-        from: {
-          email: this.fromEmail
-        },
-        domain: this.domain,
-        template_id: this.templateId
-      };
-
-      console.log(`🔧 MSG91: Sending email OTP to ${email} using template ${this.templateId}`);
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "authkey": this.authKey,
-          "Accept": "application/json"
-        },
-        body: JSON.stringify(body)
-      });
-
-      const result: EmailSendResponse = await response.json();
-
-      if (response.ok) {
-        // Store OTP for verification (in production, use database/Redis)
+      // Try Email Template API first
+      const templateResult = await this.sendViaTemplateAPI(email, userName, otp);
+      if (templateResult.success) {
+        // Store OTP for verification
         otpStorage.set(email, {
           email,
           otp,
           expiresAt,
-          requestId: result.request_id || `email_${Date.now()}`
+          requestId: templateResult.requestId || `email_${Date.now()}`
         });
-
-        console.log(`✅ MSG91: Email OTP sent successfully to ${email}`);
-        return { 
-          success: true, 
-          message: "OTP sent successfully to your email address", 
-          requestId: result.request_id 
-        };
-      } else {
-        console.error("❌ MSG91: Failed to send email OTP:", result);
-        return { success: false, message: result.message || "Failed to send OTP. Please check your email template configuration." };
+        return templateResult;
       }
+
+      // Fallback to simple OTP API if template fails
+      console.log(`🔧 MSG91: Template API failed, trying simple OTP API...`);
+      const otpResult = await this.sendViaOTPAPI(email, userName, otp);
+      if (otpResult.success) {
+        // Store OTP for verification
+        otpStorage.set(email, {
+          email,
+          otp,
+          expiresAt,
+          requestId: otpResult.requestId || `email_${Date.now()}`
+        });
+      }
+      return otpResult;
     } catch (error) {
       console.error("❌ MSG91: Error sending email OTP:", error);
       return { success: false, message: "Failed to send OTP. Please try again." };
+    }
+  }
+
+  /**
+   * Send OTP via MSG91 Email Template API
+   */
+  private async sendViaTemplateAPI(email: string, userName?: string, otp?: string): Promise<{ success: boolean; message: string; requestId?: string }> {
+    const url = `${this.baseUrl}/email/send`;
+    
+    const body = {
+      recipients: [
+        {
+          to: [
+            {
+              email: email,
+              name: userName || email.split("@")[0]
+            }
+          ],
+          variables: {
+            "OTP": otp,
+            "NAME": userName || email.split("@")[0],
+            "EMAIL": email,
+            "COMPANY": "WytNet"
+          }
+        }
+      ],
+      from: {
+        email: this.fromEmail
+      },
+      template_id: this.templateId
+    };
+
+    console.log(`🔧 MSG91: Sending email OTP to ${email} using template ${this.templateId}`);
+    console.log(`🔧 MSG91: Request body:`, JSON.stringify(body, null, 2));
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "authkey": this.authKey,
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+
+    const result: EmailSendResponse = await response.json();
+    console.log(`🔧 MSG91: Template API Response status: ${response.status}`);
+    console.log(`🔧 MSG91: Template API Response body:`, JSON.stringify(result, null, 2));
+
+    if (response.ok) {
+      console.log(`✅ MSG91: Email OTP sent successfully via template API to ${email}`);
+      return { 
+        success: true, 
+        message: "OTP sent successfully to your email address", 
+        requestId: result.request_id 
+      };
+    } else {
+      console.error("❌ MSG91: Template API failed:", result);
+      return { success: false, message: result.message || "Template API failed" };
+    }
+  }
+
+  /**
+   * Fallback: Send OTP via MSG91 Simple OTP API
+   */
+  private async sendViaOTPAPI(email: string, userName?: string, otp?: string): Promise<{ success: boolean; message: string; requestId?: string }> {
+    const url = `${this.baseUrl}/otp`;
+    const params = new URLSearchParams({
+      template_id: this.templateId,
+      mobile: email, // MSG91 can use email for email OTP
+      authkey: this.authKey,
+      otp_expiry: "10", // 10 minutes
+      realTimeResponse: "1"
+    });
+
+    const body = {
+      OTP: otp,
+      NAME: userName || email.split("@")[0],
+      EMAIL: email,
+      COMPANY: "WytNet"
+    };
+
+    console.log(`🔧 MSG91: Sending email OTP via OTP API to ${email}`);
+
+    const response = await fetch(`${url}?${params}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+
+    const result: any = await response.json();
+    console.log(`🔧 MSG91: OTP API Response status: ${response.status}`);
+    console.log(`🔧 MSG91: OTP API Response body:`, JSON.stringify(result, null, 2));
+
+    if (response.ok && result.type === "success") {
+      console.log(`✅ MSG91: Email OTP sent successfully via OTP API to ${email}`);
+      return { 
+        success: true, 
+        message: "OTP sent successfully to your email address", 
+        requestId: result.request_id 
+      };
+    } else {
+      console.error("❌ MSG91: OTP API also failed:", result);
+      return { success: false, message: result.message || "Both API methods failed. Please check MSG91 configuration." };
     }
   }
 
