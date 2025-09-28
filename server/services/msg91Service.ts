@@ -28,7 +28,7 @@ class MSG91Service {
 
   constructor() {
     this.authKey = process.env.MSG91_AUTH_KEY || "464667ALFYbnq3689f001dP1";
-    this.templateId = process.env.MSG91_EMAIL_TEMPLATE_ID || "";
+    this.templateId = process.env.MSG91_EMAIL_TEMPLATE_ID || "global_otp";
     this.domain = "wytnet.com";
     this.fromEmail = "no-reply@wytnet.com";
   }
