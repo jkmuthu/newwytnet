@@ -187,6 +187,7 @@ export interface IStorage {
   // Marketplace Hubs operations
   getMarketplaceHubs(): Promise<(MarketplaceHub & { items: HubItem[] })[]>;
   getMarketplaceHub(id: string): Promise<(MarketplaceHub & { items: HubItem[] }) | undefined>;
+  getMarketplaceHubBySlug(slug: string): Promise<(MarketplaceHub & { items: HubItem[] }) | undefined>;
   createMarketplaceHub(hubData: InsertMarketplaceHub): Promise<MarketplaceHub>;
   updateMarketplaceHub(id: string, data: Partial<InsertMarketplaceHub>): Promise<MarketplaceHub | undefined>;
   deleteMarketplaceHub(id: string): Promise<boolean>;
@@ -1067,6 +1068,14 @@ export class DatabaseStorage implements IStorage {
 
   async getMarketplaceHub(id: string): Promise<(MarketplaceHub & { items: HubItem[] }) | undefined> {
     const [hub] = await db.select().from(marketplaceHubs).where(eq(marketplaceHubs.id, id));
+    if (!hub) return undefined;
+    
+    const items = await db.select().from(hubItems).where(eq(hubItems.hubId, hub.id));
+    return { ...hub, items };
+  }
+
+  async getMarketplaceHubBySlug(slug: string): Promise<(MarketplaceHub & { items: HubItem[] }) | undefined> {
+    const [hub] = await db.select().from(marketplaceHubs).where(eq(marketplaceHubs.slug, slug));
     if (!hub) return undefined;
     
     const items = await db.select().from(hubItems).where(eq(hubItems.hubId, hub.id));

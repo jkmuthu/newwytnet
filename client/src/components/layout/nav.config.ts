@@ -11,9 +11,9 @@ export const bottomNavItems = [
   { 
     icon: Network, 
     label: 'WytHubs', 
-    href: '/ai-directory', 
+    href: '/hubs', 
     badge: 'LIVE',
-    activeRoutes: ['/ai-directory', '/hubs']
+    activeRoutes: ['/hubs', '/hub', '/ai-directory']
   },
   { 
     icon: QrCode, 
@@ -32,11 +32,12 @@ export const bottomNavItems = [
 ];
 
 export const sidebarNavItems = [
-  { icon: Network, label: 'WytHubs', href: '/ai-directory' },
+  { icon: Network, label: 'WytHubs', href: '/hubs' },
 ];
 
 // WytHubs submenu items
 export const wytHubsItems = [
+  { icon: Network, label: 'All Hubs', href: '/hubs' },
   { icon: Bot, label: 'AI Directory', href: '/ai-directory' },
 ];
 

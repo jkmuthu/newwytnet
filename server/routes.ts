@@ -496,7 +496,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Get single marketplace hub
+  // Get single marketplace hub by ID
   app.get('/api/marketplace/hubs/:id', async (req: any, res) => {
     try {
       const { id } = req.params;
@@ -510,6 +510,40 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error) {
       console.error("Error fetching marketplace hub:", error);
       res.status(500).json({ message: "Failed to fetch marketplace hub" });
+    }
+  });
+
+  // Get single marketplace hub by slug
+  app.get('/api/marketplace/hubs/slug/:slug', async (req: any, res) => {
+    try {
+      const { slug } = req.params;
+      const hub = await storage.getMarketplaceHubBySlug(slug);
+      
+      if (!hub) {
+        return res.status(404).json({ message: "Hub not found" });
+      }
+      
+      res.json(hub);
+    } catch (error) {
+      console.error("Error fetching marketplace hub by slug:", error);
+      res.status(500).json({ message: "Failed to fetch marketplace hub" });
+    }
+  });
+
+  // Get hub items for a specific hub
+  app.get('/api/marketplace/hubs/:id/items', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const hub = await storage.getMarketplaceHub(id);
+      
+      if (!hub) {
+        return res.status(404).json({ message: "Hub not found" });
+      }
+      
+      res.json(hub.items || []);
+    } catch (error) {
+      console.error("Error fetching hub items:", error);
+      res.status(500).json({ message: "Failed to fetch hub items" });
     }
   });
 
