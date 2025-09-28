@@ -92,7 +92,7 @@ export default function PublicHeader() {
                 Access WytPanel
               </Button>
             </Link>
-            <Link href="/login">
+            <Link href="/wytpass-login">
               <Button 
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md"
                 data-testid="button-get-wytpass"

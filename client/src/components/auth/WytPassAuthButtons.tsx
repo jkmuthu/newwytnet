@@ -1,0 +1,104 @@
+import { Button } from "@/components/ui/button";
+import { FaGoogle, FaFacebook } from "react-icons/fa";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
+
+interface WytPassAuthButtonsProps {
+  title?: string;
+  description?: string;
+  onGoogleLogin?: () => void;
+  onFacebookLogin?: () => void;
+  showEmailLogin?: boolean;
+}
+
+export default function WytPassAuthButtons({ 
+  title = "Access WytNet with WytPass", 
+  description = "Choose your preferred sign-in method",
+  showEmailLogin = true 
+}: WytPassAuthButtonsProps) {
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+
+  const handleGoogleLogin = () => {
+    setIsLoading("google");
+    window.location.href = "/api/auth/google";
+  };
+
+  const handleFacebookLogin = () => {
+    setIsLoading("facebook");
+    window.location.href = "/api/auth/facebook";
+  };
+
+  return (
+    <Card className="w-full max-w-md mx-auto" data-testid="wytpass-auth-card">
+      <CardHeader className="space-y-1 text-center">
+        <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          {title}
+        </CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Google Login Button */}
+        <Button 
+          onClick={handleGoogleLogin}
+          disabled={isLoading !== null}
+          className="w-full h-11 bg-white hover:bg-gray-50 text-gray-900 border border-gray-300 shadow-sm transition-all duration-200 hover:shadow-md"
+          data-testid="button-google-login"
+        >
+          {isLoading === "google" ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <FaGoogle className="h-4 w-4 mr-2 text-red-500" />
+          )}
+          Continue with Google
+        </Button>
+
+        {/* Facebook Login Button */}
+        <Button 
+          onClick={handleFacebookLogin}
+          disabled={isLoading !== null}
+          className="w-full h-11 bg-[#1877f2] hover:bg-[#166fe5] text-white shadow-sm transition-all duration-200 hover:shadow-md"
+          data-testid="button-facebook-login"
+        >
+          {isLoading === "facebook" ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <FaFacebook className="h-4 w-4 mr-2" />
+          )}
+          Continue with Facebook
+        </Button>
+
+        {showEmailLogin && (
+          <>
+            <div className="flex items-center space-x-2">
+              <Separator className="flex-1" />
+              <span className="text-xs text-gray-500 bg-background px-2">
+                OR
+              </span>
+              <Separator className="flex-1" />
+            </div>
+
+            {/* Email/Password Login Button */}
+            <Button 
+              onClick={() => window.location.href = "/login"}
+              variant="outline"
+              className="w-full h-11"
+              data-testid="button-email-login"
+            >
+              Continue with Email
+            </Button>
+          </>
+        )}
+
+        {/* WytPass Branding */}
+        <div className="text-center pt-4">
+          <p className="text-xs text-gray-500">
+            Secured by <span className="font-semibold text-blue-600">WytPass</span> • 
+            Universal Identity & Validation
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

@@ -86,6 +86,17 @@ app.use((req, res, next) => {
     console.log('Server starting with limited functionality');
   }
 
+  // Setup WytPass Authentication
+  try {
+    console.log('Setting up WytPass Auth...');
+    const { setupWytPassAuth } = await import('./wytpass-auth');
+    setupWytPassAuth(app);
+    console.log('WytPass Auth initialized successfully');
+  } catch (error) {
+    console.warn('WytPass Auth initialization failed:', error);
+    console.log('Continuing without WytPass Auth - Google/Facebook login unavailable');
+  }
+
   await registerRoutes(app);
   const server = createServer(app);
 
