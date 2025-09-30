@@ -5140,7 +5140,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Verify payment and mark assessment as paid
-  app.post('/api/payments/verify', async (req, res) => {
+  app.post('/api/payments/disc/verify', async (req, res) => {
     try {
       const { razorpay_payment_id, razorpay_order_id, razorpay_signature, sessionId } = req.body;
 

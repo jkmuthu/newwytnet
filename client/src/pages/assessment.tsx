@@ -261,7 +261,7 @@ export default function Assessment() {
         handler: async (response: any) => {
           try {
             // Verify payment
-            const verifyResponse = await apiRequest('/api/payments/verify', 'POST', {
+            const verifyResponse = await apiRequest('/api/payments/disc/verify', 'POST', {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_signature: response.razorpay_signature,
