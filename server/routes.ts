@@ -64,7 +64,11 @@ import {
   apiIntegrations,
   insertApiIntegrationSchema,
   type ApiIntegration,
-  type InsertApiIntegration
+  type InsertApiIntegration,
+  pointsWallets,
+  pointsTransactions,
+  payments,
+  orders
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -5238,6 +5242,144 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.status(500).json({
         success: false,
         error: 'Failed to verify payment'
+      });
+    }
+  });
+
+  // ========================================
+  // WYTPOINTS ECONOMY API ROUTES
+  // ========================================
+  
+  const { pointsService } = await import('./services/pointsService');
+
+  // User Points Routes
+  
+  // Get current points balance
+  app.get('/api/points/balance', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const balance = await pointsService.getBalance(principal.id);
+      res.json({ success: true, balance });
+    } catch (error) {
+      console.error('Error fetching points balance:', error);
+      res.status(500).json({ error: 'Failed to fetch balance' });
+    }
+  });
+
+  // Get wallet details with transaction history
+  app.get('/api/points/wallet', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const limit = parseInt(req.query.limit as string) || 20;
+      const details = await pointsService.getWalletDetails(principal.id, limit);
+      
+      res.json({ success: true, data: details });
+    } catch (error) {
+      console.error('Error fetching wallet details:', error);
+      res.status(500).json({ error: 'Failed to fetch wallet details' });
+    }
+  });
+
+  // Get transaction history
+  app.get('/api/points/transactions', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const limit = parseInt(req.query.limit as string) || 50;
+      const transactions = await pointsService.getTransactions(principal.id, limit);
+      
+      res.json({ success: true, transactions });
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      res.status(500).json({ error: 'Failed to fetch transactions' });
+    }
+  });
+
+  // Admin Points Routes
+  
+  // Get points system statistics
+  app.get('/api/admin/points/statistics', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const stats = await pointsService.getStatistics();
+      res.json({ success: true, data: stats });
+    } catch (error) {
+      console.error('Error fetching points statistics:', error);
+      res.status(500).json({ error: 'Failed to fetch statistics' });
+    }
+  });
+
+  // Get all wallets (admin view)
+  app.get('/api/admin/points/wallets', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const wallets = await db.select()
+        .from(pointsWallets)
+        .orderBy(desc(pointsWallets.balance))
+        .limit(100);
+      
+      res.json({ success: true, wallets });
+    } catch (error) {
+      console.error('Error fetching wallets:', error);
+      res.status(500).json({ error: 'Failed to fetch wallets' });
+    }
+  });
+
+  // Get specific user's wallet details (admin)
+  app.get('/api/admin/points/wallet/:userId', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+      
+      const details = await pointsService.getWalletDetails(userId, limit);
+      res.json({ success: true, data: details });
+    } catch (error) {
+      console.error('Error fetching user wallet:', error);
+      res.status(500).json({ error: 'Failed to fetch wallet details' });
+    }
+  });
+
+  // Admin manual balance adjustment
+  app.post('/api/admin/points/adjust', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const principal = await getAdminPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { userId, amount, reason } = req.body;
+
+      if (!userId || amount === undefined || !reason) {
+        return res.status(400).json({ 
+          error: 'Missing required fields: userId, amount, reason' 
+        });
+      }
+
+      const wallet = await pointsService.adminAdjustBalance({
+        userId,
+        amount: parseInt(amount),
+        reason,
+        adminUserId: principal.id,
+      });
+
+      res.json({ 
+        success: true, 
+        message: 'Balance adjusted successfully',
+        wallet 
+      });
+    } catch (error: any) {
+      console.error('Error adjusting balance:', error);
+      res.status(500).json({ 
+        error: error.message || 'Failed to adjust balance' 
       });
     }
   });

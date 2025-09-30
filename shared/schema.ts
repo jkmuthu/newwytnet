@@ -1581,6 +1581,80 @@ export const hubItems = pgTable("hub_items", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// ========================================
+// WYTPOINTS ECONOMY SYSTEM
+// ========================================
+
+// Entitlement status enum
+export const entitlementStatusEnum = pgEnum("entitlement_status", [
+  "active",
+  "expired",
+  "cancelled",
+  "suspended"
+]);
+
+// Points Wallets - User point balances
+export const pointsWallets = pgTable("points_wallets", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => whatsappUsers.id),
+  balance: integer("balance").notNull().default(0),
+  lifetimeEarned: integer("lifetime_earned").notNull().default(0),
+  lifetimeSpent: integer("lifetime_spent").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Points Transactions - Complete audit trail
+export const pointsTransactions = pgTable("points_transactions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  amount: integer("amount").notNull(), // Positive for credits, negative for debits
+  balanceAfter: integer("balance_after").notNull(),
+  type: varchar("type", { length: 50 }).notNull(), // 'registration', 'login', 'purchase', 'recharge', 'referral', 'admin_adjustment', etc.
+  description: text("description"),
+  metadata: jsonb("metadata").default({}), // Additional context (order_id, app_id, etc.)
+  createdBy: varchar("created_by").references(() => whatsappUsers.id), // For admin adjustments
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Entitlements - App access control (uses existing orders table for purchases)
+export const entitlements = pgTable("entitlements", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  appId: varchar("app_id", { length: 255 }).notNull(), // App or module ID
+  appName: varchar("app_name", { length: 255 }),
+  orderId: uuid("order_id").references(() => orders.id),
+  type: varchar("type", { length: 50 }).notNull(), // 'one_time', 'subscription', 'trial', 'lifetime'
+  status: entitlementStatusEnum("status").notNull().default('active'),
+  usageLimit: integer("usage_limit"), // For per-output models
+  usageCount: integer("usage_count").default(0),
+  startsAt: timestamp("starts_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"), // Null for lifetime access
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// WytPoints schema exports
+export const insertPointsWalletSchema = createInsertSchema(pointsWallets);
+export const selectPointsWalletSchema = createSelectSchema(pointsWallets);
+export const insertPointsTransactionSchema = createInsertSchema(pointsTransactions);
+export const selectPointsTransactionSchema = createSelectSchema(pointsTransactions);
+export const insertEntitlementSchema = createInsertSchema(entitlements);
+export const selectEntitlementSchema = createSelectSchema(entitlements);
+
+// WytPoints type exports
+export type PointsWallet = typeof pointsWallets.$inferSelect;
+export type InsertPointsWallet = typeof pointsWallets.$inferInsert;
+export type PointsTransaction = typeof pointsTransactions.$inferSelect;
+export type InsertPointsTransaction = typeof pointsTransactions.$inferInsert;
+export type Entitlement = typeof entitlements.$inferSelect;
+export type InsertEntitlement = typeof entitlements.$inferInsert;
+
+// ========================================
+// END WYTPOINTS ECONOMY SYSTEM
+// ========================================
+
 // Marketplace Apps schema exports
 export const insertMarketplaceAppSchema = createInsertSchema(marketplaceApps);
 export const selectMarketplaceAppSchema = createSelectSchema(marketplaceApps);
