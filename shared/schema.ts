@@ -1146,6 +1146,8 @@ export const assessmentSessions = pgTable("assessment_sessions", {
   categoryId: uuid("category_id").references(() => assessmentCategories.id),
   language: varchar("language", { length: 10 }).notNull().default('en'),
   isCompleted: boolean("is_completed").default(false),
+  reportPaid: boolean("report_paid").default(false),
+  paymentOrderId: uuid("payment_order_id"),
   startedAt: timestamp("started_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
   ipAddress: varchar("ip_address", { length: 45 }),

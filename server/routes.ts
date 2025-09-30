@@ -5050,4 +5050,140 @@ export async function registerRoutes(app: Express): Promise<void> {
       });
     }
   });
+
+  // Create payment order for DISC Assessment Report
+  app.post('/api/payments/create-order', async (req, res) => {
+    try {
+      const { sessionId, product } = req.body;
+      const user = (req as any).user;
+
+      if (!sessionId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Session ID is required'
+        });
+      }
+
+      // Verify session is completed
+      const session = await db.select()
+        .from(assessmentSessions)
+        .where(eq(assessmentSessions.id, sessionId))
+        .limit(1);
+
+      if (!session[0]) {
+        return res.status(404).json({
+          success: false,
+          error: 'Assessment session not found'
+        });
+      }
+
+      if (!session[0].isCompleted) {
+        return res.status(400).json({
+          success: false,
+          error: 'Please complete the assessment first'
+        });
+      }
+
+      if (session[0].reportPaid) {
+        return res.status(400).json({
+          success: false,
+          error: 'Report already purchased'
+        });
+      }
+
+      // Create order with Rs. 1 amount
+      const result = await razorpayService.createOrder(user?.id || 'anonymous', {
+        amount: 1, // Rs. 1
+        currency: 'INR',
+        receipt: `DISC-${sessionId.slice(0, 8)}`,
+        notes: {
+          sessionId,
+          product: product || 'disc_assessment_report',
+          participantName: session[0].participantName,
+          participantEmail: session[0].participantEmail || '',
+        },
+        items: [{
+          name: 'DISC Assessment Report',
+          description: `DISC Assessment Report for ${session[0].participantName}`,
+          amount: 1,
+          currency: 'INR',
+          quantity: 1,
+        }]
+      });
+
+      if (result.success && result.data) {
+        // Link order to session
+        await db.update(assessmentSessions)
+          .set({ 
+            paymentOrderId: result.data.orderId,
+            updatedAt: new Date()
+          })
+          .where(eq(assessmentSessions.id, sessionId));
+
+        res.json({
+          success: true,
+          data: result.data
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: result.error || 'Failed to create order'
+        });
+      }
+    } catch (error) {
+      console.error('Error creating payment order:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create payment order'
+      });
+    }
+  });
+
+  // Verify payment and mark assessment as paid
+  app.post('/api/payments/verify', async (req, res) => {
+    try {
+      const { razorpay_payment_id, razorpay_order_id, razorpay_signature, sessionId } = req.body;
+
+      if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing payment verification data'
+        });
+      }
+
+      // Verify payment using Razorpay service
+      const verificationResult = await razorpayService.handlePaymentSuccess({
+        razorpay_payment_id,
+        razorpay_order_id,
+        razorpay_signature
+      });
+
+      if (verificationResult.success && sessionId) {
+        // Mark assessment session as paid
+        await db.update(assessmentSessions)
+          .set({ 
+            reportPaid: true,
+            updatedAt: new Date()
+          })
+          .where(eq(assessmentSessions.id, sessionId));
+
+        res.json({
+          success: true,
+          message: 'Payment verified successfully',
+          data: verificationResult.data
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: verificationResult.error || 'Payment verification failed'
+        });
+      }
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to verify payment'
+      });
+    }
+  });
 }
