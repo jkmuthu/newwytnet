@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Download, Copy, ExternalLink } from "lucide-react";
 
 interface AssessmentCategory {
   id: string;
@@ -66,6 +67,8 @@ export default function Assessment() {
     categoryId: '',
     language: 'en'
   });
+  const [paymentLink, setPaymentLink] = useState<any>(null);
+  const [isCreatingPaymentLink, setIsCreatingPaymentLink] = useState(false);
 
   // Fetch categories
   const { data: categories } = useQuery({
@@ -207,6 +210,50 @@ export default function Assessment() {
 
   const calculateResults = () => {
     calculateResultsMutation.mutate(sessionId);
+  };
+
+  const handleDownloadReport = async () => {
+    setIsCreatingPaymentLink(true);
+    try {
+      const response = await apiRequest("/api/payments/create-link", "POST", {
+        amount: 100, // Rs. 1 in paise
+        description: `DISC Assessment Report - ${participantInfo.participantName}`,
+        customerName: participantInfo.participantName,
+        customerEmail: participantInfo.participantEmail || undefined,
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setPaymentLink(result.data);
+        toast({
+          title: "Payment Link Created!",
+          description: "Please complete the payment to download your report.",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "Failed to create payment link",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create payment link",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingPaymentLink(false);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied!",
+      description: "Payment link copied to clipboard",
+    });
   };
 
   const currentQuestion = questions?.[currentQuestionIndex];
@@ -486,6 +533,66 @@ export default function Assessment() {
                     </Card>
                   )}
 
+                  {!paymentLink ? (
+                    <Card className="bg-primary/5 border-primary/20">
+                      <CardContent className="p-6 text-center">
+                        <h3 className="font-semibold mb-2">Download Your Complete Report</h3>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          Get your detailed DISC Assessment Report in PDF format for just ₹1
+                        </p>
+                        <Button 
+                          onClick={handleDownloadReport}
+                          disabled={isCreatingPaymentLink}
+                          data-testid="button-download-report"
+                          className="gap-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          {isCreatingPaymentLink ? 'Creating Payment Link...' : 'Download Report (₹1)'}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                      <CardContent className="p-6 space-y-4">
+                        <div className="text-center">
+                          <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">
+                            Payment Link Created!
+                          </h3>
+                          <p className="text-sm text-green-700 dark:text-green-300 mb-4">
+                            Complete your payment of ₹1 to download your report
+                          </p>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <Input 
+                            value={paymentLink.short_url} 
+                            readOnly 
+                            className="flex-1"
+                          />
+                          <Button 
+                            variant="outline" 
+                            size="icon"
+                            onClick={() => copyToClipboard(paymentLink.short_url)}
+                            data-testid="button-copy-link"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={() => window.open(paymentLink.short_url, '_blank')}
+                            data-testid="button-open-payment"
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Pay Now
+                          </Button>
+                        </div>
+                        
+                        <div className="text-xs text-center text-muted-foreground">
+                          Amount: ₹{(paymentLink.amount / 100).toFixed(2)} | Payment ID: {paymentLink.id}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   <div className="text-center space-y-4">
                     <Button 
                       onClick={() => window.print()} 
@@ -500,6 +607,7 @@ export default function Assessment() {
                         setSessionId('');
                         setCurrentQuestionIndex(0);
                         setResponses({});
+                        setPaymentLink(null);
                         setParticipantInfo({
                           participantName: '',
                           participantEmail: '',
