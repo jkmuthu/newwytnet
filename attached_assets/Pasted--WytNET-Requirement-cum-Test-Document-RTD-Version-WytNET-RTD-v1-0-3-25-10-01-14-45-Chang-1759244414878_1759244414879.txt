@@ -1,0 +1,207 @@
+📑 WytNET – Requirement cum Test Document (RTD)
+
+Version: WytNET-RTD-v1.0.3-25.10.01.14.45
+
+🔄 Change Log
+
+v1.0.3 (2025-10-01 14:45)
+
+Clarified database decision: Neon PostgreSQL + Drizzle ORM (not Supabase).
+
+Clarified authentication: WytPass = branding for current auth.
+
+Confirmed extending existing /admin infra.
+
+Prioritized Phase 1 rollout: WytPoints → WytApps → WytLife → Content/AI.
+
+v1.0.2 (2025-10-01 12:45)
+
+Expanded Content & Stream (AI, media, preview/publish).
+
+Added WytLife landing page + applications.
+
+Added roadmap notes (WytPoints as a Service = Phase 2, WytExchange Hub = Phase 3).
+
+v1.0.1 (2025-10-01 09:30)
+
+Added Flow Diagrams (Auth, Admin, Pages migration).
+
+v1.0.0 (2025-09-30 23:15)
+
+Initial Phase 1 RTD Draft.
+
+1. Clarifications (as per Replit Agent Feedback)
+1.1 Database Platform
+
+RTD v1.0.2 said: “All database via Supabase.”
+
+Reality: Current system uses Neon PostgreSQL + Drizzle ORM.
+
+Decision: ✅ We will continue with Neon PostgreSQL + Drizzle ORM (stable, zero risk).
+
+Supabase optional in future for storage/realtime features only.
+
+1.2 Authentication (WytPass)
+
+RTD v1.0.2 said: “Use WytPass Auth system.”
+
+Reality: Current custom auth already exists (Google OAuth, Email/Password, OTP).
+
+Decision: ✅ “WytPass” is branding for existing auth system.
+
+No separate new auth system required, only ensure consistent branding.
+
+1.3 Admin Infrastructure
+
+Question: Extend existing /admin or build separate backend?
+
+Decision: ✅ Extend existing /admin routes & infra.
+
+Reason: Already role-based guards + CMS present, risk is low.
+
+1.4 Priority Order for Phase 1 Features
+
+Based on feasibility and foundation-first approach:
+
+Phase 1A (Foundation)
+
+Add WytPoints schema (wallet + ledger).
+
+Extend Razorpay flow for recharge + app purchases.
+
+Entitlements table for app access.
+
+Show WytPoints balance in admin + user dashboard.
+
+Phase 1B (Features)
+
+WytApps catalog (per-output fees, subscriptions).
+
+Automate WytPoints earn/spend rules.
+
+Build WytLife landing page /wytlife + application form system.
+
+Phase 1C (Polish)
+
+Content & Stream → migrate static pages into DB.
+
+Add AI-assisted content generation.
+
+Add rich media (images, animations, video).
+
+Add Preview & Publish workflow.
+
+2. Phase 1 (Confirmed Scope)
+2.1 WytPass Auth
+
+Already working → Google OAuth, Email OTP, Password login.
+
+Branding: Show everywhere as WytPass.
+
+Points integration: +10 for registration, +1 for login.
+
+2.2 WytPoints Economy
+
+New tables:
+
+points_wallets (user balance)
+
+points_transactions (ledger)
+
+orders (recharges/purchases)
+
+entitlements (app access)
+
+Razorpay integration extended for recharges.
+
+Earn rules (registration, login, referral).
+
+Spend rules (per-output fee, subscriptions).
+
+2.3 WytApps Catalog
+
+Pricing models: one-time, per-output, subscription.
+
+Entitlements tracked via DB.
+
+Usage logging enabled.
+
+2.4 WytLife Landing Page & Applications
+
+New route /wytlife.
+
+Page content (hero, mission, benefits, CTA).
+
+Application form (Name, Email, Phone, City, Occupation, Reason).
+
+Store in applications table.
+
+Super Admin → view, approve/reject, export.
+
+2.5 Content & Stream (Enhanced CMS)
+
+DB-driven Pages, Menus, SEO.
+
+Manual + AI-assisted content creation.
+
+Support for images, animations, videos.
+
+Preview/Publish workflow.
+
+3. Testing Checklist (Refined)
+
+✅ WytPass Auth
+
+Google login works.
+
+Email OTP works.
+
+Password login works after first set.
+
+Points credited.
+
+✅ WytPoints
+
+Wallet created on registration.
+
+Balance updates correctly.
+
+Ledger logs every transaction.
+
+Recharge via Razorpay updates wallet.
+
+✅ WytApps
+
+Catalog shows apps with pricing.
+
+Per-output deduction works.
+
+Subscription activation works.
+
+✅ WytLife
+
+Page loads at /wytlife.
+
+Form submits data.
+
+Super Admin sees applications.
+
+✅ Content & Stream
+
+Pages editable in admin.
+
+AI draft generation works.
+
+Images/videos upload works.
+
+Preview → Publish works.
+
+SEO meta overrides work.
+
+4. Roadmap Notes
+
+Phase 2 → WytPoints as a Service (orgs create colored points programs).
+
+Phase 3 → WytExchange Hub (cross-redemption between WytPoints, WytGold, WytCoin).
+
+✅ End of Document v1.0.3

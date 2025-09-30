@@ -1,0 +1,288 @@
+📑 WytNET – Requirement cum Test Document (RTD)
+
+Version: WytNET-RTD-v1.0.2-25.10.01.12.45
+
+🔄 Change Log
+
+v1.0.2 (2025-10-01 12:45)
+
+Expanded Content & Stream: AI-assisted content, media (images, animations, video), Preview & Publish.
+
+Added WytLife Landing Page + Early Members Application form.
+
+Added Phase 2/3 roadmap notes: WytPoints as a Service (Phase 2), WytExchange Hub (Phase 3).
+
+v1.0.1 (2025-10-01 09:30)
+
+Added Flow Diagrams (Auth, Admin, Pages migration).
+
+v1.0.0 (2025-09-30 23:15)
+
+Initial Phase 1 RTD Draft.
+
+1. Introduction
+
+This document defines the Phase 1 requirements for WytNET.
+Goal: Establish authentication, apps economy, points system, super admin management, and dynamic content control without disturbing the current live frontend at wytnet.com.
+
+2. Key Guidelines for Replit Agent
+
+Do not disturb existing frontend at wytnet.com/.
+
+Introduce a new Super Admin Panel at route → wytnet.com/admin.
+
+Use WytPass Auth system for all logins.
+
+Role-based access → SuperAdmin role required for /admin.
+
+Separate admin APIs under /api/admin/*.
+
+All database to be handled via Supabase (Postgres).
+
+Static assets to move towards Cloudflare (R2/CDN) later; keep logic clean for migration.
+
+3. Phase 1 Features
+3.1 WytPass Authentication
+
+Login Options:
+
+Google OAuth
+
+Email OTP (MSG91)
+
+First Login → must set password.
+
+Subsequent Logins → use Password OR Google OR OTP fallback.
+
+Points Integration:
+
++10 WytPoints for successful registration.
+
++1 WytPoint for each login.
+
+DB Schema (simplified)
+
+users(id, email, username, password_hash, role, created_at, updated_at)
+user_logins(id, user_id, login_method, points_earned, login_at)
+
+3.2 WytApps (Base)
+
+Existing apps/tools integrated into App Catalog.
+
+Pricing options:
+
+One-time activation fee
+
+Per-output fee (₹1–₹100)
+
+Monthly/Yearly subscription
+
+WytPoints deduction
+
+Usage logs recorded.
+
+3.3 WytPoints Economy
+
+Earn rules: registration, daily login, referrals, actions.
+
+Spend rules: app activations, tool output, premium content.
+
+Recharge: buy points via UPI/Razorpay.
+
+Super Admin can manage: circulation, packages, redemption.
+
+DB Schema (simplified)
+
+wyt_points_balance(user_id, balance_points, updated_at)
+wyt_points_ledger(id, user_id, change_amount, change_type, balance_after, created_at)
+
+3.4 Super Admin Panel
+
+Route: /admin
+Access: SuperAdmin role only
+
+Menus:
+
+Dashboard (stats overview)
+
+Users (roles, logs, suspension)
+
+WytPanels (Personal & Org panels)
+
+WytApps (catalog, pricing, usage)
+
+Modules Library (reusable feature modules with tags)
+
+App Builder (CRUD, AI prompt later, publish)
+
+WytPoints & Wallet (circulation, ledger)
+
+Payments & Revenue (gateway config, payouts)
+
+WytHubs (ProfitFREE, OwnerNET, etc.)
+
+Content & Stream (Pages, Menus, SEO, moderation)
+
+Settings (branding, SEO defaults, iPaaS, roles)
+
+Logs & Reports (activity, errors, exports)
+
+3.5 Content & Stream (Dynamic Pages, Menus, SEO, Media, AI)
+
+Pages Management
+
+Create new pages with slug/URL (e.g., /pricing, /services).
+
+Assign to header/footer menus dynamically.
+
+Content Creation
+
+Manual WYSIWYG editor (text, headings, lists, links).
+
+AI-Assisted content generation (Admin provides prompt → draft generated → can be edited before publish).
+
+Rich Media
+
+Support for images, icons, animations, and video embeds.
+
+Files stored in Cloudflare R2 or Supabase Storage.
+
+Preview & Publish Flow
+
+Save as Draft → Preview page → Publish.
+
+Published pages instantly available on frontend.
+
+SEO Setup
+
+Default site meta values (title, description, keywords, OG image).
+
+Per-page overrides from DB.
+
+DB Schema (simplified)
+
+pages(id, slug, title, content, meta_title, meta_description, meta_keywords, status, created_at)
+menus(id, name, items JSONB)
+seo_settings(id, default_title, default_description, default_keywords, default_image)
+
+3.6 WytLife Landing Page + Applications
+
+Landing Page: wytnet.com/wytlife
+
+Explain WytLife vision, mission, benefits.
+
+CTA (Join / Apply / Learn More).
+
+Hero banner + sections (features, roadmap).
+
+Application Form for early members:
+
+Name, Email/Phone, City, Occupation, Why Join?
+
+Store in applications table.
+
+DB Schema (simplified)
+
+applications (
+  id UUID,
+  type VARCHAR,       -- 'wytlife'
+  name VARCHAR,
+  email VARCHAR,
+  phone VARCHAR,
+  city VARCHAR,
+  occupation VARCHAR,
+  reason TEXT,
+  status ENUM('pending','approved','rejected'),
+  created_at TIMESTAMP
+)
+
+
+Super Admin → View applicants, Approve/Reject, Export CSV.
+
+4. Development Guidelines
+
+Keep backend (Node/Express) & frontend (React/Vite) separated.
+
+Follow modular design for Super Admin menus.
+
+Implement APIs cleanly (/api/admin/*).
+
+Apply JWT-based session management.
+
+Secure OTP flow (expiry 5 min, rate limit).
+
+Role-based access enforced in backend.
+
+5. Testing Checklist
+
+✅ WytPass Auth
+
+ New user can login with Google.
+
+ New user can login with Email OTP.
+
+ First login asks password setup.
+
+ Returning login works with password.
+
+ Points credited on signup/login.
+
+✅ WytApps
+
+ Admin can set app pricing.
+
+ Per-output fee deduction works.
+
+ Subscription plan works.
+
+✅ WytPoints
+
+ Registration/login earns points.
+
+ Spending points deducts correctly.
+
+ Recharge adds points to balance.
+
+✅ Super Admin Panel
+
+ Accessible only at /admin.
+
+ Only SuperAdmin role can login.
+
+ All menus visible.
+
+ API calls respond under /api/admin/*.
+
+✅ Content & Stream
+
+ All existing static pages migrated to DB.
+
+ Admin can CRUD pages with text, images, videos.
+
+ AI-assisted content generation works.
+
+ Preview/Publish flow works.
+
+ Header/Footer menus editable in admin.
+
+ SEO meta editable.
+
+ Responsive UI verified.
+
+✅ WytLife
+
+ Landing page loads at /wytlife.
+
+ Application form submits correctly.
+
+ Applications visible in Super Admin.
+
+ Approve/Reject flow works.
+
+6. Roadmap Notes (Beyond Phase 1)
+
+Phase 2: WytPoints as a Service (orgs create loyalty/performance/referral points with different colors/types).
+
+Phase 3: WytExchange Hub (consolidated exchange for WytPoints, WytGold, WytCoin, cross-redemption).
+
+✅ End of Document v1.0.2
