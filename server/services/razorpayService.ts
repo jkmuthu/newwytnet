@@ -382,6 +382,76 @@ export class RazorpayService {
       };
     }
   }
+
+  /**
+   * Create a payment link
+   */
+  async createPaymentLink(data: {
+    amount: number;
+    currency?: string;
+    description?: string;
+    customerName?: string;
+    customerEmail?: string;
+    customerContact?: string;
+    reference_id?: string;
+    notes?: Record<string, any>;
+  }): Promise<{
+    success: boolean;
+    data?: any;
+    error?: string;
+  }> {
+    try {
+      const paymentLink = await this.razorpay.paymentLink.create({
+        amount: Math.round(data.amount * 100), // Convert to paisa
+        currency: data.currency || 'INR',
+        description: data.description || 'Payment',
+        customer: {
+          name: data.customerName,
+          email: data.customerEmail,
+          contact: data.customerContact,
+        },
+        notify: {
+          sms: true,
+          email: true,
+        },
+        reminder_enable: true,
+        reference_id: data.reference_id || `WYT-PL-${Date.now()}`,
+        notes: data.notes || {},
+        callback_url: `${process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'https://wytnet.com'}/payment-success`,
+        callback_method: 'get',
+      });
+
+      console.log(`✅ Razorpay: Payment link created successfully - ${paymentLink.short_url}`);
+
+      return { success: true, data: paymentLink };
+    } catch (error) {
+      console.error("❌ Razorpay: Failed to create payment link:", error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : "Failed to create payment link"
+      };
+    }
+  }
+
+  /**
+   * Get payment link details
+   */
+  async getPaymentLink(paymentLinkId: string): Promise<{
+    success: boolean;
+    data?: any;
+    error?: string;
+  }> {
+    try {
+      const paymentLink = await this.razorpay.paymentLink.fetch(paymentLinkId);
+      return { success: true, data: paymentLink };
+    } catch (error) {
+      console.error("❌ Razorpay: Failed to get payment link:", error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : "Failed to get payment link"
+      };
+    }
+  }
 }
 
 // Export singleton instance

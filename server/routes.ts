@@ -4982,4 +4982,72 @@ export async function registerRoutes(app: Express): Promise<void> {
       });
     }
   });
+
+  // Create payment link
+  app.post('/api/payments/create-link', async (req, res) => {
+    try {
+      const { amount, description, customerName, customerEmail, customerContact, notes } = req.body;
+
+      if (!amount || amount <= 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Valid amount is required'
+        });
+      }
+
+      const result = await razorpayService.createPaymentLink({
+        amount,
+        description: description || 'Test Payment',
+        customerName,
+        customerEmail,
+        customerContact,
+        notes
+      });
+
+      if (result.success) {
+        res.json({
+          success: true,
+          message: 'Payment link created successfully',
+          data: result.data
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: result.error
+        });
+      }
+    } catch (error) {
+      console.error('Error creating payment link:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create payment link'
+      });
+    }
+  });
+
+  // Get payment link details
+  app.get('/api/payments/link/:paymentLinkId', async (req, res) => {
+    try {
+      const { paymentLinkId } = req.params;
+      const result = await razorpayService.getPaymentLink(paymentLinkId);
+
+      if (result.success) {
+        res.json({
+          success: true,
+          data: result.data
+        });
+      } else {
+        res.status(500).json({
+          success: false,
+          error: result.error
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching payment link:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch payment link'
+      });
+    }
+  });
 }
