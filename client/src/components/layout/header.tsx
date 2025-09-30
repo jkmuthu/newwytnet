@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, User, Settings, LogOut, Home, Activity, Building, Briefcase, QrCode, Bot, BarChart, Brain, MessageCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Menu, User, Settings, LogOut, Home, Activity, Building, Briefcase, QrCode, Bot, BarChart, Brain, MessageCircle, Coins } from "lucide-react";
 import { Link } from "wouter";
 import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -32,6 +33,17 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const isModuleEnabled = (moduleId: string) => {
     return enabledModules.some(module => module.id === moduleId);
   };
+
+  // Fetch WytPoints balance for authenticated WhatsApp users
+  const { data: pointsBalance, isLoading: pointsLoading } = useQuery<{
+    success: boolean;
+    balance: number;
+  }>({
+    queryKey: ['/api/points/balance'],
+    enabled: isAuthenticated,
+    staleTime: 30 * 1000, // 30 seconds
+    retry: false,
+  });
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
@@ -108,8 +120,22 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 Login / Join
               </Button>
             ) : (
-              /* Show User Panel Menu when AUTHENTICATED */
-              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              /* Show WytPoints balance and User Panel Menu when AUTHENTICATED */
+              <>
+                {/* WytPoints Balance Badge */}
+                {pointsBalance && pointsBalance.success && (
+                  <Badge 
+                    variant="outline" 
+                    className="hidden md:flex items-center gap-1.5 px-3 py-1.5 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    data-testid="badge-wytpoints-balance"
+                  >
+                    <Coins className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                    <span className="font-semibold">{pointsBalance.balance}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">WytPoints</span>
+                  </Badge>
+                )}
+                
+                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                 <SheetTrigger asChild>
                   <Button 
                     variant="ghost" 
@@ -134,7 +160,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                   {/* User Info Section */}
                   {user && (
                     <div className="px-3 py-3 bg-gray-50 dark:bg-gray-800 rounded-lg mb-4">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 mb-3">
                         <Avatar className="h-8 w-8">
                           <AvatarFallback className="text-sm">
                             {getUserInitials(user)}
@@ -149,6 +175,24 @@ export default function Header({ onMenuClick }: HeaderProps) {
                           </p>
                         </div>
                       </div>
+                      
+                      {/* WytPoints Balance */}
+                      {pointsBalance && pointsBalance.success && (
+                        <div className="flex items-center justify-between px-3 py-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-md border border-yellow-200 dark:border-yellow-800">
+                          <div className="flex items-center gap-2">
+                            <Coins className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">WytPoints</span>
+                          </div>
+                          <span className="text-sm font-bold text-yellow-600 dark:text-yellow-400" data-testid="text-wytpoints-balance">
+                            {pointsBalance.balance}
+                          </span>
+                        </div>
+                      )}
+                      {pointsLoading && (
+                        <div className="flex items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-md">
+                          <span className="text-sm text-gray-500">Loading points...</span>
+                        </div>
+                      )}
                     </div>
                   )}
                   
@@ -218,7 +262,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
                   )}
                 </nav>
               </SheetContent>
-            </Sheet>
+                </Sheet>
+              </>
             )}
           </div>
         </div>
