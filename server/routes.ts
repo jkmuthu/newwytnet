@@ -5144,10 +5144,53 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const { razorpay_payment_id, razorpay_order_id, razorpay_signature, sessionId } = req.body;
 
-      if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+      if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature || !sessionId) {
         return res.status(400).json({
           success: false,
           error: 'Missing payment verification data'
+        });
+      }
+
+      // Get session and validate
+      const session = await db.select()
+        .from(assessmentSessions)
+        .where(eq(assessmentSessions.id, sessionId))
+        .limit(1);
+
+      if (!session[0]) {
+        return res.status(404).json({
+          success: false,
+          error: 'Assessment session not found'
+        });
+      }
+
+      // Check if session is completed
+      if (!session[0].isCompleted) {
+        return res.status(400).json({
+          success: false,
+          error: 'Assessment must be completed first'
+        });
+      }
+
+      // Check if already paid (idempotent)
+      if (session[0].reportPaid) {
+        return res.status(200).json({
+          success: true,
+          message: 'Report already purchased',
+          data: { alreadyPaid: true }
+        });
+      }
+
+      // Verify order belongs to this session
+      const payment = await db.select()
+        .from(payments)
+        .where(eq(payments.providerOrderId, razorpay_order_id))
+        .limit(1);
+
+      if (!payment[0]) {
+        return res.status(404).json({
+          success: false,
+          error: 'Payment order not found'
         });
       }
 
@@ -5158,7 +5201,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         razorpay_signature
       });
 
-      if (verificationResult.success && sessionId) {
+      if (verificationResult.success) {
         // Mark assessment session as paid
         await db.update(assessmentSessions)
           .set({ 
@@ -5170,7 +5213,10 @@ export async function registerRoutes(app: Express): Promise<void> {
         res.json({
           success: true,
           message: 'Payment verified successfully',
-          data: verificationResult.data
+          data: { 
+            ...verificationResult.data,
+            reportPaid: true
+          }
         });
       } else {
         res.status(400).json({

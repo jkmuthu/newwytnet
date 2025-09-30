@@ -212,48 +212,114 @@ export default function Assessment() {
     calculateResultsMutation.mutate(sessionId);
   };
 
+  const loadRazorpayScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if ((window as any).Razorpay) {
+        resolve(true);
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const handleDownloadReport = async () => {
     setIsCreatingPaymentLink(true);
     try {
-      const response = await apiRequest("/api/payments/create-link", "POST", {
-        amount: 100, // Rs. 1 in paise
-        description: `DISC Assessment Report - ${participantInfo.participantName}`,
-        customerName: participantInfo.participantName,
-        customerEmail: participantInfo.participantEmail || undefined,
+      // Load Razorpay script
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error('Failed to load payment gateway');
+      }
+
+      // Create order
+      const orderResponse = await apiRequest("/api/payments/create-order", "POST", {
+        sessionId: sessionId,
+        product: 'disc_assessment_report'
       });
       
-      const result = await response.json();
+      const orderData = await orderResponse.json();
       
-      if (result.success) {
-        setPaymentLink(result.data);
-        toast({
-          title: "Payment Link Created!",
-          description: "Please complete the payment to download your report.",
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: result.error || "Failed to create payment link",
-          variant: "destructive",
-        });
+      if (!orderData.success) {
+        throw new Error(orderData.error || 'Failed to create order');
       }
+
+      const { razorpayOrderId, key, amount } = orderData.data;
+
+      // Configure Razorpay options (amount is derived from order_id, don't set separately)
+      const options = {
+        key,
+        currency: 'INR',
+        name: 'WytNet',
+        description: 'DISC Assessment Report',
+        order_id: razorpayOrderId,
+        image: 'https://wytnet.com/logo.png', // Add your logo URL
+        handler: async (response: any) => {
+          try {
+            // Verify payment
+            const verifyResponse = await apiRequest('/api/payments/verify', 'POST', {
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+              sessionId: sessionId,
+            });
+
+            const verifyData = await verifyResponse.json();
+
+            if (verifyData.success) {
+              setPaymentLink({ verified: true, paymentId: response.razorpay_payment_id });
+              toast({
+                title: 'Payment Successful!',
+                description: 'Your report is now ready to download.',
+              });
+            } else {
+              throw new Error(verifyData.error || 'Payment verification failed');
+            }
+          } catch (error) {
+            toast({
+              title: 'Payment Verification Failed',
+              description: error instanceof Error ? error.message : 'Please contact support',
+              variant: 'destructive',
+            });
+          } finally {
+            setIsCreatingPaymentLink(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setIsCreatingPaymentLink(false);
+            toast({
+              title: 'Payment Cancelled',
+              description: 'Payment was cancelled',
+              variant: 'destructive',
+            });
+          },
+        },
+        prefill: {
+          name: participantInfo.participantName,
+          email: participantInfo.participantEmail || '',
+        },
+        theme: {
+          color: '#4F46E5',
+        },
+      };
+
+      // Open Razorpay checkout
+      const razorpay = new (window as any).Razorpay(options);
+      razorpay.open();
+
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create payment link",
+        description: error instanceof Error ? error.message : "Failed to initiate payment",
         variant: "destructive",
       });
-    } finally {
       setIsCreatingPaymentLink(false);
     }
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copied!",
-      description: "Payment link copied to clipboard",
-    });
   };
 
   const currentQuestion = questions?.[currentQuestionIndex];
@@ -533,7 +599,7 @@ export default function Assessment() {
                     </Card>
                   )}
 
-                  {!paymentLink ? (
+                  {!paymentLink && !results.reportPaid ? (
                     <Card className="bg-primary/5 border-primary/20">
                       <CardContent className="p-6 text-center">
                         <h3 className="font-semibold mb-2">Download Your Complete Report</h3>
@@ -547,48 +613,41 @@ export default function Assessment() {
                           className="gap-2"
                         >
                           <Download className="h-4 w-4" />
-                          {isCreatingPaymentLink ? 'Creating Payment Link...' : 'Download Report (₹1)'}
+                          {isCreatingPaymentLink ? 'Opening Payment...' : 'Buy Report (₹1)'}
                         </Button>
                       </CardContent>
                     </Card>
-                  ) : (
+                  ) : (paymentLink || results.reportPaid) && (
                     <Card className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-                      <CardContent className="p-6 space-y-4">
-                        <div className="text-center">
+                      <CardContent className="p-6 text-center space-y-4">
+                        <div className="flex justify-center">
+                          <div className="h-12 w-12 bg-green-500 rounded-full flex items-center justify-center">
+                            <Download className="h-6 w-6 text-white" />
+                          </div>
+                        </div>
+                        <div>
                           <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">
-                            Payment Link Created!
+                            Payment Successful!
                           </h3>
                           <p className="text-sm text-green-700 dark:text-green-300 mb-4">
-                            Complete your payment of ₹1 to download your report
+                            Your report is now ready to download
                           </p>
                         </div>
                         
-                        <div className="flex gap-2">
-                          <Input 
-                            value={paymentLink.short_url} 
-                            readOnly 
-                            className="flex-1"
-                          />
-                          <Button 
-                            variant="outline" 
-                            size="icon"
-                            onClick={() => copyToClipboard(paymentLink.short_url)}
-                            data-testid="button-copy-link"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            onClick={() => window.open(paymentLink.short_url, '_blank')}
-                            data-testid="button-open-payment"
-                          >
-                            <ExternalLink className="h-4 w-4 mr-2" />
-                            Pay Now
-                          </Button>
-                        </div>
+                        <Button
+                          onClick={() => window.print()}
+                          className="gap-2"
+                          data-testid="button-download-paid-report"
+                        >
+                          <Download className="h-4 w-4" />
+                          Download Report
+                        </Button>
                         
-                        <div className="text-xs text-center text-muted-foreground">
-                          Amount: ₹{(paymentLink.amount / 100).toFixed(2)} | Payment ID: {paymentLink.id}
-                        </div>
+                        {paymentLink?.paymentId && (
+                          <div className="text-xs text-muted-foreground">
+                            Payment ID: {paymentLink.paymentId}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   )}
