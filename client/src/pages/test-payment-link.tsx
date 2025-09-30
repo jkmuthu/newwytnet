@@ -24,7 +24,8 @@ export default function TestPaymentLink() {
   const handleCreateLink = async () => {
     setIsLoading(true);
     try {
-      const result = await apiRequest("POST", "/api/payments/create-link", formData);
+      const response = await apiRequest("/api/payments/create-link", "POST", formData);
+      const result = await response.json();
       
       if (result.success) {
         setPaymentLink(result.data);
@@ -42,7 +43,7 @@ export default function TestPaymentLink() {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create payment link",
+        description: error instanceof Error ? error.message : "Failed to create payment link",
         variant: "destructive",
       });
     } finally {
