@@ -2199,9 +2199,18 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Initialize assessment data (safe for production) - GET version for browser access
   app.get('/api/assessments/initialize', async (req, res) => {
     try {
+      const force = req.query.force === 'true';
+      
+      if (force) {
+        // Delete existing questions and options to force reinit
+        await db.delete(assessmentOptions);
+        await db.delete(assessmentQuestions);
+        console.log('Forced deletion of questions and options for reinitialization');
+      }
+      
       // Force initialization of default data
       await assessmentService.initializeDefaultData();
-      res.json({ success: true, message: 'Assessment data initialized successfully' });
+      res.json({ success: true, message: 'Assessment data initialized successfully', forced: force });
     } catch (error) {
       console.error('Error initializing assessment data:', error);
       res.status(500).json({ error: 'Failed to initialize assessment data' });
