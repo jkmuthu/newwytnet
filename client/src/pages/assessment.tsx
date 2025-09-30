@@ -237,7 +237,7 @@ export default function Assessment() {
       }
 
       // Create order
-      const orderResponse = await apiRequest("/api/payments/create-order", "POST", {
+      const orderResponse = await apiRequest("/api/payments/disc/create-order", "POST", {
         sessionId: sessionId,
         product: 'disc_assessment_report'
       });

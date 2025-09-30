@@ -5052,7 +5052,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Create payment order for DISC Assessment Report
-  app.post('/api/payments/create-order', async (req, res) => {
+  app.post('/api/payments/disc/create-order', async (req, res) => {
     try {
       const { sessionId, product } = req.body;
       const user = (req as any).user;
