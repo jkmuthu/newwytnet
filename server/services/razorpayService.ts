@@ -452,6 +452,241 @@ export class RazorpayService {
       };
     }
   }
+
+  // ========================================
+  // WYTPOINTS RECHARGE METHODS
+  // ========================================
+
+  /**
+   * Create a WytPoints recharge order
+   */
+  async createPointsRechargeOrder(userId: string, data: {
+    amount: number; // Amount in rupees
+    pointsAmount: number; // Number of points to credit
+    currency?: string;
+  }): Promise<{
+    success: boolean;
+    data?: {
+      orderId: string;
+      razorpayOrderId: string;
+      amount: number;
+      pointsAmount: number;
+      currency: string;
+      key: string;
+    };
+    error?: string;
+  }> {
+    try {
+      // Get user details - WhatsApp users only
+      const user = await db.select().from(whatsappUsers).where(eq(whatsappUsers.id, userId)).limit(1);
+      if (!user[0]) {
+        return { success: false, error: "WytPoints are only available for WhatsApp-authenticated users" };
+      }
+
+      // Generate order number
+      const orderNumber = `WYT-POINTS-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      
+      const currency = data.currency || 'INR';
+
+      // Create order in database
+      const dbOrderResult = await db.insert(orders).values({
+        tenantId: user[0].tenantId!,
+        userId: userId,
+        orderNumber,
+        status: 'pending',
+        subtotal: data.amount.toString(),
+        tax: '0',
+        discount: '0',
+        total: data.amount.toString(),
+        currency,
+        items: [{
+          name: `${data.pointsAmount} WytPoints`,
+          description: 'WytPoints recharge',
+          amount: data.amount,
+          currency,
+          quantity: 1,
+        }],
+        metadata: {
+          orderType: 'points_recharge',
+          pointsAmount: data.pointsAmount,
+        },
+      }).returning({ id: orders.id });
+
+      const dbOrderId = dbOrderResult[0].id;
+
+      // Create order in Razorpay
+      const razorpayOrder = await this.razorpay.orders.create({
+        amount: Math.round(data.amount * 100), // Convert to paisa
+        currency,
+        receipt: orderNumber,
+        notes: {
+          orderId: dbOrderId,
+          userId: userId,
+          orderType: 'points_recharge',
+          pointsAmount: data.pointsAmount,
+        },
+      });
+
+      // Create payment record
+      await db.insert(payments).values({
+        tenantId: user[0].tenantId!,
+        userId: userId,
+        orderId: dbOrderId,
+        provider: 'razorpay',
+        providerOrderId: razorpayOrder.id,
+        amount: data.amount.toString(),
+        currency,
+        status: 'pending',
+        receipt: orderNumber,
+        notes: {
+          orderType: 'points_recharge',
+          pointsAmount: data.pointsAmount,
+        },
+      });
+
+      console.log(`✅ Razorpay: Points recharge order created - Order ID: ${dbOrderId}, Points: ${data.pointsAmount}`);
+
+      return {
+        success: true,
+        data: {
+          orderId: dbOrderId,
+          razorpayOrderId: razorpayOrder.id,
+          amount: data.amount,
+          pointsAmount: data.pointsAmount,
+          currency,
+          key: this.keyId,
+        },
+      };
+    } catch (error) {
+      console.error("❌ Razorpay: Failed to create points recharge order:", error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : "Failed to create points recharge order"
+      };
+    }
+  }
+
+  /**
+   * Handle successful points recharge payment
+   */
+  async handlePointsRechargeSuccess(data: PaymentVerificationData): Promise<{
+    success: boolean;
+    data?: {
+      paymentId: string;
+      orderId: string;
+      amount: number;
+      pointsAmount: number;
+      newBalance: number;
+    };
+    error?: string;
+  }> {
+    try {
+      // Import PointsService dynamically to avoid circular dependency
+      const { pointsService } = await import('./pointsService');
+
+      // Verify signature first
+      if (!this.verifyPaymentSignature(data)) {
+        return { success: false, error: "Invalid payment signature" };
+      }
+
+      // Get payment details from Razorpay
+      const razorpayPayment = await this.razorpay.payments.fetch(data.razorpay_payment_id);
+      
+      // Find our payment record
+      const paymentRecord = await db.select()
+        .from(payments)
+        .where(eq(payments.providerOrderId, data.razorpay_order_id))
+        .limit(1);
+
+      if (!paymentRecord[0]) {
+        return { success: false, error: "Payment record not found" };
+      }
+
+      // Verify orderId and userId exist
+      if (!paymentRecord[0].orderId) {
+        return { success: false, error: "Payment record missing order ID" };
+      }
+
+      if (!paymentRecord[0].userId) {
+        return { success: false, error: "Payment record missing user ID" };
+      }
+
+      const orderId = paymentRecord[0].orderId;
+      const userId = paymentRecord[0].userId;
+
+      // Get order details
+      const orderRecord = await db.select()
+        .from(orders)
+        .where(eq(orders.id, orderId))
+        .limit(1);
+
+      if (!orderRecord[0]) {
+        return { success: false, error: "Order record not found" };
+      }
+
+      // Verify this is a points recharge order
+      const metadata = orderRecord[0].metadata as any;
+      if (metadata?.orderType !== 'points_recharge' || !metadata?.pointsAmount) {
+        return { success: false, error: "Invalid order type for points recharge" };
+      }
+
+      const pointsAmount = metadata.pointsAmount;
+
+      // Update payment status
+      await db.update(payments)
+        .set({
+          providerPaymentId: data.razorpay_payment_id,
+          status: 'completed',
+          method: razorpayPayment.method,
+          paymentMethod: razorpayPayment as any,
+          paidAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(payments.id, paymentRecord[0].id));
+
+      // Update order status
+      await db.update(orders)
+        .set({
+          status: 'confirmed',
+          updatedAt: new Date(),
+        })
+        .where(eq(orders.id, orderId));
+
+      // Credit points to user's wallet
+      const wallet = await pointsService.creditPoints({
+        userId,
+        amount: pointsAmount,
+        type: 'recharge',
+        description: `Recharged ${pointsAmount} points via Razorpay payment`,
+        metadata: {
+          orderId,
+          paymentId: data.razorpay_payment_id,
+          razorpayOrderId: data.razorpay_order_id,
+          amountPaid: parseFloat(paymentRecord[0].amount),
+          currency: paymentRecord[0].currency,
+        },
+      });
+
+      console.log(`✅ Razorpay: Points recharge completed - User: ${userId}, Points: ${pointsAmount}, New Balance: ${wallet.balance}`);
+
+      return {
+        success: true,
+        data: {
+          paymentId: data.razorpay_payment_id,
+          orderId,
+          amount: parseFloat(paymentRecord[0].amount),
+          pointsAmount,
+          newBalance: wallet.balance,
+        },
+      };
+    } catch (error) {
+      console.error("❌ Razorpay: Failed to handle points recharge success:", error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : "Failed to process points recharge"
+      };
+    }
+  }
 }
 
 // Export singleton instance

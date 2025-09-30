@@ -297,6 +297,9 @@ export async function setupAuth(app: Express) {
         tenantId: tenantId,
       });
 
+      // NOTE: WytPoints are only available for WhatsApp-authenticated users
+      // Legacy email/password users do not receive points
+
       // Set session with new unified format
       (req.session as any).user = { 
         type: 'legacy' as const,
@@ -352,6 +355,21 @@ export async function setupAuth(app: Express) {
         const isPasswordValid = await verifyPassword(password, user.passwordHash);
         if (!isPasswordValid) {
           return res.status(401).json({ message: "Invalid mobile number or password" });
+        }
+
+        // Award +1 point for login (WhatsApp user)
+        try {
+          const { pointsService } = await import('./services/pointsService');
+          await pointsService.creditPoints({
+            userId: user.id,
+            amount: 1,
+            type: 'login',
+            description: 'Daily login reward',
+          });
+          console.log(`✅ Awarded +1 login point to user ${user.id}`);
+        } catch (error) {
+          console.error('Failed to award login points:', error);
+          // Don't throw - login succeeded
         }
 
         // Set session with new unified format
@@ -417,6 +435,9 @@ export async function setupAuth(app: Express) {
 
         // Reset rate limit on successful login
         resetRateLimit(rateLimitKey);
+
+        // NOTE: WytPoints are only available for WhatsApp-authenticated users
+        // Legacy email/password users do not receive login points
 
         // Set session with new unified format
         (req.session as any).user = { 

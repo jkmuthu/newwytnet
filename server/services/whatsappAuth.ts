@@ -118,6 +118,21 @@ export async function createWhatsAppUser(userData: {
       })
       .returning();
 
+    // Award +10 points for registration
+    try {
+      const { pointsService } = await import('./pointsService');
+      await pointsService.creditPoints({
+        userId: user.id,
+        amount: 10,
+        type: 'registration',
+        description: 'Welcome bonus for new account registration',
+      });
+      console.log(`✅ Awarded +10 registration points to user ${user.id}`);
+    } catch (error) {
+      console.error('Failed to award registration points:', error);
+      // Don't throw - user creation succeeded
+    }
+
     return user;
   } catch (error) {
     console.error('Error creating WhatsApp user:', error);
@@ -237,6 +252,21 @@ export async function verifyOTP(whatsappNumber: string, otp: string): Promise<Wh
         })
         .where(eq(whatsappUsers.id, user.id))
         .returning();
+
+      // Award +1 point for login (existing user)
+      try {
+        const { pointsService } = await import('./pointsService');
+        await pointsService.creditPoints({
+          userId: user.id,
+          amount: 1,
+          type: 'login',
+          description: 'Daily login reward',
+        });
+        console.log(`✅ Awarded +1 login point to user ${user.id}`);
+      } catch (error) {
+        console.error('Failed to award login points:', error);
+        // Don't throw - login succeeded
+      }
     }
 
     return user;

@@ -5262,6 +5262,15 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
+      // WytPoints are only available for WhatsApp-authenticated users
+      if (principal.provider !== 'whatsapp') {
+        return res.status(403).json({ 
+          error: 'WytPoints are only available for WhatsApp-authenticated users',
+          feature: 'wytpoints',
+          requiredProvider: 'whatsapp'
+        });
+      }
+
       const balance = await pointsService.getBalance(principal.id);
       res.json({ success: true, balance });
     } catch (error) {
@@ -5276,6 +5285,15 @@ export async function registerRoutes(app: Express): Promise<void> {
       const principal = await getPrincipal(req);
       if (!principal) {
         return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // WytPoints are only available for WhatsApp-authenticated users
+      if (principal.provider !== 'whatsapp') {
+        return res.status(403).json({ 
+          error: 'WytPoints are only available for WhatsApp-authenticated users',
+          feature: 'wytpoints',
+          requiredProvider: 'whatsapp'
+        });
       }
 
       const limit = parseInt(req.query.limit as string) || 20;
@@ -5296,6 +5314,15 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
+      // WytPoints are only available for WhatsApp-authenticated users
+      if (principal.provider !== 'whatsapp') {
+        return res.status(403).json({ 
+          error: 'WytPoints are only available for WhatsApp-authenticated users',
+          feature: 'wytpoints',
+          requiredProvider: 'whatsapp'
+        });
+      }
+
       const limit = parseInt(req.query.limit as string) || 50;
       const transactions = await pointsService.getTransactions(principal.id, limit);
       
@@ -5303,6 +5330,95 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error) {
       console.error('Error fetching transactions:', error);
       res.status(500).json({ error: 'Failed to fetch transactions' });
+    }
+  });
+
+  // Create points recharge order
+  app.post('/api/points/recharge', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // WytPoints are only available for WhatsApp-authenticated users
+      if (principal.provider !== 'whatsapp') {
+        return res.status(403).json({ 
+          error: 'WytPoints are only available for WhatsApp-authenticated users',
+          feature: 'wytpoints',
+          requiredProvider: 'whatsapp'
+        });
+      }
+
+      const { amount, pointsAmount } = req.body;
+
+      if (!amount || !pointsAmount || amount <= 0 || pointsAmount <= 0) {
+        return res.status(400).json({ 
+          error: 'Invalid amount or pointsAmount' 
+        });
+      }
+
+      const result = await razorpayService.createPointsRechargeOrder(principal.id, {
+        amount: parseFloat(amount),
+        pointsAmount: parseInt(pointsAmount),
+      });
+
+      if (!result.success) {
+        // Return 403 for WhatsApp-only restriction, 500 for other errors
+        const statusCode = result.error?.includes('WhatsApp-authenticated') ? 403 : 500;
+        return res.status(statusCode).json({ error: result.error });
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error creating recharge order:', error);
+      res.status(500).json({ 
+        error: error.message || 'Failed to create recharge order' 
+      });
+    }
+  });
+
+  // Verify points recharge payment
+  app.post('/api/points/recharge/verify', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // WytPoints are only available for WhatsApp-authenticated users
+      if (principal.provider !== 'whatsapp') {
+        return res.status(403).json({ 
+          error: 'WytPoints are only available for WhatsApp-authenticated users',
+          feature: 'wytpoints',
+          requiredProvider: 'whatsapp'
+        });
+      }
+
+      const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
+
+      if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+        return res.status(400).json({ 
+          error: 'Missing payment verification data' 
+        });
+      }
+
+      const result = await razorpayService.handlePointsRechargeSuccess({
+        razorpay_payment_id,
+        razorpay_order_id,
+        razorpay_signature,
+      });
+
+      if (!result.success) {
+        return res.status(500).json({ error: result.error });
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error verifying recharge payment:', error);
+      res.status(500).json({ 
+        error: error.message || 'Failed to verify payment' 
+      });
     }
   });
 
