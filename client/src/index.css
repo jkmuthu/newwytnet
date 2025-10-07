@@ -6,6 +6,12 @@
 @tailwind utilities;
 
 :root {
+  /* WytNet Brand Colors */
+  --wytnet-blue: #4285F4;
+  --wytnet-green: #0F9D58;
+  --wytnet-yellow: #F4B400;
+  --wytnet-red: #DB4437;
+  
   /* Light theme colors - matching design reference */
   --background: hsl(210, 40%, 98%);
   --foreground: hsl(222.2, 84%, 4.9%);
@@ -13,7 +19,7 @@
   --card-foreground: hsl(222.2, 84%, 4.9%);
   --popover: hsl(0, 0%, 100%);
   --popover-foreground: hsl(222.2, 84%, 4.9%);
-  --primary: hsl(221.2, 83.2%, 53.3%);
+  --primary: #4285F4;
   --primary-foreground: hsl(210, 40%, 98%);
   --secondary: hsl(210, 40%, 96%);
   --secondary-foreground: hsl(222.2, 84%, 4.9%);
@@ -21,11 +27,11 @@
   --muted-foreground: hsl(215.4, 16.3%, 46.9%);
   --accent: hsl(210, 40%, 96%);
   --accent-foreground: hsl(222.2, 84%, 4.9%);
-  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive: #DB4437;
   --destructive-foreground: hsl(210, 40%, 98%);
   --border: hsl(214.3, 31.8%, 91.4%);
   --input: hsl(214.3, 31.8%, 91.4%);
-  --ring: hsl(221.2, 83.2%, 53.3%);
+  --ring: #4285F4;
   --radius: 0.75rem;
 
   /* Chart colors */
