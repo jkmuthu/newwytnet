@@ -28,22 +28,22 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
       active: location === "/"
     },
     {
-      href: "/ai-directory", 
-      icon: Bot,
-      label: "AI Tools",
-      active: location === "/ai-directory"
-    },
-    {
-      href: "/qr-generator",
-      icon: Wrench,
-      label: "Tools",
-      active: location.startsWith("/qr-generator") || location.startsWith("/assessment")
-    },
-    {
       href: "/wytapps",
       icon: Briefcase,
       label: "WytApps",
       active: location === "/wytapps"
+    },
+    {
+      href: "/hubs",
+      icon: Wrench,
+      label: "WytHubs",
+      active: location.startsWith("/hubs") || location.startsWith("/hub/")
+    },
+    {
+      href: "/ai-directory", 
+      icon: Bot,
+      label: "AI Directory",
+      active: location === "/ai-directory"
     }
   ];
 
