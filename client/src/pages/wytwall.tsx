@@ -5,7 +5,8 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Filter } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, Filter, Search } from "lucide-react";
 import WytWallLayout from "@/components/wytwall/WytWallLayout";
 import FiltersPanel from "@/components/wytwall/FiltersPanel";
 import NeedCard from "@/components/wytwall/NeedCard";
@@ -15,6 +16,7 @@ export default function WytWall() {
   const { user } = useAuthContext();
   const [, navigate] = useLocation();
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch needs based on authentication status
   const { data: needsData, isLoading } = useQuery({
@@ -22,8 +24,16 @@ export default function WytWall() {
     enabled: true,
   });
 
-  const needs = (needsData as any)?.needs || [];
+  const allNeeds = (needsData as any)?.needs || [];
   const counts = (needsData as any)?.counts || {};
+  
+  // Filter needs by search query
+  const needs = searchQuery.trim()
+    ? allNeeds.filter((need: any) =>
+        need.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        need.description.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : allNeeds;
 
   const handleMakeOffer = (needId: string) => {
     // Navigate to offer creation (will be implemented later)
@@ -79,6 +89,19 @@ export default function WytWall() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Search Bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Input
+          type="text"
+          placeholder="Search needs by keyword..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10 w-full"
+          data-testid="input-search-needs"
+        />
+      </div>
 
       {/* Mobile Filter Button */}
       <div className="lg:hidden">

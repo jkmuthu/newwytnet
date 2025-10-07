@@ -30,7 +30,7 @@ export default function NeedCard({ need, isAuthenticated, onMakeOffer, onLogin }
   };
 
   return (
-    <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow" data-testid={`need-card-${need.id}`}>
+    <Card className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 hover:scale-[1.02] cursor-pointer" data-testid={`need-card-${need.id}`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3 flex-1">
