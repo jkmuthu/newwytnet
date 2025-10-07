@@ -68,7 +68,8 @@ import {
   pointsWallets,
   pointsTransactions,
   payments,
-  orders
+  orders,
+  wytLifeApplications
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -5882,6 +5883,105 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error: any) {
       console.error('Error completing section:', error);
       res.status(400).json({ error: error.message || 'Failed to complete section' });
+    }
+  });
+
+  // WytLife Application Routes
+
+  // Submit WytLife application
+  app.post('/api/wytlife/apply', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      const data = req.body;
+
+      // Validate required fields
+      if (!data.fullName || !data.whyJoin) {
+        return res.status(400).json({ error: 'Full name and why join are required' });
+      }
+
+      // Create application record
+      const [application] = await db.insert(wytLifeApplications).values({
+        fullName: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        city: data.city,
+        country: data.country,
+        occupation: data.occupation,
+        organization: data.organization,
+        whyJoin: data.whyJoin,
+        areasOfInterest: data.areasOfInterest || [],
+        status: 'pending',
+        userId: principal?.id || null,
+        pointsAwarded: 0,
+        tenantId: principal?.tenantId || null,
+      }).returning();
+
+      // Award bonus points if user is authenticated
+      if (principal?.id) {
+        const bonusPoints = 25;
+        await pointsService.creditPoints({
+          userId: principal.id,
+          amount: bonusPoints,
+          type: 'wytlife_application',
+          description: 'Bonus points for WytLife application',
+          metadata: { applicationId: application.id },
+        });
+
+        // Update application with points awarded
+        await db.update(wytLifeApplications)
+          .set({ pointsAwarded: bonusPoints })
+          .where(eq(wytLifeApplications.id, application.id));
+      }
+
+      res.json({ 
+        success: true, 
+        message: 'Application submitted successfully',
+        pointsAwarded: principal?.id ? 25 : 0,
+        application 
+      });
+    } catch (error: any) {
+      console.error('Error submitting WytLife application:', error);
+      res.status(500).json({ error: error.message || 'Failed to submit application' });
+    }
+  });
+
+  // Get WytLife applications (admin only)
+  app.get('/api/wytlife/applications', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // Check if user is admin/super admin
+      const user = await db.select()
+        .from(whatsappUsers)
+        .where(eq(whatsappUsers.id, principal.id))
+        .limit(1);
+
+      if (!user[0]?.isSuperAdmin && user[0]?.role !== 'admin') {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+
+      const status = req.query.status as string | undefined;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      let query = db.select().from(wytLifeApplications);
+      
+      if (status) {
+        query = query.where(eq(wytLifeApplications.status, status));
+      }
+
+      const applications = await query
+        .orderBy(desc(wytLifeApplications.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      res.json({ success: true, applications });
+    } catch (error: any) {
+      console.error('Error fetching applications:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch applications' });
     }
   });
 
