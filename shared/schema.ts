@@ -1652,7 +1652,210 @@ export type Entitlement = typeof entitlements.$inferSelect;
 export type InsertEntitlement = typeof entitlements.$inferInsert;
 
 // ========================================
-// END WYTPOINTS ECONOMY SYSTEM
+// WYTWALL MARKETPLACE SYSTEM
+// ========================================
+
+// Need category enum
+export const needCategoryEnum = pgEnum("need_category", [
+  "jobs",
+  "real_estate",
+  "b2b_supply",
+  "service",
+  "other"
+]);
+
+// Need status enum
+export const needStatusEnum = pgEnum("need_status", [
+  "active",
+  "closed",
+  "fulfilled",
+  "expired"
+]);
+
+// Needs - Marketplace needs posted by users
+export const needs = pgTable("needs", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  category: needCategoryEnum("category").notNull(),
+  location: varchar("location", { length: 255 }),
+  budget: decimal("budget", { precision: 12, scale: 2 }),
+  currency: varchar("currency", { length: 3 }).default('INR'),
+  status: needStatusEnum("status").notNull().default('active'),
+  isPublic: boolean("is_public").default(true), // Public or circle-only
+  isSponsored: boolean("is_sponsored").default(false),
+  circles: jsonb("circles").default([]), // Array of circle IDs
+  pointsCost: integer("points_cost").default(0), // Cost to make an offer
+  metadata: jsonb("metadata").default({}),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Offers - User offers on needs
+export const offers = pgTable("offers", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  needId: uuid("need_id").notNull().references(() => needs.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  description: text("description").notNull(),
+  proposedPrice: decimal("proposed_price", { precision: 12, scale: 2 }),
+  currency: varchar("currency", { length: 3 }).default('INR'),
+  status: varchar("status", { length: 20 }).default('pending'), // pending, accepted, rejected
+  pointsSpent: integer("points_spent").default(0), // Points deducted for offer
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// ========================================
+// WYTSTAR GAMIFICATION SYSTEM
+// ========================================
+
+// WytStar contribution types enum
+export const contributionTypeEnum = pgEnum("contribution_type", [
+  "post_need",
+  "make_offer",
+  "verify_need",
+  "verify_offer",
+  "add_listing",
+  "add_details",
+  "upload_image"
+]);
+
+// WytStar level enum
+export const wytstarLevelEnum = pgEnum("wytstar_level", [
+  "bronze",
+  "silver",
+  "gold",
+  "platinum",
+  "diamond"
+]);
+
+// WytStar Contributions - Track all contributions for rewards
+export const wytstarContributions = pgTable("wytstar_contributions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  type: contributionTypeEnum("type").notNull(),
+  entityType: varchar("entity_type", { length: 50 }), // 'need', 'offer', 'listing'
+  entityId: uuid("entity_id"),
+  pointsEarned: integer("points_earned").notNull().default(0),
+  isVerified: boolean("is_verified").default(false),
+  verifiedBy: varchar("verified_by").references(() => whatsappUsers.id),
+  verifiedAt: timestamp("verified_at"),
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// WytStar Levels - User star levels and rankings
+export const wytstarLevels = pgTable("wytstar_levels", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => whatsappUsers.id),
+  level: wytstarLevelEnum("level").notNull().default('bronze'),
+  totalPoints: integer("total_points").notNull().default(0),
+  rank: integer("rank"), // Global ranking
+  monthlyPoints: integer("monthly_points").default(0),
+  monthlyRank: integer("monthly_rank"),
+  streakDays: integer("streak_days").default(0),
+  lastContributionAt: timestamp("last_contribution_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// ========================================
+// PROFILE COMPLETION ECONOMY
+// ========================================
+
+// Profile sections enum
+export const profileSectionEnum = pgEnum("profile_section", [
+  "basic_info",
+  "demographics",
+  "photo_upload",
+  "first_need",
+  "first_offer"
+]);
+
+// Profile Completion - Track user profile completion for rewards
+export const profileCompletion = pgTable("profile_completion", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique().references(() => whatsappUsers.id),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  completionPercentage: integer("completion_percentage").notNull().default(0),
+  sectionsCompleted: jsonb("sections_completed").default([]), // Array of completed section IDs
+  totalPointsEarned: integer("total_points_earned").default(0),
+  completedAt: timestamp("completed_at"), // When 100% achieved
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// ========================================
+// WYTMATCH SYSTEM
+// ========================================
+
+// Match status enum
+export const matchStatusEnum = pgEnum("match_status", [
+  "pending",
+  "unlocked",
+  "contacted",
+  "completed"
+]);
+
+// Matches - Need-Offer matchmaking
+export const matches = pgTable("matches", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => whatsappUsers.id), // User who sees the match
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  needId: uuid("need_id").notNull().references(() => needs.id),
+  offerId: uuid("offer_id").references(() => offers.id),
+  matchType: varchar("match_type", { length: 50 }).notNull(), // 'my_need_their_offer', 'my_offer_their_need'
+  matchScore: integer("match_score").default(0), // Algorithm score 0-100
+  status: matchStatusEnum("status").notNull().default('pending'),
+  unlockCost: integer("unlock_cost").default(1), // Points to unlock
+  isUnlocked: boolean("is_unlocked").default(false),
+  unlockedAt: timestamp("unlocked_at"),
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// ========================================
+// DUAL PANEL SYSTEM (Organizations)
+// ========================================
+
+// Organizations - For OurPanel multi-user workspaces
+export const organizations = pgTable("organizations", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  ownerId: varchar("owner_id").notNull().references(() => whatsappUsers.id),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  description: text("description"),
+  logo: varchar("logo", { length: 500 }),
+  settings: jsonb("settings").default({}),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Organization Members - Team members in organizations
+export const organizationMembers = pgTable("organization_members", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  role: varchar("role", { length: 50 }).notNull().default('member'), // owner, admin, member
+  permissions: jsonb("permissions").default({}),
+  isActive: boolean("is_active").default(true),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.organizationId, table.userId] }),
+}));
+
+// ========================================
+// END WYTWALL MARKETPLACE SYSTEM
 // ========================================
 
 // Marketplace Apps schema exports
@@ -1686,3 +1889,55 @@ export type MarketplaceHub = typeof marketplaceHubs.$inferSelect;
 export type InsertMarketplaceHub = typeof marketplaceHubs.$inferInsert;
 export type HubItem = typeof hubItems.$inferSelect;
 export type InsertHubItem = typeof hubItems.$inferInsert;
+
+// WytWall Marketplace schema exports
+export const insertNeedSchema = createInsertSchema(needs);
+export const selectNeedSchema = createSelectSchema(needs);
+export const insertOfferSchema = createInsertSchema(offers);
+export const selectOfferSchema = createSelectSchema(offers);
+
+// WytStar schema exports
+export const insertWytstarContributionSchema = createInsertSchema(wytstarContributions);
+export const selectWytstarContributionSchema = createSelectSchema(wytstarContributions);
+export const insertWytstarLevelSchema = createInsertSchema(wytstarLevels);
+export const selectWytstarLevelSchema = createSelectSchema(wytstarLevels);
+
+// Profile Completion schema exports
+export const insertProfileCompletionSchema = createInsertSchema(profileCompletion);
+export const selectProfileCompletionSchema = createSelectSchema(profileCompletion);
+
+// WytMatch schema exports
+export const insertMatchSchema = createInsertSchema(matches);
+export const selectMatchSchema = createSelectSchema(matches);
+
+// Organizations schema exports
+export const insertOrganizationSchema = createInsertSchema(organizations);
+export const selectOrganizationSchema = createSelectSchema(organizations);
+export const insertOrganizationMemberSchema = createInsertSchema(organizationMembers);
+export const selectOrganizationMemberSchema = createSelectSchema(organizationMembers);
+
+// WytWall Marketplace type exports
+export type Need = typeof needs.$inferSelect;
+export type InsertNeed = typeof needs.$inferInsert;
+export type Offer = typeof offers.$inferSelect;
+export type InsertOffer = typeof offers.$inferInsert;
+
+// WytStar type exports
+export type WytstarContribution = typeof wytstarContributions.$inferSelect;
+export type InsertWytstarContribution = typeof wytstarContributions.$inferInsert;
+export type WytstarLevel = typeof wytstarLevels.$inferSelect;
+export type InsertWytstarLevel = typeof wytstarLevels.$inferInsert;
+
+// Profile Completion type exports
+export type ProfileCompletion = typeof profileCompletion.$inferSelect;
+export type InsertProfileCompletion = typeof profileCompletion.$inferInsert;
+
+// WytMatch type exports
+export type Match = typeof matches.$inferSelect;
+export type InsertMatch = typeof matches.$inferInsert;
+
+// Organizations type exports
+export type Organization = typeof organizations.$inferSelect;
+export type InsertOrganization = typeof organizations.$inferInsert;
+export type OrganizationMember = typeof organizationMembers.$inferSelect;
+export type InsertOrganizationMember = typeof organizationMembers.$inferInsert;
