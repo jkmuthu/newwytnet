@@ -76,7 +76,7 @@ export class ProfileCompletionService {
     
     // Get points for this section
     const pointsAwarded = SECTION_POINTS[section] || 0;
-    const newTotalPoints = completion.totalPointsEarned + pointsAwarded;
+    const newTotalPoints = (completion.totalPointsEarned || 0) + pointsAwarded;
 
     // Update completion record
     const [updated] = await db.update(profileCompletion)

@@ -5499,4 +5499,393 @@ export async function registerRoutes(app: Express): Promise<void> {
       });
     }
   });
+
+  // ========================================
+  // WYTWALL MARKETPLACE ROUTES
+  // ========================================
+
+  const { needsService } = await import('./services/needsService');
+  const { offersService } = await import('./services/offersService');
+  const { wytstarService } = await import('./services/wytstarService');
+  const { profileCompletionService } = await import('./services/profileCompletionService');
+
+  // Needs Routes
+  
+  // List public needs (unauthenticated)
+  app.get('/api/needs/public', async (req: any, res) => {
+    try {
+      const category = req.query.category as string;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const needs = await needsService.listPublicNeeds({ category, limit, offset });
+      const counts = await needsService.getNeedsCounts({ isPublic: true });
+
+      res.json({ success: true, needs, counts });
+    } catch (error: any) {
+      console.error('Error fetching public needs:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch needs' });
+    }
+  });
+
+  // List authenticated user needs
+  app.get('/api/needs', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const category = req.query.category as string;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const needs = await needsService.listAuthenticatedNeeds({
+        userId: principal.id,
+        category,
+        circles: [],
+        limit,
+        offset,
+      });
+
+      const counts = await needsService.getNeedsCounts({
+        isPublic: false,
+        userId: principal.id,
+        circles: [],
+      });
+
+      res.json({ success: true, needs, counts });
+    } catch (error: any) {
+      console.error('Error fetching needs:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch needs' });
+    }
+  });
+
+  // Get user's own needs
+  app.get('/api/needs/my', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const status = req.query.status as string;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const needs = await needsService.getUserNeeds(principal.id, { status, limit, offset });
+      res.json({ success: true, needs });
+    } catch (error: any) {
+      console.error('Error fetching user needs:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch needs' });
+    }
+  });
+
+  // Get single need by ID
+  app.get('/api/needs/:id', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const need = await needsService.getNeedById(id);
+      
+      if (!need) {
+        return res.status(404).json({ error: 'Need not found' });
+      }
+
+      res.json({ success: true, need });
+    } catch (error: any) {
+      console.error('Error fetching need:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch need' });
+    }
+  });
+
+  // Create a new need
+  app.post('/api/needs', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const needData = {
+        ...req.body,
+        userId: principal.id,
+        tenantId: principal.tenantId || null,
+      };
+
+      const need = await needsService.createNeed(needData);
+
+      // Record WytStar contribution
+      await wytstarService.recordContribution({
+        userId: principal.id,
+        tenantId: principal.tenantId,
+        type: 'post_need',
+        entityType: 'need',
+        entityId: need.id,
+      });
+
+      // Auto-complete profile section if first need
+      await profileCompletionService.autoCompleteSection(principal.id, 'first_need');
+
+      res.json({ success: true, need });
+    } catch (error: any) {
+      console.error('Error creating need:', error);
+      res.status(500).json({ error: error.message || 'Failed to create need' });
+    }
+  });
+
+  // Update a need
+  app.put('/api/needs/:id', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { id } = req.params;
+      const need = await needsService.updateNeed(id, principal.id, req.body);
+      
+      res.json({ success: true, need });
+    } catch (error: any) {
+      console.error('Error updating need:', error);
+      res.status(400).json({ error: error.message || 'Failed to update need' });
+    }
+  });
+
+  // Delete a need
+  app.delete('/api/needs/:id', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { id } = req.params;
+      await needsService.deleteNeed(id, principal.id);
+      
+      res.json({ success: true, message: 'Need deleted successfully' });
+    } catch (error: any) {
+      console.error('Error deleting need:', error);
+      res.status(400).json({ error: error.message || 'Failed to delete need' });
+    }
+  });
+
+  // Offers Routes
+
+  // Get offers for a need
+  app.get('/api/needs/:needId/offers', async (req: any, res) => {
+    try {
+      const { needId } = req.params;
+      const status = req.query.status as string;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const offers = await offersService.getOffersByNeed(needId, { status, limit, offset });
+      res.json({ success: true, offers });
+    } catch (error: any) {
+      console.error('Error fetching offers:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch offers' });
+    }
+  });
+
+  // Create an offer on a need
+  app.post('/api/offers', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const offer = await offersService.createOffer(req.body, principal.id);
+
+      // Record WytStar contribution
+      await wytstarService.recordContribution({
+        userId: principal.id,
+        tenantId: principal.tenantId,
+        type: 'make_offer',
+        entityType: 'offer',
+        entityId: offer.id,
+      });
+
+      // Auto-complete profile section if first offer
+      await profileCompletionService.autoCompleteSection(principal.id, 'first_offer');
+
+      res.json({ success: true, offer });
+    } catch (error: any) {
+      console.error('Error creating offer:', error);
+      res.status(400).json({ error: error.message || 'Failed to create offer' });
+    }
+  });
+
+  // Get user's offers
+  app.get('/api/offers/my', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const status = req.query.status as string;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const offers = await offersService.getUserOffers(principal.id, { status, limit, offset });
+      res.json({ success: true, offers });
+    } catch (error: any) {
+      console.error('Error fetching user offers:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch offers' });
+    }
+  });
+
+  // Get offers received on user's needs
+  app.get('/api/offers/received', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const status = req.query.status as string;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const offers = await offersService.getReceivedOffers(principal.id, { status, limit, offset });
+      res.json({ success: true, offers });
+    } catch (error: any) {
+      console.error('Error fetching received offers:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch offers' });
+    }
+  });
+
+  // Update offer status
+  app.put('/api/offers/:id/status', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { id } = req.params;
+      const { status } = req.body;
+
+      const offer = await offersService.updateOfferStatus(id, status, principal.id);
+      res.json({ success: true, offer });
+    } catch (error: any) {
+      console.error('Error updating offer status:', error);
+      res.status(400).json({ error: error.message || 'Failed to update offer' });
+    }
+  });
+
+  // Delete an offer
+  app.delete('/api/offers/:id', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { id } = req.params;
+      await offersService.deleteOffer(id, principal.id);
+      
+      res.json({ success: true, message: 'Offer deleted successfully' });
+    } catch (error: any) {
+      console.error('Error deleting offer:', error);
+      res.status(400).json({ error: error.message || 'Failed to delete offer' });
+    }
+  });
+
+  // WytStar Routes
+
+  // Get user's WytStar level
+  app.get('/api/wytstar/level', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const level = await wytstarService.getOrCreateUserLevel(principal.id);
+      res.json({ success: true, level });
+    } catch (error: any) {
+      console.error('Error fetching WytStar level:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch level' });
+    }
+  });
+
+  // Get user's contributions
+  app.get('/api/wytstar/contributions', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const contributions = await wytstarService.getUserContributions(principal.id, { limit, offset });
+      res.json({ success: true, contributions });
+    } catch (error: any) {
+      console.error('Error fetching contributions:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch contributions' });
+    }
+  });
+
+  // Get leaderboard
+  app.get('/api/wytstar/leaderboard', async (req: any, res) => {
+    try {
+      const period = (req.query.period as 'all' | 'monthly') || 'all';
+      const limit = parseInt(req.query.limit as string) || 100;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const leaderboard = await wytstarService.getLeaderboard({ period, limit, offset });
+      res.json({ success: true, leaderboard });
+    } catch (error: any) {
+      console.error('Error fetching leaderboard:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch leaderboard' });
+    }
+  });
+
+  // Profile Completion Routes
+
+  // Get user's profile completion status
+  app.get('/api/profile/completion', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const status = await profileCompletionService.getCompletionStatus(principal.id);
+      res.json({ success: true, ...status });
+    } catch (error: any) {
+      console.error('Error fetching completion status:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch status' });
+    }
+  });
+
+  // Complete a profile section
+  app.post('/api/profile/completion/:section', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { section } = req.params;
+      const completion = await profileCompletionService.completeSection(
+        principal.id,
+        section as any,
+        principal.tenantId
+      );
+
+      res.json({ success: true, completion });
+    } catch (error: any) {
+      console.error('Error completing section:', error);
+      res.status(400).json({ error: error.message || 'Failed to complete section' });
+    }
+  });
+
+  // ========================================
+  // END WYTWALL MARKETPLACE ROUTES
+  // ========================================
 }
