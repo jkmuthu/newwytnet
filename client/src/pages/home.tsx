@@ -99,40 +99,48 @@ export default function Home() {
           {/* Trust Signals */}
           {/* Enhanced Trust Signals with Real Stats */}
           <div className="flex flex-wrap justify-center items-center gap-6 mb-8 text-sm text-gray-500 dark:text-gray-400">
-            <div className="flex items-center gap-2" data-testid="trust-users">
-              <Users className="h-4 w-4 text-blue-500" />
-              <span><strong>5,247</strong> Active Users</span>
+            <div className="flex items-center gap-2 group transition-all duration-200 hover:scale-110 cursor-pointer" data-testid="trust-users">
+              <Users className="h-4 w-4 text-blue-500 group-hover:animate-bounce" />
+              <span className="group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                <strong className="tabular-nums">5,247</strong> Active Users
+              </span>
             </div>
-            <div className="flex items-center gap-2" data-testid="trust-security">
-              <Shield className="h-4 w-4 text-green-500" />
-              <span>Bank-Level Security</span>
+            <div className="flex items-center gap-2 group transition-all duration-200 hover:scale-110 cursor-pointer" data-testid="trust-security">
+              <Shield className="h-4 w-4 text-green-500 group-hover:animate-pulse" />
+              <span className="group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">Bank-Level Security</span>
             </div>
-            <div className="flex items-center gap-2" data-testid="trust-uptime">
-              <Clock className="h-4 w-4 text-purple-500" />
-              <span>99.9% Uptime</span>
+            <div className="flex items-center gap-2 group transition-all duration-200 hover:scale-110 cursor-pointer" data-testid="trust-uptime">
+              <Clock className="h-4 w-4 text-purple-500 group-hover:animate-spin" />
+              <span className="group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">99.9% Uptime</span>
             </div>
-            <div className="flex items-center gap-2" data-testid="trust-quality">
-              <Award className="h-4 w-4 text-orange-500" />
-              <span>SSL Secured</span>
+            <div className="flex items-center gap-2 group transition-all duration-200 hover:scale-110 cursor-pointer" data-testid="trust-quality">
+              <Award className="h-4 w-4 text-orange-500 group-hover:animate-bounce" />
+              <span className="group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">SSL Secured</span>
             </div>
           </div>
 
           {/* Social Proof Bar */}
           <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-blue-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-800 rounded-xl p-4 mb-8 border border-blue-100 dark:border-gray-600">
             <div className="flex flex-wrap justify-center items-center gap-4 text-xs text-gray-600 dark:text-gray-300">
-              <div className="flex items-center gap-1">
-                <Star className="h-3 w-3 text-yellow-500 fill-current" />
-                <span><strong>4.9/5</strong> user rating</span>
+              <div className="flex items-center gap-1 group transition-all duration-200 hover:scale-110 cursor-pointer">
+                <Star className="h-3 w-3 text-yellow-500 fill-current group-hover:animate-spin" />
+                <span className="group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors">
+                  <strong className="tabular-nums">4.9/5</strong> user rating
+                </span>
               </div>
               <div className="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
-              <div className="flex items-center gap-1">
-                <CheckCircle className="h-3 w-3 text-green-500" />
-                <span><strong>12,893</strong> assessments completed</span>
+              <div className="flex items-center gap-1 group transition-all duration-200 hover:scale-110 cursor-pointer">
+                <CheckCircle className="h-3 w-3 text-green-500 group-hover:animate-pulse" />
+                <span className="group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+                  <strong className="tabular-nums">12,893</strong> assessments completed
+                </span>
               </div>
               <div className="w-px h-4 bg-gray-300 dark:bg-gray-600"></div>
-              <div className="flex items-center gap-1">
-                <TrendingUp className="h-3 w-3 text-blue-500" />
-                <span><strong>47</strong> users online now</span>
+              <div className="flex items-center gap-1 group transition-all duration-200 hover:scale-110 cursor-pointer">
+                <TrendingUp className="h-3 w-3 text-blue-500 group-hover:animate-bounce" />
+                <span className="group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  <strong className="tabular-nums">47</strong> users online now
+                </span>
               </div>
             </div>
           </div>
