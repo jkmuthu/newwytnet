@@ -149,7 +149,7 @@ export default function Home() {
           <div className="flex justify-center mb-6">
             <Link href="/assessment">
               <Button 
-                size={isMobile ? "lg" : "xl"} 
+                size="lg"
                 className={`${isMobile ? 'w-full px-8' : 'px-12'} bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-semibold relative overflow-hidden group`} 
                 data-testid="button-primary-cta"
               >
