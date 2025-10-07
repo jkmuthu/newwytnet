@@ -42,6 +42,7 @@ import MobileAppPage from "@/pages/MobileAppPage";
 import SearchPage from "@/pages/search";
 import PaymentsPage from "@/pages/payments";
 import TestPaymentLink from "@/pages/test-payment-link";
+import WytWall from "@/pages/wytwall";
 
 /**
  * PublicRouter handles all public routes accessible to guests and basic authenticated users
@@ -108,6 +109,9 @@ export default function PublicRouter() {
       <Route path="/plans" component={PaymentsPage} />
       <Route path="/pricing-plans" component={PaymentsPage} />
       <Route path="/test-payment" component={TestPaymentLink} />
+
+      {/* WytWall Marketplace */}
+      <Route path="/wytwall" component={WytWall} />
 
       {/* Coming Soon routes for tools in development */}
       <Route path="/business-card-designer" component={ComingSoon} />

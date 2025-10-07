@@ -4,7 +4,7 @@ import {
   type Need,
   type InsertNeed 
 } from '../../shared/schema';
-import { eq, desc, and, or, sql, inArray } from 'drizzle-orm';
+import { eq, desc, and, or, sql, inArray, SQL } from 'drizzle-orm';
 
 export class NeedsService {
   /**
@@ -91,12 +91,14 @@ export class NeedsService {
       eq(needs.status, 'active')
     ];
 
-    // Show public needs OR needs in user's circles
+    // Show public needs OR needs in user's circles (using safe parameter binding)
     if (circles.length > 0) {
+      // Use Drizzle's safe SQL parameter binding for arrays
+      const circlesParam = sql<string[]>`ARRAY[${sql.join(circles.map(c => sql`${c}`), sql`, `)}]::text[]`;
       conditions.push(
         or(
           eq(needs.isPublic, true),
-          sql`${needs.circles} && ARRAY[${circles.join(',')}]::text[]`
+          sql`${needs.circles} && ${circlesParam}`
         )!
       );
     } else {
@@ -243,7 +245,7 @@ export class NeedsService {
       conditions.push(
         or(
           eq(needs.isPublic, true),
-          sql`${needs.circles} && ARRAY[${circles.join(',')}]::text[]`
+          sql`${needs.circles} && ARRAY[${sql.join(circles.map(c => sql`${c}`), sql`, `)}]::text[]`
         )!
       );
     }
@@ -296,7 +298,7 @@ export class NeedsService {
       conditions.push(
         or(
           eq(needs.isPublic, true),
-          sql`${needs.circles} && ARRAY[${circles.join(',')}]::text[]`
+          sql`${needs.circles} && ARRAY[${sql.join(circles.map(c => sql`${c}`), sql`, `)}]::text[]`
         )!
       );
     }
