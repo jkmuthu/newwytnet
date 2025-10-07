@@ -50,9 +50,15 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
   // Sidebar items for mobile menu
   const sidebarItems = [
     { 
-      section: "WytTools",
+      section: "WytHubs",
       items: [
         { icon: Bot, label: 'AI Directory', href: '/ai-directory' },
+        { icon: Activity, label: 'WytLife', href: '/wytlife' },
+      ]
+    },
+    { 
+      section: "WytTools",
+      items: [
         { icon: QrCode, label: 'QR Generator', href: '/qr-generator' },
         { icon: Activity, label: 'DISC Assessment', href: '/assessment' },
       ]
