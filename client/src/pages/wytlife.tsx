@@ -40,7 +40,7 @@ export default function WytLife() {
   const [formData, setFormData] = useState({
     fullName: user?.name || "",
     email: user?.email || "",
-    phone: user?.whatsappNumber || "",
+    phone: "",
     city: "",
     country: "",
     occupation: "",

@@ -43,6 +43,7 @@ import SearchPage from "@/pages/search";
 import PaymentsPage from "@/pages/payments";
 import TestPaymentLink from "@/pages/test-payment-link";
 import WytWall from "@/pages/wytwall";
+import WytLife from "@/pages/wytlife";
 
 /**
  * PublicRouter handles all public routes accessible to guests and basic authenticated users
@@ -63,6 +64,9 @@ export default function PublicRouter() {
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
       <Route path="/help" component={Help} />
+      
+      {/* WytHubs */}
+      <Route path="/wytlife" component={WytLife} />
       <Route path="/status" component={Status} />
       
       {/* Legal pages */}
