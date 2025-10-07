@@ -1855,6 +1855,30 @@ export const organizationMembers = pgTable("organization_members", {
 }));
 
 // ========================================
+// WYTLIFE APPLICATIONS
+// ========================================
+
+// WytLife Applications - For early member applications
+export const wytLifeApplications = pgTable("wyt_life_applications", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  fullName: varchar("full_name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }),
+  phone: varchar("phone", { length: 20 }),
+  city: varchar("city", { length: 100 }),
+  country: varchar("country", { length: 100 }),
+  occupation: varchar("occupation", { length: 255 }),
+  organization: varchar("organization", { length: 255 }),
+  whyJoin: text("why_join").notNull(),
+  areasOfInterest: jsonb("areas_of_interest").default([]), // ['Leadership', 'Productivity', 'Wellness', 'Networking']
+  status: varchar("status", { length: 20 }).notNull().default('pending'), // pending, approved, rejected
+  userId: varchar("user_id").references(() => whatsappUsers.id), // If application is from logged-in user
+  pointsAwarded: integer("points_awarded").default(0), // WytPoints bonus (e.g., 25 pts)
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// ========================================
 // END WYTWALL MARKETPLACE SYSTEM
 // ========================================
 
@@ -1941,3 +1965,11 @@ export type Organization = typeof organizations.$inferSelect;
 export type InsertOrganization = typeof organizations.$inferInsert;
 export type OrganizationMember = typeof organizationMembers.$inferSelect;
 export type InsertOrganizationMember = typeof organizationMembers.$inferInsert;
+
+// WytLife Applications schema exports
+export const insertWytLifeApplicationSchema = createInsertSchema(wytLifeApplications).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectWytLifeApplicationSchema = createSelectSchema(wytLifeApplications);
+
+// WytLife Applications type exports
+export type WytLifeApplication = typeof wytLifeApplications.$inferSelect;
+export type InsertWytLifeApplication = z.infer<typeof insertWytLifeApplicationSchema>;
