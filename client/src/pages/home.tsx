@@ -19,7 +19,7 @@ export default function Home() {
   });
 
   return (
-    <div className={`min-h-screen ${isMobile ? 'bg-gray-50 dark:bg-gray-900' : 'bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900'}`}>
+    <div className={`min-h-screen ${isMobile ? 'bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800' : 'bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900'}`}>
       
       {/* Mobile Sticky CTA Bar */}
       {isMobile && (
@@ -142,12 +142,13 @@ export default function Home() {
             <Link href="/assessment">
               <Button 
                 size={isMobile ? "lg" : "xl"} 
-                className={`${isMobile ? 'w-full px-8' : 'px-12'} bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-semibold`} 
+                className={`${isMobile ? 'w-full px-8' : 'px-12'} bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg font-semibold relative overflow-hidden group`} 
                 data-testid="button-primary-cta"
               >
-                <Brain className="h-6 w-6 mr-3" />
-                Start with Free Assessment
-                <ArrowRight className="h-5 w-5 ml-3" />
+                <span className="absolute inset-0 bg-white/20 rounded-full scale-0 group-hover:scale-150 transition-transform duration-500 ease-out"></span>
+                <Brain className="h-6 w-6 mr-3 relative z-10" />
+                <span className="relative z-10">Start with Free Assessment</span>
+                <ArrowRight className="h-5 w-5 ml-3 relative z-10" />
               </Button>
             </Link>
           </div>
@@ -156,9 +157,9 @@ export default function Home() {
           <div className="flex justify-center">
             <Link href="/ai-directory">
               <Button 
-                variant="ghost" 
+                variant="outline" 
                 size="lg" 
-                className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200" 
+                className="text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-600 dark:hover:border-blue-400 transition-all duration-200" 
                 data-testid="button-secondary-cta"
               >
                 <Zap className="h-4 w-4 mr-2" />
