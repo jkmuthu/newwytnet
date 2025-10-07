@@ -20,18 +20,9 @@ export default function PublicHeader() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const companyNavItems = [
-    { label: "About", href: "/about" },
-    { label: "Features", href: "/features" },
-    { label: "Pricing", href: "/pricing" },
-    { label: "Contact", href: "/contact" },
-  ];
-
-  const resourcesNavItems = [
-    { label: "Help Center", href: "/help" },
-    { label: "Documentation", href: "/docs" },
-    { label: "API", href: "/api" },
-    { label: "Status", href: "/status" },
+  const wytHubsNavItems = [
+    { label: "AI Directory", href: "/ai-directory" },
+    { label: "WytLife", href: "/wytlife" },
   ];
 
   const logoutMutation = useMutation({
@@ -92,6 +83,24 @@ export default function PublicHeader() {
           {/* Desktop Navigation */}
           <NavigationMenu className="hidden lg:flex">
             <NavigationMenuList>
+              {/* WytWall - Direct Link */}
+              <NavigationMenuItem>
+                <NavigationMenuLink asChild>
+                  <Link href="/" className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-105 focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
+                    WytWall
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+
+              {/* Features - Direct Link */}
+              <NavigationMenuItem>
+                <NavigationMenuLink asChild>
+                  <Link href="/features" className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-105 focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
+                    Features
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+
               {/* WytApps - Direct Link */}
               <NavigationMenuItem>
                 <NavigationMenuLink asChild>
@@ -101,22 +110,27 @@ export default function PublicHeader() {
                 </NavigationMenuLink>
               </NavigationMenuItem>
 
-              {/* AI Directory - Direct Link */}
+              {/* WytHubs - Dropdown Menu */}
               <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link href="/ai-directory" className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-105 focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
-                    AI Directory
-                  </Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-
-              {/* About - Direct Link */}
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link href="/about" className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-105 focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
-                    About
-                  </Link>
-                </NavigationMenuLink>
+                <NavigationMenuTrigger className="text-gray-700 dark:text-gray-200 font-medium transition-all duration-200 hover:scale-105 hover:text-blue-600 dark:hover:text-blue-400">
+                  WytHubs
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                    {wytHubsNavItems.map((item) => (
+                      <li key={item.href}>
+                        <NavigationMenuLink asChild>
+                          <Link
+                            href={item.href}
+                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:scale-105 hover:shadow-md"
+                          >
+                            <div className="text-sm font-medium leading-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{item.label}</div>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                    ))}
+                  </ul>
+                </NavigationMenuContent>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
