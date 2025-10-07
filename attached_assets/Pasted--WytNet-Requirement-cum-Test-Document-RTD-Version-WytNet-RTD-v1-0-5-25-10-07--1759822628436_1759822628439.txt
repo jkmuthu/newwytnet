@@ -1,0 +1,272 @@
+# 📑 WytNet – Requirement cum Test Document (RTD)
+
+**Version:** `WytNet-RTD-v1.0.5-25.10.07`
+
+---
+
+## 🔄 Change Log
+
+* Integrated latest feedback for component consistency and responsive standards.
+* Reinforced shared component rules with authentication awareness.
+* Added explicit PWA, responsive design, and theme mode standards.
+* Clarified UI consistency across MyPanel, OurPanel, and Admin Panel.
+* Added detailed developer guidelines to ensure stability and additive updates.
+
+---
+
+## 1. Public Website Homepage (Visitor View)
+
+**URL:** `wytnet.com/`
+
+### Layout (3-Column Grid)
+
+* **Left Bar:**
+
+  * Minimal filters: Category, Location.
+  * Quick links disabled → show “Login to access MyNeeds/MyOffers”.
+
+* **Center (WytWall Stream):**
+
+  * Show only **Public Needs** (title, short desc).
+  * Tabs: All Stream | Jobs | Real Estate | B2B Supply | Service.
+  * Offer button disabled → shows **“Login to Offer”**.
+  * Sponsored Needs pinned at top.
+
+* **Right Bar:**
+
+  * WytApps preview grid (Duty, Task, Goals, etc.) → read-only.
+  * Promotions:
+
+    * “Join WytNet → Post Needs & Earn Points.”
+    * “Apply for WytLife.”
+
+### Purpose
+
+* Public visitors see **live activity (Needs)** → platform looks active.
+* Conversion funnel: CTA to **Signup/Login**.
+
+---
+
+## 2. Homepage After Authentication (User View)
+
+**URL:** `wytnet.com/` after login
+
+### Layout (3-Column Grid)
+
+* **Left Bar:**
+
+  * Full filters: Category, Location, Date, Circles.
+  * Quick Links: MyNeeds, MyOffers, Saved Needs, MyCircle.
+
+* **Center (WytWall Stream):**
+
+  * Needs from self + others (public + circles).
+  * Tabs: All Stream | Jobs | Real Estate | B2B Supply | Service.
+  * Offer button active → deducts points.
+  * Post Need button on top.
+
+* **Right Bar:**
+
+  * WytApps launch grid (Duty, Task, Goals, CRM, ERP, Wallet).
+  * Promotions: “Boost Your Need”, “Recharge Points”, “Apply WytLife”.
+  * Wallet balance card (points + recharge).
+
+### Purpose
+
+* Users actively engage (Post Needs, Make Offers, Use Points).
+
+---
+
+## 3. WytStar Program (Community Contribution & Recognition)
+
+* **Brand:** WytStar 🌟
+* **Purpose:** Build verified datasets via community contributions.
+* **Contribution types:** Post Needs, Offers, Listings, add images/details.
+* **Verification:** Community verifiers confirm entries.
+* **Rewards:** Contributor & Verifier both earn WytPoints.
+
+### Star Levels
+
+1. Bronze (0–199 pts)
+2. Silver (200–999 pts)
+3. Gold (1000–4999 pts)
+4. Platinum (5000–14999 pts)
+5. Diamond (15000+)
+
+### UI
+
+* Profile badge (🌟 Bronze → 💎 Diamond).
+* Leaderboard = Hall of WytStars.
+
+### Admin Control
+
+* Configure point values per action.
+* Verification thresholds.
+* Monthly bonuses & caps.
+
+---
+
+## 4. Profile Completion Economy
+
+* **Welcome Bonus:** +10 pts.
+
+* **Profile Fields → Reward:**
+
+  * Basic info (Name, Email, Phone, City) = +5 pts.
+  * Demographics (Age, Occupation, Interests) = +5 pts.
+  * Upload photo/cover = +5 pts.
+  * First Need posted = +10 pts.
+  * First Offer posted = +10 pts.
+
+* **Mandatory Rule:**
+
+  * Profile completion >=70% required for full platform access.
+  * 100% completion required to spend points / unlock matches.
+
+* **UI:**
+
+  * Progress bar (“Your profile is 40% complete. Finish now to earn +30 pts”).
+  * “Complete Profile → Unlock Matches & Offers.”
+
+---
+
+## 5. WytMatch (Matchmaking Stream)
+
+* **New Menu Tab:** WytMatch (after login).
+* **Logic:**
+
+  * MyNeeds ↔ Other Offers.
+  * MyOffers ↔ Other Needs.
+* **UI:**
+
+  * Match cards: “3 Offers match your Need: Office Chair.”
+  * CTA → “Unlock Match (Cost: 1 pt)”.
+* **Rules:**
+
+  * Daily free quota (eg. 3 free matches).
+  * Extra unlocks cost points.
+  * Streak bonus & WytStar level = more free matches.
+
+---
+
+## 6. Dual Panel System
+
+* **MyPanel (Personal):**
+
+  * Menus: MyDashboard, MyStream (WytWall), MyNeeds, MyOffers, MyMatch, MyCircle, MyWallet, MyProfile, MySettings.
+
+* **OurPanel (Organization):**
+
+  * Menus: OurDashboard, OurStream (WytWall), OurNeeds, OurOffers, OurMatch, OurTeam, OurCircle, OurWallet, OurProfile, OurSettings.
+
+* **Switch Option:**
+
+  * Top navigation switcher → user can toggle between MyPanel & any OurPanel.
+
+---
+
+## 7. Branding Clarifications
+
+* **WytWall** = Section (main hub for social + marketplace activity).
+* **Stream** = Flow of Needs/Offers inside WytWall.
+* **WytStar** = Contribution + verification program.
+* **WytMatch** = Personalized matchmaking stream.
+
+---
+
+## 8. UI/UX Guardrails – Standard Items
+
+### Responsive Design
+
+* All panels (Public, User, Org, Admin) must be mobile-first responsive.
+* Support breakpoints: Desktop, Tablet, Mobile.
+* Ensure PWA support for mobile.
+* Sidebar collapses on mobile; tables collapse to cards.
+
+### Dark Mode & Light Mode
+
+* Must have system-wide theme toggle.
+* Default = follow system settings.
+* All components must support theme switch.
+
+### Panels Consistency
+
+* Same base layout grid (Header + Sidebar + Content).
+* Role-based menus inside Sidebar.
+* Seamless switch between panels.
+
+### Shared Components
+
+* Header, Sidebar, Footer = single source of truth.
+* Auth/role-based rendering only.
+
+### Accessibility Standards
+
+* All buttons, links = keyboard accessible.
+* Screen reader labels.
+* Font scaling support.
+
+### Localization
+
+* Text from localization file.
+* Default: English, future Tamil/Hindi support.
+
+### Performance
+
+* Pages must load <2 sec on 4G.
+* Lazy loading for images.
+* CDN for static resources.
+
+### Branding
+
+* WytNet logo top-left.
+* Brand mantra: Speed ⚡ | Security 🔒 | Scale 📈.
+* WytStar badges + WytPoints visible consistently.
+
+---
+
+## 9. Development Philosophy & Guardrails
+
+* **Speed** 🚀 – Fast actions, minimal steps.
+* **Security** 🔒 – Strong auth, verified data, safe payments.
+* **Scale** 📈 – Design for 1M+ users, plug-and-play apps.
+
+**Rules for Developers:**
+
+1. New features must be additive, not destructive.
+2. Existing working flows must remain intact.
+3. Enhancements = overlay, not replace.
+4. Each RTD version must follow change log exactly.
+
+---
+
+## 10. Shared Components Policy (Auth-aware)
+
+* Header, Sidebar, Footer to be created once under `/components`.
+* Must support authentication check:
+
+  * Before auth → show Login/Join.
+  * After auth → show User Menu, Wallet, Notifications.
+* Sidebar adapts to role: User, Org, Admin.
+* Layout wrappers ensure consistent usage across all pages.
+
+---
+
+## 11. Developer Tasks (Phase-1 Implementation)
+
+1. Add WytWall as new default homepage (public view).
+
+   * Keep current homepage (WytApps) at `/wytapps`.
+2. Implement dynamic homepage (Visitor vs User).
+3. Add Need Stream Tabs & Filters.
+4. Build WytStar DB tables + ledger.
+5. Add Profile Completion Wizard + Reward points.
+6. Add WytMatch tab + unlock flow.
+7. Implement Dual Panel switcher.
+8. Extend Admin Panel for WytStar, Profile rewards, Match unlock costs.
+9. Ensure UI/UX guardrails: responsive, dark/light, accessibility.
+10. All components (header/sidebar/footer) must be shared + auth-aware.
+
+---
+
+✅ End of RTD v1.0.5
