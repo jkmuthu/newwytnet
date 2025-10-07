@@ -53,8 +53,8 @@ export default function PublicRouter() {
     <PublicLayout>
       <Switch>
       {/* Landing/Home routes */}
-      <Route path="/" component={Home} />
-      <Route path="/home" component={Home} />
+      <Route path="/" component={WytWall} />
+      <Route path="/home" component={WytWall} />
       <Route path="/landing" component={Landing} />
 
       {/* Company/Product pages */}
@@ -110,7 +110,7 @@ export default function PublicRouter() {
       <Route path="/pricing-plans" component={PaymentsPage} />
       <Route path="/test-payment" component={TestPaymentLink} />
 
-      {/* WytWall Marketplace */}
+      {/* WytWall Marketplace - Also available at /wytwall */}
       <Route path="/wytwall" component={WytWall} />
 
       {/* Coming Soon routes for tools in development */}
