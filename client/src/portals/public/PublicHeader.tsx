@@ -122,20 +122,20 @@ export default function PublicHeader() {
 
               {/* AI Directory - Direct Link */}
               <NavigationMenuItem>
-                <Link href="/ai-directory">
-                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-105 focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
+                <NavigationMenuLink asChild>
+                  <Link href="/ai-directory" className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-105 focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
                     AI Directory
-                  </NavigationMenuLink>
-                </Link>
+                  </Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
 
               {/* WytApps - Direct Link */}
               <NavigationMenuItem>
-                <Link href="/wytapps">
-                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-105 focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
+                <NavigationMenuLink asChild>
+                  <Link href="/wytapps" className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-105 focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
                     WytApps
-                  </NavigationMenuLink>
-                </Link>
+                  </Link>
+                </NavigationMenuLink>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
@@ -162,36 +162,36 @@ export default function PublicHeader() {
                       WytPanel
                     </div>
                     <DropdownMenuSeparator />
-                    <Link href="/panel/me/dashboard">
-                      <DropdownMenuItem className="cursor-pointer">
+                    <DropdownMenuItem className="cursor-pointer" asChild>
+                      <Link href="/panel/me/dashboard">
                         <LayoutDashboard className="mr-2 h-4 w-4" />
                         <span>My Dash</span>
-                      </DropdownMenuItem>
-                    </Link>
-                    <Link href="/panel/me/wyttools">
-                      <DropdownMenuItem className="cursor-pointer">
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer" asChild>
+                      <Link href="/panel/me/wyttools">
                         <Wrench className="mr-2 h-4 w-4" />
                         <span>My WytTools</span>
-                      </DropdownMenuItem>
-                    </Link>
-                    <Link href="/panel/me/wytapps">
-                      <DropdownMenuItem className="cursor-pointer">
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer" asChild>
+                      <Link href="/panel/me/wytapps">
                         <Smartphone className="mr-2 h-4 w-4" />
                         <span>My WytApps</span>
-                      </DropdownMenuItem>
-                    </Link>
-                    <Link href="/panel/me/wallet">
-                      <DropdownMenuItem className="cursor-pointer">
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer" asChild>
+                      <Link href="/panel/me/wallet">
                         <Wallet className="mr-2 h-4 w-4" />
                         <span>My Wallet</span>
-                      </DropdownMenuItem>
-                    </Link>
-                    <Link href="/panel/me/account">
-                      <DropdownMenuItem className="cursor-pointer">
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer" asChild>
+                      <Link href="/panel/me/account">
                         <UserCircle className="mr-2 h-4 w-4" />
                         <span>My Account</span>
-                      </DropdownMenuItem>
-                    </Link>
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="cursor-pointer text-red-600 dark:text-red-400"
@@ -205,12 +205,13 @@ export default function PublicHeader() {
                 </DropdownMenu>
 
                 {/* User Display Picture */}
-                <Link href="/panel/me/profile">
-                  <Button 
-                    variant="ghost" 
-                    className="relative h-8 w-8 rounded-full p-0 hover:scale-105 transition-transform"
-                    data-testid="user-avatar"
-                  >
+                <Button 
+                  variant="ghost" 
+                  className="relative h-8 w-8 rounded-full p-0 hover:scale-105 transition-transform"
+                  data-testid="user-avatar"
+                  asChild
+                >
+                  <Link href="/panel/me/profile">
                     <Avatar className="h-8 w-8">
                       {user && typeof user === 'object' && 'profileImageUrl' in user && user.profileImageUrl && 
                        typeof user.profileImageUrl === 'string' ? (
@@ -223,8 +224,8 @@ export default function PublicHeader() {
                         {getUserInitials(user)}
                       </AvatarFallback>
                     </Avatar>
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
 
                 {/* Notification Icon */}
                 <Button 
