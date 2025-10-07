@@ -1,0 +1,139 @@
+# 📑 WytNet – Requirement cum Test Document (RTD)
+
+**Version:** `WytNet-RTD-v1.0.7-25.10.07`
+
+---
+
+## 🔄 Change Log
+
+* Added UI improvement requirements for Home Page and WytWall (Desktop & Mobile versions).
+* Enhanced responsive layout specifications.
+* Added clarity on public vs authenticated experience.
+* Included animation, color, and performance suggestions for visual optimization.
+
+---
+
+## 1. Current Version Status (from Screenshots)
+
+**Pages Reviewed:**
+
+1. Home Page (Desktop + Mobile)
+2. WytWall Marketplace (Desktop + Mobile)
+
+**Observation:**
+✅ Layout is clean and responsive.
+✅ Consistent branding with logo and color.
+✅ PWA behavior functional.
+⚠️ Minor UI/UX improvement opportunities for engagement and clarity.
+
+---
+
+## 2. Home Page (Desktop & Mobile) – Improvement Requirements
+
+### A. Header
+
+* Retain current header layout with WytNet logo at left.
+* Add subtle hover animation for menu items (WytTools, AI Directory, WytApps).
+* Ensure **sticky header** behavior on scroll (always visible on top).
+* On Mobile: collapse menus into a hamburger toggle for better readability.
+
+### B. Hero Section
+
+* Add soft background gradient (light blue → white) to enhance visibility.
+* WytNet logo + tagline centered with balanced white space.
+* CTA Button improvements:
+
+  * “Start with Free Assessment” → Highlight with animated ripple effect.
+  * “Browse All Tools” → Convert to secondary outline button.
+* On Mobile: Keep hero content centered, and reduce padding for compact view.
+
+### C. Metrics Section
+
+* Icons (Active Users, Security, Uptime, SSL) to include animated hover states.
+* Add real-time counter animation for Active Users and Assessments.
+* Improve alignment in mobile view to avoid overlapping metrics.
+
+### D. Footer
+
+* Add simple footer section for SEO and credibility:
+
+  * Links: About | Contact | Terms | Privacy.
+  * Copyright © 2025 WytNet.
+
+### E. Performance Optimization
+
+* Compress background images and optimize SVG logo rendering.
+* Ensure all icons use vector format (SVG) for clarity on mobile devices.
+
+---
+
+## 3. WytWall Marketplace (Desktop & Mobile) – Improvement Requirements
+
+### A. Filters Section (Left Sidebar)
+
+* Expand filters: Add “Price Range” and “Location” (coming soon → functional in next phase).
+* Add collapsible filter categories for cleaner mobile experience.
+* On mobile, Filters should open via slide-in modal for clarity.
+
+### B. Stream Section (Center)
+
+* Add subtle hover effect on each “Need” card.
+* Include placeholder illustrations when no needs are available.
+* Add “Load More” button or infinite scroll for large data sets.
+* Introduce search bar for quick keyword filtering.
+* On mobile, cards should have larger clickable areas and improved spacing.
+
+### C. Quick Links (Right Sidebar)
+
+* Add dynamic leaderboard snippet: “Top 3 WytStars this week.”
+* Include rotating featured app carousel for better engagement.
+* CTA buttons (“Sign Up Free”, “Post Need”) should have hover gradient animation.
+
+### D. Responsive Behavior
+
+* **Tablet View (768–1023px):** Ensure two-column layout (Filters collapsible).
+* **Mobile View (≤767px):**
+
+  * Tabs (“All”, “Jobs”, “Real Estate”, etc.) should convert to swipeable chip layout.
+  * Filters and Promotions stacked vertically below Stream.
+
+### E. Branding Consistency
+
+* WytNet color palette must follow: Blue (#4285F4), Green (#0F9D58), Yellow (#F4B400), Red (#DB4437).
+* WytStar badges to appear on user profiles in Need Stream cards (if verified).
+* Add small WytNet watermark logo in WytWall background for identity.
+
+---
+
+## 4. Developer Instructions
+
+1. Maintain existing secure backend and data schema.
+2. Implement all visual/UI improvements using shared components.
+3. Test all changes on Chrome, Edge, and Safari.
+4. Validate PWA compatibility post-update.
+5. Ensure dark/light mode transitions work for both pages.
+6. Verify accessibility standards (keyboard navigation, alt text, ARIA labels).
+
+---
+
+## 5. Next Steps Summary (Replit Implementation Order)
+
+| Priority | Section         | Action                                              |
+| :------: | :-------------- | :-------------------------------------------------- |
+|     1    | Home Page       | Add gradient, animations, sticky header, and footer |
+|     2    | WytWall Filters | Enable responsive collapsible filters               |
+|     3    | WytWall Stream  | Add search, hover animation, infinite scroll        |
+|     4    | Right Sidebar   | Add Top WytStars + Featured Apps carousel           |
+|     5    | Mobile Layout   | Optimize tab layout and button spacing              |
+
+---
+
+## 🧩 Developer Notes
+
+* Continue following the 3 guiding principles: **Speed ⚡ | Security 🔒 | Scale 📈**.
+* Implement enhancements additively — do not modify existing logic.
+* Maintain component reusability and auth-awareness.
+
+---
+
+✅ End of RTD v1.0.7

@@ -99,7 +99,7 @@ export default function PublicHeader() {
             <NavigationMenuList>
               {/* WytTools Menu */}
               <NavigationMenuItem>
-                <NavigationMenuTrigger className="text-gray-700 dark:text-gray-200 font-medium">
+                <NavigationMenuTrigger className="text-gray-700 dark:text-gray-200 font-medium transition-all duration-200 hover:scale-105 hover:text-blue-600 dark:hover:text-blue-400">
                   WytTools
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
@@ -109,9 +109,9 @@ export default function PublicHeader() {
                         <NavigationMenuLink asChild>
                           <Link
                             href={item.href}
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:scale-105 hover:shadow-md"
                           >
-                            <div className="text-sm font-medium leading-none">{item.label}</div>
+                            <div className="text-sm font-medium leading-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors">{item.label}</div>
                           </Link>
                         </NavigationMenuLink>
                       </li>
@@ -123,7 +123,7 @@ export default function PublicHeader() {
               {/* AI Directory - Direct Link */}
               <NavigationMenuItem>
                 <Link href="/ai-directory">
-                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
+                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-105 focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
                     AI Directory
                   </NavigationMenuLink>
                 </Link>
@@ -132,7 +132,7 @@ export default function PublicHeader() {
               {/* WytApps - Direct Link */}
               <NavigationMenuItem>
                 <Link href="/wytapps">
-                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
+                  <NavigationMenuLink className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-105 focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
                     WytApps
                   </NavigationMenuLink>
                 </Link>
