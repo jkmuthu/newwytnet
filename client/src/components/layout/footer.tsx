@@ -20,8 +20,12 @@ export default function Footer() {
     { label: "Status", href: "/status" },
   ];
 
-  const wytToolsLinks = [
+  const wytHubsLinks = [
     { label: "AI Directory", href: "/ai-directory" },
+    { label: "WytLife", href: "/wytlife" },
+  ];
+
+  const wytToolsLinks = [
     { label: "QR Generator", href: "/qr-generator" },
     { label: "DISC Assessment", href: "/assessment" },
     { label: "WytApps", href: "/wytapps" },
@@ -79,7 +83,7 @@ export default function Footer() {
         </div>
 
         {/* Links grid - optimized for mobile */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-6 lg:gap-8">
           {/* Company links */}
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm sm:text-base" data-testid="footer-heading-company">
@@ -87,6 +91,26 @@ export default function Footer() {
             </h3>
             <ul className="space-y-2">
               {companyLinks.map((link) => (
+                <li key={link.label}>
+                  <a 
+                    href={link.href} 
+                    className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors text-sm"
+                    data-testid={`footer-link-${link.label.toLowerCase().replace(' ', '-')}`}
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* WytHubs links */}
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm sm:text-base" data-testid="footer-heading-wythubs">
+              WytHubs
+            </h3>
+            <ul className="space-y-2">
+              {wytHubsLinks.map((link) => (
                 <li key={link.label}>
                   <a 
                     href={link.href} 
