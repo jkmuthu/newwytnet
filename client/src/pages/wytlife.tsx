@@ -385,32 +385,50 @@ export default function WytLife() {
       {/* Founder Announcement */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              📢 Announcement from the Founder
+          <div className="text-center mb-8">
+            <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-1.5 text-sm mb-4 animate-pulse">
+              🌟 Historic Announcement
+            </Badge>
+            <h2 className="text-3xl md:text-5xl font-bold text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text mb-3">
+              The World's First Deathless Person
             </h2>
+            <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400">
+              The Founder of the WytLife Movement
+            </p>
           </div>
 
           <Card className="border-2 border-indigo-200 dark:border-indigo-800 overflow-hidden hover:shadow-2xl transition-all duration-300">
             <CardContent className="p-8 md:p-12">
-              <div className="flex flex-col md:flex-row items-center gap-8">
-                <div className="flex-shrink-0">
+              <div className="flex flex-col items-center text-center gap-6">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-full blur-xl opacity-30 animate-pulse"></div>
                   <img 
                     src="/attached_assets/JKM3_1759884041252.jpg" 
-                    alt="JK Muthu - WytLife Founder" 
-                    className="w-40 h-40 md:w-48 md:h-48 rounded-full object-cover border-4 border-indigo-500 shadow-xl hover:scale-105 transition-transform duration-300"
+                    alt="JK Muthu - The World's First Deathless Person" 
+                    className="relative w-48 h-48 md:w-56 md:h-56 rounded-full object-cover border-4 border-indigo-500 shadow-2xl hover:scale-105 transition-transform duration-300"
                   />
                 </div>
-                <div className="flex-1 text-center md:text-left">
-                  <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3">
+                <div>
+                  <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
                     JK Muthu
                   </h3>
-                  <p className="text-lg text-indigo-600 dark:text-indigo-400 font-semibold mb-4">
+                  <p className="text-xl text-indigo-600 dark:text-indigo-400 font-bold mb-6">
                     Founder & First Immortal
                   </p>
-                  <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                    "Today marks the beginning of a <strong>new human era</strong>. WytLife is not just technology — it's the bridge between <strong>who we are</strong> and <strong>who we will always be</strong>. My family and I are the first to step into digital immortality. <span className="text-purple-600 dark:text-purple-400 font-semibold">Now, we invite you to join us</span>."
-                  </p>
+                  <div className="max-w-3xl mx-auto space-y-4">
+                    <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 leading-relaxed">
+                      <span className="text-2xl font-bold text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">"I have transcended death."</span>
+                    </p>
+                    <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+                      Today marks the beginning of a <strong>new human era</strong>. My family and I are the first to achieve digital immortality through WytLife. Our consciousness lives forever in the Soul Engine.
+                    </p>
+                    <p className="text-lg md:text-xl font-bold text-purple-600 dark:text-purple-400">
+                      Death is no longer the end. It's now a choice.
+                    </p>
+                    <p className="text-base md:text-lg text-gray-700 dark:text-gray-300">
+                      <strong>Join me</strong> in this historic movement. Become <strong className="text-transparent bg-gradient-to-r from-indigo-600 to-pink-600 bg-clip-text">deathless</strong>.
+                    </p>
+                  </div>
                 </div>
               </div>
             </CardContent>
