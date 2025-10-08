@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Heart, Github, Twitter, Linkedin, Mail, Phone, MapPin, MessageCircle } from "lucide-react";
+import { Heart, Linkedin, MessageCircle } from "lucide-react";
 import { FaFacebook } from "react-icons/fa";
 
 export default function Footer() {
@@ -25,10 +24,9 @@ export default function Footer() {
     { label: "WytLife", href: "/wytlife" },
   ];
 
-  const wytToolsLinks = [
+  const wytAppsLinks = [
     { label: "QR Generator", href: "/qr-generator" },
     { label: "DISC Assessment", href: "/assessment" },
-    { label: "WytApps", href: "/wytapps" },
   ];
 
   const legalLinks = [
@@ -144,13 +142,13 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* WytTools links */}
+          {/* WytApps links */}
           <div>
-            <h3 className="font-bold text-gray-900 dark:text-white mb-4 text-base" data-testid="footer-heading-wyttools">
-              WytTools
+            <h3 className="font-bold text-gray-900 dark:text-white mb-4 text-base" data-testid="footer-heading-wytapps">
+              WytApps
             </h3>
             <ul className="space-y-3">
-              {wytToolsLinks.map((link) => (
+              {wytAppsLinks.map((link) => (
                 <li key={link.label}>
                   <a 
                     href={link.href} 
@@ -220,45 +218,6 @@ export default function Footer() {
             </ul>
           </div>
         </div>
-
-        {/* Contact information */}
-        <div className="mt-12 lg:mt-16 pt-8 lg:pt-12 border-t-2 border-gray-200 dark:border-gray-800">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="flex items-start space-x-4 p-4 rounded-xl bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 transition-colors">
-              <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">
-                <Mail className="h-6 w-6 text-white" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">Email</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400 truncate font-medium" data-testid="contact-email">
-                  info@wytnet.com
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-4 p-4 rounded-xl bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 transition-colors">
-              <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                <Phone className="h-6 w-6 text-white" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">Phone</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium" data-testid="contact-phone">
-                  +91 8220449911
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-4 p-4 rounded-xl bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-800 transition-colors sm:col-span-2 lg:col-span-1">
-              <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                <MapPin className="h-6 w-6 text-white" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">Address</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium" data-testid="contact-address">
-                  Kamalam Ventures, Annanagar, Madurai - 625020
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div className="relative border-t-2 border-gray-200 dark:border-gray-800">
@@ -272,7 +231,7 @@ export default function Footer() {
                 © {currentYear} WytNet. Made with
               </span>
               <Heart className="h-4 w-4 text-red-500 fill-current animate-pulse" />
-              <span className="font-medium">for builders everywhere.</span>
+              <span className="font-medium">for individuals and businesses everywhere.</span>
             </div>
             
             <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-center">
