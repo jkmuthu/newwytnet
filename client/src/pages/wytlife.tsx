@@ -219,11 +219,6 @@ export default function WytLife() {
             </div>
           </div>
           
-          <div className="mb-4">
-            <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-1.5 text-xs">
-              🌍 Powered by Soul Engine
-            </Badge>
-          </div>
           
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
             <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
@@ -288,7 +283,7 @@ export default function WytLife() {
               What if your memories, voice, thoughts, and emotions could <strong className="text-indigo-600 dark:text-indigo-400">live on forever</strong>?
             </p>
             <p className="text-lg md:text-xl font-semibold text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text pt-1">
-              ✨ WytLife is not just a platform. It's a revolution in human continuity — a digital evolution powered by Soul Engine, where your existence becomes eternal.
+              ✨ WytLife is not just a platform. It's a revolution in human continuity — a digital evolution where your existence becomes eternal.
             </p>
           </div>
         </div>
@@ -327,12 +322,12 @@ export default function WytLife() {
         </div>
       </section>
 
-      {/* Powered by Soul Engine */}
+      {/* Technology Behind MyClone */}
       <section className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-8">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3">
-              🔮 Powered by Soul Engine
+              🔮 The Technology Behind MyClone
             </h2>
           </div>
 
