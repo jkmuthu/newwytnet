@@ -30,6 +30,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
 import wytLifeLogo from "@assets/IMG-20250927-WA0258_1759886837095.jpg";
 import founderPhoto from "@assets/IMG-20210523-WA0001_1759887385614.jpg";
+import wytLifeVideo from "@assets/1759896323287_1759896354187.mp4";
 
 function HowItWorksCarousel() {
   const [emblaRef] = useEmblaCarousel({ loop: true }, [
@@ -285,6 +286,24 @@ export default function WytLife() {
             <p className="text-lg md:text-xl font-semibold text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text pt-1">
               ✨ WytLife is not just a platform. It's a revolution in human continuity — a digital evolution where your existence becomes eternal.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Video Section */}
+      <section className="py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl border-4 border-indigo-200 dark:border-indigo-800">
+            <video 
+              className="w-full h-auto"
+              controls
+              playsInline
+              preload="metadata"
+              data-testid="video-wytlife-intro"
+            >
+              <source src={wytLifeVideo} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
           </div>
         </div>
       </section>
