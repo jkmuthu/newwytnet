@@ -207,11 +207,16 @@ export default function WytLife() {
         <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/10 via-purple-600/10 to-pink-600/10 dark:from-indigo-600/5 dark:via-purple-600/5 dark:to-pink-600/5" />
         <div className="relative max-w-7xl mx-auto text-center">
           <div className="flex justify-center mb-6">
-            <img 
-              src={wytLifeLogo}
-              alt="WytLife Logo" 
-              className="h-20 sm:h-24 md:h-28 w-auto object-contain"
-            />
+            <div className="relative group">
+              <div className="absolute -inset-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl blur-lg opacity-30 group-hover:opacity-50 transition duration-300 animate-pulse"></div>
+              <div className="relative bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-2xl p-4 shadow-2xl border border-indigo-200/50 dark:border-indigo-800/50">
+                <img 
+                  src={wytLifeLogo}
+                  alt="WytLife Logo" 
+                  className="h-16 sm:h-20 md:h-24 w-auto object-contain"
+                />
+              </div>
+            </div>
           </div>
           
           <div className="mb-4">
