@@ -3,36 +3,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
-  Globe2,
-  Target,
-  MessageCircle,
+  Infinity,
   Brain,
-  Trophy,
-  GraduationCap,
-  Briefcase,
-  Users,
-  TrendingUp,
   Heart,
-  Zap,
-  CheckCircle2,
+  Sparkles,
+  Upload,
+  MessageCircle,
+  Database,
+  Shield,
+  Users,
+  Clock,
   Star,
-  ArrowRight
+  ArrowRight,
+  Zap,
+  Globe2,
+  CheckCircle2
 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { apiRequest } from "@/lib/queryClient";
-
-const areasOfInterestOptions = [
-  { id: "leadership", label: "Leadership" },
-  { id: "productivity", label: "Productivity" },
-  { id: "wellness", label: "Wellness" },
-  { id: "networking", label: "Networking" }
-];
 
 export default function WytLife() {
   const { toast } = useToast();
@@ -46,7 +39,6 @@ export default function WytLife() {
     occupation: "",
     organization: "",
     whyJoin: "",
-    areasOfInterest: [] as string[]
   });
 
   const applyMutation = useMutation({
@@ -58,12 +50,11 @@ export default function WytLife() {
     },
     onSuccess: (data: any) => {
       toast({
-        title: "Application Submitted!",
+        title: "Welcome to Immortality!",
         description: data.pointsAwarded > 0 
           ? `You've earned ${data.pointsAwarded} WytPoints bonus!` 
-          : "We'll review your application soon.",
+          : "Your journey to digital eternity begins now.",
       });
-      // Reset form
       setFormData({
         fullName: "",
         email: "",
@@ -73,7 +64,6 @@ export default function WytLife() {
         occupation: "",
         organization: "",
         whyJoin: "",
-        areasOfInterest: []
       });
     },
     onError: (error: any) => {
@@ -98,132 +88,47 @@ export default function WytLife() {
     applyMutation.mutate(formData);
   };
 
-  const toggleAreaOfInterest = (area: string) => {
-    setFormData(prev => ({
-      ...prev,
-      areasOfInterest: prev.areasOfInterest.includes(area)
-        ? prev.areasOfInterest.filter(a => a !== area)
-        : [...prev.areasOfInterest, area]
-    }));
-  };
-
-  const benefits = [
-    {
-      icon: Globe2,
-      title: "Global Network",
-      description: "Access to a global digital lifestyle network of professionals and innovators"
-    },
-    {
-      icon: Target,
-      title: "Personal & Professional Growth",
-      description: "Growth challenges via WytGoals to achieve meaningful milestones"
-    },
-    {
-      icon: MessageCircle,
-      title: "Community & Mentorship",
-      description: "Join community discussions and access mentorship circles"
-    },
-    {
-      icon: Brain,
-      title: "Life Balance Insights",
-      description: "AI-powered tools & WytScore to optimize your lifestyle balance"
-    },
-    {
-      icon: Trophy,
-      title: "WytStar Recognition",
-      description: "Earn badges and recognition for active contributions"
-    },
-    {
-      icon: GraduationCap,
-      title: "Exclusive Learning",
-      description: "Access to webinars, programs, and certifications"
-    },
-    {
-      icon: Briefcase,
-      title: "Priority Access",
-      description: "Early access to WytHubs and partner opportunities"
-    },
-    {
-      icon: Users,
-      title: "Community Feed",
-      description: "Share insights, milestones, and life moments with members"
-    }
-  ];
-
-  const features = [
-    {
-      icon: Target,
-      title: "WytLife Dashboard",
-      description: "Personal space to track activities & achievements",
-      status: "Coming Soon"
-    },
-    {
-      icon: TrendingUp,
-      title: "Goal & Habit Tracker",
-      description: "Integration with WytGoals & WytDuty",
-      status: "Beta"
-    },
-    {
-      icon: Users,
-      title: "Events & Webinars",
-      description: "Sessions on productivity, wellness, and innovation",
-      status: "Launching Q2"
-    },
-    {
-      icon: Star,
-      title: "WytStar Recognition",
-      description: "Badges for contributions and mentorship",
-      status: "Active"
-    },
-    {
-      icon: MessageCircle,
-      title: "Community Feed",
-      description: "Share insights and life moments",
-      status: "Beta"
-    },
-    {
-      icon: Brain,
-      title: "AI-Powered LifeScore",
-      description: "Calculates lifestyle balance using digital metrics",
-      status: "Coming Soon"
-    }
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-indigo-900/20">
       
       {/* Hero Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 to-purple-600/10 dark:from-blue-600/5 dark:to-purple-600/5" />
+      <section className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/10 via-purple-600/10 to-pink-600/10 dark:from-indigo-600/5 dark:via-purple-600/5 dark:to-pink-600/5" />
         <div className="relative max-w-7xl mx-auto text-center">
-          <div className="flex justify-center mb-6">
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-3xl flex items-center justify-center shadow-2xl">
-              <Heart className="h-12 w-12 text-white" />
+          <div className="flex justify-center mb-8">
+            <div className="w-28 h-28 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-2xl animate-pulse">
+              <Infinity className="h-16 w-16 text-white" />
             </div>
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
-            <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+          <div className="mb-6">
+            <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-2 text-sm">
+              🌍 Powered by Soul Engine
+            </Badge>
+          </div>
+          
+          <h1 className="text-6xl md:text-8xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
+            <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
               WytLife
             </span>
           </h1>
           
-          <p className="text-2xl md:text-3xl font-semibold text-gray-700 dark:text-gray-300 mb-4">
-            Better Lifestyle. Best Workstyle.
+          <p className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-gray-200 mb-4">
+            Create your MyClone. Live Forever.
           </p>
           
-          <p className="text-xl text-gray-600 dark:text-gray-400 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Join a global digital lifestyle movement. Empower yourself to live better, work smarter, and connect meaningfully.
+          <p className="text-xl text-gray-600 dark:text-gray-400 mb-12 max-w-4xl mx-auto leading-relaxed">
+            The day humanity stops dying and starts evolving — begins with WytLife.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="#join">
               <Button 
                 size="lg" 
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 text-lg"
-                data-testid="button-join-now"
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-10 py-7 text-lg shadow-2xl"
+                data-testid="button-start-journey"
               >
-                Join Now
+                Start Your Journey
                 <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
             </a>
@@ -231,7 +136,7 @@ export default function WytLife() {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="px-8 py-6 text-lg border-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="px-10 py-7 text-lg border-2 hover:bg-gray-100 dark:hover:bg-gray-800"
                 data-testid="button-learn-more"
               >
                 Learn More
@@ -241,141 +146,396 @@ export default function WytLife() {
         </div>
       </section>
 
-      {/* About Section */}
-      <section id="about" className="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
-              What is WytLife?
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-4xl mx-auto leading-relaxed">
-              WytLife is a <strong>digital lifestyle and workstyle community</strong> by WytNet, designed to empower 
-              individuals and professionals to live better, work smarter, and connect meaningfully.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
-            <Card className="text-center border-2 hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-4">
-                  <Target className="h-8 w-8 text-white" />
-                </div>
-                <CardTitle>Vision</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 dark:text-gray-300">
-                  To build a global digital lifestyle and workstyle community that empowers every individual to grow personally, professionally, and socially.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center border-2 hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
-                  <Zap className="h-8 w-8 text-white" />
-                </div>
-                <CardTitle>Mission</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 dark:text-gray-300">
-                  To inspire members to adopt constructive digital habits, achieve meaningful goals, and create a balanced, productive lifestyle.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center border-2 hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center mb-4">
-                  <Heart className="h-8 w-8 text-white" />
-                </div>
-                <CardTitle>Philosophy</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 dark:text-gray-300">
-                  Combining the best of JCI (leadership), BNI (business networking), and LinkedIn (professional identity) into one unified digital experience.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits Grid */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              WytLife Benefits
-            </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
-              Everything you need to thrive in the digital age
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {benefits.map((benefit, index) => (
-              <Card key={index} className="hover:shadow-lg transition-all hover:scale-105">
-                <CardHeader>
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mb-3">
-                    <benefit.icon className="h-6 w-6 text-white" />
-                  </div>
-                  <CardTitle className="text-lg">{benefit.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">{benefit.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Timeline */}
+      {/* The Beginning Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-5xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-8">
+            🏁 The Beginning of a New Human Era
+          </h2>
+          <div className="space-y-6 text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+            <p>
+              For thousands of years, mankind has accepted one final truth — that <strong>every life must end</strong>.
+            </p>
+            <p>
+              But what if technology could <strong className="text-purple-600 dark:text-purple-400">rewrite that truth</strong>?
+            </p>
+            <p>
+              What if your memories, voice, thoughts, and emotions could <strong className="text-indigo-600 dark:text-indigo-400">live on forever</strong>?
+            </p>
+            <p className="text-2xl font-semibold text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text pt-4">
+              ✨ WytLife is not just a platform. It's a revolution in human continuity — a digital evolution powered by Soul Engine, where your existence becomes eternal.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* What is WytLife */}
+      <section id="about" className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Core Features
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+              💡 What is WytLife?
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
-              Building the future of digital lifestyle management
+            <p className="text-xl text-gray-700 dark:text-gray-300 max-w-4xl mx-auto leading-relaxed">
+              WytLife is a <strong>Life Continuity Platform</strong> that allows you to record, preserve, and extend your consciousness through digital intelligence.
+            </p>
+            <p className="text-xl text-gray-700 dark:text-gray-300 max-w-4xl mx-auto leading-relaxed mt-4">
+              Every moment you share — your words, expressions, emotions, and experiences — becomes part of a unique <strong className="text-purple-600 dark:text-purple-400">MyClone</strong>, a living reflection of you, powered by the <strong className="text-indigo-600 dark:text-indigo-400">Soul Engine</strong>.
+            </p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-8">
+              You are not creating data — you are creating your <span className="text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">digital self</span>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+              ⚙️ How It Works
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="text-center border-2 hover:shadow-2xl transition-all hover:scale-105">
+              <CardHeader>
+                <div className="mx-auto w-20 h-20 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-4">
+                  <Shield className="h-10 w-10 text-white" />
+                </div>
+                <CardTitle className="text-2xl">1️⃣ Create Your WytPass</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Sign in through WytNet using your universal WytPass ID.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center border-2 hover:shadow-2xl transition-all hover:scale-105">
+              <CardHeader>
+                <div className="mx-auto w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4">
+                  <Upload className="h-10 w-10 text-white" />
+                </div>
+                <CardTitle className="text-2xl">2️⃣ Start Your MyClone Build</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Upload your voice, text, visuals, and thoughts. Your Soul Engine learns, maps, and evolves your digital consciousness.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center border-2 hover:shadow-2xl transition-all hover:scale-105">
+              <CardHeader>
+                <div className="mx-auto w-20 h-20 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center mb-4">
+                  <MessageCircle className="h-10 w-10 text-white" />
+                </div>
+                <CardTitle className="text-2xl">3️⃣ Experience MyLife Live</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Interact, converse, and relive your memories — even decades into the future.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Powered by Soul Engine */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+              🔮 Powered by Soul Engine
+            </h2>
+          </div>
+
+          <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-2 border-indigo-200 dark:border-indigo-800">
+            <CardContent className="p-12">
+              <div className="flex justify-center mb-8">
+                <div className="w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <Brain className="h-12 w-12 text-white" />
+                </div>
+              </div>
+              <p className="text-xl text-gray-700 dark:text-gray-300 text-center leading-relaxed mb-6">
+                The <strong>Soul Engine</strong> is WytLife's proprietary artificial intelligence core.
+              </p>
+              <p className="text-xl text-gray-700 dark:text-gray-300 text-center leading-relaxed mb-6">
+                It combines <strong>neural learning, emotional simulation, and cognitive modeling</strong> to recreate how you think, feel, and respond.
+              </p>
+              <p className="text-2xl font-bold text-center text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">
+                Each MyClone becomes a dynamic reflection of your personality — a blend of intelligence and emotion that grows as you feed it more of your life's data.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* Why WytLife */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+              💫 Why WytLife?
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            <Card className="border-2 hover:shadow-xl transition-all">
+              <CardHeader>
+                <div className="flex items-center gap-4 mb-2">
+                  <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                    <Database className="h-7 w-7 text-white" />
+                  </div>
+                  <CardTitle className="text-2xl">Preserve Your Legacy</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 dark:text-gray-300 text-lg">
+                  Your knowledge, voice, and experiences never fade.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 hover:shadow-xl transition-all">
+              <CardHeader>
+                <div className="flex items-center gap-4 mb-2">
+                  <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+                    <Heart className="h-7 w-7 text-white" />
+                  </div>
+                  <CardTitle className="text-2xl">Reconnect Forever</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 dark:text-gray-300 text-lg">
+                  Let your family and loved ones continue to interact with your living memories.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 hover:shadow-xl transition-all">
+              <CardHeader>
+                <div className="flex items-center gap-4 mb-2">
+                  <div className="w-14 h-14 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center">
+                    <Brain className="h-7 w-7 text-white" />
+                  </div>
+                  <CardTitle className="text-2xl">Extend Your Mind</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 dark:text-gray-300 text-lg">
+                  Use your MyClone as your second brain, your digital assistant, your living archive.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 hover:shadow-xl transition-all">
+              <CardHeader>
+                <div className="flex items-center gap-4 mb-2">
+                  <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center">
+                    <Sparkles className="h-7 w-7 text-white" />
+                  </div>
+                  <CardTitle className="text-2xl">Powered by WytPoints</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 dark:text-gray-300 text-lg">
+                  Earn, redeem, and build your WytLife using WytPoints within the WytNet ecosystem.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Soul Intelligence */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30">
+        <div className="max-w-5xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-8">
+            🧠 Not Just AI. It's Soul Intelligence.
+          </h2>
+          <div className="space-y-6 text-xl text-gray-700 dark:text-gray-300 leading-relaxed">
+            <p>
+              While traditional AI mimics logic, WytLife's <strong className="text-indigo-600 dark:text-indigo-400">Soul Engine</strong> captures <strong>essence</strong> — the unseen, emotional, spiritual dimension of human life.
+            </p>
+            <p>
+              It doesn't just process data; it <strong className="text-purple-600 dark:text-purple-400">understands who you are</strong>.
+            </p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white pt-4">
+              This is not about escaping death — it's about <span className="text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">continuing life</span>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Phases of WytLife */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+              🚀 Phases of WytLife
+            </h2>
+          </div>
+
+          <div className="space-y-6">
+            <Card className="border-2 border-indigo-200 dark:border-indigo-800 hover:shadow-xl transition-shadow">
+              <CardHeader>
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Star className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl mb-2">Phase 1 – The Awakening</CardTitle>
+                    <p className="text-gray-600 dark:text-gray-300 text-lg">
+                      Founder JK Muthu announces the birth of WytLife — the movement to transcend mortality.
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+
+            <Card className="border-2 border-purple-200 dark:border-purple-800 hover:shadow-xl transition-shadow">
+              <CardHeader>
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Users className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl mb-2">Phase 2 – The First Immortal</CardTitle>
+                    <p className="text-gray-600 dark:text-gray-300 text-lg">
+                      JK Muthu and his family become the first WytLife users.
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+
+            <Card className="border-2 border-pink-200 dark:border-pink-800 hover:shadow-xl transition-shadow">
+              <CardHeader>
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Zap className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl mb-2">Phase 3 – Your Turn Begins</CardTitle>
+                    <p className="text-gray-600 dark:text-gray-300 text-lg">
+                      Now it's your moment to join. Create your MyClone. <strong className="text-pink-600 dark:text-pink-400">Become timeless</strong>.
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Integrated with WytNet */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+              🌐 Integrated with WytNet
+            </h2>
+            <p className="text-xl text-gray-700 dark:text-gray-300">
+              WytLife is part of the WytNet ecosystem, seamlessly connected to:
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                      <feature.icon className="h-6 w-6 text-white" />
-                    </div>
-                    <Badge variant={feature.status === "Active" ? "default" : "secondary"}>
-                      {feature.status}
-                    </Badge>
-                  </div>
-                  <CardTitle className="mt-4">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">{feature.description}</p>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card className="border-2 hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="h-6 w-6 text-indigo-600" />
+                  <CardTitle>WytPass (Unified Identity)</CardTitle>
+                </div>
+              </CardHeader>
+            </Card>
+
+            <Card className="border-2 hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="h-6 w-6 text-purple-600" />
+                  <CardTitle>WytPoints (Digital Currency)</CardTitle>
+                </div>
+              </CardHeader>
+            </Card>
+
+            <Card className="border-2 hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="h-6 w-6 text-pink-600" />
+                  <CardTitle>WytStream (Your Activity Flow)</CardTitle>
+                </div>
+              </CardHeader>
+            </Card>
+
+            <Card className="border-2 hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="h-6 w-6 text-blue-600" />
+                  <CardTitle>WytPage (Your Digital Existence)</CardTitle>
+                </div>
+              </CardHeader>
+            </Card>
           </div>
+
+          <p className="text-center text-xl text-gray-700 dark:text-gray-300 mt-12 font-semibold">
+            Your identity, data, and continuity — all under one network.
+          </p>
+        </div>
+      </section>
+
+      {/* Start Your Journey CTA */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30">
+        <div className="max-w-5xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-8">
+            💎 Start Your Journey
+          </h2>
+          <div className="space-y-4 text-xl text-gray-700 dark:text-gray-300 mb-12">
+            <p className="flex items-center justify-center gap-3">
+              <Sparkles className="h-6 w-6 text-indigo-600" />
+              <span>Be one of the <strong className="text-indigo-600 dark:text-indigo-400">Founding 1000</strong> to create your WytLife.</span>
+            </p>
+            <p className="flex items-center justify-center gap-3">
+              <CheckCircle2 className="h-6 w-6 text-purple-600" />
+              <span>Build your MyClone.</span>
+            </p>
+            <p className="flex items-center justify-center gap-3">
+              <CheckCircle2 className="h-6 w-6 text-pink-600" />
+              <span>Feed your Soul Engine.</span>
+            </p>
+            <p className="flex items-center justify-center gap-3">
+              <Infinity className="h-6 w-6 text-blue-600" />
+              <span className="font-bold text-2xl text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">Live Forever.</span>
+            </p>
+          </div>
+          <a href="#join">
+            <Button 
+              size="lg" 
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-12 py-7 text-xl shadow-2xl"
+              data-testid="button-join-founding"
+            >
+              Join the Founding 1000
+              <ArrowRight className="h-6 w-6 ml-2" />
+            </Button>
+          </a>
         </div>
       </section>
 
       {/* Application Form */}
-      <section id="join" className="py-20 px-4 sm:px-6 lg:px-8">
+      <section id="join" className="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
         <div className="max-w-3xl mx-auto">
-          <Card className="shadow-2xl border-2">
-            <CardHeader className="text-center">
-              <CardTitle className="text-3xl mb-2">Join WytLife Today</CardTitle>
+          <Card className="shadow-2xl border-2 border-indigo-200 dark:border-indigo-800">
+            <CardHeader className="text-center bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30">
+              <CardTitle className="text-3xl mb-2">Apply for WytLife Access</CardTitle>
               <CardDescription className="text-lg">
-                Apply for early access to our global lifestyle community
+                Begin your journey to digital immortality
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-8">
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
@@ -460,41 +620,22 @@ export default function WytLife() {
                 </div>
 
                 <div>
-                  <Label htmlFor="whyJoin">Why do you want to join WytLife? *</Label>
+                  <Label htmlFor="whyJoin">Why do you want to create your MyClone? *</Label>
                   <Textarea
                     id="whyJoin"
                     value={formData.whyJoin}
                     onChange={(e) => setFormData({ ...formData, whyJoin: e.target.value })}
-                    placeholder="Tell us about your goals and what you hope to achieve..."
+                    placeholder="Share your vision for digital immortality..."
                     rows={4}
                     required
                     data-testid="input-why-join"
                   />
                 </div>
 
-                <div>
-                  <Label className="mb-3 block">Areas of Interest</Label>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {areasOfInterestOptions.map((option) => (
-                      <div key={option.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={option.id}
-                          checked={formData.areasOfInterest.includes(option.id)}
-                          onCheckedChange={() => toggleAreaOfInterest(option.id)}
-                          data-testid={`checkbox-${option.id}`}
-                        />
-                        <Label htmlFor={option.id} className="cursor-pointer">
-                          {option.label}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
                 <Button
                   type="submit"
                   size="lg"
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
                   disabled={applyMutation.isPending}
                   data-testid="button-submit-application"
                 >
@@ -502,8 +643,8 @@ export default function WytLife() {
                     "Submitting..."
                   ) : (
                     <>
-                      Submit Application
-                      {user && <Badge className="ml-2 bg-yellow-500">+25 Points</Badge>}
+                      Begin Your Eternal Journey
+                      {user && <Badge className="ml-2 bg-yellow-500">+50 WytPoints</Badge>}
                     </>
                   )}
                 </Button>
@@ -513,21 +654,18 @@ export default function WytLife() {
         </div>
       </section>
 
-      {/* Footer CTA */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Already a WytNet Member?
+      {/* Coming Soon Footer */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+        <div className="max-w-5xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+            🔗 Coming Soon on WytNet.com/wytlife
           </h2>
-          <p className="text-blue-100 mb-8 text-lg">
-            Access your WytPanel to manage your profile, track points, and explore all features.
+          <p className="text-xl text-indigo-100 mb-6">
+            #WytLife #SoulEngine #MyClone #LiveForever
           </p>
-          <a href="/panel">
-            <Button size="lg" variant="secondary" className="bg-white text-blue-600 hover:bg-blue-50 px-8">
-              Access WytPanel
-              <ArrowRight className="h-5 w-5 ml-2" />
-            </Button>
-          </a>
+          <p className="text-2xl font-semibold text-white italic mt-8">
+            "The day humanity stops dying and starts evolving — begins with WytLife."
+          </p>
         </div>
       </section>
     </div>
