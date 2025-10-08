@@ -153,10 +153,6 @@ export default function PublicHeader() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <div className="px-2 py-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      WytPanel
-                    </div>
-                    <DropdownMenuSeparator />
                     <DropdownMenuItem className="cursor-pointer" asChild>
                       <Link href="/panel/me/dashboard">
                         <LayoutDashboard className="mr-2 h-4 w-4" />
