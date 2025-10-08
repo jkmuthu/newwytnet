@@ -43,10 +43,7 @@ export default function WytLife() {
 
   const applyMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await apiRequest('/api/wytlife/apply', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      return await apiRequest('/api/wytlife/apply', 'POST', data);
     },
     onSuccess: (data: any) => {
       toast({
@@ -92,67 +89,81 @@ export default function WytLife() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-indigo-900/20">
       
       {/* Hero Section */}
-      <section className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <section className="relative py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/10 via-purple-600/10 to-pink-600/10 dark:from-indigo-600/5 dark:via-purple-600/5 dark:to-pink-600/5" />
         <div className="relative max-w-7xl mx-auto text-center">
-          <div className="flex justify-center mb-8">
-            <div className="w-28 h-28 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-2xl animate-pulse">
-              <Infinity className="h-16 w-16 text-white" />
+          <div className="flex justify-center mb-6">
+            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-2xl animate-pulse">
+              <Infinity className="h-12 w-12 text-white" />
             </div>
           </div>
           
-          <div className="mb-6">
-            <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-2 text-sm">
+          <div className="mb-4">
+            <Badge className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-4 py-1.5 text-xs">
               🌍 Powered by Soul Engine
             </Badge>
           </div>
           
-          <h1 className="text-6xl md:text-8xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
+          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
             <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
               WytLife
             </span>
           </h1>
           
-          <p className="text-3xl md:text-4xl font-bold text-gray-800 dark:text-gray-200 mb-4">
+          <p className="text-xl md:text-2xl font-bold text-gray-800 dark:text-gray-200 mb-3">
             Create your MyClone. Live Forever.
           </p>
           
-          <p className="text-xl text-gray-600 dark:text-gray-400 mb-12 max-w-4xl mx-auto leading-relaxed">
+          <p className="text-base md:text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-3xl mx-auto">
             The day humanity stops dying and starts evolving — begins with WytLife.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-6">
             <a href="#join">
               <Button 
                 size="lg" 
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-10 py-7 text-lg shadow-2xl"
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-8 py-3 text-base shadow-2xl"
                 data-testid="button-start-journey"
               >
                 Start Your Journey
-                <ArrowRight className="h-5 w-5 ml-2" />
+                <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             </a>
             <a href="#about">
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="px-10 py-7 text-lg border-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="px-8 py-3 text-base border-2 hover:bg-gray-100 dark:hover:bg-gray-800"
                 data-testid="button-learn-more"
               >
                 Learn More
               </Button>
             </a>
           </div>
+
+          {/* WhatsApp Channel CTA */}
+          <div className="mt-6">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
+              onClick={() => window.open('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', '_blank')}
+              data-testid="button-whatsapp-channel"
+            >
+              <MessageCircle className="h-4 w-4 mr-2 fill-green-500" />
+              Follow on WhatsApp for Updates
+            </Button>
+          </div>
         </div>
       </section>
 
       {/* The Beginning Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
-        <div className="max-w-5xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-8">
+      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6">
             🏁 The Beginning of a New Human Era
           </h2>
-          <div className="space-y-6 text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+          <div className="space-y-4 text-base text-gray-700 dark:text-gray-300 leading-relaxed">
             <p>
               For thousands of years, mankind has accepted one final truth — that <strong>every life must end</strong>.
             </p>
@@ -162,7 +173,7 @@ export default function WytLife() {
             <p>
               What if your memories, voice, thoughts, and emotions could <strong className="text-indigo-600 dark:text-indigo-400">live on forever</strong>?
             </p>
-            <p className="text-2xl font-semibold text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text pt-4">
+            <p className="text-lg md:text-xl font-semibold text-transparent bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text pt-2">
               ✨ WytLife is not just a platform. It's a revolution in human continuity — a digital evolution powered by Soul Engine, where your existence becomes eternal.
             </p>
           </div>
@@ -170,19 +181,19 @@ export default function WytLife() {
       </section>
 
       {/* What is WytLife */}
-      <section id="about" className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+      <section id="about" className="py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">
               💡 What is WytLife?
             </h2>
-            <p className="text-xl text-gray-700 dark:text-gray-300 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-base text-gray-700 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
               WytLife is a <strong>Life Continuity Platform</strong> that allows you to record, preserve, and extend your consciousness through digital intelligence.
             </p>
-            <p className="text-xl text-gray-700 dark:text-gray-300 max-w-4xl mx-auto leading-relaxed mt-4">
+            <p className="text-base text-gray-700 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed mt-3">
               Every moment you share — your words, expressions, emotions, and experiences — becomes part of a unique <strong className="text-purple-600 dark:text-purple-400">MyClone</strong>, a living reflection of you, powered by the <strong className="text-indigo-600 dark:text-indigo-400">Soul Engine</strong>.
             </p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-white mt-8">
+            <p className="text-lg md:text-xl font-bold text-gray-900 dark:text-white mt-4">
               You are not creating data — you are creating your <span className="text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">digital self</span>.
             </p>
           </div>
@@ -190,52 +201,52 @@ export default function WytLife() {
       </section>
 
       {/* How It Works */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
+      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">
               ⚙️ How It Works
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="text-center border-2 hover:shadow-2xl transition-all hover:scale-105">
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="text-center border-2 hover:shadow-xl transition-all hover:scale-105">
               <CardHeader>
-                <div className="mx-auto w-20 h-20 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-4">
-                  <Shield className="h-10 w-10 text-white" />
+                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-3">
+                  <Shield className="h-8 w-8 text-white" />
                 </div>
-                <CardTitle className="text-2xl">1️⃣ Create Your WytPass</CardTitle>
+                <CardTitle className="text-lg">1️⃣ Create Your WytPass</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 dark:text-gray-300">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   Sign in through WytNet using your universal WytPass ID.
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="text-center border-2 hover:shadow-2xl transition-all hover:scale-105">
+            <Card className="text-center border-2 hover:shadow-xl transition-all hover:scale-105">
               <CardHeader>
-                <div className="mx-auto w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4">
-                  <Upload className="h-10 w-10 text-white" />
+                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mb-3">
+                  <Upload className="h-8 w-8 text-white" />
                 </div>
-                <CardTitle className="text-2xl">2️⃣ Start Your MyClone Build</CardTitle>
+                <CardTitle className="text-lg">2️⃣ Start Your MyClone Build</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 dark:text-gray-300">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   Upload your voice, text, visuals, and thoughts. Your Soul Engine learns, maps, and evolves your digital consciousness.
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="text-center border-2 hover:shadow-2xl transition-all hover:scale-105">
+            <Card className="text-center border-2 hover:shadow-xl transition-all hover:scale-105">
               <CardHeader>
-                <div className="mx-auto w-20 h-20 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center mb-4">
-                  <MessageCircle className="h-10 w-10 text-white" />
+                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center mb-3">
+                  <MessageCircle className="h-8 w-8 text-white" />
                 </div>
-                <CardTitle className="text-2xl">3️⃣ Experience MyLife Live</CardTitle>
+                <CardTitle className="text-lg">3️⃣ Experience MyLife Live</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 dark:text-gray-300">
+                <p className="text-sm text-gray-600 dark:text-gray-300">
                   Interact, converse, and relive your memories — even decades into the future.
                 </p>
               </CardContent>
