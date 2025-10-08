@@ -101,20 +101,10 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
             <div className="flex items-center gap-2">
               {/* Access Buttons */}
               <div className="flex items-center gap-1">
-                <Link href="/panel">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="text-xs px-2 py-1 text-gray-700 dark:text-gray-200"
-                    data-testid="mobile-access-panel-button"
-                  >
-                    WytPanel
-                  </Button>
-                </Link>
-                <Link href="/login">
+                <Link href="/wytpass-login">
                   <Button 
                     size="sm"
-                    className="text-xs px-2 py-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                    className="text-xs px-3 py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
                     data-testid="mobile-get-wytpass-button"
                   >
                     WytPass
