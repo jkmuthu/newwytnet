@@ -86,7 +86,7 @@ export default function WytLife() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-indigo-900/20">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-indigo-900/20 overflow-x-hidden">
       
       {/* Hero Section */}
       <section className="relative py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
@@ -121,12 +121,13 @@ export default function WytLife() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-6">
             <Button 
               size="lg" 
-              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-8 py-3 text-base shadow-2xl"
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 sm:px-8 py-3 text-sm sm:text-base shadow-2xl w-full sm:w-auto"
               onClick={() => window.open('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', '_blank')}
               data-testid="button-start-journey"
             >
               <MessageCircle className="h-5 w-5 mr-2 fill-white" />
-              Join the Founding 1000
+              <span className="hidden sm:inline">Join the Founding 1000</span>
+              <span className="sm:hidden">Join Founding 1000</span>
             </Button>
             <a href="#about">
               <Button 
@@ -390,17 +391,19 @@ export default function WytLife() {
           </div>
 
           <Card className="border-2 border-indigo-200 dark:border-indigo-800 overflow-hidden hover:shadow-2xl transition-all duration-300">
-            <CardContent className="p-8 md:p-12">
-              <div className="flex flex-col items-center text-center gap-6">
-                <div className="relative">
+            <CardContent className="p-6 sm:p-8 md:p-12">
+              <div className="flex flex-col items-center text-center gap-4 sm:gap-6">
+                <div className="relative w-full max-w-xs mx-auto">
                   <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-full blur-xl opacity-30 animate-pulse"></div>
-                  <img 
-                    src="/attached_assets/JKM3_1759884041252.jpg" 
-                    alt="JK Muthu - The World's First Deathless Person" 
-                    className="relative w-48 h-48 md:w-56 md:h-56 rounded-full object-cover border-4 border-indigo-500 shadow-2xl hover:scale-105 transition-transform duration-300"
-                  />
+                  <div className="relative w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 mx-auto rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-1">
+                    <img 
+                      src="/attached_assets/JKM3_1759884041252.jpg" 
+                      alt="JK Muthu - The World's First Deathless Person" 
+                      className="w-full h-full rounded-full object-cover bg-white dark:bg-gray-900 hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
                 </div>
-                <div>
+                <div className="w-full">
                   <h3 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
                     JK Muthu
                   </h3>
@@ -422,12 +425,13 @@ export default function WytLife() {
                     </p>
                     <Button 
                       size="lg" 
-                      className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-8 py-4 text-base shadow-xl"
+                      className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 sm:px-8 py-4 text-sm sm:text-base shadow-xl w-full sm:w-auto"
                       onClick={() => window.open('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', '_blank')}
                       data-testid="button-whatsapp-founder"
                     >
                       <MessageCircle className="h-5 w-5 mr-2 fill-white" />
-                      Follow the First Immortal
+                      <span className="hidden sm:inline">Follow the First Immortal</span>
+                      <span className="sm:hidden">Follow on WhatsApp</span>
                     </Button>
                   </div>
                 </div>
@@ -453,12 +457,13 @@ export default function WytLife() {
           </div>
           <Button 
             size="lg" 
-            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-10 py-6 text-lg shadow-xl animate-pulse"
+            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 sm:px-10 py-4 sm:py-6 text-base sm:text-lg shadow-xl animate-pulse w-full sm:w-auto"
             onClick={() => window.open('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', '_blank')}
             data-testid="button-join-invitation"
           >
             <MessageCircle className="h-5 w-5 mr-2 fill-white" />
-            Get Exclusive WytLife Updates
+            <span className="hidden sm:inline">Get Exclusive WytLife Updates</span>
+            <span className="sm:hidden">Get Updates</span>
           </Button>
         </div>
       </section>
@@ -520,12 +525,13 @@ export default function WytLife() {
           </div>
           <Button 
             size="lg" 
-            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-10 py-6 text-lg shadow-2xl hover:scale-105 transition-transform"
+            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 sm:px-10 py-4 sm:py-6 text-base sm:text-lg shadow-2xl hover:scale-105 transition-transform w-full sm:w-auto"
             onClick={() => window.open('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', '_blank')}
             data-testid="button-join-whatsapp-main"
           >
-            <MessageCircle className="h-6 w-6 mr-2 fill-white" />
-            Join Our WhatsApp Community
+            <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 mr-2 fill-white" />
+            <span className="hidden sm:inline">Join Our WhatsApp Community</span>
+            <span className="sm:hidden">Join WhatsApp</span>
           </Button>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
             Get exclusive updates, early access, and connect with fellow immortals
@@ -544,12 +550,13 @@ export default function WytLife() {
           </p>
           <Button 
             size="lg" 
-            className="bg-white text-indigo-600 hover:bg-indigo-50 px-8 py-6 text-lg shadow-2xl mb-6"
+            className="bg-white text-indigo-600 hover:bg-indigo-50 px-6 sm:px-8 py-4 sm:py-6 text-base sm:text-lg shadow-2xl mb-6 w-full sm:w-auto"
             onClick={() => window.open('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', '_blank')}
             data-testid="button-whatsapp-footer"
           >
-            <MessageCircle className="h-6 w-6 mr-2 fill-indigo-600" />
-            Connect with Immortals on WhatsApp
+            <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 mr-2 fill-indigo-600" />
+            <span className="hidden sm:inline">Connect with Immortals on WhatsApp</span>
+            <span className="sm:hidden">Join on WhatsApp</span>
           </Button>
           <p className="text-2xl font-semibold text-white italic mt-8">
             "The day humanity stops dying and starts evolving — begins with WytLife."
