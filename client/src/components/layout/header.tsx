@@ -153,7 +153,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                       alt="WytNet" 
                       className="h-6 w-auto"
                     />
-                    <span>WytPanel</span>
+                    <span>Menu</span>
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="mt-6 space-y-2">
