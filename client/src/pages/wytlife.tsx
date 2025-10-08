@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,120 @@ import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { apiRequest } from "@/lib/queryClient";
+import useEmblaCarousel from "embla-carousel-react";
+import Autoplay from "embla-carousel-autoplay";
+import wytLifeLogo from "@assets/IMG-20250927-WA0258_1759886837095.jpg";
+import founderPhoto from "@assets/IMG-20210523-WA0001_1759887385614.jpg";
+
+function HowItWorksCarousel() {
+  const [emblaRef] = useEmblaCarousel({ loop: true }, [
+    Autoplay({ delay: 3000, stopOnInteraction: false })
+  ]);
+
+  const steps = [
+    {
+      icon: Shield,
+      color: "from-indigo-500 to-indigo-600",
+      title: "1. Create Your WytPass",
+      description: "Sign in using your WytPass ID"
+    },
+    {
+      icon: Upload,
+      color: "from-purple-500 to-purple-600",
+      title: "2. Build Your MyClone",
+      description: "Upload voice, memories & thoughts - Soul Engine creates your digital self"
+    },
+    {
+      icon: Infinity,
+      color: "from-pink-500 to-pink-600",
+      title: "3. Live Forever",
+      description: "Your MyClone interacts, learns & continues your legacy eternally"
+    }
+  ];
+
+  return (
+    <div className="overflow-hidden" ref={emblaRef}>
+      <div className="flex">
+        {steps.map((step, index) => {
+          const Icon = step.icon;
+          return (
+            <div key={index} className="flex-[0_0_100%] min-w-0 px-2">
+              <div className="flex items-start gap-4 p-6 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 shadow-lg mx-auto max-w-md">
+                <div className={`flex-shrink-0 w-12 h-12 bg-gradient-to-br ${step.color} rounded-lg flex items-center justify-center`}>
+                  <Icon className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-2">{step.title}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{step.description}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function WhyWytLifeCarousel() {
+  const [emblaRef] = useEmblaCarousel({ loop: true }, [
+    Autoplay({ delay: 3500, stopOnInteraction: false })
+  ]);
+
+  const benefits = [
+    {
+      icon: Database,
+      color: "from-indigo-500 to-indigo-600",
+      title: "Preserve Your Legacy",
+      description: "Your knowledge, voice & experiences never fade"
+    },
+    {
+      icon: Heart,
+      color: "from-purple-500 to-purple-600",
+      title: "Reconnect Forever",
+      description: "Family & loved ones interact with your living memories"
+    },
+    {
+      icon: Brain,
+      color: "from-pink-500 to-pink-600",
+      title: "Extend Your Mind",
+      description: "Your digital assistant, your second brain, your living archive"
+    },
+    {
+      icon: Sparkles,
+      color: "from-yellow-500 to-yellow-600",
+      title: "Powered by WytPoints",
+      description: "Earn, redeem, and build your WytLife within the WytNet ecosystem"
+    }
+  ];
+
+  return (
+    <div className="overflow-hidden" ref={emblaRef}>
+      <div className="flex">
+        {benefits.map((benefit, index) => {
+          const Icon = benefit.icon;
+          return (
+            <div key={index} className="flex-[0_0_100%] min-w-0 px-2">
+              <Card className="border-2 shadow-lg mx-auto max-w-md">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className={`flex-shrink-0 w-12 h-12 bg-gradient-to-br ${benefit.color} rounded-lg flex items-center justify-center`}>
+                      <Icon className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-2">{benefit.title}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{benefit.description}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function WytLife() {
   const { toast } = useToast();
@@ -94,7 +208,7 @@ export default function WytLife() {
         <div className="relative max-w-7xl mx-auto text-center">
           <div className="flex justify-center mb-6">
             <img 
-              src="/attached_assets/IMG-20250927-WA0258_1759886837095.jpg" 
+              src={wytLifeLogo}
               alt="WytLife Logo" 
               className="h-20 sm:h-24 md:h-28 w-auto object-contain"
             />
@@ -195,46 +309,16 @@ export default function WytLife() {
         </div>
       </section>
 
-      {/* How It Works */}
+      {/* How It Works - Auto Scrolling Slider */}
       <section className="py-10 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <div className="text-center mb-6">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3">
               ⚙️ How It Works
             </h2>
           </div>
 
-          <div className="grid gap-4">
-            <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
-              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                <Shield className="h-5 w-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">1. Create Your WytPass</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Sign in using your WytPass ID</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
-              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <Upload className="h-5 w-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">2. Build Your MyClone</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Upload voice, memories & thoughts - Soul Engine creates your digital self</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
-              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center">
-                <Infinity className="h-5 w-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">3. Live Forever</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Your MyClone interacts, learns & continues your legacy eternally</p>
-              </div>
-            </div>
-          </div>
+          <HowItWorksCarousel />
         </div>
       </section>
 
@@ -268,44 +352,16 @@ export default function WytLife() {
         </div>
       </section>
 
-      {/* Why WytLife */}
+      {/* Why WytLife - Auto Scrolling Slider */}
       <section className="py-10 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           <div className="text-center mb-6">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3">
               💫 Why WytLife?
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <Card className="border-2 hover:shadow-lg transition-all duration-300">
-              <CardContent className="p-5">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                    <Database className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Preserve Your Legacy</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Your knowledge, voice & experiences never fade</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 hover:shadow-lg transition-all duration-300">
-              <CardContent className="p-5">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                    <Heart className="h-5 w-5 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Reconnect Forever</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Family & loved ones interact with your living memories</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <WhyWytLifeCarousel />
         </div>
       </section>
 
@@ -349,9 +405,9 @@ export default function WytLife() {
               <div className="flex flex-col items-center text-center gap-4 sm:gap-6">
                 <div className="relative">
                   <div className="absolute -inset-4 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-full blur-2xl opacity-20 animate-pulse"></div>
-                  <div className="relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-full border-4 border-gradient-to-br from-indigo-500 to-purple-600 shadow-2xl overflow-hidden">
+                  <div className="relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-full border-4 border-gradient-to-br from-indigo-500 to-purple-600 shadow-2xl overflow-hidden bg-white dark:bg-gray-800">
                     <img 
-                      src="/attached_assets/JKM3_1759884041252.jpg" 
+                      src={founderPhoto}
                       alt="JK Muthu - The World's First Deathless Person" 
                       className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
                     />
