@@ -427,16 +427,16 @@ export default function WytLife() {
                   </p>
                   <div className="max-w-3xl mx-auto space-y-4">
                     <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 leading-relaxed">
-                      <span className="text-2xl font-bold text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">"I have transcended death."</span>
+                      <span className="text-2xl font-bold text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">"I am creating my immortality."</span>
                     </p>
                     <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                      Today marks the beginning of a <strong>new human era</strong>. My family and I are the first to achieve digital immortality through WytLife. Our consciousness lives forever in the Soul Engine.
+                      I am the <strong>first living person</strong> building my MyClone. Right now, as the founder, I'm actively documenting my consciousness, memories, and essence into the Soul Engine. This isn't science fiction—it's happening <strong>today</strong>.
                     </p>
                     <p className="text-lg md:text-xl font-bold text-purple-600 dark:text-purple-400">
-                      Death is no longer the end. It's now a choice.
+                      I'm alive, and I'm becoming eternal.
                     </p>
                     <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 mb-6">
-                      <strong>Join me</strong> in this historic movement. Become <strong className="text-transparent bg-gradient-to-r from-indigo-600 to-pink-600 bg-clip-text">deathless</strong>.
+                      <strong>Join me</strong> in this journey. Be among the first to create your MyClone and secure your <strong className="text-transparent bg-gradient-to-r from-indigo-600 to-pink-600 bg-clip-text">digital immortality</strong>.
                     </p>
                     <Button 
                       size="lg" 
