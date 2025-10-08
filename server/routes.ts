@@ -5990,64 +5990,68 @@ export async function registerRoutes(app: Express): Promise<void> {
   // ========================================
 
   // ========================================
-  // WYTLIFE SEO/SMO ROUTE HANDLER
+  // WYTLIFE SEO/SMO ROUTE HANDLER (Production Only)
   // ========================================
   
-  app.get('/wytlife', async (_req, res, next) => {
-    try {
-      const fs = await import('fs/promises');
-      const path = await import('path');
-      
-      const indexPath = path.resolve(process.cwd(), 'client', 'index.html');
-      let html = await fs.readFile(indexPath, 'utf-8');
-      
-      // Replace meta tags for WytLife-specific SEO/SMO
-      html = html.replace(
-        '<title>WytNet - Multi-Tenant SaaS Platform | Free Assessment Tools</title>',
-        '<title>WytLife - Create Your MyClone. Live Forever | Life Continuity Platform</title>'
-      );
-      html = html.replace(
-        '<meta name="description" content="Build scalable SaaS applications with WytNet\'s multi-tenant platform. Start with free assessment tools, productivity suites, and specialized business utilities." />',
-        '<meta name="description" content="WytLife is a revolutionary life continuity platform powered by Soul Engine. Create your MyClone and achieve digital immortality. Your consciousness, memories, and personality live forever." />'
-      );
-      html = html.replace(
-        '<meta property="og:title" content="WytNet - Multi-Tenant SaaS Platform" />',
-        '<meta property="og:title" content="WytLife - Create Your MyClone. Live Forever" />'
-      );
-      html = html.replace(
-        '<meta property="og:description" content="The ultimate platform for building, managing, and scaling SaaS applications with free productivity tools." />',
-        '<meta property="og:description" content="Revolutionary life continuity platform powered by Soul Engine. Create your digital immortality with MyClone technology." />'
-      );
-      html = html.replace(
-        '<meta property="og:image" content="https://wytnet.com/og-banner.png" />',
-        '<meta property="og:image" content="https://wytnet.com/attached_assets/IMG-20250927-WA0258_1759886837095.jpg" />'
-      );
-      html = html.replace(
-        '<meta property="og:url" content="https://wytnet.com/" />',
-        '<meta property="og:url" content="https://wytnet.com/wytlife" />'
-      );
-      html = html.replace(
-        '<meta property="twitter:title" content="WytNet - Multi-Tenant SaaS Platform" />',
-        '<meta property="twitter:title" content="WytLife - Create Your MyClone. Live Forever" />'
-      );
-      html = html.replace(
-        '<meta property="twitter:description" content="Build scalable SaaS applications with our multi-tenant platform. Free assessment tools available." />',
-        '<meta property="twitter:description" content="Revolutionary life continuity platform powered by Soul Engine. Create your digital immortality with MyClone technology." />'
-      );
-      html = html.replace(
-        '<meta property="twitter:image" content="https://wytnet.com/og-banner.png" />',
-        '<meta property="twitter:image" content="https://wytnet.com/attached_assets/IMG-20250927-WA0258_1759886837095.jpg" />'
-      );
-      html = html.replace(
-        '<meta property="twitter:url" content="https://wytnet.com/" />',
-        '<meta property="twitter:url" content="https://wytnet.com/wytlife" />'
-      );
-      
-      res.set('Content-Type', 'text/html').send(html);
-    } catch (error) {
-      next(error);
-    }
-  });
+  // Only apply server-side meta tag injection in production
+  // In development, let Vite handle routing and the client-side router will work
+  if (process.env.NODE_ENV === 'production') {
+    app.get('/wytlife', async (_req, res, next) => {
+      try {
+        const fs = await import('fs/promises');
+        const path = await import('path');
+        
+        const indexPath = path.resolve(process.cwd(), 'dist', 'public', 'index.html');
+        let html = await fs.readFile(indexPath, 'utf-8');
+        
+        // Replace meta tags for WytLife-specific SEO/SMO
+        html = html.replace(
+          '<title>WytNet - Multi-Tenant SaaS Platform | Free Assessment Tools</title>',
+          '<title>WytLife - Create Your MyClone. Live Forever | Life Continuity Platform</title>'
+        );
+        html = html.replace(
+          '<meta name="description" content="Build scalable SaaS applications with WytNet\'s multi-tenant platform. Start with free assessment tools, productivity suites, and specialized business utilities." />',
+          '<meta name="description" content="WytLife is a revolutionary life continuity platform powered by Soul Engine. Create your MyClone and achieve digital immortality. Your consciousness, memories, and personality live forever." />'
+        );
+        html = html.replace(
+          '<meta property="og:title" content="WytNet - Multi-Tenant SaaS Platform" />',
+          '<meta property="og:title" content="WytLife - Create Your MyClone. Live Forever" />'
+        );
+        html = html.replace(
+          '<meta property="og:description" content="The ultimate platform for building, managing, and scaling SaaS applications with free productivity tools." />',
+          '<meta property="og:description" content="Revolutionary life continuity platform powered by Soul Engine. Create your digital immortality with MyClone technology." />'
+        );
+        html = html.replace(
+          '<meta property="og:image" content="https://wytnet.com/og-banner.png" />',
+          '<meta property="og:image" content="https://wytnet.com/attached_assets/IMG-20250927-WA0258_1759886837095.jpg" />'
+        );
+        html = html.replace(
+          '<meta property="og:url" content="https://wytnet.com/" />',
+          '<meta property="og:url" content="https://wytnet.com/wytlife" />'
+        );
+        html = html.replace(
+          '<meta property="twitter:title" content="WytNet - Multi-Tenant SaaS Platform" />',
+          '<meta property="twitter:title" content="WytLife - Create Your MyClone. Live Forever" />'
+        );
+        html = html.replace(
+          '<meta property="twitter:description" content="Build scalable SaaS applications with our multi-tenant platform. Free assessment tools available." />',
+          '<meta property="twitter:description" content="Revolutionary life continuity platform powered by Soul Engine. Create your digital immortality with MyClone technology." />'
+        );
+        html = html.replace(
+          '<meta property="twitter:image" content="https://wytnet.com/og-banner.png" />',
+          '<meta property="twitter:image" content="https://wytnet.com/attached_assets/IMG-20250927-WA0258_1759886837095.jpg" />'
+        );
+        html = html.replace(
+          '<meta property="twitter:url" content="https://wytnet.com/" />',
+          '<meta property="twitter:url" content="https://wytnet.com/wytlife" />'
+        );
+        
+        res.set('Content-Type', 'text/html').send(html);
+      } catch (error) {
+        next(error);
+      }
+    });
+  }
 
   // ========================================
   // END WYTLIFE SEO/SMO ROUTE HANDLER
