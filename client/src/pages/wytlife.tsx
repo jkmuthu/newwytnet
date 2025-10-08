@@ -119,16 +119,15 @@ export default function WytLife() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-6">
-            <a href="#join">
-              <Button 
-                size="lg" 
-                className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-8 py-3 text-base shadow-2xl"
-                data-testid="button-start-journey"
-              >
-                Start Your Journey
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </a>
+            <Button 
+              size="lg" 
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-8 py-3 text-base shadow-2xl"
+              onClick={() => window.open('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', '_blank')}
+              data-testid="button-start-journey"
+            >
+              <MessageCircle className="h-5 w-5 mr-2 fill-white" />
+              Join the Founding 1000
+            </Button>
             <a href="#about">
               <Button 
                 size="lg" 
@@ -141,18 +140,11 @@ export default function WytLife() {
             </a>
           </div>
 
-          {/* WhatsApp Channel CTA */}
+          {/* Additional info */}
           <div className="mt-6">
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-green-500 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20"
-              onClick={() => window.open('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', '_blank')}
-              data-testid="button-whatsapp-channel"
-            >
-              <MessageCircle className="h-4 w-4 mr-2 fill-green-500" />
-              Follow on WhatsApp for Updates
-            </Button>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              🔔 Get real-time updates on our WhatsApp channel
+            </p>
           </div>
         </div>
       </section>
@@ -425,9 +417,18 @@ export default function WytLife() {
                     <p className="text-lg md:text-xl font-bold text-purple-600 dark:text-purple-400">
                       Death is no longer the end. It's now a choice.
                     </p>
-                    <p className="text-base md:text-lg text-gray-700 dark:text-gray-300">
+                    <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 mb-6">
                       <strong>Join me</strong> in this historic movement. Become <strong className="text-transparent bg-gradient-to-r from-indigo-600 to-pink-600 bg-clip-text">deathless</strong>.
                     </p>
+                    <Button 
+                      size="lg" 
+                      className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-8 py-4 text-base shadow-xl"
+                      onClick={() => window.open('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', '_blank')}
+                      data-testid="button-whatsapp-founder"
+                    >
+                      <MessageCircle className="h-5 w-5 mr-2 fill-white" />
+                      Follow the First Immortal
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -450,16 +451,15 @@ export default function WytLife() {
               Now it's your turn to become timeless.
             </p>
           </div>
-          <a href="#join">
-            <Button 
-              size="lg" 
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-10 py-6 text-lg shadow-xl animate-pulse"
-              data-testid="button-join-invitation"
-            >
-              Join the Movement
-              <ArrowRight className="h-5 w-5 ml-2" />
-            </Button>
-          </a>
+          <Button 
+            size="lg" 
+            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-10 py-6 text-lg shadow-xl animate-pulse"
+            onClick={() => window.open('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', '_blank')}
+            data-testid="button-join-invitation"
+          >
+            <MessageCircle className="h-5 w-5 mr-2 fill-white" />
+            Get Exclusive WytLife Updates
+          </Button>
         </div>
       </section>
 
@@ -495,10 +495,10 @@ export default function WytLife() {
       </section>
 
       {/* Start Your Journey CTA */}
-      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30">
+      <section id="join" className="py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6">
-            💎 Start Your Journey
+            💎 Join the Movement
           </h2>
           <div className="space-y-3 text-base text-gray-700 dark:text-gray-300 mb-8">
             <p className="flex items-center justify-center gap-3">
@@ -518,145 +518,18 @@ export default function WytLife() {
               <span className="font-bold text-lg md:text-xl text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">Live Forever.</span>
             </p>
           </div>
-          <a href="#join">
-            <Button 
-              size="lg" 
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-10 py-6 text-lg shadow-2xl hover:scale-105 transition-transform"
-              data-testid="button-join-founding"
-            >
-              Join the Founding 1000
-              <ArrowRight className="h-5 w-5 ml-2" />
-            </Button>
-          </a>
-        </div>
-      </section>
-
-      {/* Application Form */}
-      <section id="join" className="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
-        <div className="max-w-3xl mx-auto">
-          <Card className="shadow-2xl border-2 border-indigo-200 dark:border-indigo-800">
-            <CardHeader className="text-center bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30">
-              <CardTitle className="text-3xl mb-2">Apply for WytLife Access</CardTitle>
-              <CardDescription className="text-lg">
-                Begin your journey to digital immortality
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-8">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="fullName">Full Name *</Label>
-                    <Input
-                      id="fullName"
-                      value={formData.fullName}
-                      onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      placeholder="John Doe"
-                      required
-                      data-testid="input-full-name"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="john@example.com"
-                      data-testid="input-email"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      placeholder="+1234567890"
-                      data-testid="input-phone"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="city">City</Label>
-                    <Input
-                      id="city"
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      placeholder="New York"
-                      data-testid="input-city"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="country">Country</Label>
-                    <Input
-                      id="country"
-                      value={formData.country}
-                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                      placeholder="United States"
-                      data-testid="input-country"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="occupation">Occupation</Label>
-                    <Input
-                      id="occupation"
-                      value={formData.occupation}
-                      onChange={(e) => setFormData({ ...formData, occupation: e.target.value })}
-                      placeholder="Software Engineer"
-                      data-testid="input-occupation"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="organization">Organization</Label>
-                  <Input
-                    id="organization"
-                    value={formData.organization}
-                    onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
-                    placeholder="Company Name"
-                    data-testid="input-organization"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="whyJoin">Why do you want to create your MyClone? *</Label>
-                  <Textarea
-                    id="whyJoin"
-                    value={formData.whyJoin}
-                    onChange={(e) => setFormData({ ...formData, whyJoin: e.target.value })}
-                    placeholder="Share your vision for digital immortality..."
-                    rows={4}
-                    required
-                    data-testid="input-why-join"
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
-                  disabled={applyMutation.isPending}
-                  data-testid="button-submit-application"
-                >
-                  {applyMutation.isPending ? (
-                    "Submitting..."
-                  ) : (
-                    <>
-                      Begin Your Eternal Journey
-                      {user && <Badge className="ml-2 bg-yellow-500">+50 WytPoints</Badge>}
-                    </>
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+          <Button 
+            size="lg" 
+            className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-10 py-6 text-lg shadow-2xl hover:scale-105 transition-transform"
+            onClick={() => window.open('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', '_blank')}
+            data-testid="button-join-whatsapp-main"
+          >
+            <MessageCircle className="h-6 w-6 mr-2 fill-white" />
+            Join Our WhatsApp Community
+          </Button>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-4">
+            Get exclusive updates, early access, and connect with fellow immortals
+          </p>
         </div>
       </section>
 
@@ -669,6 +542,15 @@ export default function WytLife() {
           <p className="text-xl text-indigo-100 mb-6">
             #WytLife #SoulEngine #MyClone #LiveForever
           </p>
+          <Button 
+            size="lg" 
+            className="bg-white text-indigo-600 hover:bg-indigo-50 px-8 py-6 text-lg shadow-2xl mb-6"
+            onClick={() => window.open('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', '_blank')}
+            data-testid="button-whatsapp-footer"
+          >
+            <MessageCircle className="h-6 w-6 mr-2 fill-indigo-600" />
+            Connect with Immortals on WhatsApp
+          </Button>
           <p className="text-2xl font-semibold text-white italic mt-8">
             "The day humanity stops dying and starts evolving — begins with WytLife."
           </p>
