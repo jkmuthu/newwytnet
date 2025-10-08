@@ -970,91 +970,179 @@ function MyPanelProfile() {
 }
 
 function MyPanelSettings() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          My Settings
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          Personal settings will be implemented here
-        </p>
-      </div>
-    </div>
-  );
+  return <MyPanelAccount />;
 }
 
 function MyPanelProjects() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          My Projects
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          Personal projects management will be implemented here
-        </p>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">My Projects</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage your personal and team projects</p>
+        </div>
+        <Button>
+          <AppWindow className="h-4 w-4 mr-2" />
+          Create Project
+        </Button>
       </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="bg-blue-100 dark:bg-blue-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
+                <Briefcase className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <p className="text-2xl font-bold">0</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Active Projects</p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="bg-green-100 dark:bg-green-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
+                <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <p className="text-2xl font-bold">0</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Completed</p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center">
+              <div className="bg-purple-100 dark:bg-purple-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
+                <Calendar className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              </div>
+              <p className="text-2xl font-bold">0</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">This Month</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Projects</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-12">
+            <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Briefcase className="h-12 w-12 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No projects yet</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">Create your first project to get started</p>
+            <Button>
+              <AppWindow className="h-4 w-4 mr-2" />
+              Create First Project
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
 function OrgPanelDashboard() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          Organization Dashboard
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          Organization dashboard will be implemented here
-        </p>
-      </div>
+    <div className="p-6">
+      <Card>
+        <CardContent className="py-12">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Briefcase className="h-8 w-8 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Organization Dashboard
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+              Manage your organization's workspace, projects, and team members from one centralized dashboard.
+            </p>
+            <Button className="mt-6">
+              Get Started
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
 function OrgPanelSettings() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          Organization Settings
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          Organization settings will be implemented here
-        </p>
-      </div>
+    <div className="p-6">
+      <Card>
+        <CardContent className="py-12">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Settings className="h-8 w-8 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Organization Settings
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+              Configure your organization's preferences, branding, and access controls.
+            </p>
+            <Button className="mt-6">
+              Configure Settings
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
 function OrgPanelMembers() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          Organization Members
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          Member management will be implemented here
-        </p>
-      </div>
+    <div className="p-6">
+      <Card>
+        <CardContent className="py-12">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <User className="h-8 w-8 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Organization Members
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+              Invite team members, manage roles and permissions, and collaborate effectively.
+            </p>
+            <Button className="mt-6">
+              Invite Members
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
 function OrgPanelProjects() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          Organization Projects
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          Organization projects will be implemented here
-        </p>
-      </div>
+    <div className="p-6">
+      <Card>
+        <CardContent className="py-12">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AppWindow className="h-8 w-8 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              Organization Projects
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+              Create and manage shared projects across your organization with team collaboration.
+            </p>
+            <Button className="mt-6">
+              Create Project
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
