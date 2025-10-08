@@ -194,56 +194,44 @@ export default function WytLife() {
       </section>
 
       {/* How It Works */}
-      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      <section className="py-10 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3">
               ⚙️ How It Works
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card className="text-center border-2 hover:shadow-xl transition-all hover:scale-105">
-              <CardHeader>
-                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-3">
-                  <Shield className="h-8 w-8 text-white" />
-                </div>
-                <CardTitle className="text-lg">1️⃣ Create Your WytPass</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Sign in through WytNet using your universal WytPass ID.
-                </p>
-              </CardContent>
-            </Card>
+          <div className="grid gap-4">
+            <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
+              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                <Shield className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">1. Create Your WytPass</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Sign in using your WytPass ID</p>
+              </div>
+            </div>
 
-            <Card className="text-center border-2 hover:shadow-xl transition-all hover:scale-105">
-              <CardHeader>
-                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mb-3">
-                  <Upload className="h-8 w-8 text-white" />
-                </div>
-                <CardTitle className="text-lg">2️⃣ Start Your MyClone Build</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Upload your voice, text, visuals, and thoughts. Your Soul Engine learns, maps, and evolves your digital consciousness.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
+              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <Upload className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">2. Build Your MyClone</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Upload voice, memories & thoughts - Soul Engine creates your digital self</p>
+              </div>
+            </div>
 
-            <Card className="text-center border-2 hover:shadow-xl transition-all hover:scale-105">
-              <CardHeader>
-                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center mb-3">
-                  <MessageCircle className="h-8 w-8 text-white" />
-                </div>
-                <CardTitle className="text-lg">3️⃣ Experience MyLife Live</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-600 dark:text-gray-300">
-                  Interact, converse, and relive your memories — even decades into the future.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="flex items-start gap-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
+              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg flex items-center justify-center">
+                <Infinity className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">3. Live Forever</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Your MyClone interacts, learns & continues your legacy eternally</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -279,76 +267,40 @@ export default function WytLife() {
       </section>
 
       {/* Why WytLife */}
-      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-10">
+      <section className="py-10 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-6">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3">
               💫 Why WytLife?
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card className="border-2 hover:shadow-xl transition-all duration-300 hover:scale-105">
-              <CardHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center">
-                    <Database className="h-6 w-6 text-white" />
+          <div className="grid md:grid-cols-2 gap-4">
+            <Card className="border-2 hover:shadow-lg transition-all duration-300">
+              <CardContent className="p-5">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                    <Database className="h-5 w-5 text-white" />
                   </div>
-                  <CardTitle className="text-lg">Preserve Your Legacy</CardTitle>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Preserve Your Legacy</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Your knowledge, voice & experiences never fade</p>
+                  </div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 dark:text-gray-300 text-sm">
-                  Your knowledge, voice, and experiences never fade.
-                </p>
               </CardContent>
             </Card>
 
-            <Card className="border-2 hover:shadow-xl transition-all duration-300 hover:scale-105">
-              <CardHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
-                    <Heart className="h-6 w-6 text-white" />
+            <Card className="border-2 hover:shadow-lg transition-all duration-300">
+              <CardContent className="p-5">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <Heart className="h-5 w-5 text-white" />
                   </div>
-                  <CardTitle className="text-lg">Reconnect Forever</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 dark:text-gray-300 text-sm">
-                  Let your family and loved ones continue to interact with your living memories.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 hover:shadow-xl transition-all duration-300 hover:scale-105">
-              <CardHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center">
-                    <Brain className="h-6 w-6 text-white" />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Reconnect Forever</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Family & loved ones interact with your living memories</p>
                   </div>
-                  <CardTitle className="text-lg">Extend Your Mind</CardTitle>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 dark:text-gray-300 text-sm">
-                  Use your MyClone as your second brain, your digital assistant, your living archive.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 hover:shadow-xl transition-all duration-300 hover:scale-105">
-              <CardHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center">
-                    <Sparkles className="h-6 w-6 text-white" />
-                  </div>
-                  <CardTitle className="text-lg">Powered by WytPoints</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 dark:text-gray-300 text-sm">
-                  Earn, redeem, and build your WytLife using WytPoints within the WytNet ecosystem.
-                </p>
               </CardContent>
             </Card>
           </div>
