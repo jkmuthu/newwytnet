@@ -155,6 +155,60 @@ export default function WytLife() {
     whyJoin: "",
   });
 
+  useEffect(() => {
+    // Set page title
+    document.title = "WytLife - Create Your MyClone. Live Forever | Life Continuity Platform";
+    
+    // Set meta description
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'WytLife is a revolutionary life continuity platform powered by Soul Engine. Create your MyClone and achieve digital immortality. Your consciousness, memories, and personality live forever.');
+    } else {
+      const meta = document.createElement('meta');
+      meta.name = 'description';
+      meta.content = 'WytLife is a revolutionary life continuity platform powered by Soul Engine. Create your MyClone and achieve digital immortality. Your consciousness, memories, and personality live forever.';
+      document.head.appendChild(meta);
+    }
+
+    // Set Open Graph meta tags for social media sharing
+    const ogTags = [
+      { property: 'og:title', content: 'WytLife - Create Your MyClone. Live Forever' },
+      { property: 'og:description', content: 'Revolutionary life continuity platform powered by Soul Engine. Create your digital immortality with MyClone technology.' },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:url', content: 'https://wytnet.com/wytlife' },
+      { property: 'og:image', content: 'https://wytnet.com/attached_assets/IMG-20250927-WA0258_1759886837095.jpg' },
+      { property: 'og:image:width', content: '1200' },
+      { property: 'og:image:height', content: '630' },
+      { property: 'og:site_name', content: 'WytNet' },
+      { name: 'twitter:card', content: 'summary_large_image' },
+      { name: 'twitter:title', content: 'WytLife - Create Your MyClone. Live Forever' },
+      { name: 'twitter:description', content: 'Revolutionary life continuity platform powered by Soul Engine. Create your digital immortality with MyClone technology.' },
+      { name: 'twitter:image', content: 'https://wytnet.com/attached_assets/IMG-20250927-WA0258_1759886837095.jpg' },
+    ];
+
+    ogTags.forEach(tag => {
+      const property = tag.property || tag.name || '';
+      const attr = tag.property ? 'property' : 'name';
+      if (!property) return;
+      
+      let metaTag = document.querySelector(`meta[${attr}="${property}"]`);
+      
+      if (metaTag) {
+        metaTag.setAttribute('content', tag.content);
+      } else {
+        metaTag = document.createElement('meta');
+        metaTag.setAttribute(attr, property);
+        metaTag.setAttribute('content', tag.content);
+        document.head.appendChild(metaTag);
+      }
+    });
+
+    // Cleanup function to reset title when component unmounts
+    return () => {
+      document.title = "WytNet - Multi-Tenant SaaS Platform";
+    };
+  }, []);
+
   const applyMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       return await apiRequest('/api/wytlife/apply', 'POST', data);
