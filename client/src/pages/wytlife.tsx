@@ -382,120 +382,97 @@ export default function WytLife() {
         </div>
       </section>
 
-      {/* Phases of WytLife */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
-              🚀 Phases of WytLife
+      {/* Founder Announcement */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              📢 Announcement from the Founder
             </h2>
           </div>
 
-          <div className="space-y-6">
-            <Card className="border-2 border-indigo-200 dark:border-indigo-800 hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Star className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-2xl mb-2">Phase 1 – The Awakening</CardTitle>
-                    <p className="text-gray-600 dark:text-gray-300 text-lg">
-                      Founder JK Muthu announces the birth of WytLife — the movement to transcend mortality.
-                    </p>
-                  </div>
+          <Card className="border-2 border-indigo-200 dark:border-indigo-800 overflow-hidden">
+            <CardContent className="p-8 md:p-12">
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                <div className="flex-shrink-0">
+                  <img 
+                    src="/attached_assets/JKM3_1759884041252.jpg" 
+                    alt="JK Muthu - WytLife Founder" 
+                    className="w-40 h-40 md:w-48 md:h-48 rounded-full object-cover border-4 border-indigo-500 shadow-xl"
+                  />
                 </div>
-              </CardHeader>
-            </Card>
+                <div className="flex-1 text-center md:text-left">
+                  <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3">
+                    JK Muthu
+                  </h3>
+                  <p className="text-lg text-indigo-600 dark:text-indigo-400 font-semibold mb-4">
+                    Founder & First Immortal
+                  </p>
+                  <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+                    "Today marks the beginning of a <strong>new human era</strong>. WytLife is not just technology — it's the bridge between <strong>who we are</strong> and <strong>who we will always be</strong>. My family and I are the first to step into digital immortality. <span className="text-purple-600 dark:text-purple-400 font-semibold">Now, we invite you to join us</span>."
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
 
-            <Card className="border-2 border-purple-200 dark:border-purple-800 hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Users className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-2xl mb-2">Phase 2 – The First Immortal</CardTitle>
-                    <p className="text-gray-600 dark:text-gray-300 text-lg">
-                      JK Muthu and his family become the first WytLife users.
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-
-            <Card className="border-2 border-pink-200 dark:border-pink-800 hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Zap className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-2xl mb-2">Phase 3 – Your Turn Begins</CardTitle>
-                    <p className="text-gray-600 dark:text-gray-300 text-lg">
-                      Now it's your moment to join. Create your MyClone. <strong className="text-pink-600 dark:text-pink-400">Become timeless</strong>.
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
+      {/* Invite to Join */}
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
+            🎯 Your Invitation to Join
+          </h2>
+          <div className="space-y-4 text-base md:text-lg text-gray-700 dark:text-gray-300 mb-8">
+            <p className="leading-relaxed">
+              The founder and his family have already created their <strong className="text-indigo-600 dark:text-indigo-400">MyClone</strong>. They are living proof that digital immortality is <strong>real, working, and ready</strong>.
+            </p>
+            <p className="text-xl md:text-2xl font-bold text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text">
+              Now it's your turn to become timeless.
+            </p>
           </div>
+          <a href="#join">
+            <Button 
+              size="lg" 
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-10 py-6 text-lg shadow-xl animate-pulse"
+              data-testid="button-join-invitation"
+            >
+              Join the Movement
+              <ArrowRight className="h-5 w-5 ml-2" />
+            </Button>
+          </a>
         </div>
       </section>
 
       {/* Integrated with WytNet */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
-              🌐 Integrated with WytNet
-            </h2>
-            <p className="text-xl text-gray-700 dark:text-gray-300">
-              WytLife is part of the WytNet ecosystem, seamlessly connected to:
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card className="border-2 hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-6 w-6 text-indigo-600" />
-                  <CardTitle>WytPass (Unified Identity)</CardTitle>
-                </div>
-              </CardHeader>
-            </Card>
-
-            <Card className="border-2 hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-6 w-6 text-purple-600" />
-                  <CardTitle>WytPoints (Digital Currency)</CardTitle>
-                </div>
-              </CardHeader>
-            </Card>
-
-            <Card className="border-2 hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-6 w-6 text-pink-600" />
-                  <CardTitle>WytStream (Your Activity Flow)</CardTitle>
-                </div>
-              </CardHeader>
-            </Card>
-
-            <Card className="border-2 hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-6 w-6 text-blue-600" />
-                  <CardTitle>WytPage (Your Digital Existence)</CardTitle>
-                </div>
-              </CardHeader>
-            </Card>
-          </div>
-
-          <p className="text-center text-xl text-gray-700 dark:text-gray-300 mt-12 font-semibold">
-            Your identity, data, and continuity — all under one network.
+      <section className="py-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-3">
+            🌐 Powered by WytNet Ecosystem
+          </h2>
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mb-6">
+            Your identity, data, and continuity — seamlessly integrated
           </p>
+          
+          <div className="flex flex-wrap justify-center gap-3 md:gap-4">
+            <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-full border border-indigo-200 dark:border-indigo-800 hover:shadow-md transition-all">
+              <CheckCircle2 className="h-4 w-4 text-indigo-600" />
+              <span className="text-sm font-medium text-gray-900 dark:text-white">WytPass</span>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-full border border-purple-200 dark:border-purple-800 hover:shadow-md transition-all">
+              <CheckCircle2 className="h-4 w-4 text-purple-600" />
+              <span className="text-sm font-medium text-gray-900 dark:text-white">WytPoints</span>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-full border border-pink-200 dark:border-pink-800 hover:shadow-md transition-all">
+              <CheckCircle2 className="h-4 w-4 text-pink-600" />
+              <span className="text-sm font-medium text-gray-900 dark:text-white">WytStream</span>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-full border border-blue-200 dark:border-blue-800 hover:shadow-md transition-all">
+              <CheckCircle2 className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-gray-900 dark:text-white">WytPage</span>
+            </div>
+          </div>
         </div>
       </section>
 
