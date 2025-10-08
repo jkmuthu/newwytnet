@@ -71,11 +71,11 @@ export default function WytWall() {
         <CardContent className="p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">
-                WytWall Stream
+              <h1 className="text-xl sm:text-2xl font-bold text-white">
+                Stream of WytWall
               </h1>
-              <p className="text-sm sm:text-base text-blue-100 dark:text-blue-200 mt-1">
-                {user ? "Post your needs, discover opportunities" : "Getin . . . Get Done"}
+              <p className="text-sm text-blue-100 dark:text-blue-200 mt-1">
+                {user ? "Post your needs, discover opportunities" : "Get in. Get it done."}
               </p>
             </div>
             <Button
