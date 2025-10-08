@@ -93,9 +93,11 @@ export default function WytLife() {
         <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/10 via-purple-600/10 to-pink-600/10 dark:from-indigo-600/5 dark:via-purple-600/5 dark:to-pink-600/5" />
         <div className="relative max-w-7xl mx-auto text-center">
           <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-2xl animate-pulse">
-              <Infinity className="h-12 w-12 text-white" />
-            </div>
+            <img 
+              src="/attached_assets/IMG-20250927-WA0258_1759886837095.jpg" 
+              alt="WytLife Logo" 
+              className="h-20 sm:h-24 md:h-28 w-auto object-contain"
+            />
           </div>
           
           <div className="mb-4">
@@ -104,9 +106,9 @@ export default function WytLife() {
             </Badge>
           </div>
           
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
             <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-              WytLife
+              Life Continuity Platform
             </span>
           </h1>
           
@@ -345,13 +347,13 @@ export default function WytLife() {
           <Card className="border-2 border-indigo-200 dark:border-indigo-800 overflow-hidden hover:shadow-2xl transition-all duration-300">
             <CardContent className="p-6 sm:p-8 md:p-12">
               <div className="flex flex-col items-center text-center gap-4 sm:gap-6">
-                <div className="relative w-full max-w-xs mx-auto">
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-full blur-xl opacity-30 animate-pulse"></div>
-                  <div className="relative w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 mx-auto rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-1">
+                <div className="relative">
+                  <div className="absolute -inset-4 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-full blur-2xl opacity-20 animate-pulse"></div>
+                  <div className="relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-full border-4 border-gradient-to-br from-indigo-500 to-purple-600 shadow-2xl overflow-hidden">
                     <img 
                       src="/attached_assets/JKM3_1759884041252.jpg" 
                       alt="JK Muthu - The World's First Deathless Person" 
-                      className="w-full h-full rounded-full object-cover bg-white dark:bg-gray-900 hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
                     />
                   </div>
                 </div>
