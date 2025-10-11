@@ -33,6 +33,8 @@ import {
 } from "./services/trademarkAnalysis";
 import { razorpayService } from "./services/razorpayService";
 import path from "path";
+// NOTE: whatsappAuthService is only used by legacy social auth routes (/api/auth/social/*)
+// Main WytPass OAuth authentication (Google, Email OTP, Email/Password) is in wytpass-auth.ts
 import * as whatsappAuthService from "./services/whatsappAuth";
 import * as socialAuthService from "./services/socialAuth";
 import { storage } from "./storage";
@@ -112,8 +114,8 @@ import { eq, desc, and, sql, gte, lte, like, or, ilike } from "drizzle-orm";
 // Principal resolver now imported from customAuth.ts
 
 export async function registerRoutes(app: Express): Promise<void> {
-  // Setup both authentication systems
-  await setupAuth(app); // Custom mobile/WhatsApp auth
+  // Setup authentication systems
+  await setupAuth(app); // Legacy auth system (being migrated)
   await setupReplitAuth(app); // Social auth (Google, Facebook, etc.)
 
   // Initialize services
@@ -1211,168 +1213,6 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // WhatsApp OTP Authentication System
-  // =================================
-
-  // Initiate registration/login with WhatsApp OTP
-  app.post('/api/auth/whatsapp/send-otp', async (req, res) => {
-    try {
-      const { name, country = 'IN', whatsappNumber, gender, dateOfBirth } = req.body;
-
-      if (!whatsappNumber) {
-        return res.status(400).json({ error: 'WhatsApp number is required' });
-      }
-
-      const whatsappAuthService = await import('./services/whatsappAuth');
-      
-      // Validate phone number
-      if (!whatsappAuthService.validatePhoneNumber(whatsappNumber, country)) {
-        return res.status(400).json({ 
-          error: country === 'IN' 
-            ? 'Invalid Indian mobile number. Please enter 10 digits starting with 6, 7, 8, or 9'
-            : 'Invalid phone number format'
-        });
-      }
-
-      // Format phone number
-      const formattedNumber = whatsappAuthService.formatPhoneNumber(whatsappNumber, country);
-
-      // Check if user exists
-      let user = await whatsappAuthService.findWhatsAppUser(formattedNumber);
-      
-      let isNewUser = false;
-      
-      // If user doesn't exist, detect if it's a new user registration
-      if (!user) {
-        isNewUser = true;
-        
-        // For new users, validate required fields
-        if (name && gender && dateOfBirth) {
-          user = await whatsappAuthService.createWhatsAppUser({
-            name,
-            country,
-            whatsappNumber: formattedNumber,
-            gender,
-            dateOfBirth,
-          });
-        } else {
-          // Return new user indication - frontend will show registration form
-          return res.json({
-            success: true,
-            isNewUser: true,
-            message: 'New user detected. Please complete registration.',
-            whatsappNumber: formattedNumber,
-          });
-        }
-      }
-
-      // Generate OTP session
-      const { otp, sessionId } = await whatsappAuthService.createOTPSession(formattedNumber);
-
-      // Generate WhatsApp share link
-      const whatsappLink = whatsappAuthService.generateWhatsAppLink(formattedNumber, otp);
-
-      res.json({
-        success: true,
-        message: isNewUser ? 'Welcome! OTP generated for new WytPass account.' : 'Welcome back! OTP generated.',
-        sessionId,
-        whatsappLink,
-        whatsappNumber: formattedNumber,
-        expiresIn: 300, // 5 minutes in seconds
-        isNewUser: isNewUser || !user.isVerified,
-      });
-    } catch (error) {
-      console.error('Error sending WhatsApp OTP:', error);
-      res.status(500).json({ error: 'Failed to send OTP' });
-    }
-  });
-
-  // Verify WhatsApp OTP and complete login
-  app.post('/api/auth/whatsapp/verify-otp', async (req, res) => {
-    try {
-      const { whatsappNumber, otp } = req.body;
-
-      if (!whatsappNumber || !otp) {
-        return res.status(400).json({ error: 'WhatsApp number and OTP are required' });
-      }
-
-      const whatsappAuthService = await import('./services/whatsappAuth');
-
-      // Verify OTP
-      const user = await whatsappAuthService.verifyOTP(whatsappNumber, otp);
-
-      if (!user) {
-        return res.status(401).json({ 
-          error: 'Invalid or expired OTP. Please request a new one.' 
-        });
-      }
-
-      // Create session (similar to regular auth)
-      if (req.session) {
-        req.session.whatsappUserId = user.id;
-        req.session.whatsappNumber = user.whatsappNumber;
-        req.session.isWhatsAppAuth = true;
-      }
-
-      res.json({
-        success: true,
-        message: user.isSuperAdmin ? 'Welcome back, Super Admin!' : 'Login successful',
-        user: {
-          id: user.id,
-          name: user.name,
-          country: user.country,
-          whatsappNumber: user.whatsappNumber,
-          gender: user.gender,
-          dateOfBirth: user.dateOfBirth,
-          role: user.role,
-          isSuperAdmin: user.isSuperAdmin,
-          isVerified: user.isVerified,
-          lastLoginAt: user.lastLoginAt,
-        },
-      });
-    } catch (error) {
-      console.error('Error verifying WhatsApp OTP:', error);
-      res.status(500).json({ error: 'Failed to verify OTP' });
-    }
-  });
-
-  // Get current WhatsApp authenticated user
-  app.get('/api/auth/whatsapp/user', async (req, res) => {
-    try {
-      if (!req.session?.whatsappUserId) {
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
-
-      const whatsappAuthService = await import('./services/whatsappAuth');
-      const user = await whatsappAuthService.findWhatsAppUser(req.session.whatsappNumber);
-
-      if (!user) {
-        return res.status(401).json({ error: 'User not found' });
-      }
-
-      // Security check: Ensure role matches the actual WhatsApp number
-      // Super Admin access control
-      const isSuperAdmin = Boolean(user.whatsappNumber === '+919345228184' || 
-                          (process.env.NODE_ENV === 'development' && user.whatsappNumber)); // Dev mode: any authenticated user can be super admin
-      const correctRole = isSuperAdmin ? 'super_admin' : 'user';
-
-      res.json({
-        id: user.id,
-        name: user.name,
-        country: user.country,
-        whatsappNumber: user.whatsappNumber,
-        gender: user.gender,
-        dateOfBirth: user.dateOfBirth,
-        role: correctRole,
-        isSuperAdmin,
-        isVerified: user.isVerified,
-        lastLoginAt: user.lastLoginAt,
-      });
-    } catch (error) {
-      console.error('Error getting WhatsApp user:', error);
-      res.status(500).json({ error: 'Failed to get user' });
-    }
-  });
 
   // Admin login endpoint with email-based authentication
   // Enterprise Admin Authentication Endpoints
@@ -1686,121 +1526,6 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Development login endpoint (only in development mode)
-  app.post('/api/auth/whatsapp/dev-login', async (req, res) => {
-    // Only allow in development mode
-    if (process.env.NODE_ENV !== 'development') {
-      return res.status(403).json({ error: 'Development login not available in production' });
-    }
-
-    try {
-      const { name, whatsappNumber, country = 'India' } = req.body;
-
-      if (!name || !whatsappNumber) {
-        return res.status(400).json({ error: 'Name and WhatsApp number are required' });
-      }
-
-      const whatsappAuthService = await import('./services/whatsappAuth');
-      
-      // Find or create development user
-      let user = await whatsappAuthService.findWhatsAppUser(whatsappNumber);
-      
-      if (!user) {
-        // Create new user if doesn't exist
-        user = await whatsappAuthService.createWhatsAppUser({
-          name,
-          whatsappNumber,
-          country,
-          gender: undefined,
-          dateOfBirth: undefined,
-          isVerified: true,
-        });
-      }
-
-      // Set session
-      req.session.whatsappUserId = user.id;
-      req.session.whatsappNumber = user.whatsappNumber;
-
-      const isSuperAdmin = Boolean(user.whatsappNumber === '+919345228184' || 
-                          (process.env.NODE_ENV === 'development' && user.whatsappNumber));
-
-      res.json({
-        success: true,
-        message: 'Development login successful',
-        user: {
-          id: user.id,
-          name: user.name,
-          whatsappNumber: user.whatsappNumber,
-          country: user.country,
-          role: isSuperAdmin ? 'super_admin' : 'user',
-          isSuperAdmin: isSuperAdmin,
-          isVerified: true,
-        },
-      });
-    } catch (error) {
-      console.error('Error in development login:', error);
-      res.status(500).json({ error: 'Development login failed' });
-    }
-  });
-
-  // WhatsApp logout
-  app.post('/api/auth/whatsapp/logout', async (req, res) => {
-    try {
-      if (req.session) {
-        req.session.destroy((err) => {
-          if (err) {
-            console.error('Error destroying session:', err);
-            return res.status(500).json({ error: 'Logout failed' });
-          }
-          res.json({ success: true, message: 'Logged out successfully' });
-        });
-      } else {
-        res.json({ success: true, message: 'Already logged out' });
-      }
-    } catch (error) {
-      console.error('Error during WhatsApp logout:', error);
-      res.status(500).json({ error: 'Logout failed' });
-    }
-  });
-
-  // Check phone number availability
-  app.post('/api/auth/whatsapp/check-number', async (req, res) => {
-    try {
-      const { whatsappNumber, country = 'IN' } = req.body;
-
-      if (!whatsappNumber) {
-        return res.status(400).json({ error: 'WhatsApp number is required' });
-      }
-
-      const whatsappAuthService = await import('./services/whatsappAuth');
-
-      // Validate phone number format
-      if (!whatsappAuthService.validatePhoneNumber(whatsappNumber, country)) {
-        return res.status(400).json({ 
-          error: 'Invalid phone number format',
-          isValid: false 
-        });
-      }
-
-      // Format and check if exists
-      const formattedNumber = whatsappAuthService.formatPhoneNumber(whatsappNumber, country);
-      const existingUser = await whatsappAuthService.findWhatsAppUser(formattedNumber);
-
-      res.json({
-        isValid: true,
-        isAvailable: !existingUser,
-        isRegistered: !!existingUser,
-        formattedNumber,
-        existingUser: existingUser ? {
-          name: existingUser.name,
-          isVerified: existingUser.isVerified,
-        } : null,
-      });
-    } catch (error) {
-      console.error('Error checking phone number:', error);
-      res.status(500).json({ error: 'Failed to check number' });
-    }
-  });
 
   // Production Search API with Meilisearch
   // =====================================

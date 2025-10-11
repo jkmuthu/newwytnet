@@ -18,7 +18,6 @@ import WytPassLoginPage from "@/pages/wytpass-login";
 import EmailOTPLoginPage from "@/pages/email-otp-login";
 import Documentation from "@/pages/documentation";
 import APIReference from "@/pages/api-reference";
-import WhatsAppAuth from "@/pages/whatsapp-auth";
 import UserAuthMethods from "@/pages/user-auth-methods";
 import NotFound from "@/pages/not-found";
 import ComingSoon from "@/pages/coming-soon";
@@ -85,8 +84,6 @@ export default function PublicRouter() {
       <Route path="/wytpass-login" component={WytPassLoginPage} />
       <Route path="/wytpass" component={WytPassLoginPage} />
       <Route path="/email-otp-login" component={EmailOTPLoginPage} />
-      <Route path="/auth/whatsapp" component={WhatsAppAuth} />
-      <Route path="/whatsapp-auth" component={WhatsAppAuth} />
       <Route path="/user-auth-methods" component={UserAuthMethods} />
 
       {/* Tool routes */}

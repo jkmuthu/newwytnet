@@ -4,33 +4,27 @@
 
 ## Authentication Methods
 
-WytNet uses modern OAuth-based authentication following global best practices. **Email is the primary identifier** for all authentication methods:
+WytNet uses modern OAuth-based authentication following global best practices. **Email is the exclusive identifier** for all authentication methods:
 
-### Primary Authentication Methods (Email-Based)
-1. **Google OAuth** - Sign in with Google account (email as identifier)
+### Available Authentication Methods (All Email-Based)
+1. **Google OAuth** - Sign in with Google account
 2. **Email OTP** - Passwordless login via MSG91 Email OTP
 3. **Email + Password** - Traditional email/password authentication
-
-### Supplementary Authentication Methods
-4. **WhatsApp OTP** - Mobile number-based OTP via WhatsApp (available at `/whatsapp-auth`)
-   - Note: This is a supplementary authentication option, not the primary method
-   - Users authenticate using their WhatsApp number and receive OTP
-   - Separate from the deprecated mobile number + password login
 
 ## Migration from Mobile Number to Email-Based Auth
 
 **What Changed:**
 - ❌ **REMOVED:** Mobile number + password login (deprecated `LoginPage.tsx`)
-- ❌ **REMOVED:** Mobile number as primary user identifier
-- ✅ **ADDED:** Email as primary identifier for all users
+- ❌ **REMOVED:** WhatsApp OTP authentication (mobile number-based)
+- ❌ **REMOVED:** All mobile number-based authentication flows
+- ✅ **ADDED:** Email as exclusive identifier for all users
 - ✅ **ADDED:** Google OAuth for social login
 - ✅ **ADDED:** Email OTP for passwordless authentication
-- ✅ **KEPT:** WhatsApp OTP as supplementary authentication method
 
-**Key Distinction:**
-- **Deprecated Mobile Login:** Used mobile number + password as PRIMARY authentication
-- **Current WhatsApp OTP:** Uses WhatsApp for OTP delivery as SUPPLEMENTARY authentication
-- **Primary Authentication:** Now exclusively email-based (Google OAuth, Email OTP, Email/Password)
+**Current Authentication:**
+- All authentication methods use email as the primary identifier
+- No mobile number-based authentication available
+- Clean OAuth-based architecture following global best practices
 
 ## Super Admin Access
 
@@ -70,10 +64,10 @@ WytNet uses modern OAuth-based authentication following global best practices. *
 3. Enter password: SuperAdmin@2025
 4. Access full admin dashboard
 
-## Alternative Login Routes
+## Login Routes
 
-- **WytPass Login:** `/wytpass-login` (Main user authentication)
-- **Email OTP Only:** `/email-otp-login` (Passwordless authentication)
+- **Main Login:** `/login` or `/wytpass-login` (OAuth authentication portal)
+- **Email OTP Only:** `/email-otp-login` (Direct passwordless authentication)
 - **Admin Portal:** `/admin` (Super admin access)
 
 ## Security Notes
@@ -137,10 +131,6 @@ WytNet uses modern OAuth-based authentication following global best practices. *
 - `POST /api/auth/admin/verify-mfa` - Admin MFA verification (development mode)
 - `GET /api/auth/admin/status` - Check admin authentication
 - `POST /api/auth/admin/logout` - Admin logout
-
-#### Supplementary Endpoints (WhatsApp OTP)
-- `POST /api/auth/whatsapp/send-otp` - Send WhatsApp OTP
-- `POST /api/auth/whatsapp/verify-otp` - Verify WhatsApp OTP
 
 ### Database Schema
 
