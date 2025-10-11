@@ -53,8 +53,8 @@ function AdminBilling() {
 // Placeholder for logs page
 function AdminLogs() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="text-center">
+    <div className="space-y-6">
+      <div className="text-center py-12">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
           System Logs
         </h1>
@@ -69,13 +69,93 @@ function AdminLogs() {
 // Placeholder for security page
 function AdminSecurity() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="text-center">
+    <div className="space-y-6">
+      <div className="text-center py-12">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
           Security Settings
         </h1>
         <p className="text-gray-600 dark:text-gray-300">
           Security settings will be implemented here
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Placeholder for themes page
+function AdminThemes() {
+  return (
+    <div className="space-y-6">
+      <div className="text-center py-12">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+          Theme Management
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300">
+          Theme customization will be implemented here
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Placeholder for media page
+function AdminMedia() {
+  return (
+    <div className="space-y-6">
+      <div className="text-center py-12">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+          Media Library
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300">
+          Media management will be implemented here
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Placeholder for global settings page
+function AdminGlobalSettings() {
+  return (
+    <div className="space-y-6">
+      <div className="text-center py-12">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+          Global Settings
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300">
+          Global platform settings will be implemented here
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Placeholder for system monitor page
+function AdminSystemMonitor() {
+  return (
+    <div className="space-y-6">
+      <div className="text-center py-12">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+          System Monitor
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300">
+          Real-time system monitoring will be implemented here
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Placeholder for AI management page
+function AdminAI() {
+  return (
+    <div className="space-y-6">
+      <div className="text-center py-12">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+          AI Management
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300">
+          AI configuration and management will be implemented here
         </p>
       </div>
     </div>
@@ -113,9 +193,16 @@ export default function AdminRouter() {
           {/* WytPoints Management */}
           <Route path="/admin/wytpoints" component={AdminWytPoints} />
           
+          {/* Super Admin Only Routes */}
+          <Route path="/admin/global-settings" component={AdminGlobalSettings} />
+          <Route path="/admin/monitor" component={AdminSystemMonitor} />
+          
           {/* Configuration routes */}
           <Route path="/admin/seo-settings" component={AdminSeoSettings} />
+          <Route path="/admin/themes" component={AdminThemes} />
+          <Route path="/admin/media" component={AdminMedia} />
           <Route path="/admin/billing" component={AdminBilling} />
+          <Route path="/admin/ai" component={AdminAI} />
           
           {/* Legacy analytics route */}
           <Route path="/admin/analytics" component={AdminAnalytics} />
