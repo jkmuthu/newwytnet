@@ -17,8 +17,6 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
 
   // Fetch needs for WytWall stream
   const { data: needsData, isLoading } = useQuery({
@@ -52,14 +50,6 @@ export default function Home() {
       const matchesLocation = 
         (need.location || '').toLowerCase().includes(trimmedLocation.toLowerCase());
       if (!matchesLocation) return false;
-    }
-
-    // Price range filter
-    if (minPrice && need.budget) {
-      if (parseFloat(need.budget) < parseFloat(minPrice)) return false;
-    }
-    if (maxPrice && need.budget) {
-      if (parseFloat(need.budget) > parseFloat(maxPrice)) return false;
     }
 
     return true;
@@ -145,29 +135,6 @@ export default function Home() {
           <div className="text-xs text-gray-500 dark:text-gray-400">
             Filter by city, state, or region
           </div>
-        </div>
-      </div>
-
-      {/* Price Range */}
-      <div>
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Price Range</h3>
-        <div className="space-y-3">
-          <Input 
-            type="number" 
-            placeholder="Min price" 
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
-            className="w-full" 
-            data-testid="input-price-min" 
-          />
-          <Input 
-            type="number" 
-            placeholder="Max price" 
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-            className="w-full" 
-            data-testid="input-price-max" 
-          />
         </div>
       </div>
     </div>
@@ -310,14 +277,14 @@ export default function Home() {
               <Shield className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-white mb-1">Join WytNet Today</h3>
-              <p className="text-sm text-white/90">Create an account to post needs, make offers, and earn rewards</p>
+              <h3 className="text-lg font-bold text-white mb-1">Join and Get WytPass</h3>
+              <p className="text-sm text-white/90">Sign up today and get your WytPass identity</p>
             </div>
           </div>
           <Button
             onClick={() => navigate('/login')}
             className="w-full bg-white/90 hover:bg-white text-purple-600 font-bold shadow-lg rounded-xl"
-            data-testid="button-join-wytnet"
+            data-testid="button-join-wytpass"
           >
             Sign Up Free
             <ArrowRight className="h-4 w-4 ml-2" />
@@ -325,7 +292,7 @@ export default function Home() {
         </CardContent>
       </Card>
 
-      {/* Earn WytPoints */}
+      {/* Earn WytPoints to Become a WytStar */}
       <Card className="bg-gradient-to-br from-yellow-400 to-orange-500 border-0 shadow-xl hover:scale-105 transition-all rounded-2xl overflow-hidden">
         <CardContent className="p-6">
           <div className="flex items-start gap-3 mb-4">
@@ -333,7 +300,7 @@ export default function Home() {
               <Award className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-white mb-1">Earn WytStars</h3>
+              <h3 className="text-lg font-bold text-white mb-1">Earn WytPoints to Become a WytStar</h3>
               <p className="text-sm text-white/90">Contribute to the marketplace and climb the leaderboard!</p>
             </div>
           </div>
@@ -348,82 +315,74 @@ export default function Home() {
         </CardContent>
       </Card>
 
-      {/* Featured Apps */}
-      <div>
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-          <Rocket className="h-4 w-4" />
-          Featured Apps
-        </h3>
-        <div className="space-y-3">
-          
-          {/* AI Directory */}
-          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-0 shadow-lg hover:shadow-xl transition-all rounded-xl cursor-pointer" onClick={() => navigate('/ai-directory')}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <BarChart3 className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">AI Directory</h4>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Explore AI tools from WytHubs</p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
-              </div>
-            </CardContent>
-          </Card>
+      {/* Explore AI Directory from WytHubs */}
+      <Card className="bg-gradient-to-br from-blue-500 to-cyan-600 border-0 shadow-xl hover:scale-105 transition-all rounded-2xl overflow-hidden cursor-pointer" onClick={() => navigate('/ai-directory')}>
+        <CardContent className="p-6">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="h-12 w-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center flex-shrink-0">
+              <BarChart3 className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-white mb-1">Explore AI Directory from WytHubs</h3>
+              <p className="text-sm text-white/90">Discover AI tools and resources</p>
+            </div>
+          </div>
+          <Button
+            onClick={(e) => { e.stopPropagation(); navigate('/ai-directory'); }}
+            className="w-full bg-white/90 hover:bg-white text-blue-600 font-bold shadow-lg rounded-xl"
+            data-testid="button-ai-directory"
+          >
+            Browse All Apps
+            <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
+        </CardContent>
+      </Card>
 
-          {/* QR Generator */}
-          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-0 shadow-lg hover:shadow-xl transition-all rounded-xl cursor-pointer" onClick={() => navigate('/qr-generator')}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <QrCode className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">WytQRC App</h4>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Create QR codes instantly</p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
-              </div>
-            </CardContent>
-          </Card>
+      {/* Create QR Codes Using WytQRC App */}
+      <Card className="bg-gradient-to-br from-emerald-500 to-teal-600 border-0 shadow-xl hover:scale-105 transition-all rounded-2xl overflow-hidden cursor-pointer" onClick={() => navigate('/qr-generator')}>
+        <CardContent className="p-6">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="h-12 w-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center flex-shrink-0">
+              <QrCode className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-white mb-1">Create QR Codes Using WytQRC App</h3>
+              <p className="text-sm text-white/90">Generate QR codes instantly</p>
+            </div>
+          </div>
+          <Button
+            onClick={(e) => { e.stopPropagation(); navigate('/qr-generator'); }}
+            className="w-full bg-white/90 hover:bg-white text-emerald-600 font-bold shadow-lg rounded-xl"
+            data-testid="button-qr-generator"
+          >
+            QR Generator
+            <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
+        </CardContent>
+      </Card>
 
-          {/* DISC Assessment */}
-          <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-0 shadow-lg hover:shadow-xl transition-all rounded-xl cursor-pointer" onClick={() => navigate('/assessment')}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Brain className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-bold text-sm text-gray-900 dark:text-white truncate">Assess DISC</h4>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Your personality insights</p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Join WytNet CTA (for non-authenticated users) */}
-      {!user && (
-        <Card className="bg-gradient-to-br from-blue-600 to-purple-600 border-0 shadow-xl rounded-2xl">
-          <CardContent className="p-6 text-center">
-            <Gift className="h-12 w-12 text-white mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-white mb-2">Join WytNet Today</h3>
-            <p className="text-sm text-white/90 mb-4">Create an account to post needs, make offers, and earn rewards</p>
-            <Button
-              onClick={() => navigate('/login')}
-              className="w-full bg-white/90 hover:bg-white text-purple-600 font-bold shadow-lg rounded-xl"
-              data-testid="button-signup-sidebar"
-            >
-              Sign Up Free
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+      {/* Assess your DISC Using WytApp's "Assess DISC" */}
+      <Card className="bg-gradient-to-br from-purple-500 to-pink-600 border-0 shadow-xl hover:scale-105 transition-all rounded-2xl overflow-hidden cursor-pointer" onClick={() => navigate('/assessment')}>
+        <CardContent className="p-6">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="h-12 w-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center flex-shrink-0">
+              <Brain className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-white mb-1">Assess your DISC Using WytApp's Assess DISC</h3>
+              <p className="text-sm text-white/90">Discover your personality type</p>
+            </div>
+          </div>
+          <Button
+            onClick={(e) => { e.stopPropagation(); navigate('/assessment'); }}
+            className="w-full bg-white/90 hover:bg-white text-purple-600 font-bold shadow-lg rounded-xl"
+            data-testid="button-disc-assessment"
+          >
+            DISC Assessment
+            <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 
