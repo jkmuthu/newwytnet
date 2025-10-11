@@ -1392,38 +1392,11 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Get current admin user info
-  app.get('/api/auth/admin/user', async (req, res) => {
-    try {
-      const user = req.user;
-      
-      if (!user || !user.isSuperAdmin) {
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
-      
-      // Find admin user
-      const adminUser = await db
-        .select()
-        .from(whatsappUsers)
-        .where(eq(whatsappUsers.id, user.id))
-        .limit(1);
-
-      if (adminUser.length > 0) {
-        const user = adminUser[0];
-        return res.json({
-          id: user.id,
-          name: user.name || 'Super Admin',
-          role: user.role || 'super_admin',
-          isSuperAdmin: Boolean(user.isSuperAdmin || user.whatsappNumber === '+919345228184')
-        });
-      }
-      
-      return res.status(404).json({ error: 'User not found' });
-    } catch (error) {
-      console.error('Get admin user error:', error);
-      return res.status(500).json({ error: 'Failed to get user info' });
-    }
-  });
+  // Get current admin user info - MOVED to server/admin-auth.ts
+  // Using isolated admin authentication system
+  // app.get('/api/auth/admin/user', async (req, res) => {
+  //   ... old implementation using req.user ...
+  // });
 
   // Admin logout
   app.post('/api/auth/admin/logout', async (req, res) => {
@@ -3589,94 +3562,13 @@ export async function registerRoutes(app: Express): Promise<void> {
   // SUPER ADMIN DASHBOARD ROUTES
   // =============================================================================
 
-  // Super Admin dashboard data
-  app.get('/api/admin/dashboard', adminAuthMiddleware, async (req: any, res) => {
-    try {
-
-      // Get comprehensive dashboard data
-      const [
-        totalUsers,
-        totalTenants,
-        totalApps,
-        totalHubs,
-        modulesList,
-        recentUsers,
-        systemMetrics
-      ] = await Promise.all([
-        // Total users count
-        db.select({ count: sql<number>`cast(count(*) as integer)` }).from(users),
-        
-        // Total tenants count
-        db.select({ count: sql<number>`cast(count(*) as integer)` }).from(tenants),
-        
-        // Total apps count
-        db.select({ count: sql<number>`cast(count(*) as integer)` }).from(apps),
-        
-        // Total hubs count
-        db.select({ count: sql<number>`cast(count(*) as integer)` }).from(hubs),
-        
-        // Platform modules status
-        db.select().from(platformModules).orderBy(platformModules.name),
-        
-        // Recent users (last 10) - using correct column names
-        db.select({
-          id: users.id,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          email: users.email,
-          createdAt: users.createdAt,
-          tenantId: users.tenantId
-        }).from(users).orderBy(desc(users.createdAt)).limit(10),
-        
-        // System metrics (placeholder)
-        Promise.resolve({
-          uptime: process.uptime(),
-          memoryUsage: process.memoryUsage(),
-          cpuLoad: 0.45, // Mock data
-          activeConnections: 42 // Mock data
-        })
-      ]);
-
-      res.json({
-        success: true,
-        dashboard: {
-          statistics: {
-            totalUsers: totalUsers[0]?.count || 0,
-            totalTenants: totalTenants[0]?.count || 0,
-            totalApps: totalApps[0]?.count || 0,
-            totalHubs: totalHubs[0]?.count || 0,
-            platformModules: modulesList.length
-          },
-          platformModules: modulesList.map(module => ({
-            id: module.id,
-            name: module.name,
-            description: module.description,
-            isEnabled: module.isEnabled,
-            category: module.category,
-            version: module.version
-          })),
-          recentActivity: recentUsers.map(user => ({
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            joinedAt: user.createdAt,
-            role: user.role,
-            type: 'user_registration'
-          })),
-          systemMetrics: {
-            ...systemMetrics,
-            timestamp: new Date().toISOString()
-          }
-        }
-      });
-    } catch (error) {
-      console.error('Error loading admin dashboard:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to load dashboard data'
-      });
-    }
-  });
+  // NOTE: Admin dashboard endpoint moved to server/admin-auth.ts
+  // Using isolated admin authentication system with dedicated session
+  
+  // Super Admin dashboard data - COMMENTED OUT - Using new isolated admin system
+  // app.get('/api/admin/dashboard', adminAuthMiddleware, async (req: any, res) => {
+  //   ... old implementation ...
+  // });
 
   // Super Admin user management
   app.get('/api/admin/users', adminAuthMiddleware, async (req: any, res) => {

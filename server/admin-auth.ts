@@ -2,8 +2,8 @@ import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
-import { whatsappUsers } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { whatsappUsers, tenants, models, apps } from "@shared/schema";
+import { eq, sql, count, and, isNotNull } from "drizzle-orm";
 
 // Extend Express Request to include admin session
 declare global {
@@ -164,5 +164,88 @@ export function setupAdminAuth(app: Express) {
         message: "Logged out successfully",
       });
     });
+  });
+
+  // Middleware to check admin authentication
+  const requireAdminAuth = (req: Request, res: Response, next: NextFunction) => {
+    const adminPrincipal = (req.session as any)?.adminPrincipal;
+    
+    if (!adminPrincipal || !adminPrincipal.isSuperAdmin) {
+      return res.status(401).json({
+        error: "Unauthorized - Admin access required",
+      });
+    }
+    
+    next();
+  };
+
+  // GET /api/admin/dashboard - Dashboard statistics
+  app.get("/api/admin/dashboard", requireAdminAuth, async (req: Request, res: Response) => {
+    try {
+      const startTime = Date.now();
+
+      // Get total users count
+      const [usersCount] = await db
+        .select({ count: count() })
+        .from(whatsappUsers);
+
+      // Get active tenants count
+      const [tenantsCount] = await db
+        .select({ count: count() })
+        .from(tenants);
+
+      // Get enabled modules count
+      const [modulesCount] = await db
+        .select({ count: count() })
+        .from(models);
+
+      // Get configured apps/integrations count
+      const [appsCount] = await db
+        .select({ count: count() })
+        .from(apps);
+
+      const responseTime = Date.now() - startTime;
+
+      // Calculate system uptime
+      const uptime = process.uptime();
+      const hours = Math.floor(uptime / 3600);
+      const minutes = Math.floor((uptime % 3600) / 60);
+      const uptimeString = `${hours}h ${minutes}m`;
+
+      // Recent activity (mock data for now - can be enhanced with activity logs)
+      const recentActivity = [
+        {
+          id: "1",
+          type: "user_login" as const,
+          description: "Admin logged in successfully",
+          timestamp: new Date().toISOString(),
+          severity: "info" as const,
+        },
+      ];
+
+      return res.json({
+        totalUsers: usersCount?.count || 0,
+        activeTenants: tenantsCount?.count || 0,
+        enabledModules: modulesCount?.count || 0,
+        configuredIntegrations: appsCount?.count || 0,
+        systemHealth: {
+          status: responseTime < 1000 ? "healthy" : responseTime < 3000 ? "warning" : "error",
+          uptime: uptimeString,
+          responseTime,
+        },
+        recentActivity,
+      });
+    } catch (error) {
+      console.error("Dashboard stats error:", error);
+      return res.status(500).json({
+        error: "Failed to fetch dashboard statistics",
+      });
+    }
+  });
+
+  // GET /api/auth/admin/user - Get current admin user info
+  app.get("/api/auth/admin/user", requireAdminAuth, (req: Request, res: Response) => {
+    const adminPrincipal = (req.session as any)?.adminPrincipal;
+    return res.json(adminPrincipal);
   });
 }
