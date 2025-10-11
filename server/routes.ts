@@ -1253,20 +1253,28 @@ export async function registerRoutes(app: Express): Promise<void> {
         if (superAdminUser.length > 0) {
           const user = superAdminUser[0];
           
-          // Set unified session structure for admin users
-          (req.session as any).user = {
-            type: 'whatsapp' as const,
+          // Use Passport's login mechanism for proper session management
+          const passportUser = {
             id: user.id,
-            tenantId: user.tenantId || null,
+            name: user.name || 'Super Admin',
+            email: user.email || undefined,
+            profileImageUrl: user.profileImageUrl || undefined,
             role: 'super_admin',
+            authMethods: user.authMethods as string[],
+            socialProviders: user.socialProviders as string[],
             isSuperAdmin: true
           };
           
-          // Explicitly save session to ensure it persists
+          // Use Passport login to properly serialize user in session
           await new Promise<void>((resolve, reject) => {
-            req.session.save((err) => {
-              if (err) reject(err);
-              else resolve();
+            (req as any).login(passportUser, (err: any) => {
+              if (err) {
+                console.error('Passport login error:', err);
+                reject(err);
+              } else {
+                console.log('Passport login successful for user:', passportUser.id);
+                resolve();
+              }
             });
           });
           
@@ -1364,15 +1372,16 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Check admin authentication status
   app.get('/api/auth/admin/status', async (req, res) => {
     try {
-      const sessionUser = (req.session as any)?.user;
+      const user = req.user;
       
-      if (sessionUser && sessionUser.isSuperAdmin) {
+      if (user && user.isSuperAdmin) {
         return res.json({
           authenticated: true,
           user: {
-            id: sessionUser.id,
-            role: sessionUser.role || 'super_admin',
-            isSuperAdmin: sessionUser.isSuperAdmin
+            id: user.id,
+            name: user.name,
+            role: user.role || 'super_admin',
+            isSuperAdmin: user.isSuperAdmin
           }
         });
       }
@@ -1386,9 +1395,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Get current admin user info
   app.get('/api/auth/admin/user', async (req, res) => {
     try {
-      const sessionUser = (req.session as any)?.user;
+      const user = req.user;
       
-      if (!sessionUser || !sessionUser.isSuperAdmin) {
+      if (!user || !user.isSuperAdmin) {
         return res.status(401).json({ error: 'Not authenticated' });
       }
       
@@ -1396,7 +1405,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const adminUser = await db
         .select()
         .from(whatsappUsers)
-        .where(eq(whatsappUsers.id, sessionUser.id))
+        .where(eq(whatsappUsers.id, user.id))
         .limit(1);
 
       if (adminUser.length > 0) {

@@ -23,6 +23,7 @@ declare global {
       role: string;
       authMethods: string[];
       socialProviders: string[];
+      isSuperAdmin?: boolean;
     }
   }
 }
@@ -323,6 +324,7 @@ export function setupWytPassAuth(app: Express) {
           role: user.role,
           authMethods: user.authMethods as string[],
           socialProviders: user.socialProviders as string[],
+          isSuperAdmin: user.isSuperAdmin || false,
         });
       } else {
         cb(null, false);
