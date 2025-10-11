@@ -3,10 +3,9 @@ import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Briefcase, Home, Package, Wrench, Grid, MapPin, DollarSign, ChevronDown } from "lucide-react";
+import { Briefcase, Home, Package, Wrench, Grid, MapPin, ChevronDown } from "lucide-react";
 
 interface FiltersPanelProps {
   selectedCategory: string;
@@ -26,8 +25,6 @@ const CATEGORIES = [
 export default function FiltersPanel({ selectedCategory, onCategoryChange, categoryCounts = {} }: FiltersPanelProps) {
   const [categoriesOpen, setCategoriesOpen] = useState(true);
   const [locationOpen, setLocationOpen] = useState(false);
-  const [priceOpen, setPriceOpen] = useState(false);
-  const [priceRange, setPriceRange] = useState([0, 100000]);
   const [location, setLocation] = useState("");
 
   return (
@@ -111,36 +108,6 @@ export default function FiltersPanel({ selectedCategory, onCategoryChange, categ
           </CollapsibleContent>
         </Collapsible>
 
-        <Separator className="dark:bg-gray-700" />
-
-        {/* Price Range Filter - Collapsible */}
-        <Collapsible open={priceOpen} onOpenChange={setPriceOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full group">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-              <DollarSign className="h-4 w-4 mr-2" />
-              Price Range
-            </h3>
-            <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${priceOpen ? 'rotate-180' : ''}`} />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-3 space-y-3">
-            <Slider
-              value={priceRange}
-              onValueChange={setPriceRange}
-              max={100000}
-              step={1000}
-              className="w-full"
-              data-testid="slider-price-range"
-            />
-            <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-              <span className="font-medium">₹{priceRange[0].toLocaleString()}</span>
-              <span className="text-gray-400">-</span>
-              <span className="font-medium">₹{priceRange[1].toLocaleString()}</span>
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Filter by budget (Coming soon)
-            </p>
-          </CollapsibleContent>
-        </Collapsible>
 
       </CardContent>
     </>
