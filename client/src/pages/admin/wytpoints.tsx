@@ -18,7 +18,7 @@ import { z } from "zod";
 import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Coins, TrendingUp, Users, Activity, Plus, Minus, RefreshCw } from "lucide-react";
+import { Coins, TrendingUp, Users, Activity, Plus, Minus, RefreshCw, Settings2 } from "lucide-react";
 
 // Form schema for manual balance adjustment
 const adjustBalanceSchema = z.object({
@@ -27,13 +27,23 @@ const adjustBalanceSchema = z.object({
   reason: z.string().min(5, "Reason must be at least 5 characters"),
 });
 
+// Form schema for points configuration
+const configSchema = z.object({
+  points: z.number().int("Points must be an integer"),
+  description: z.string().optional(),
+  isActive: z.boolean(),
+});
+
 type AdjustBalanceForm = z.infer<typeof adjustBalanceSchema>;
+type ConfigForm = z.infer<typeof configSchema>;
 
 export default function AdminWytPoints() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [activeTab, setActiveTab] = useState("statistics");
+  const [editConfigDialogOpen, setEditConfigDialogOpen] = useState(false);
+  const [selectedConfig, setSelectedConfig] = useState<any>(null);
   
   const { user } = useWhatsAppAuth();
   const { toast } = useToast();
@@ -53,6 +63,12 @@ export default function AdminWytPoints() {
   const { data: userWalletData, isLoading: userWalletLoading } = useQuery({
     queryKey: ['/api/admin/points/wallet', selectedUserId],
     enabled: !!selectedUserId && activeTab === "user-details",
+  });
+
+  // Fetch points configuration
+  const { data: pointsConfigData, isLoading: configLoading } = useQuery({
+    queryKey: ['/api/admin/points/config'],
+    enabled: activeTab === "configuration",
   });
 
   // Adjust balance mutation
@@ -80,6 +96,29 @@ export default function AdminWytPoints() {
     },
   });
 
+  // Update points configuration mutation
+  const updateConfigMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: ConfigForm }) => {
+      return apiRequest('PUT', `/api/admin/points/config/${id}`, data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Configuration updated",
+        description: "Points configuration has been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/points/config'] });
+      setEditConfigDialogOpen(false);
+      configForm.reset();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to update configuration",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Form
   const form = useForm<AdjustBalanceForm>({
     resolver: zodResolver(adjustBalanceSchema),
@@ -87,6 +126,16 @@ export default function AdminWytPoints() {
       userId: "",
       amount: 0,
       reason: "",
+    },
+  });
+
+  // Config form
+  const configForm = useForm<ConfigForm>({
+    resolver: zodResolver(configSchema),
+    defaultValues: {
+      points: 0,
+      description: "",
+      isActive: true,
     },
   });
 
@@ -99,9 +148,26 @@ export default function AdminWytPoints() {
     setActiveTab("user-details");
   };
 
-  const wallets = walletsData?.success ? walletsData.wallets : [];
-  const stats = statistics?.success ? statistics.data : null;
-  const userWallet = userWalletData?.success ? userWalletData.data : null;
+  const handleEditConfig = (config: any) => {
+    setSelectedConfig(config);
+    configForm.reset({
+      points: config.points,
+      description: config.description || "",
+      isActive: config.isActive,
+    });
+    setEditConfigDialogOpen(true);
+  };
+
+  const handleUpdateConfig = (data: ConfigForm) => {
+    if (selectedConfig) {
+      updateConfigMutation.mutate({ id: selectedConfig.id, data });
+    }
+  };
+
+  const wallets = (walletsData as any)?.success ? (walletsData as any).wallets : [];
+  const stats = (statistics as any)?.success ? (statistics as any).data : null;
+  const userWallet = (userWalletData as any)?.success ? (userWalletData as any).data : null;
+  const configs = (pointsConfigData as any)?.success ? (pointsConfigData as any).configs : [];
 
   return (
     <div className="space-y-6">
@@ -211,6 +277,10 @@ export default function AdminWytPoints() {
                 <TrendingUp className="h-4 w-4 mr-2" />
                 Statistics
               </TabsTrigger>
+              <TabsTrigger value="configuration" data-testid="tab-configuration">
+                <Settings2 className="h-4 w-4 mr-2" />
+                Points Config
+              </TabsTrigger>
               <TabsTrigger value="wallets" data-testid="tab-wallets">
                 <Users className="h-4 w-4 mr-2" />
                 All Wallets
@@ -286,6 +356,169 @@ export default function AdminWytPoints() {
                   </Card>
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="configuration">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Points Configuration</CardTitle>
+                  <CardDescription>Manage point values for all user actions</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {configLoading ? (
+                    <div className="space-y-2">
+                      {[...Array(7)].map((_, i) => (
+                        <div key={i} className="h-16 bg-muted animate-pulse rounded"></div>
+                      ))}
+                    </div>
+                  ) : configs.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">No configurations found</p>
+                  ) : (
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Action</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Description</TableHead>
+                            <TableHead className="text-right">Points</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {configs.map((config: any) => (
+                            <TableRow key={config.id}>
+                              <TableCell className="font-medium" data-testid={`text-action-${config.action}`}>
+                                {config.action.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{config.category}</Badge>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
+                                {config.description || '-'}
+                              </TableCell>
+                              <TableCell className={`text-right font-bold ${config.points > 0 ? 'text-green-600' : config.points < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                                {config.points > 0 ? '+' : ''}{config.points}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={config.isActive ? "default" : "secondary"}>
+                                  {config.isActive ? 'Active' : 'Inactive'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEditConfig(config)}
+                                  data-testid={`button-edit-${config.action}`}
+                                >
+                                  Edit
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Dialog open={editConfigDialogOpen} onOpenChange={setEditConfigDialogOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Edit Points Configuration</DialogTitle>
+                    <DialogDescription>
+                      Update the point value for {selectedConfig?.action?.replace(/_/g, ' ')}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Form {...configForm}>
+                    <form onSubmit={configForm.handleSubmit(handleUpdateConfig)} className="space-y-4">
+                      <FormField
+                        control={configForm.control}
+                        name="points"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Points Value</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="number"
+                                placeholder="e.g. 10 or -5"
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                data-testid="input-config-points"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Positive for earning, negative for spending
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={configForm.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Description</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                placeholder="Optional description"
+                                rows={3}
+                                data-testid="textarea-config-description"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={configForm.control}
+                        name="isActive"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                            <div className="space-y-0.5">
+                              <FormLabel>Active Status</FormLabel>
+                              <FormDescription>
+                                Enable or disable this points action
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <input
+                                type="checkbox"
+                                checked={field.value}
+                                onChange={field.onChange}
+                                className="h-4 w-4"
+                                data-testid="checkbox-config-active"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setEditConfigDialogOpen(false)}
+                          data-testid="button-cancel-config"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={updateConfigMutation.isPending}
+                          data-testid="button-submit-config"
+                        >
+                          {updateConfigMutation.isPending ? "Updating..." : "Update Configuration"}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
             </TabsContent>
 
             <TabsContent value="wallets">

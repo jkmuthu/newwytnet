@@ -69,6 +69,7 @@ import {
   type InsertApiIntegration,
   pointsWallets,
   pointsTransactions,
+  pointsConfig,
   payments,
   orders,
   wytLifeApplications
@@ -5153,6 +5154,76 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.status(500).json({ 
         error: error.message || 'Failed to adjust balance' 
       });
+    }
+  });
+
+  // Points Configuration Routes (Admin)
+  
+  // Get all points configurations
+  app.get('/api/admin/points/config', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const configs = await db.select()
+        .from(pointsConfig)
+        .orderBy(pointsConfig.category, pointsConfig.action);
+      
+      res.json({ success: true, configs });
+    } catch (error) {
+      console.error('Error fetching points config:', error);
+      res.status(500).json({ error: 'Failed to fetch points configuration' });
+    }
+  });
+
+  // Update points configuration
+  app.put('/api/admin/points/config/:id', requireSuperAdmin, async (req: any, res) => {
+    try {
+      const principal = await getAdminPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { id } = req.params;
+      const { points, description, isActive } = req.body;
+
+      const [updated] = await db.update(pointsConfig)
+        .set({ 
+          points, 
+          description, 
+          isActive,
+          updatedBy: principal.id,
+          updatedAt: new Date()
+        })
+        .where(eq(pointsConfig.id, id))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ error: 'Configuration not found' });
+      }
+
+      res.json({ success: true, config: updated });
+    } catch (error) {
+      console.error('Error updating points config:', error);
+      res.status(500).json({ error: 'Failed to update configuration' });
+    }
+  });
+
+  // Get points value for a specific action (helper for services)
+  app.get('/api/points/config/:action', async (req: any, res) => {
+    try {
+      const { action } = req.params;
+      
+      const [config] = await db.select()
+        .from(pointsConfig)
+        .where(eq(pointsConfig.action, action))
+        .limit(1);
+
+      if (!config) {
+        return res.status(404).json({ error: 'Configuration not found' });
+      }
+
+      res.json({ success: true, config });
+    } catch (error) {
+      console.error('Error fetching points config:', error);
+      res.status(500).json({ error: 'Failed to fetch configuration' });
     }
   });
 

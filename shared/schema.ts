@@ -1635,6 +1635,19 @@ export const entitlements = pgTable("entitlements", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Points Configuration - Admin-configurable point values for all actions
+export const pointsConfig = pgTable("points_config", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  action: varchar("action", { length: 100 }).notNull().unique(), // 'registration', 'profile_complete', 'post_need', 'post_offer', 'daily_login', etc.
+  points: integer("points").notNull(), // Positive for earn, negative for spend
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  category: varchar("category", { length: 50 }).default('general'), // 'onboarding', 'marketplace', 'engagement', etc.
+  updatedBy: varchar("updated_by").references(() => whatsappUsers.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // WytPoints schema exports
 export const insertPointsWalletSchema = createInsertSchema(pointsWallets);
 export const selectPointsWalletSchema = createSelectSchema(pointsWallets);
@@ -1642,6 +1655,8 @@ export const insertPointsTransactionSchema = createInsertSchema(pointsTransactio
 export const selectPointsTransactionSchema = createSelectSchema(pointsTransactions);
 export const insertEntitlementSchema = createInsertSchema(entitlements);
 export const selectEntitlementSchema = createSelectSchema(entitlements);
+export const insertPointsConfigSchema = createInsertSchema(pointsConfig);
+export const selectPointsConfigSchema = createSelectSchema(pointsConfig);
 
 // WytPoints type exports
 export type PointsWallet = typeof pointsWallets.$inferSelect;
@@ -1650,6 +1665,8 @@ export type PointsTransaction = typeof pointsTransactions.$inferSelect;
 export type InsertPointsTransaction = typeof pointsTransactions.$inferInsert;
 export type Entitlement = typeof entitlements.$inferSelect;
 export type InsertEntitlement = typeof entitlements.$inferInsert;
+export type PointsConfig = typeof pointsConfig.$inferSelect;
+export type InsertPointsConfig = typeof pointsConfig.$inferInsert;
 
 // ========================================
 // WYTWALL MARKETPLACE SYSTEM
