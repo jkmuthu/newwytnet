@@ -20,10 +20,9 @@ import AdminRouter from "@/portals/admin/AdminRouter";
 function PortalRouter() {
   return (
     <Switch>
-      {/* Admin Portal - Routes: /admin/login, /admin/* */}
-      <Route path="/admin/:rest*">
-        {(params) => <AdminRouter />}
-      </Route>
+      {/* Admin Portal - Routes: /admin, /admin/* */}
+      <Route path="/admin" component={AdminRouter} />
+      <Route path="/admin/:rest*" component={AdminRouter} />
       
       {/* Panel Portal - Routes: /panel, /panel/me/*, /panel/org/:orgId/* */}
       <Route path="/panel">
