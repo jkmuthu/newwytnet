@@ -31,6 +31,7 @@ import Autoplay from "embla-carousel-autoplay";
 import wytLifeLogo from "@assets/IMG-20250927-WA0258_1759886837095.jpg";
 import founderPhoto from "@assets/IMG-20210523-WA0001_1759887385614.jpg";
 import wytLifeVideo from "@assets/1759896323287_1759896354187.mp4";
+import { openExternalLink, UTMCampaigns } from "@/lib/utm";
 
 function HowItWorksCarousel() {
   const [emblaRef] = useEmblaCarousel({ loop: true }, [
@@ -239,7 +240,10 @@ export default function WytLife() {
             <Button 
               size="lg" 
               className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 sm:px-8 py-3 text-sm sm:text-base shadow-2xl w-full sm:w-auto"
-              onClick={() => window.open('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', '_blank')}
+              onClick={() => openExternalLink('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', {
+                ...UTMCampaigns.WYTLIFE_WHATSAPP,
+                content: 'hero_cta'
+              })}
               data-testid="button-start-journey"
             >
               <MessageCircle className="h-5 w-5 mr-2 fill-white" />
@@ -455,7 +459,10 @@ export default function WytLife() {
                     <Button 
                       size="lg" 
                       className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 sm:px-8 py-4 text-sm sm:text-base shadow-xl w-full sm:w-auto"
-                      onClick={() => window.open('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', '_blank')}
+                      onClick={() => openExternalLink('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', {
+                        ...UTMCampaigns.WYTLIFE_WHATSAPP,
+                        content: 'founder_section'
+                      })}
                       data-testid="button-whatsapp-founder"
                     >
                       <MessageCircle className="h-5 w-5 mr-2 fill-white" />
@@ -487,7 +494,10 @@ export default function WytLife() {
           <Button 
             size="lg" 
             className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 sm:px-10 py-4 sm:py-6 text-base sm:text-lg shadow-xl animate-pulse w-full sm:w-auto"
-            onClick={() => window.open('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', '_blank')}
+            onClick={() => openExternalLink('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', {
+              ...UTMCampaigns.WYTLIFE_WHATSAPP,
+              content: 'invitation_banner'
+            })}
             data-testid="button-join-invitation"
           >
             <MessageCircle className="h-5 w-5 mr-2 fill-white" />
@@ -555,7 +565,10 @@ export default function WytLife() {
           <Button 
             size="lg" 
             className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 sm:px-10 py-4 sm:py-6 text-base sm:text-lg shadow-2xl hover:scale-105 transition-transform w-full sm:w-auto"
-            onClick={() => window.open('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', '_blank')}
+            onClick={() => openExternalLink('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', {
+              ...UTMCampaigns.WYTLIFE_WHATSAPP,
+              content: 'main_cta'
+            })}
             data-testid="button-join-whatsapp-main"
           >
             <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 mr-2 fill-white" />
@@ -580,7 +593,10 @@ export default function WytLife() {
           <Button 
             size="lg" 
             className="bg-white text-indigo-600 hover:bg-indigo-50 px-6 sm:px-8 py-4 sm:py-6 text-base sm:text-lg shadow-2xl mb-6 w-full sm:w-auto"
-            onClick={() => window.open('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', '_blank')}
+            onClick={() => openExternalLink('https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w', {
+              ...UTMCampaigns.WYTLIFE_WHATSAPP,
+              content: 'footer_cta'
+            })}
             data-testid="button-whatsapp-footer"
           >
             <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 mr-2 fill-indigo-600" />

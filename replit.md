@@ -21,13 +21,15 @@ Focus: Fully white-label multi-tenant SaaS platform with identity validation.
 ## UTM Tracking Standard
 
 All external links from WytNet must include UTM parameters for proper traffic attribution:
-- **Source**: `wytnet.com` (mandatory for all external links)
-- **Medium**: Context-specific (e.g., `ai_directory`, `qr_generator`, `referral`)
-- **Campaign**: Purpose-specific (e.g., `ai_tools_referral`, `platform_traffic`)
+- **Source**: `wytnet` (mandatory for all external links)
+- **Medium**: Context-specific (e.g., `ai_directory`, `hub`, `wytlife`, `qr_generator`, `referral`)
+- **Campaign**: Purpose-specific (e.g., `ai_tools_referral`, `hub_referral`, `whatsapp_community`, `platform_traffic`)
 - **Content**: Tool/feature name when applicable
 - **Term**: Category or specific context when relevant
 
 Use the `openExternalLink()` function from `/client/src/lib/utm.ts` for all external links instead of direct `window.open()` calls.
+
+**Implementation**: All external links in AI Directory, WytHubs, WytLife, and other pages use UTM tracking with source=wytnet.
 
 # Production Domain Setup
 

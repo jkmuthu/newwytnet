@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
+import { openExternalLink, UTMCampaigns } from "@/lib/utm";
 
 interface MarketplaceHub {
   id: string;
@@ -119,12 +120,6 @@ export default function HubDetail() {
 
   // Get unique categories
   const categories = Array.from(new Set(hubItems?.map(item => item.category).filter(Boolean) || [])) || [];
-
-  const openExternalLink = (url: string, title: string) => {
-    if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -306,7 +301,11 @@ export default function HubDetail() {
                   {item.url ? (
                     <Button 
                       className="w-full" 
-                      onClick={() => openExternalLink(item.url!, item.title)}
+                      onClick={() => openExternalLink(item.url!, {
+                        ...UTMCampaigns.HUB_REFERRAL,
+                        content: item.title,
+                        term: item.category || hub.category
+                      })}
                       data-testid={`button-open-${item.id}`}
                     >
                       <ExternalLink className="h-4 w-4 mr-2" />

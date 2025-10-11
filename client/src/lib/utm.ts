@@ -15,7 +15,7 @@ export interface UTMParams {
 
 /**
  * Add UTM parameters to a URL
- * Default source is 'wytnet.com' for all external traffic attribution
+ * Default source is 'wytnet' for all external traffic attribution
  */
 export function addUTMParams(url: string, customParams: UTMParams = {}): string {
   try {
@@ -23,7 +23,7 @@ export function addUTMParams(url: string, customParams: UTMParams = {}): string 
     
     // Default UTM parameters for WytNet
     const defaultParams: UTMParams = {
-      source: 'wytnet.com',
+      source: 'wytnet',
       medium: 'referral',
       campaign: 'platform_traffic',
       ...customParams
@@ -58,22 +58,32 @@ export function openExternalLink(url: string, customParams: UTMParams = {}): voi
  */
 export const UTMCampaigns = {
   AI_DIRECTORY: {
-    source: 'wytnet.com',
+    source: 'wytnet',
     medium: 'ai_directory',
     campaign: 'ai_tools_referral'
   },
   QR_GENERATOR: {
-    source: 'wytnet.com', 
+    source: 'wytnet', 
     medium: 'qr_generator',
     campaign: 'tool_referral'
   },
   ASSESSMENT_TOOLS: {
-    source: 'wytnet.com',
+    source: 'wytnet',
     medium: 'assessment',
     campaign: 'personality_tools'
   },
+  HUB_REFERRAL: {
+    source: 'wytnet',
+    medium: 'hub',
+    campaign: 'hub_referral'
+  },
+  WYTLIFE_WHATSAPP: {
+    source: 'wytnet',
+    medium: 'wytlife',
+    campaign: 'whatsapp_community'
+  },
   GENERAL_REFERRAL: {
-    source: 'wytnet.com',
+    source: 'wytnet',
     medium: 'referral',
     campaign: 'platform_traffic'
   }
