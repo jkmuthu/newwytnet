@@ -5580,6 +5580,56 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // List public offers (unauthenticated - for WytWall feed)
+  app.get('/api/offers/public', async (req: any, res) => {
+    try {
+      const category = req.query.category as string;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const offers = await offersService.listPublicOffers({ category, limit, offset });
+      const counts = await offersService.getOffersCounts({ isPublic: true });
+
+      res.json({ success: true, offers, counts });
+    } catch (error: any) {
+      console.error('Error fetching public offers:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch offers' });
+    }
+  });
+
+  // List authenticated user offers (for WytWall feed)
+  app.get('/api/offers', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const category = req.query.category as string;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const offers = await offersService.listAuthenticatedOffers({
+        userId: principal.id,
+        category,
+        circles: [],
+        limit,
+        offset,
+      });
+
+      const counts = await offersService.getOffersCounts({
+        isPublic: false,
+        userId: principal.id,
+        circles: [],
+      });
+
+      res.json({ success: true, offers, counts });
+    } catch (error: any) {
+      console.error('Error fetching offers:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch offers' });
+    }
+  });
+
   // WytStar Routes
 
   // Get user's WytStar level

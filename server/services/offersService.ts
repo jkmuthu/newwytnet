@@ -215,6 +215,147 @@ export class OffersService {
 
     return stats;
   }
+
+  /**
+   * List public offers for WytWall feed (unauthenticated)
+   */
+  async listPublicOffers(params: {
+    category?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<any[]> {
+    const { category, limit = 20, offset = 0 } = params;
+
+    let query = db.select({
+      offer: offers,
+      user: sql`json_build_object(
+        'id', u.id,
+        'name', u.name,
+        'email', u.email,
+        'profileImageUrl', u.profile_image_url
+      )`.as('user')
+    })
+      .from(offers)
+      .leftJoin(sql`users u`, sql`u.id = ${offers.userId}`)
+      .where(
+        and(
+          eq(offers.isPublic, true),
+          eq(offers.status, 'active')
+        )
+      )
+      .orderBy(desc(offers.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    if (category && category !== 'all') {
+      query = db.select({
+        offer: offers,
+        user: sql`json_build_object(
+          'id', u.id,
+          'name', u.name,
+          'email', u.email,
+          'profileImageUrl', u.profile_image_url
+        )`.as('user')
+      })
+        .from(offers)
+        .leftJoin(sql`users u`, sql`u.id = ${offers.userId}`)
+        .where(
+          and(
+            eq(offers.isPublic, true),
+            eq(offers.status, 'active'),
+            eq(offers.category, category)
+          )
+        )
+        .orderBy(desc(offers.createdAt))
+        .limit(limit)
+        .offset(offset);
+    }
+
+    const results = await query;
+    return results.map((row: any) => ({ ...row.offer, user: row.user }));
+  }
+
+  /**
+   * List authenticated offers for WytWall feed
+   */
+  async listAuthenticatedOffers(params: {
+    userId: string;
+    category?: string;
+    circles?: string[];
+    limit?: number;
+    offset?: number;
+  }): Promise<any[]> {
+    const { userId, category, circles = [], limit = 20, offset = 0 } = params;
+
+    const conditions = [eq(offers.status, 'active')];
+
+    // For now, show public offers (circles implementation TBD)
+    conditions.push(eq(offers.isPublic, true));
+
+    if (category && category !== 'all') {
+      conditions.push(eq(offers.category, category));
+    }
+
+    const results = await db.select({
+      offer: offers,
+      user: sql`json_build_object(
+        'id', u.id,
+        'name', u.name,
+        'email', u.email,
+        'profileImageUrl', u.profile_image_url
+      )`.as('user')
+    })
+      .from(offers)
+      .leftJoin(sql`users u`, sql`u.id = ${offers.userId}`)
+      .where(and(...conditions))
+      .orderBy(desc(offers.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return results.map((row: any) => ({ ...row.offer, user: row.user }));
+  }
+
+  /**
+   * Get category counts for offers
+   */
+  async getOffersCounts(params: {
+    isPublic?: boolean;
+    userId?: string;
+    circles?: string[];
+  } = {}): Promise<Record<string, number>> {
+    const { isPublic = true, userId, circles = [] } = params;
+
+    const conditions = [eq(offers.status, 'active')];
+
+    if (isPublic) {
+      conditions.push(eq(offers.isPublic, true));
+    }
+
+    const result = await db
+      .select({
+        category: offers.category,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(offers)
+      .where(and(...conditions))
+      .groupBy(offers.category);
+
+    const counts: Record<string, number> = {
+      all: 0,
+      jobs: 0,
+      real_estate: 0,
+      b2b_supply: 0,
+      service: 0,
+      other: 0,
+    };
+
+    result.forEach(row => {
+      counts.all += row.count;
+      counts[row.category] = row.count;
+    });
+
+    return counts;
+  }
 }
 
 export const offersService = new OffersService();

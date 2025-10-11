@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { Plus, Filter, Search, Sparkles, TrendingUp, Zap } from "lucide-react";
+import { Plus, Filter, Search, Sparkles, TrendingUp, Zap, Package } from "lucide-react";
 import WytWallLayout from "@/components/wytwall/WytWallLayout";
 import FiltersPanel from "@/components/wytwall/FiltersPanel";
 import NeedCard from "@/components/wytwall/NeedCard";
+import OfferCard from "@/components/wytwall/OfferCard";
 import PromotionsPanel from "@/components/wytwall/PromotionsPanel";
 
 export default function WytWall() {
@@ -17,21 +18,56 @@ export default function WytWall() {
   const [, navigate] = useLocation();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [postType, setPostType] = useState<"all" | "needs" | "offers">("all");
 
-  const { data: needsData, isLoading } = useQuery({
-    queryKey: user ? ['/api/needs', selectedCategory] : ['/api/needs/public', selectedCategory],
-    enabled: true,
+  // Build query params conditionally to avoid undefined values
+  const needsQueryParams = selectedCategory !== 'all' ? { category: selectedCategory } : {};
+  const offersQueryParams = selectedCategory !== 'all' ? { category: selectedCategory } : {};
+
+  const { data: needsData, isLoading: needsLoading } = useQuery({
+    queryKey: user 
+      ? ['/api/needs', needsQueryParams]
+      : ['/api/needs/public', needsQueryParams],
+    enabled: postType === "all" || postType === "needs",
+  });
+
+  const { data: offersData, isLoading: offersLoading } = useQuery({
+    queryKey: user 
+      ? ['/api/offers', offersQueryParams]
+      : ['/api/offers/public', offersQueryParams],
+    enabled: postType === "all" || postType === "offers",
   });
 
   const allNeeds = (needsData as any)?.needs || [];
-  const counts = (needsData as any)?.counts || {};
+  const allOffers = (offersData as any)?.offers || [];
   
-  const needs = searchQuery.trim()
-    ? allNeeds.filter((need: any) =>
-        need.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        need.description.toLowerCase().includes(searchQuery.toLowerCase())
+  // Merge counts from both needs and offers
+  const needsCounts = (needsData as any)?.counts || {};
+  const offersCounts = (offersData as any)?.counts || {};
+  const counts: Record<string, number> = {};
+  
+  // Combine counts for each category
+  const allCategories = new Set([...Object.keys(needsCounts), ...Object.keys(offersCounts)]);
+  allCategories.forEach(cat => {
+    counts[cat] = (needsCounts[cat] || 0) + (offersCounts[cat] || 0);
+  });
+  
+  // Combine and sort by date
+  const allPosts = [...allNeeds.map((n: any) => ({ ...n, type: 'need' })), ...allOffers.map((o: any) => ({ ...o, type: 'offer' }))].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  const filteredPosts = searchQuery.trim()
+    ? allPosts.filter((post: any) =>
+        post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        post.description.toLowerCase().includes(searchQuery.toLowerCase())
       )
-    : allNeeds;
+    : allPosts;
+
+  const posts = postType === "all" ? filteredPosts :
+    filteredPosts.filter((p: any) => p.type === (postType === "needs" ? "need" : "offer"));
+
+  const isLoading = needsLoading || offersLoading;
 
   const handleMakeOffer = (needId: string) => {
     console.log('Make offer on need:', needId);
@@ -130,6 +166,33 @@ export default function WytWall() {
         </CardContent>
       </Card>
 
+      {/* Post Type Filter Pills */}
+      <div className="flex gap-3 justify-center">
+        {[
+          { value: 'all', label: 'All Posts', icon: Zap },
+          { value: 'needs', label: 'Needs', icon: Search },
+          { value: 'offers', label: 'Offers', icon: Package }
+        ].map((type) => {
+          const Icon = type.icon;
+          return (
+            <Button
+              key={type.value}
+              variant={postType === type.value ? "default" : "outline"}
+              onClick={() => setPostType(type.value as any)}
+              className={`font-bold transition-all ${
+                postType === type.value
+                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-xl border-0 scale-105"
+                  : "bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border-0 text-gray-700 dark:text-gray-300 hover:scale-105"
+              }`}
+              data-testid={`filter-${type.value}`}
+            >
+              <Icon className="h-4 w-4 mr-2" />
+              {type.label}
+            </Button>
+          );
+        })}
+      </div>
+
       {/* Category Pills for Mobile */}
       <div className="lg:hidden flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
         {['all', 'jobs', 'real_estate', 'b2b_supply', 'service'].map((cat) => (
@@ -159,7 +222,7 @@ export default function WytWall() {
             </Card>
           ))}
         </div>
-      ) : needs.length === 0 ? (
+      ) : posts.length === 0 ? (
         <Card className="relative overflow-hidden border-0 shadow-2xl rounded-3xl">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-950/20 dark:to-pink-950/20"></div>
           <CardContent className="relative p-16 text-center">
@@ -169,12 +232,12 @@ export default function WytWall() {
               </div>
             </div>
             <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-4">
-              No needs found
+              No posts found
             </h3>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-lg mx-auto mb-8">
               {selectedCategory === 'all' 
-                ? "Be the first to post a need in the marketplace and connect with solution providers!" 
-                : `No needs in the ${selectedCategory.replace('_', ' ')} category yet. Be the pioneer!`}
+                ? "Be the first to post in the marketplace and connect with the community!" 
+                : `No posts in the ${selectedCategory.replace('_', ' ')} category yet. Be the pioneer!`}
             </p>
             {user && (
               <Button
@@ -183,27 +246,37 @@ export default function WytWall() {
                 data-testid="button-post-first-need"
               >
                 <Plus className="h-6 w-6 mr-3" />
-                Post Your First Need
+                Post to Marketplace
               </Button>
             )}
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
-          {needs.map((need: any) => (
-            <NeedCard
-              key={need.id}
-              need={need}
-              isAuthenticated={!!user}
-              onMakeOffer={handleMakeOffer}
-              onLogin={handleLogin}
-            />
+          {posts.map((post: any) => (
+            post.type === 'need' ? (
+              <NeedCard
+                key={post.id}
+                need={post}
+                isAuthenticated={!!user}
+                onMakeOffer={handleMakeOffer}
+                onLogin={handleLogin}
+              />
+            ) : (
+              <OfferCard
+                key={post.id}
+                offer={post}
+                isAuthenticated={!!user}
+                onViewOffer={(offerId) => console.log('View offer:', offerId)}
+                onLogin={handleLogin}
+              />
+            )
           ))}
         </div>
       )}
 
       {/* Load More with Modern Design */}
-      {needs.length > 0 && (
+      {posts.length > 0 && (
         <div className="flex justify-center pt-4">
           <Button
             variant="outline"
