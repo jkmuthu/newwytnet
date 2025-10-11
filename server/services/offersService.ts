@@ -1,58 +1,58 @@
 import { db } from '../db';
 import { 
   offers, 
-  needs,
+  pointsConfig,
   type Offer,
   type InsertOffer 
 } from '../../shared/schema';
 import { eq, desc, and, sql } from 'drizzle-orm';
-import { needsService } from './needsService';
 import { pointsService } from './pointsService';
 
 export class OffersService {
   /**
-   * Create a new offer on a need
+   * Create a standalone offer (user posts what they can offer)
+   * Deducts WytPoints from user
    */
-  async createOffer(data: InsertOffer, userId: string): Promise<Offer> {
-    // Verify user can make offer
-    const canOffer = await needsService.canMakeOffer(data.needId, userId);
-    
-    if (!canOffer.canOffer) {
-      throw new Error(canOffer.reason || 'Cannot make offer on this need');
-    }
+  async createOffer(data: Omit<InsertOffer, 'id' | 'createdAt' | 'updatedAt' | 'pointsSpent'>, userId: string, tenantId?: string): Promise<{ offer: Offer; pointsSpent: number }> {
+    // Get points configuration for posting offers
+    const [config] = await db.select()
+      .from(pointsConfig)
+      .where(and(
+        eq(pointsConfig.action, 'post_offer'),
+        eq(pointsConfig.isActive, true)
+      ));
 
-    // Check and deduct points if needed
-    let pointsSpent = 0;
-    if (canOffer.pointsCost && canOffer.pointsCost > 0) {
+    const pointsCost = config?.points || 0;
+
+    // Check if user has enough points
+    if (pointsCost > 0) {
       const balance = await pointsService.getBalance(userId);
-      if (balance < canOffer.pointsCost) {
-        throw new Error(`Insufficient points. Required: ${canOffer.pointsCost}, Available: ${balance}`);
+      if (balance < pointsCost) {
+        throw new Error(`Insufficient points. Required: ${pointsCost}, Available: ${balance}`);
       }
 
       // Deduct points
       await pointsService.debitPoints({
         userId,
-        amount: canOffer.pointsCost,
-        type: 'offer_creation',
-        description: `Points spent to make offer on need`,
-        metadata: { needId: data.needId },
+        amount: pointsCost,
+        type: 'post_offer',
+        description: `Posted offer: ${data.title}`,
+        metadata: { offerTitle: data.title },
       });
-
-      pointsSpent = canOffer.pointsCost;
     }
 
     // Create the offer
     const [offer] = await db.insert(offers).values({
       ...data,
       userId,
-      status: 'pending',
-      pointsSpent,
+      tenantId: tenantId || null,
+      pointsSpent: pointsCost,
       createdAt: new Date(),
       updatedAt: new Date(),
     }).returning();
 
-    console.log(`[OffersService] Created offer ${offer.id} on need ${offer.needId} by user ${userId}`);
-    return offer;
+    console.log(`[OffersService] Created standalone offer ${offer.id} by user ${userId}, points spent: ${pointsCost}`);
+    return { offer, pointsSpent: pointsCost };
   }
 
   /**
@@ -68,19 +68,24 @@ export class OffersService {
   }
 
   /**
-   * Get offers for a specific need
+   * Get all public offers
    */
-  async getOffersByNeed(needId: string, params: {
+  async getPublicOffers(params: {
+    category?: string;
     status?: string;
     limit?: number;
     offset?: number;
   } = {}): Promise<Offer[]> {
-    const { status, limit = 20, offset = 0 } = params;
+    const { category, status, limit = 20, offset = 0 } = params;
 
-    const conditions = [eq(offers.needId, needId)];
+    const conditions = [eq(offers.isPublic, true)];
+
+    if (category) {
+      conditions.push(sql`${offers.category} = ${category}`);
+    }
 
     if (status) {
-      conditions.push(eq(offers.status, status));
+      conditions.push(sql`${offers.status} = ${status}`);
     }
 
     return await db.select()
@@ -92,7 +97,7 @@ export class OffersService {
   }
 
   /**
-   * Get offers made by a user
+   * Get offers posted by a user
    */
   async getUserOffers(userId: string, params: {
     status?: string;
@@ -104,7 +109,7 @@ export class OffersService {
     const conditions = [eq(offers.userId, userId)];
 
     if (status) {
-      conditions.push(eq(offers.status, status));
+      conditions.push(sql`${offers.status} = ${status}`);
     }
 
     return await db.select()
@@ -116,68 +121,37 @@ export class OffersService {
   }
 
   /**
-   * Get offers received on user's needs
+   * Update an offer (owner only)
    */
-  async getReceivedOffers(userId: string, params: {
-    status?: string;
-    limit?: number;
-    offset?: number;
-  } = {}): Promise<Array<Offer & { need: any }>> {
-    const { status, limit = 20, offset = 0 } = params;
-
-    const conditions = [eq(needs.userId, userId)];
-
-    if (status) {
-      conditions.push(eq(offers.status, status));
-    }
-
-    const result = await db.select({
-      offer: offers,
-      need: needs,
-    })
-      .from(offers)
-      .innerJoin(needs, eq(offers.needId, needs.id))
-      .where(and(...conditions))
-      .orderBy(desc(offers.createdAt))
-      .limit(limit)
-      .offset(offset);
-
-    return result.map(row => ({ ...row.offer, need: row.need }));
-  }
-
-  /**
-   * Update offer status (need owner only for accept/reject)
-   */
-  async updateOfferStatus(
+  async updateOffer(
     offerId: string, 
-    status: 'pending' | 'accepted' | 'rejected',
-    needOwnerId: string
+    userId: string,
+    data: Partial<Omit<InsertOffer, 'id' | 'userId' | 'tenantId' | 'createdAt' | 'updatedAt' | 'pointsSpent'>>
   ): Promise<Offer> {
     const offer = await this.getOfferById(offerId);
     if (!offer) {
       throw new Error('Offer not found');
     }
 
-    // Verify the user owns the need
-    const need = await needsService.getNeedById(offer.needId);
-    if (!need || need.userId !== needOwnerId) {
+    if (offer.userId !== userId) {
       throw new Error('Not authorized to update this offer');
     }
 
     const [updated] = await db.update(offers)
       .set({
-        status,
+        ...data,
         updatedAt: new Date(),
       })
       .where(eq(offers.id, offerId))
       .returning();
 
-    console.log(`[OffersService] Updated offer ${offerId} status to ${status}`);
+    console.log(`[OffersService] Updated offer ${offerId}`);
     return updated;
   }
 
   /**
-   * Delete an offer (offer owner only, only if pending)
+   * Delete an offer (owner only)
+   * Refunds points if any were spent
    */
   async deleteOffer(offerId: string, userId: string): Promise<void> {
     const offer = await this.getOfferById(offerId);
@@ -189,10 +163,6 @@ export class OffersService {
       throw new Error('Not authorized to delete this offer');
     }
 
-    if (offer.status !== 'pending') {
-      throw new Error('Can only delete pending offers');
-    }
-
     // Refund points if any were spent
     const pointsToRefund = offer.pointsSpent || 0;
     if (pointsToRefund > 0) {
@@ -201,7 +171,7 @@ export class OffersService {
         amount: pointsToRefund,
         type: 'offer_deletion_refund',
         description: 'Points refunded from deleted offer',
-        metadata: { offerId: offer.id, needId: offer.needId },
+        metadata: { offerId: offer.id },
       });
     }
 
@@ -212,40 +182,13 @@ export class OffersService {
   }
 
   /**
-   * Get offer counts for a need
-   */
-  async getOfferCount(needId: string): Promise<number> {
-    const result = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(offers)
-      .where(eq(offers.needId, needId));
-
-    return result[0]?.count || 0;
-  }
-
-  /**
-   * Check if user has already made an offer on a need
-   */
-  async hasUserOffered(needId: string, userId: string): Promise<boolean> {
-    const result = await db.select()
-      .from(offers)
-      .where(and(
-        eq(offers.needId, needId),
-        eq(offers.userId, userId)
-      ))
-      .limit(1);
-
-    return result.length > 0;
-  }
-
-  /**
    * Get offer statistics for a user
    */
   async getUserOfferStats(userId: string): Promise<{
     totalOffers: number;
-    pendingOffers: number;
-    acceptedOffers: number;
-    rejectedOffers: number;
+    activeOffers: number;
+    closedOffers: number;
+    fulfilledOffers: number;
   }> {
     const result = await db
       .select({
@@ -258,16 +201,16 @@ export class OffersService {
 
     const stats = {
       totalOffers: 0,
-      pendingOffers: 0,
-      acceptedOffers: 0,
-      rejectedOffers: 0,
+      activeOffers: 0,
+      closedOffers: 0,
+      fulfilledOffers: 0,
     };
 
     result.forEach(row => {
       stats.totalOffers += row.count;
-      if (row.status === 'pending') stats.pendingOffers = row.count;
-      if (row.status === 'accepted') stats.acceptedOffers = row.count;
-      if (row.status === 'rejected') stats.rejectedOffers = row.count;
+      if (row.status === 'active') stats.activeOffers = row.count;
+      if (row.status === 'closed') stats.closedOffers = row.count;
+      if (row.status === 'fulfilled') stats.fulfilledOffers = row.count;
     });
 
     return stats;

@@ -5432,7 +5432,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Create an offer on a need
+  // Create a standalone offer
   app.post('/api/offers', async (req: any, res) => {
     try {
       const principal = await getPrincipal(req);
@@ -5440,7 +5440,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      const offer = await offersService.createOffer(req.body, principal.id);
+      const { offer, pointsSpent } = await offersService.createOffer(req.body, principal.id, principal.tenantId);
 
       // Record WytStar contribution
       await wytstarService.recordContribution({
@@ -5454,7 +5454,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       // Auto-complete profile section if first offer
       await profileCompletionService.autoCompleteSection(principal.id, 'first_offer');
 
-      res.json({ success: true, offer });
+      res.json({ success: true, offer, pointsSpent });
     } catch (error: any) {
       console.error('Error creating offer:', error);
       res.status(400).json({ error: error.message || 'Failed to create offer' });
@@ -5516,6 +5516,24 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.json({ success: true, offer });
     } catch (error: any) {
       console.error('Error updating offer status:', error);
+      res.status(400).json({ error: error.message || 'Failed to update offer' });
+    }
+  });
+
+  // Update an offer
+  app.put('/api/offers/:id', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { id } = req.params;
+      const offer = await offersService.updateOffer(id, principal.id, req.body);
+      
+      res.json({ success: true, offer });
+    } catch (error: any) {
+      console.error('Error updating offer:', error);
       res.status(400).json({ error: error.message || 'Failed to update offer' });
     }
   });

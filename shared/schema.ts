@@ -1714,18 +1714,24 @@ export const needs = pgTable("needs", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Offers - User offers on needs
+// Offers - Standalone marketplace offers posted by users
 export const offers = pgTable("offers", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  needId: uuid("need_id").notNull().references(() => needs.id, { onDelete: 'cascade' }),
   userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
   tenantId: uuid("tenant_id").references(() => tenants.id),
+  title: varchar("title", { length: 255 }).notNull(),
   description: text("description").notNull(),
-  proposedPrice: decimal("proposed_price", { precision: 12, scale: 2 }),
+  category: needCategoryEnum("category").notNull(), // Reuse same categories as needs
+  location: varchar("location", { length: 255 }),
+  price: decimal("price", { precision: 12, scale: 2 }),
   currency: varchar("currency", { length: 3 }).default('INR'),
-  status: varchar("status", { length: 20 }).default('pending'), // pending, accepted, rejected
-  pointsSpent: integer("points_spent").default(0), // Points deducted for offer
+  status: needStatusEnum("status").notNull().default('active'), // Reuse same statuses as needs
+  isPublic: boolean("is_public").default(true),
+  isSponsored: boolean("is_sponsored").default(false),
+  circles: jsonb("circles").default([]),
+  pointsSpent: integer("points_spent").default(0), // Points deducted when posting
   metadata: jsonb("metadata").default({}),
+  expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

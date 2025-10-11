@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PaymentHistory from "@/components/payments/PaymentHistory";
 import MyNeeds from "./pages/my-needs";
+import MyOffers from "./pages/my-offers";
 import { 
   LayoutDashboard, 
   Zap, 
@@ -1172,6 +1173,7 @@ export default function PanelRouter() {
       <Route path="/panel/me/wallet" component={MyPanelWallet} />
       <Route path="/panel/me/account" component={MyPanelAccount} />
       <Route path="/panel/me/my-needs" component={MyNeeds} />
+      <Route path="/panel/me/my-offers" component={MyOffers} />
 
       {/* Organization Panel routes - Team/organization features */}
       <Route path="/panel/org/:orgId">
