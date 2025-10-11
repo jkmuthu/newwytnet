@@ -104,24 +104,15 @@ export default function AdminWytPoints() {
   const userWallet = userWalletData?.success ? userWalletData.data : null;
 
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      <main className="flex-1 overflow-y-auto">
-        <Header 
-          user={user} 
-          onMenuClick={() => setSidebarOpen(true)} 
-        />
-        
-        <div className="p-4 lg:p-6">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-                <Coins className="h-8 w-8 text-yellow-600" />
-                WytPoints Management
-              </h1>
-              <p className="text-muted-foreground">Monitor and manage the WytPoints economy system</p>
-            </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
+            <Coins className="h-8 w-8 text-yellow-600" />
+            WytPoints Management
+          </h1>
+          <p className="text-muted-foreground">Monitor and manage the WytPoints economy system</p>
+        </div>
             <Dialog open={adjustDialogOpen} onOpenChange={setAdjustDialogOpen}>
               <DialogTrigger asChild>
                 <Button data-testid="button-adjust-balance">
@@ -451,9 +442,7 @@ export default function AdminWytPoints() {
                 </div>
               )}
             </TabsContent>
-          </Tabs>
-        </div>
-      </main>
+      </Tabs>
     </div>
   );
 }

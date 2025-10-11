@@ -1,34 +1,16 @@
-import { useState } from "react";
-import Sidebar from "@/components/layout/sidebar";
-import Header from "@/components/layout/header";
 import CMSBuilder from "@/components/builders/cms-builder";
-import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
 
 export default function AdminCMS() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user } = useWhatsAppAuth();
-
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">CMS Builder</h1>
+        <p className="text-muted-foreground">Manage home page content, menus, and promotion cards</p>
+      </div>
       
-      <main className="flex-1 overflow-y-auto">
-        <Header 
-          user={user} 
-          onMenuClick={() => setSidebarOpen(true)} 
-        />
-        
-        <div className="p-4 lg:p-6">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-foreground">CMS Builder</h1>
-            <p className="text-muted-foreground">Manage home page content, menus, and promotion cards</p>
-          </div>
-          
-          <div className="bg-card rounded-lg border border-border">
-            <CMSBuilder />
-          </div>
-        </div>
-      </main>
+      <div className="bg-card rounded-lg border border-border">
+        <CMSBuilder />
+      </div>
     </div>
   );
 }

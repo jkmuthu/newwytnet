@@ -144,19 +144,7 @@ export default function AdminModules() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <Sidebar 
-        open={sidebarOpen} 
-        onOpenChange={setSidebarOpen}
-        collapsed={sidebarCollapsed}
-        onCollapsedChange={setSidebarCollapsed}
-      />
-      
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-        
-        <main className="flex-1 overflow-auto p-6">
-          <div className="max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto">
             {/* Page Header */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -693,9 +681,6 @@ export default function AdminModules() {
                 </Card>
               </div>
             )}
-          </div>
-        </main>
-      </div>
     </div>
   );
 }
