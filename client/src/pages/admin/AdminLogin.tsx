@@ -29,13 +29,13 @@ export default function AdminLogin() {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch('/api/auth/admin/status', {
+      const response = await fetch('/api/admin/session', {
         credentials: 'include' // Important: Send cookies with request
       });
       if (response.ok) {
         const data = await response.json();
         if (data.authenticated) {
-          setLocation('/admin');
+          window.location.href = '/admin';
         }
       }
     } catch (error) {
@@ -54,7 +54,7 @@ export default function AdminLogin() {
     setError('');
 
     try {
-      const response = await fetch('/api/auth/admin/login', {
+      const response = await fetch('/api/admin/session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -63,30 +63,19 @@ export default function AdminLogin() {
         body: JSON.stringify({
           email,
           password,
-          deviceInfo: {
-            userAgent: navigator.userAgent,
-            timestamp: Date.now(),
-            remember: rememberDevice
-          }
         }),
       });
 
       const data = await response.json();
 
-      if (response.ok) {
-        if (data.requiresMFA) {
-          setShowMFA(true);
-          toast({
-            title: "MFA Required",
-            description: "Please enter the verification code sent to your device",
-          });
-        } else {
-          toast({
-            title: "Login Successful",
-            description: `Welcome back, ${data.user.name}!`,
-          });
-          setLocation('/admin');
-        }
+      if (response.ok && data.success) {
+        toast({
+          title: "Login Successful",
+          description: `Welcome back, ${data.admin.name}!`,
+        });
+        
+        // Reload to trigger admin dashboard
+        window.location.href = '/admin';
       } else {
         setError(data.error || 'Invalid credentials');
       }

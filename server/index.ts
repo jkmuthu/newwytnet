@@ -86,7 +86,7 @@ app.use((req, res, next) => {
     console.log('Server starting with limited functionality');
   }
 
-  // Setup WytPass Authentication
+  // Setup WytPass Authentication (for regular users)
   try {
     console.log('Setting up WytPass Auth...');
     const { setupWytPassAuth } = await import('./wytpass-auth');
@@ -95,6 +95,17 @@ app.use((req, res, next) => {
   } catch (error) {
     console.warn('WytPass Auth initialization failed:', error);
     console.log('Continuing without WytPass Auth - Google/Facebook login unavailable');
+  }
+
+  // Setup Admin Authentication (completely separate from user auth)
+  try {
+    console.log('Setting up Admin Auth...');
+    const { setupAdminAuth } = await import('./admin-auth');
+    setupAdminAuth(app);
+    console.log('Admin Auth initialized successfully');
+  } catch (error) {
+    console.warn('Admin Auth initialization failed:', error);
+    console.log('Continuing without Admin Auth - Admin login unavailable');
   }
 
   await registerRoutes(app);

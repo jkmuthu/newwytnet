@@ -44,7 +44,7 @@ const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefin
 // Admin user query function with proper error handling
 const fetchCurrentAdminUser = async (): Promise<AdminUser | null> => {
   try {
-    const response = await fetch('/api/auth/admin/status', {
+    const response = await fetch('/api/admin/session', {
       credentials: 'include',
       headers: {
         'Cache-Control': 'no-cache',
@@ -62,8 +62,8 @@ const fetchCurrentAdminUser = async (): Promise<AdminUser | null> => {
     const data = await response.json();
     
     // Check if the response indicates authenticated admin
-    if (data.authenticated && data.user) {
-      return data.user;
+    if (data.authenticated && data.admin) {
+      return data.admin;
     }
     
     return null;
@@ -95,7 +95,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   // Admin login mutation
   const adminLoginMutation = useMutation({
     mutationFn: async (credentials: AdminLoginCredentials) => {
-      const response = await apiRequest('/api/auth/admin/login', 'POST', credentials);
+      const response = await apiRequest('/api/admin/session', 'POST', credentials);
       return response.json();
     },
     onSuccess: () => {
@@ -107,14 +107,13 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  // Admin MFA verification mutation
+  // Admin MFA verification mutation (not used with new system, kept for compatibility)
   const adminMFAMutation = useMutation({
     mutationFn: async (credentials: AdminMFACredentials) => {
-      const response = await apiRequest('/api/auth/admin/verify-mfa', 'POST', credentials);
-      return response.json();
+      // New admin auth doesn't use MFA yet
+      return { success: false, error: 'MFA not implemented' };
     },
     onSuccess: () => {
-      // Invalidate and refetch admin data after successful MFA verification
       queryClient.invalidateQueries({ queryKey: ['admin-auth'] });
     },
     onError: (error) => {
@@ -125,7 +124,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   // Admin logout mutation
   const adminLogoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('/api/auth/admin/logout', 'POST');
+      const response = await apiRequest('/api/admin/session', 'DELETE');
       return response.json();
     },
     onSuccess: () => {

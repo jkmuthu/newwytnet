@@ -1,8 +1,8 @@
 import { Switch, Route } from "wouter";
 import AdminLayout from "./AdminLayout";
+import AdminGate from "./AdminGate";
 
 // Import existing admin components
-import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminUsers from "@/pages/admin/users";
 import AdminTenants from "@/pages/admin/tenants";
@@ -83,22 +83,16 @@ function AdminSecurity() {
 }
 
 /**
- * AdminRouter handles all admin portal routes for super admins and admins
- * Routes: '/admin/login', '/admin/*'
+ * AdminRouter - Simplified enterprise pattern
+ * Single route /admin shows login form OR admin dashboard based on auth state
  */
 export default function AdminRouter() {
   return (
-    <Switch>
-      {/* Admin Login - standalone route without layout */}
-      <Route path="/admin/login" component={AdminLogin} />
-
-      {/* All other admin routes wrapped in AdminLayout */}
-      <Route path="/admin/:rest*">
-        {(params) => (
-          <AdminLayout>
-            <Switch>
-              {/* Main admin dashboard */}
-              <Route path="/admin" component={AdminDashboard} />
+    <AdminGate>
+      <AdminLayout>
+        <Switch>
+          {/* Main admin dashboard */}
+          <Route path="/admin" component={AdminDashboard} />
 
               {/* Core admin management routes */}
               <Route path="/admin/users" component={AdminUsers} />
@@ -126,23 +120,21 @@ export default function AdminRouter() {
               {/* Legacy analytics route */}
               <Route path="/admin/analytics" component={AdminAnalytics} />
 
-              {/* 404 fallback for admin routes */}
-              <Route>
-                <div className="flex items-center justify-center py-20">
-                  <div className="text-center">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                      Admin Route Not Found
-                    </h1>
-                    <p className="text-gray-600 dark:text-gray-300">
-                      The requested admin route does not exist
-                    </p>
-                  </div>
-                </div>
-              </Route>
-            </Switch>
-          </AdminLayout>
-        )}
-      </Route>
-    </Switch>
+          {/* 404 fallback for admin routes */}
+          <Route>
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                  Admin Route Not Found
+                </h1>
+                <p className="text-gray-600 dark:text-gray-300">
+                  The requested admin route does not exist
+                </p>
+              </div>
+            </div>
+          </Route>
+        </Switch>
+      </AdminLayout>
+    </AdminGate>
   );
 }
