@@ -240,7 +240,8 @@ export class OffersService {
       .where(
         and(
           eq(offers.isPublic, true),
-          eq(offers.status, 'active')
+          eq(offers.status, 'active'),
+          eq(offers.approvalStatus, 'approved')
         )
       )
       .orderBy(desc(offers.createdAt))
@@ -263,6 +264,7 @@ export class OffersService {
           and(
             eq(offers.isPublic, true),
             eq(offers.status, 'active'),
+            eq(offers.approvalStatus, 'approved'),
             eq(offers.category, category)
           )
         )
@@ -287,7 +289,10 @@ export class OffersService {
   }): Promise<any[]> {
     const { userId, category, circles = [], limit = 20, offset = 0 } = params;
 
-    const conditions = [eq(offers.status, 'active')];
+    const conditions = [
+      eq(offers.status, 'active'),
+      eq(offers.approvalStatus, 'approved')
+    ];
 
     // For now, show public offers (circles implementation TBD)
     conditions.push(eq(offers.isPublic, true));
@@ -325,7 +330,10 @@ export class OffersService {
   } = {}): Promise<Record<string, number>> {
     const { isPublic = true, userId, circles = [] } = params;
 
-    const conditions = [eq(offers.status, 'active')];
+    const conditions = [
+      eq(offers.status, 'active'),
+      eq(offers.approvalStatus, 'approved')
+    ];
 
     if (isPublic) {
       conditions.push(eq(offers.isPublic, true));

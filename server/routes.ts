@@ -5682,6 +5682,94 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Admin Approval Workflow Routes
+
+  // Get pending offers for approval
+  app.get('/api/admin/offers/pending', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const result = await db.select({
+        offer: offers,
+        user: sql`json_build_object(
+          'id', u.id,
+          'name', u.name,
+          'email', u.email,
+          'profileImageUrl', u.profile_image_url
+        )`.as('user')
+      })
+        .from(offers)
+        .leftJoin(sql`users u`, sql`u.id = ${offers.userId}`)
+        .where(eq(offers.approvalStatus, 'pending'))
+        .orderBy(desc(offers.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      const pendingOffers = result.map((row: any) => ({ ...row.offer, user: row.user }));
+      res.json({ success: true, offers: pendingOffers });
+    } catch (error: any) {
+      console.error('Error fetching pending offers:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch pending offers' });
+    }
+  });
+
+  // Approve an offer
+  app.post('/api/admin/offers/:id/approve', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const adminId = req.admin.id;
+
+      const [offer] = await db.update(offers)
+        .set({
+          approvalStatus: 'approved',
+          approvedBy: adminId,
+          approvedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(offers.id, id))
+        .returning();
+
+      if (!offer) {
+        return res.status(404).json({ error: 'Offer not found' });
+      }
+
+      res.json({ success: true, offer });
+    } catch (error: any) {
+      console.error('Error approving offer:', error);
+      res.status(400).json({ error: error.message || 'Failed to approve offer' });
+    }
+  });
+
+  // Reject an offer
+  app.post('/api/admin/offers/:id/reject', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const adminId = req.admin.id;
+      const { reason } = req.body;
+
+      const [offer] = await db.update(offers)
+        .set({
+          approvalStatus: 'rejected',
+          approvedBy: adminId,
+          approvedAt: new Date(),
+          rejectionReason: reason || 'No reason provided',
+          updatedAt: new Date(),
+        })
+        .where(eq(offers.id, id))
+        .returning();
+
+      if (!offer) {
+        return res.status(404).json({ error: 'Offer not found' });
+      }
+
+      res.json({ success: true, offer });
+    } catch (error: any) {
+      console.error('Error rejecting offer:', error);
+      res.status(400).json({ error: error.message || 'Failed to reject offer' });
+    }
+  });
+
   // Profile Completion Routes
 
   // Get user's profile completion status

@@ -1692,6 +1692,13 @@ export const needStatusEnum = pgEnum("need_status", [
   "expired"
 ]);
 
+// Approval status enum for admin moderation
+export const approvalStatusEnum = pgEnum("approval_status", [
+  "pending",
+  "approved",
+  "rejected"
+]);
+
 // Needs - Marketplace needs posted by users
 export const needs = pgTable("needs", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1710,6 +1717,10 @@ export const needs = pgTable("needs", {
   pointsCost: integer("points_cost").default(0), // Cost to make an offer
   metadata: jsonb("metadata").default({}),
   expiresAt: timestamp("expires_at"),
+  approvalStatus: approvalStatusEnum("approval_status").notNull().default('pending'),
+  approvedBy: varchar("approved_by").references(() => whatsappUsers.id),
+  approvedAt: timestamp("approved_at"),
+  rejectionReason: text("rejection_reason"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -1732,6 +1743,10 @@ export const offers = pgTable("offers", {
   pointsSpent: integer("points_spent").default(0), // Points deducted when posting
   metadata: jsonb("metadata").default({}),
   expiresAt: timestamp("expires_at"),
+  approvalStatus: approvalStatusEnum("approval_status").notNull().default('pending'),
+  approvedBy: varchar("approved_by").references(() => whatsappUsers.id),
+  approvedAt: timestamp("approved_at"),
+  rejectionReason: text("rejection_reason"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
