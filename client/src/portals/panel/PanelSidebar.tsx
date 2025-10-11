@@ -15,7 +15,9 @@ import {
   Building,
   Users,
   CreditCard,
-  Shield
+  Shield,
+  ShoppingCart,
+  Package
 } from "lucide-react";
 import type { WorkspaceContext } from "./PanelLayout";
 
@@ -68,6 +70,23 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               icon: Calendar, 
               href: "/panel/me/calendar", 
               active: location === "/panel/me/calendar" 
+            },
+          ]
+        },
+        {
+          section: "Marketplace",
+          items: [
+            { 
+              label: "MyNeeds", 
+              icon: ShoppingCart, 
+              href: "/panel/me/my-needs", 
+              active: location === "/panel/me/my-needs" 
+            },
+            { 
+              label: "MyOffers", 
+              icon: Package, 
+              href: "/panel/me/my-offers", 
+              active: location === "/panel/me/my-offers" 
             },
           ]
         },

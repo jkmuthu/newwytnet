@@ -5350,10 +5350,28 @@ export async function registerRoutes(app: Express): Promise<void> {
         entityId: need.id,
       });
 
+      // Award WytPoints for posting need
+      const [config] = await db.select()
+        .from(pointsConfig)
+        .where(and(
+          eq(pointsConfig.action, 'post_need'),
+          eq(pointsConfig.isActive, true)
+        ));
+
+      if (config && config.points > 0) {
+        await pointsService.creditPoints({
+          userId: principal.id,
+          amount: config.points,
+          type: 'post_need',
+          description: `Posted need: ${need.title}`,
+          metadata: { needId: need.id },
+        });
+      }
+
       // Auto-complete profile section if first need
       await profileCompletionService.autoCompleteSection(principal.id, 'first_need');
 
-      res.json({ success: true, need });
+      res.json({ success: true, need, pointsEarned: config?.points || 0 });
     } catch (error: any) {
       console.error('Error creating need:', error);
       res.status(500).json({ error: error.message || 'Failed to create need' });
