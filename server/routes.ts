@@ -4936,6 +4936,30 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Wallet balance alias (for convenience)
+  app.get('/api/wallet/balance', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      if (principal.provider !== 'whatsapp') {
+        return res.status(403).json({ 
+          error: 'WytPoints are only available for WhatsApp-authenticated users',
+          feature: 'wytpoints',
+          requiredProvider: 'whatsapp'
+        });
+      }
+
+      const balance = await pointsService.getBalance(principal.id);
+      res.json({ success: true, balance });
+    } catch (error) {
+      console.error('Error fetching wallet balance:', error);
+      res.status(500).json({ error: 'Failed to fetch balance' });
+    }
+  });
+
   // Get wallet details with transaction history
   app.get('/api/points/wallet', async (req: any, res) => {
     try {
