@@ -323,7 +323,7 @@ export default function Home() {
               <BarChart3 className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-white mb-1">Explore AI Directory from WytHubs</h3>
+              <h3 className="text-lg font-bold text-white mb-1">Explore Ai Directory from WytHubs</h3>
               <p className="text-sm text-white/90">Discover AI tools and resources</p>
             </div>
           </div>
@@ -369,7 +369,7 @@ export default function Home() {
               <Brain className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-white mb-1">Assess your DISC Using WytApp's Assess DISC</h3>
+              <h3 className="text-lg font-bold text-white mb-1">Assess your DISC Using WytApp's "Assess DISC"</h3>
               <p className="text-sm text-white/90">Discover your personality type</p>
             </div>
           </div>
