@@ -63,34 +63,34 @@ export default function WytWall() {
     <div className="space-y-6">
       
       {/* Modern Header with Glassmorphism */}
-      <Card className="relative overflow-hidden border-0 shadow-2xl rounded-3xl">
+      <Card className="relative overflow-hidden border-0 shadow-2xl rounded-2xl">
         {/* Animated gradient background */}
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 animate-gradient" style={{ backgroundSize: '200% 200%' }}></div>
         
         {/* Floating orbs */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
         
-        <CardContent className="relative p-6 sm:p-8">
+        <CardContent className="relative p-4 sm:p-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="h-14 w-14 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center">
-                <Sparkles className="h-7 w-7 text-white animate-pulse" />
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-white animate-pulse" />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
                   WytWall
-                  <TrendingUp className="h-6 w-6 animate-bounce" />
+                  <TrendingUp className="h-5 w-5 animate-bounce" />
                 </h1>
-                <p className="text-white/90 text-sm font-medium">Offers Stream Marketplace</p>
+                <p className="text-white/90 text-xs font-medium">Offers Stream Marketplace</p>
               </div>
             </div>
             <Button
               onClick={handlePostNeed}
-              className="bg-white/90 hover:bg-white text-purple-600 font-bold shadow-xl hover:scale-105 transition-all rounded-xl backdrop-blur-xl"
+              className="bg-white/90 hover:bg-white text-purple-600 font-bold shadow-xl hover:scale-105 transition-all rounded-xl backdrop-blur-xl h-9 text-sm"
               data-testid="button-post-need"
             >
-              <Plus className="h-5 w-5 mr-2" />
+              <Plus className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Post Need</span>
               <span className="sm:hidden">Post</span>
             </Button>
