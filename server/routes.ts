@@ -5612,6 +5612,83 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Profile Wizard Routes
+  
+  // Update basic profile info
+  app.post('/api/profile/basic-info', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { name, email, gender, dateOfBirth } = req.body;
+
+      await db.update(whatsappUsers)
+        .set({
+          name: name || undefined,
+          email: email || undefined,
+          gender: gender || undefined,
+          dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+          updatedAt: new Date(),
+        })
+        .where(eq(whatsappUsers.id, principal.id));
+
+      res.json({ success: true, message: 'Profile updated successfully' });
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      res.status(500).json({ error: error.message || 'Failed to update profile' });
+    }
+  });
+
+  // Complete profile wizard and award points
+  app.post('/api/profile/complete-wizard', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { socialLinks } = req.body;
+
+      // Update profile as complete
+      await db.update(whatsappUsers)
+        .set({
+          profileComplete: true,
+          updatedAt: new Date(),
+        })
+        .where(eq(whatsappUsers.id, principal.id));
+
+      // Get profile_complete points config
+      const [config] = await db.select()
+        .from(pointsConfig)
+        .where(and(
+          eq(pointsConfig.action, 'profile_complete'),
+          eq(pointsConfig.isActive, true)
+        ));
+
+      const pointsEarned = config?.points || 10;
+
+      // Award points for completing profile
+      await pointsService.creditPoints({
+        userId: principal.id,
+        amount: pointsEarned,
+        type: 'profile_complete',
+        description: 'Profile completion wizard completed',
+        metadata: { socialLinks },
+      });
+
+      res.json({ 
+        success: true, 
+        message: 'Profile completed successfully',
+        pointsEarned 
+      });
+    } catch (error: any) {
+      console.error('Error completing wizard:', error);
+      res.status(500).json({ error: error.message || 'Failed to complete wizard' });
+    }
+  });
+
   // WytLife Application Routes
 
   // Submit WytLife application

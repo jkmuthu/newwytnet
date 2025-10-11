@@ -24,6 +24,7 @@ declare global {
       authMethods: string[];
       socialProviders: string[];
       isSuperAdmin?: boolean;
+      profileComplete?: boolean;
     }
   }
 }
@@ -176,6 +177,7 @@ export function setupWytPassAuth(app: Express) {
                 role: updatedUser.role,
                 authMethods: updatedUser.authMethods as string[],
                 socialProviders: updatedUser.socialProviders as string[],
+                profileComplete: updatedUser.profileComplete || false,
               });
             } else {
               // Create new user
@@ -268,6 +270,7 @@ export function setupWytPassAuth(app: Express) {
                 role: updatedUser.role,
                 authMethods: updatedUser.authMethods as string[],
                 socialProviders: updatedUser.socialProviders as string[],
+                profileComplete: updatedUser.profileComplete || false,
               });
             } else {
               // Create new user
@@ -325,6 +328,7 @@ export function setupWytPassAuth(app: Express) {
           authMethods: user.authMethods as string[],
           socialProviders: user.socialProviders as string[],
           isSuperAdmin: user.isSuperAdmin || false,
+          profileComplete: user.profileComplete || false,
         });
       } else {
         cb(null, false);
@@ -443,6 +447,7 @@ export function setupWytPassAuth(app: Express) {
       role: req.user!.role,
       authMethods: req.user!.authMethods,
       socialProviders: req.user!.socialProviders,
+      profileComplete: req.user!.profileComplete || false,
     });
   });
 

@@ -83,6 +83,9 @@ export const whatsappUsers = pgTable("whatsapp_users", {
   authMethods: jsonb("auth_methods").default(['whatsapp']), // ['whatsapp', 'password', 'google', 'facebook']
   passwordHash: varchar("password_hash", { length: 255 }),
   
+  // Profile completion tracking
+  profileComplete: boolean("profile_complete").default(false),
+  
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
