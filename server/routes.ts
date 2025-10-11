@@ -1374,20 +1374,40 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Admin login endpoint with fixed credentials
+  // Admin login endpoint with email-based authentication
   // Enterprise Admin Authentication Endpoints
   app.post('/api/auth/admin/login', async (req, res) => {
     try {
-      const { username, password, deviceInfo } = req.body;
+      const { email, password, deviceInfo } = req.body;
 
-      // Simple credentials check for development
-      if (username === '9345228184' && password === 'sadmin12') {
-        // Find the super admin user in database
-        const superAdminUser = await db
+      // Super Admin credentials check
+      if (email === 'jkm@jkmuthu.com' && password === 'SuperAdmin@2025') {
+        // Find or create the super admin user in database
+        let superAdminUser = await db
           .select()
           .from(whatsappUsers)
-          .where(eq(whatsappUsers.whatsappNumber, '+919345228184'))
+          .where(eq(whatsappUsers.email, 'jkm@jkmuthu.com'))
           .limit(1);
+
+        // If super admin doesn't exist, create it
+        if (superAdminUser.length === 0) {
+          const [newSuperAdmin] = await db
+            .insert(whatsappUsers)
+            .values({
+              name: 'Super Admin',
+              email: 'jkm@jkmuthu.com',
+              whatsappNumber: '', // Not required for admin
+              role: 'super_admin',
+              isVerified: true,
+              authMethods: ['email'],
+              socialProviders: [],
+              country: 'IN',
+              tenantId: 'admin_tenant',
+            })
+            .returning();
+          
+          superAdminUser = [newSuperAdmin];
+        }
 
         if (superAdminUser.length > 0) {
           const user = superAdminUser[0];
@@ -1397,7 +1417,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             type: 'whatsapp' as const,
             id: user.id,
             tenantId: user.tenantId || 'admin_tenant',
-            role: user.role || 'super_admin',
+            role: 'super_admin',
             isSuperAdmin: true
           };
           
@@ -1418,7 +1438,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             user: {
               id: user.id,
               name: user.name || 'Super Admin',
-              role: user.role || 'super_admin',
+              role: 'super_admin',
               isSuperAdmin: true
             }
           });

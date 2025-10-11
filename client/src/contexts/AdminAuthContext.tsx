@@ -15,14 +15,14 @@ export interface AdminUser {
 
 // Admin login credentials
 export interface AdminLoginCredentials {
-  username: string;
+  email: string;
   password: string;
   deviceInfo?: any;
 }
 
 // Admin MFA verification
 export interface AdminMFACredentials {
-  username: string;
+  email: string;
   mfaCode: string;
   rememberDevice?: boolean;
 }

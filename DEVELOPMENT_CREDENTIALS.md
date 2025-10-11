@@ -1,46 +1,66 @@
-# Standard User Credentials
+# WytNet Authentication Credentials
 
-⚠️ **FIXED STANDARD CREDENTIALS - DO NOT CHANGE** ⚠️
+⚠️ **PRODUCTION-READY OAUTH AUTHENTICATION** ⚠️
 
-## Standard User Accounts
+## Authentication Methods
 
-### 1. Super Admin
-- **Username:** 9345228184
-- **Password:** sadmin12
-- **Access:** Full system access, all permissions
-- **Can Change Password:** ✅ Yes (via WytPanel → My Account)
+WytNet uses modern OAuth-based authentication following global best practices:
 
-### 2. Admin User  
-- **Username:** 8220449933
-- **Password:** admin123
-- **Access:** Admin panel access
-- **Can Change Password:** ✅ Yes (via WytPanel → My Account)
+1. **Google OAuth** - Sign in with Google account
+2. **Email OTP** - Passwordless login via MSG91 Email OTP
+3. **Email + Password** - Traditional email/password authentication
 
-### 3. Demo User
-- **Username:** 9876543210
-- **Password:** demo1234
-- **Access:** Standard user access (read-only)
-- **Can Change Password:** ❌ No (locked for demo purposes)
+## Super Admin Access
+
+### Super Admin (Platform Owner)
+- **Email:** jkm@jkmuthu.com
+- **Password:** SuperAdmin@2025
+- **Access:** Full platform access, all permissions
+- **Login URL:** `/admin` (dedicated admin portal)
+- **Role:** super_admin
+
+## Test User Accounts
+
+### Demo User 1
+- **Email:** demo@wytnet.com
+- **Password:** Demo@123
+- **Access:** Standard user access
+- **Role:** user
+
+### Demo User 2  
+- **Email:** test@wytnet.com
+- **Password:** Test@123
+- **Access:** Standard user access
+- **Role:** user
 
 ## Login Instructions
 
-1. Go to `/login` page
-2. Select country code (default: India +91)
-3. Enter mobile number (username)
-4. Enter password
-5. Click "Sign In"
+### For Regular Users:
+1. Go to `/wytpass-login` page (WytPass authentication)
+2. Choose your preferred method:
+   - **Google OAuth:** Click "Sign in with Google"
+   - **Email OTP:** Click "Email OTP" → Enter email → Verify OTP
+   - **Email/Password:** Enter email + password → Sign In
 
-## Alternative Login Methods
+### For Super Admin:
+1. Go to `/admin` page (Admin portal)
+2. Enter email: jkm@jkmuthu.com
+3. Enter password: SuperAdmin@2025
+4. Access full admin dashboard
 
-- **WhatsApp OTP:** `/whatsapp-auth` (OTP-based authentication)
-- **Social Login:** Google/Facebook (requires API setup)
+## Alternative Login Routes
+
+- **WytPass Login:** `/wytpass-login` (Main user authentication)
+- **Email OTP Only:** `/email-otp-login` (Passwordless authentication)
+- **Admin Portal:** `/admin` (Super admin access)
 
 ## Security Notes
 
-- Mobile numbers are always the username
-- Super Admin & Admin can change passwords from WytPanel
-- Demo User password is locked (cannot be changed)
 - All passwords are securely hashed with bcrypt
+- Google OAuth uses official Google OAuth 2.0
+- Email OTP uses MSG91 service for delivery
+- Sessions are stored in PostgreSQL with httpOnly cookies
+- Production domain: wytnet.com
 
 ---
-*Standard Instructions - Do Not Modify*
+*Modern OAuth Authentication - Updated October 2025*

@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
 
 export default function AdminLogin() {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [mfaCode, setMfaCode] = useState('');
   const [rememberDevice, setRememberDevice] = useState(false);
@@ -58,7 +58,7 @@ export default function AdminLogin() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username,
+          email,
           password,
           deviceInfo: {
             userAgent: navigator.userAgent,
@@ -110,7 +110,7 @@ export default function AdminLogin() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          username,
+          email,
           mfaCode: mfaCode.trim(),
           rememberDevice
         }),
@@ -138,7 +138,7 @@ export default function AdminLogin() {
     setShowMFA(false);
     setMfaCode('');
     setError('');
-    setUsername('');
+    setEmail('');
     setPassword('');
   };
 
@@ -167,19 +167,19 @@ export default function AdminLogin() {
             {!showMFA ? (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="flex items-center gap-2">
+                  <Label htmlFor="email" className="flex items-center gap-2">
                     <User className="h-4 w-4" />
-                    Username
+                    Email
                   </Label>
                   <Input
-                    id="username"
-                    type="text"
-                    placeholder="Enter your admin username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    id="email"
+                    type="email"
+                    placeholder="admin@wytnet.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
-                    autoComplete="username"
-                    data-testid="input-username"
+                    autoComplete="email"
+                    data-testid="input-email"
                   />
                 </div>
                 
