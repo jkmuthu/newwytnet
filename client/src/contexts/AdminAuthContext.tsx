@@ -62,7 +62,7 @@ const fetchCurrentAdminUser = async (): Promise<AdminUser | null> => {
     const data = await response.json();
     
     // Check if the response indicates authenticated admin
-    if (data.success && data.user) {
+    if (data.authenticated && data.user) {
       return data.user;
     }
     

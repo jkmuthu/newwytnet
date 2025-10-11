@@ -29,7 +29,9 @@ export default function AdminLogin() {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch('/api/auth/admin/status');
+      const response = await fetch('/api/auth/admin/status', {
+        credentials: 'include' // Important: Send cookies with request
+      });
       if (response.ok) {
         const data = await response.json();
         if (data.authenticated) {
@@ -57,6 +59,7 @@ export default function AdminLogin() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Important: Send cookies with request
         body: JSON.stringify({
           email,
           password,
@@ -109,6 +112,7 @@ export default function AdminLogin() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Important: Send cookies with request
         body: JSON.stringify({
           email,
           mfaCode: mfaCode.trim(),

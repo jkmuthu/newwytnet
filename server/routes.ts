@@ -1262,6 +1262,14 @@ export async function registerRoutes(app: Express): Promise<void> {
             isSuperAdmin: true
           };
           
+          // Explicitly save session to ensure it persists
+          await new Promise<void>((resolve, reject) => {
+            req.session.save((err) => {
+              if (err) reject(err);
+              else resolve();
+            });
+          });
+          
           // Check if MFA is required (for future implementation)
           const requiresMFA = false; // Set to true when MFA is implemented
           
