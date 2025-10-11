@@ -4,11 +4,11 @@ WytNet is a fully white-label, production-ready multi-tenant SaaS platform found
 
 The system is built as a monorepo with Express.js backend, React frontend using Vite, and PostgreSQL with Drizzle ORM for data persistence. It now includes custom authentication (fully white-label), role-based access control, comprehensive multi-tenancy support with Row Level Security, and the complete WytID blockchain-anchored identity system.
 
-**Latest Status (Complete White-Label Implementation):**
-✅ **Removed all Replit Auth and branding** - Fully white-label platform
-✅ **Custom authentication system** - Registration, login, logout with session management
-✅ **Professional Header and Footer** - Complete layout with login/registration modals
-✅ **WytID Universal Identity System** - Complete blockchain-anchored identity validation
+**Latest Status (OAuth-Based Authentication):**
+✅ **Modern OAuth Authentication** - Google OAuth and Email OTP (global best practices)
+✅ **Email-Based System** - Removed mobile number concept, using email as primary identifier
+✅ **Super Admin Access** - Dedicated admin portal at /admin with jkm@jkmuthu.com
+✅ **WytPass Universal Identity** - OAuth-powered identity validation system
 ✅ **Production-ready architecture** - All core systems functional and integrated
 ✅ **Enterprise Structure Analysis** - Evaluated separated admin/client architecture vs unified approach
 ✅ **Architecture Decision** - Maintained unified structure for stability and zero-risk operation
@@ -53,7 +53,7 @@ The frontend follows a component-based architecture with separate builders for d
 ## Backend Architecture
 The backend uses Express.js with TypeScript, serving both API endpoints and static files. The server implements a RESTful API architecture with dedicated routes for authentication, dashboard statistics, and CRUD operations for models, pages, apps, and hubs.
 
-Authentication is handled through Replit's OpenID Connect integration with session-based authentication using PostgreSQL session storage. The system implements role-based access control with tenant isolation enforced at the database level.
+Authentication is handled through WytPass OAuth system with multiple methods: Google OAuth for social login, Email OTP for passwordless authentication, and traditional email/password. The system uses session-based authentication with PostgreSQL session storage and implements role-based access control with tenant isolation enforced at the database level.
 
 ## Data Storage Architecture
 PostgreSQL is used as the primary database with Drizzle ORM for type-safe database operations. The database schema implements multi-tenancy using tenant_id columns with Row Level Security policies for data isolation.
@@ -99,7 +99,9 @@ Security is implemented through multiple layers:
 - **Drizzle ORM**: Type-safe database operations and migrations with PostgreSQL dialect
 
 ## Authentication Services  
-- **Replit Auth**: OpenID Connect authentication integration for user management
+- **WytPass OAuth**: Multi-method authentication system (Google OAuth, Email OTP, Email/Password)
+- **Google OAuth**: Official Google OAuth 2.0 integration for social login
+- **MSG91 Email OTP**: Passwordless email OTP authentication via MSG91 service
 - **Session Storage**: PostgreSQL-backed session management using `connect-pg-simple`
 
 ## UI and Styling Framework

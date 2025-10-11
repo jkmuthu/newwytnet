@@ -14,7 +14,6 @@ import Terms from "@/pages/terms";
 import RefundPolicy from "@/pages/refund";
 import ShippingPolicy from "@/pages/shipping";
 import Status from "@/pages/status";
-import LoginPage from "@/pages/LoginPage";
 import WytPassLoginPage from "@/pages/wytpass-login";
 import EmailOTPLoginPage from "@/pages/email-otp-login";
 import Documentation from "@/pages/documentation";
@@ -82,7 +81,7 @@ export default function PublicRouter() {
       <Route path="/api-reference" component={APIReference} />
 
       {/* Authentication routes */}
-      <Route path="/login" component={LoginPage} />
+      <Route path="/login" component={WytPassLoginPage} />
       <Route path="/wytpass-login" component={WytPassLoginPage} />
       <Route path="/wytpass" component={WytPassLoginPage} />
       <Route path="/email-otp-login" component={EmailOTPLoginPage} />
