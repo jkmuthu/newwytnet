@@ -1236,13 +1236,14 @@ export async function registerRoutes(app: Express): Promise<void> {
             .values({
               name: 'Super Admin',
               email: 'jkm@jkmuthu.com',
-              whatsappNumber: '', // Not required for admin
+              whatsappNumber: 'ADMIN_SUPER', // Unique identifier for super admin
               role: 'super_admin',
               isVerified: true,
               authMethods: ['email'],
               socialProviders: [],
               country: 'IN',
-              tenantId: 'admin_tenant',
+              tenantId: null, // Admin users don't belong to a tenant
+              isSuperAdmin: true,
             })
             .returning();
           
@@ -1256,7 +1257,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           (req.session as any).user = {
             type: 'whatsapp' as const,
             id: user.id,
-            tenantId: user.tenantId || 'admin_tenant',
+            tenantId: user.tenantId || null,
             role: 'super_admin',
             isSuperAdmin: true
           };
