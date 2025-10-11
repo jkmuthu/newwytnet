@@ -1,0 +1,115 @@
+
+🧩 Clarification Addendum – Section 1 (Launch Implementation Priorities)
+
+Version: v25.10.11.23.00
+Purpose: Replit Development Alignment
+---
+
+✅ 1. WytWall (as Landing Page)
+
+The current /wytwall route is working fine and already suitable as the public landing page.
+
+For public (unauthenticated) users:
+
+Show open WytWall stream with filters (category, location) and right sidebar with promo cards.
+
+
+For authenticated users:
+
+The same WytWall expands contextually with additional data and options based on user type and apps activated.
+
+Tabs: All | Jobs | Real Estate | B2B Supply | Services
+
+Left Sidebar → Filters, Right Sidebar → Promotions, Suggested Apps.
+✅ No redesign of existing home page required — just link / → /wytwall.
+
+---
+
+⚙️ 2. Profile Completion Wizard
+
+Trigger:
+
+Automatically after first successful login/registration through WytPass (Google or Email OTP).
+
+Popup or overlay wizard prompting user to complete profile basics.
+
+
+Flow Steps:
+1️⃣ Basic Information (name, location, occupation).
+2️⃣ MyNeeds (what they are looking for / buying).
+3️⃣ MyOffers (what they are selling / offering).
+4️⃣ Connect Socials (optional).
+
+WytPoints Integration:
+
+Completing profile → +10 points.
+
+Adding MyNeed → +5 points.
+
+Adding MyOffer → –5 points (spending points).
+
+Points updates reflect live in the WytWallet tab.
+✅ The wizard must record partial progress so users can resume from MyPanel.
+---
+
+🧠 3. WytPoints Logic (Phase 1 Rules)
+
+Action	Points	Type
+
+Register / First Login	+10	Earn
+Complete Profile	+10	Earn
+Post a Need	+5	Earn
+Post an Offer	–5	Spend
+Daily Login (Streak)	+1	Earn
+
+
+Points are visible in the header (badge icon) and WytWallet tab.
+
+Transactions logged in backend (points_transactions).
+✅ This builds instant engagement and a reason for users to act.
+
+---
+
+🧭 4. Admin & SuperAdmin Workflows
+
+Admin Role: Approve or reject new Needs/Offers and monitor points usage.
+
+SuperAdmin Role: Manage banners, featured content, and adjust reward rules.
+
+Both can view detailed user transactions in /admin/wytpoints and /admin/wytwall.
+---
+
+📱 5. UI / UX Refinement
+
+Public WytWall → simple & open feel (guest feed).
+
+Logged-in view → richer, contextualized stream (offers, matches, tasks).
+
+Mobile View → Bottom Nav:
+Home | Apps | Hubs | AI
+
+MyPanel Tabs →
+MyWall | MyNeeds | MyOffers | MyWallet | MyAccount.
+---
+
+🧩 6. Developer Implementation Notes
+
+Use current /wytwall as the unified route.
+
+Add dynamic rendering: if user not logged → show public; if logged → show personalized.
+
+Profile Wizard appears once, then re-accessible via MyPanel.
+
+WytPoints API already present; just connect event triggers.
+
+All actions must be additive — no DB or session structure changes.
+---
+✅ Priority Summary for Replit:
+
+Order	Feature	Status
+
+1	WytWall as Home	✅ Already Live
+2	Profile Completion Wizard	🚧 To Implement
+3	WytPoints Earn/Spend Logic	🚧 To Integrate
+4	MyNeeds/MyOffers CRUD	🚧 To Extend
+5	Admin Approvals	🚧 To Extend

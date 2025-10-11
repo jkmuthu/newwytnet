@@ -1,0 +1,233 @@
+---
+🚀 Section 1 – Launch Implementation (To Do Now)
+
+1️⃣ WytWall as Landing Page (/) – public offers/needs stream + filters + promo cards.
+2️⃣ Profile Completion Wizard – runs after WytPass signup and rewards WytPoints for each step.
+3️⃣ MyNeeds / MyOffers Tabs – create/edit/manage needs and offers inside MyPanel.
+4️⃣ Smart Reminder / Schedule Tab – authenticated users only; tasks + appointments.
+5️⃣ WytPoints Wallet Integration – earn/spend display in Wallet tab.
+6️⃣ Admin Approval Panel – approve new users, needs, offers.
+7️⃣ SuperAdmin Moderation Controls – banners, featured posts, AI feed weights.
+8️⃣ UI/UX Refinement – responsive design; mobile bottom bar (Home | Apps | Hubs | AI).
+
+
+---
+
+🧭 Section 1.9 – Menu Structure Across All Panels
+
+Public Pages
+
+Home (WytWall)
+
+WytApps
+
+WytHubs
+
+Features
+
+Help
+
+About / Contact
+
+Login / Signup
+
+
+User Panel (MyPanel)
+
+1. My WytWall
+
+
+2. My WytScore
+
+
+3. My Circle
+
+
+4. My WytWallet (with WytPoints)
+
+
+5. My WytApps
+
+
+6. My WytHubs
+
+
+7. My WytGames
+
+
+8. My Account
+
+
+
+Org Panel (OurPanel)
+
+1. Our WytWall
+
+
+2. Our WytApps
+
+
+3. Our WytWallet
+
+
+4. Our Team
+
+
+5. Our Account
+
+
+
+Admin Panel
+
+1. Dashboard
+
+
+2. All Users
+
+
+3. All Orgs
+
+
+4. All Apps
+
+
+5. Admin Users
+
+
+6. Settings
+
+
+
+
+---
+
+🧪 Section 1.10 – Demo Users & Data Setup
+
+Demo Accounts
+
+SuperAdmin → jkm@jkmuthu.com / SuperAdmin@2025
+
+Admin → info@wytnet.com / Admin@2025
+
+Demo User 1–2, Demo Org 1–2 → password Demo@2025
+
+
+Demo data seeded via demo_seed.js (script).
+Sandbox only – no emails/SMS triggered.
+
+
+---
+
+🧱 SuperAdmin Panel Structure (Updated & Verified)
+
+Admin Panel
+
+Dashboard
+
+System Status
+
+System Overview
+
+
+Super Admin
+
+Global Settings
+
+System Logs
+
+System Monitor
+
+Backup & Restore
+
+WytPoints Management
+
+WytLife Applications
+
+
+User Management
+
+Users
+
+Tenants
+
+
+Platform Management
+
+Modules
+
+Apps
+
+Hubs
+
+CMS
+
+
+Analytics & Reports
+
+Analytics
+
+AI Management
+
+
+Configuration
+
+SEO Settings
+
+Themes
+
+Media
+
+
+Advanced
+
+Integrations
+
+Billing
+
+Security
+
+Email Templates
+
+
+
+---
+
+🔮 Section 2 – Upcoming Features (Next Queue)
+
+WytLife (Landing + Application Form)
+
+WytGames (Simulation Learning)
+
+WytStar Leaderboard
+
+WytMatch (AI Matching Engine)
+
+WytExchange (Points–Gold–Coin Ecosystem)
+
+
+
+---
+
+✅ Section 3 – Already Implemented (Stable Environment)
+
+WytPass Auth (Google + Email OTP)
+
+WytPoints Backend
+
+WytWall Core
+
+Admin CMS
+
+Security Patch (SQL Injection Fixed)
+
+
+
+---
+
+🔒 Developer Commitment Notice
+
+All updates must be additive, modular, and non-destructive.
+No DB schema or route changes unless approved in writing.
+All existing functions to remain active during development.
+
+---
