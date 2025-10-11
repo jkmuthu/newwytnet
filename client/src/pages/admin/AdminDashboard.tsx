@@ -19,7 +19,6 @@ import {
   Database
 } from "lucide-react";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
-import AdminLayout from './AdminLayout';
 
 interface DashboardStats {
   totalUsers: number;
@@ -59,21 +58,19 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <AdminLayout user={userInfo}>
-        <div className="space-y-6">
-          {/* Loading skeleton */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-6">
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-8 bg-gray-200 rounded"></div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+      <div className="space-y-6">
+        {/* Loading skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-8 bg-gray-200 rounded"></div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-      </AdminLayout>
+      </div>
     );
   }
 
@@ -132,8 +129,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <AdminLayout user={userInfo}>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
@@ -342,7 +338,6 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
-    </AdminLayout>
+    </div>
   );
 }
