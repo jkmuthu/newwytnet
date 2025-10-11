@@ -92,16 +92,22 @@ export default function AdminRouter() {
       {/* Admin Login - standalone route without layout */}
       <Route path="/admin/login" component={AdminLogin} />
 
+      {/* Main admin dashboard - exact match */}
+      <Route path="/admin">
+        {(params) => (
+          <AdminLayout>
+            <AdminDashboard />
+          </AdminLayout>
+        )}
+      </Route>
+
       {/* All other admin routes wrapped in AdminLayout */}
-      <Route>
+      <Route path="/admin/:rest+">
         {(params) => (
           <AdminLayout>
             <Switch>
-              {/* Main admin dashboard */}
-              <Route path="/admin" component={AdminDashboard} />
-
-      {/* Core admin management routes */}
-      <Route path="/admin/users" component={AdminUsers} />
+              {/* Core admin management routes */}
+              <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/tenants" component={AdminTenants} />
       <Route path="/admin/modules" component={AdminModules} />
       
