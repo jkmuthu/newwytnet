@@ -21,7 +21,7 @@ function PortalRouter() {
   return (
     <Switch>
       {/* Admin Portal - Routes: /admin/login, /admin/* */}
-      <Route path="/admin">
+      <Route path="/admin/:rest*">
         {(params) => <AdminRouter />}
       </Route>
       
