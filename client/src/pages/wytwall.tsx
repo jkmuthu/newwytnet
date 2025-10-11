@@ -72,11 +72,8 @@ export default function WytWall() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-white">
-                Stream of WytWall
+                WytWall (Offers Stream)
               </h1>
-              <p className="text-sm text-blue-100 dark:text-blue-200 mt-1">
-                {user ? "Post your needs, discover opportunities" : "Get in. Get it done."}
-              </p>
             </div>
             <Button
               onClick={handlePostNeed}
