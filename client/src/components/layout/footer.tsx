@@ -14,9 +14,9 @@ export default function Footer() {
 
   const resourcesLinks = [
     { label: "Help Center", href: "/help" },
-    { label: "Documentation", href: "/docs" },
-    { label: "API Reference", href: "/api" },
-    { label: "Status", href: "/status" },
+    { label: "Blog", href: "/blog" },
+    { label: "Community", href: "/community" },
+    { label: "Support", href: "/support" },
   ];
 
   const wytHubsLinks = [
