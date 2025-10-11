@@ -94,31 +94,31 @@ export default function AdminRouter() {
           {/* Main admin dashboard */}
           <Route path="/admin" component={AdminDashboard} />
 
-              {/* Core admin management routes */}
-              <Route path="/admin/users" component={AdminUsers} />
-              <Route path="/admin/tenants" component={AdminTenants} />
-              <Route path="/admin/modules" component={AdminModules} />
-              
-              {/* Platform management routes */}
-              <Route path="/admin/apps" component={AdminApps} />
-              <Route path="/admin/hubs" component={AdminHubs} />
-              <Route path="/admin/cms" component={AdminCMS} />
-              
-              {/* System administration routes */}
-              <Route path="/admin/system-overview" component={AdminSystemOverview} />
-              <Route path="/admin/integrations" component={AdminIntegrations} />
-              <Route path="/admin/security" component={AdminSecurity} />
-              <Route path="/admin/logs" component={AdminLogs} />
-              
-              {/* WytPoints Management */}
-              <Route path="/admin/wytpoints" component={AdminWytPoints} />
-              
-              {/* Configuration routes */}
-              <Route path="/admin/seo-settings" component={AdminSeoSettings} />
-              <Route path="/admin/billing" component={AdminBilling} />
-              
-              {/* Legacy analytics route */}
-              <Route path="/admin/analytics" component={AdminAnalytics} />
+          {/* Core admin management routes */}
+          <Route path="/admin/users" component={AdminUsers} />
+          <Route path="/admin/tenants" component={AdminTenants} />
+          <Route path="/admin/modules" component={AdminModules} />
+          
+          {/* Platform management routes */}
+          <Route path="/admin/apps" component={AdminApps} />
+          <Route path="/admin/hubs" component={AdminHubs} />
+          <Route path="/admin/cms" component={AdminCMS} />
+          
+          {/* System administration routes */}
+          <Route path="/admin/system-overview" component={AdminSystemOverview} />
+          <Route path="/admin/integrations" component={AdminIntegrations} />
+          <Route path="/admin/security" component={AdminSecurity} />
+          <Route path="/admin/logs" component={AdminLogs} />
+          
+          {/* WytPoints Management */}
+          <Route path="/admin/wytpoints" component={AdminWytPoints} />
+          
+          {/* Configuration routes */}
+          <Route path="/admin/seo-settings" component={AdminSeoSettings} />
+          <Route path="/admin/billing" component={AdminBilling} />
+          
+          {/* Legacy analytics route */}
+          <Route path="/admin/analytics" component={AdminAnalytics} />
 
           {/* 404 fallback for admin routes */}
           <Route>
