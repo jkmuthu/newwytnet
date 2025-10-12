@@ -3606,16 +3606,21 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       const [allUsers, totalCount] = await Promise.all([
         db.select({
-          id: users.id,
-          name: users.name,
-          email: users.email,
-          role: users.role,
-          createdAt: users.createdAt,
-          lastLoginAt: users.lastLoginAt,
-          tenantId: users.tenantId
-        }).from(users).limit(limit).offset(offset).orderBy(desc(users.createdAt)),
+          id: whatsappUsers.id,
+          name: whatsappUsers.name,
+          email: whatsappUsers.email,
+          whatsappNumber: whatsappUsers.whatsappNumber,
+          country: whatsappUsers.country,
+          gender: whatsappUsers.gender,
+          role: whatsappUsers.role,
+          isVerified: whatsappUsers.isVerified,
+          isSuperAdmin: whatsappUsers.isSuperAdmin,
+          profileImageUrl: whatsappUsers.profileImageUrl,
+          createdAt: whatsappUsers.createdAt,
+          tenantId: whatsappUsers.tenantId
+        }).from(whatsappUsers).limit(limit).offset(offset).orderBy(desc(whatsappUsers.createdAt)),
         
-        db.select({ count: sql<number>`cast(count(*) as integer)` }).from(users)
+        db.select({ count: sql<number>`cast(count(*) as integer)` }).from(whatsappUsers)
       ]);
 
       res.json({
