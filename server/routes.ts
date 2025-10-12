@@ -3439,22 +3439,8 @@ export async function registerRoutes(app: Express): Promise<void> {
     });
   });
 
-  app.get('/api/auth/linkedin', (req, res) => {
-    const state = Buffer.from(JSON.stringify({
-      provider: 'linkedin',
-      timestamp: Date.now(),
-      requiresMobileVerification: true
-    })).toString('base64');
-    
-    res.json({
-      success: true,
-      provider: 'linkedin',
-      message: 'LinkedIn OAuth - Mobile verification required',
-      redirectUrl: `https://www.linkedin.com/oauth/v2/authorization?client_id=demo&redirect_uri=${encodeURIComponent(process.env.OAUTH_REDIRECT_URI || '/api/auth/callback/linkedin')}&state=${state}&scope=r_liteprofile%20r_emailaddress`,
-      requiresMobileVerification: true,
-      demoMode: true
-    });
-  });
+  // LinkedIn OAuth route now handled by WytPass Auth (server/wytpass-auth.ts)
+  // app.get('/api/auth/linkedin', ...) - REMOVED to avoid conflict with passport route
 
   app.get('/api/auth/instagram', (req, res) => {
     const state = Buffer.from(JSON.stringify({

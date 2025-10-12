@@ -55,6 +55,7 @@ WytNet uses modern OAuth-based authentication following global best practices. *
 1. Go to `/login` page (WytPass authentication)
 2. Choose your preferred method:
    - **Google OAuth:** Click "Sign in with Google"
+   - **LinkedIn OAuth:** Click "Sign in with LinkedIn"
    - **Email OTP:** Click "Email OTP" → Enter email → Verify OTP
    - **Email/Password:** Enter email + password → Sign In
 
@@ -96,7 +97,15 @@ WytNet uses modern OAuth-based authentication following global best practices. *
    - Scopes: `["profile", "email"]`
    - Auto-linking: Links Google account to existing email users
 
-3. **Email OTP (MSG91)**
+3. **LinkedInStrategy (OAuth 2.0)**
+   - Implementation: `passport-linkedin-oauth2` in `server/wytpass-auth.ts`
+   - Client ID: From `LINKEDIN_CLIENT_ID` environment variable (86bfkk6k6shzhf)
+   - Client Secret: From `LINKEDIN_CLIENT_SECRET` environment variable
+   - Callback URL: `${baseUrl}/api/auth/linkedin/callback`
+   - Scopes: `["r_emailaddress", "r_liteprofile"]`
+   - Auto-linking: Links LinkedIn account to existing email users
+
+4. **Email OTP (MSG91)**
    - Implementation: `MSG91Service` in `server/services/msg91Service.ts`
    - Template: From `MSG91_EMAIL_TEMPLATE_ID` environment variable
    - Auth Key: From `MSG91_AUTH_KEY` environment variable
@@ -121,6 +130,8 @@ WytNet uses modern OAuth-based authentication following global best practices. *
 - `POST /api/auth/login` - Email/password login
 - `GET /api/auth/google` - Initiate Google OAuth
 - `GET /api/auth/google/callback` - Google OAuth callback
+- `GET /api/auth/linkedin` - Initiate LinkedIn OAuth
+- `GET /api/auth/linkedin/callback` - LinkedIn OAuth callback
 - `POST /api/auth/email-otp/send` - Send email OTP
 - `POST /api/auth/email-otp/verify` - Verify email OTP
 - `POST /api/auth/logout` - Logout user

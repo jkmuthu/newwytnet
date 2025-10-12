@@ -1,6 +1,7 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { Strategy as LinkedInStrategy } from "passport-linkedin-oauth2";
 // import { Strategy as FacebookStrategy } from "passport-facebook"; // DISABLED until setup
 import { Express } from "express";
 import session from "express-session";
@@ -193,6 +194,113 @@ export function setupWytPassAuth(app: Express) {
                   role: "user",
                   isVerified: true,
                   whatsappNumber: "", // Required field, will be empty for Google auth
+                  lastLoginAt: new Date(),
+                })
+                .returning();
+
+              return done(null, {
+                id: newUser.id,
+                name: newUser.name,
+                email: newUser.email || undefined,
+                profileImageUrl: newUser.profileImageUrl || undefined,
+                role: newUser.role,
+                authMethods: newUser.authMethods as string[],
+                socialProviders: newUser.socialProviders as string[],
+              });
+            }
+          } catch (error) {
+            return done(error);
+          }
+        }
+      )
+    );
+  }
+
+  // LinkedIn OAuth Strategy
+  if (process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET) {
+    // Determine the correct callback URL based on environment
+    let baseUrl;
+    if (process.env.NODE_ENV === "production") {
+      baseUrl = "https://wytnet.com";
+    } else if (process.env.REPLIT_DEV_DOMAIN) {
+      baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
+    } else if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+      baseUrl = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+    } else {
+      baseUrl = "http://localhost:5000";
+    }
+    
+    console.log(`🔧 LinkedIn OAuth Callback URL: ${baseUrl}/api/auth/linkedin/callback`);
+    
+    passport.use(
+      new LinkedInStrategy(
+        {
+          clientID: process.env.LINKEDIN_CLIENT_ID,
+          clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+          callbackURL: `${baseUrl}/api/auth/linkedin/callback`,
+          scope: ["r_emailaddress", "r_liteprofile"],
+        },
+        async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+          try {
+            const email = profile.emails?.[0]?.value;
+            
+            // Check if user exists with LinkedIn email
+            const [existingUser] = await db
+              .select()
+              .from(whatsappUsers)
+              .where(eq(whatsappUsers.email, email || ""));
+
+            if (existingUser) {
+              // Update existing user with LinkedIn info
+              const socialIds = (existingUser.socialIds as Record<string, string>) || {};
+              const socialProviders = (existingUser.socialProviders as string[]) || [];
+              const authMethods = (existingUser.authMethods as string[]) || [];
+
+              socialIds.linkedin = profile.id;
+              if (!socialProviders.includes("linkedin")) {
+                socialProviders.push("linkedin");
+              }
+              if (!authMethods.includes("linkedin")) {
+                authMethods.push("linkedin");
+              }
+
+              const [updatedUser] = await db
+                .update(whatsappUsers)
+                .set({
+                  socialIds,
+                  socialProviders,
+                  authMethods,
+                  profileImageUrl: profile.photos?.[0]?.value || existingUser.profileImageUrl,
+                  lastLoginAt: new Date(),
+                  updatedAt: new Date(),
+                })
+                .where(eq(whatsappUsers.id, existingUser.id))
+                .returning();
+
+              return done(null, {
+                id: updatedUser.id,
+                name: updatedUser.name,
+                email: updatedUser.email || undefined,
+                profileImageUrl: updatedUser.profileImageUrl || undefined,
+                role: updatedUser.role,
+                authMethods: updatedUser.authMethods as string[],
+                socialProviders: updatedUser.socialProviders as string[],
+                profileComplete: updatedUser.profileComplete || false,
+              });
+            } else {
+              // Create new user
+              const [newUser] = await db
+                .insert(whatsappUsers)
+                .values({
+                  name: profile.displayName || `${profile.name?.givenName} ${profile.name?.familyName}` || "LinkedIn User",
+                  email: email,
+                  profileImageUrl: profile.photos?.[0]?.value,
+                  socialIds: { linkedin: profile.id },
+                  socialProviders: ["linkedin"],
+                  authMethods: ["linkedin"],
+                  role: "user",
+                  isVerified: true,
+                  whatsappNumber: "", // Required field, will be empty for LinkedIn auth
                   lastLoginAt: new Date(),
                 })
                 .returning();
@@ -414,6 +522,18 @@ export function setupWytPassAuth(app: Express) {
 
   app.get("/api/auth/google/callback",
     passport.authenticate("google", { failureRedirect: "/login?error=google_failed" }),
+    (req, res) => {
+      res.redirect("/"); // Redirect to dashboard after successful login
+    }
+  );
+
+  // LinkedIn OAuth routes
+  app.get("/api/auth/linkedin",
+    passport.authenticate("linkedin", { scope: ["r_emailaddress", "r_liteprofile"] })
+  );
+
+  app.get("/api/auth/linkedin/callback",
+    passport.authenticate("linkedin", { failureRedirect: "/login?error=linkedin_failed" }),
     (req, res) => {
       res.redirect("/"); // Redirect to dashboard after successful login
     }
