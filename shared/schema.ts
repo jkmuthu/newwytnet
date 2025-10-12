@@ -101,6 +101,63 @@ export const whatsappOtpSessions = pgTable("whatsapp_otp_sessions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// User Profiles - Detailed user information
+export const userProfiles = pgTable("user_profiles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  username: varchar("username", { length: 50 }).unique(),
+  bio: text("bio"),
+  location: varchar("location", { length: 255 }),
+  website: varchar("website", { length: 500 }),
+  company: varchar("company", { length: 255 }),
+  jobTitle: varchar("job_title", { length: 255 }),
+  skills: jsonb("skills").default([]),
+  interests: jsonb("interests").default([]),
+  socialLinks: jsonb("social_links").default({}),
+  phone: varchar("phone", { length: 20 }),
+  address: text("address"),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 100 }),
+  country: varchar("country", { length: 100 }),
+  zipCode: varchar("zip_code", { length: 20 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User Needs - Marketplace needs
+export const userNeeds = pgTable("user_needs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  category: varchar("category", { length: 100 }),
+  budget: decimal("budget", { precision: 10, scale: 2 }),
+  currency: varchar("currency", { length: 10 }).default('USD'),
+  status: varchar("status", { length: 20 }).notNull().default('active'),
+  tags: jsonb("tags").default([]),
+  location: varchar("location", { length: 255 }),
+  responseCount: integer("response_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User Offers - Marketplace offers
+export const userOffers = pgTable("user_offers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description").notNull(),
+  category: varchar("category", { length: 100 }),
+  price: decimal("price", { precision: 10, scale: 2 }),
+  currency: varchar("currency", { length: 10 }).default('USD'),
+  status: varchar("status", { length: 20 }).notNull().default('active'),
+  tags: jsonb("tags").default([]),
+  location: varchar("location", { length: 255 }),
+  viewCount: integer("view_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Tenant memberships with roles
 export const memberships = pgTable("memberships", {
   id: uuid("id").default(sql`gen_random_uuid()`),
@@ -768,11 +825,29 @@ export const insertSeoSettingSchema = createInsertSchema(seoSettings);
 export const insertWhatsAppUserSchema = createInsertSchema(whatsappUsers);
 export const selectWhatsAppUserSchema = createSelectSchema(whatsappUsers);
 export const insertWhatsAppOtpSessionSchema = createInsertSchema(whatsappOtpSessions);
+export const selectWhatsAppOtpSessionSchema = createSelectSchema(whatsappOtpSessions);
+
+// User Profile schemas
+export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectUserProfileSchema = createSelectSchema(userProfiles);
+export type UserProfile = typeof userProfiles.$inferSelect;
+export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
+
+// User Needs schemas
+export const insertUserNeedSchema = createInsertSchema(userNeeds).omit({ id: true, createdAt: true, updatedAt: true, responseCount: true });
+export const selectUserNeedSchema = createSelectSchema(userNeeds);
+export type UserNeed = typeof userNeeds.$inferSelect;
+export type InsertUserNeed = z.infer<typeof insertUserNeedSchema>;
+
+// User Offers schemas
+export const insertUserOfferSchema = createInsertSchema(userOffers).omit({ id: true, createdAt: true, updatedAt: true, viewCount: true });
+export const selectUserOfferSchema = createSelectSchema(userOffers);
+export type UserOffer = typeof userOffers.$inferSelect;
+export type InsertUserOffer = z.infer<typeof insertUserOfferSchema>;
 
 // Social Auth types
 export type SocialAuthToken = typeof socialAuthTokens.$inferSelect;
 export type InsertSocialAuthToken = typeof socialAuthTokens.$inferInsert;
-export const selectWhatsAppOtpSessionSchema = createSelectSchema(whatsappOtpSessions);
 
 // Select schemas
 export const selectTenantSchema = createSelectSchema(tenants);
