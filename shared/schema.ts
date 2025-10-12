@@ -41,6 +41,10 @@ export const tenants = pgTable("tenants", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Enums - must be defined before they are used
+export const genderEnum = pgEnum("gender", ["male", "female", "other", "prefer_not_to_say"]);
+export const userRoleEnum = pgEnum("user_role", ["super_admin", "admin", "manager", "user", "guest"]);
+
 // Users table with RLS support - unified for all authentication methods
 export const users = pgTable("users", {
   id: varchar("id").primaryKey(),
@@ -73,12 +77,6 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
-
-// Gender enum for WhatsApp users
-export const genderEnum = pgEnum("gender", ["male", "female", "other", "prefer_not_to_say"]);
-
-// User roles enum for WytPass system
-export const userRoleEnum = pgEnum("user_role", ["super_admin", "admin", "manager", "user", "guest"]);
 
 // Enhanced User Authentication System (supports mobile + social auth)
 export const whatsappUsers = pgTable("whatsapp_users", {
