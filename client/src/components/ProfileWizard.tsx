@@ -129,9 +129,9 @@ export default function ProfileWizard({ open, onClose }: ProfileWizardProps) {
     },
   });
 
-  // Update form values when user data loads
+  // Update form values when dialog opens (only once)
   useEffect(() => {
-    if (user && open) {
+    if (user && open && currentStep === 1) {
       basicInfoForm.reset({
         name: (user as any)?.name || "",
         email: (user as any)?.email || "",
@@ -139,7 +139,7 @@ export default function ProfileWizard({ open, onClose }: ProfileWizardProps) {
         dateOfBirth: (user as any)?.dateOfBirth || "",
       });
     }
-  }, [user, open]);
+  }, [open]);
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: any) => {
