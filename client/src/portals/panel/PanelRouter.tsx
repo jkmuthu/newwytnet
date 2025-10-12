@@ -15,6 +15,7 @@ import PaymentHistory from "@/components/payments/PaymentHistory";
 import MyNeeds from "./pages/my-needs";
 import MyOffers from "./pages/my-offers";
 import MyWallet from "./pages/my-wallet";
+import MyPoints from "./pages/my-points";
 import MyAccount from "./pages/my-account";
 import MyProfile from "./pages/my-profile";
 import { 
@@ -1560,6 +1561,7 @@ export default function PanelRouter() {
       <Route path="/mypanel/wytscore" component={MyPanelWytScore} />
       <Route path="/mypanel/circle" component={MyPanelCircle} />
       <Route path="/mypanel/wallet" component={MyWallet} />
+      <Route path="/mypanel/points" component={MyPoints} />
       <Route path="/mypanel/wytapps" component={MyPanelWytApps} />
       <Route path="/mypanel/wythubs" component={MyPanelWytHubs} />
       <Route path="/mypanel/wytgames" component={MyPanelWytGames} />

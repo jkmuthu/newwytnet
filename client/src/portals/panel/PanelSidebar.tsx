@@ -17,7 +17,8 @@ import {
   CreditCard,
   Shield,
   ShoppingCart,
-  Package
+  Package,
+  Award
 } from "lucide-react";
 import type { WorkspaceContext } from "./PanelLayout";
 
@@ -83,6 +84,12 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               icon: CreditCard, 
               href: "/mypanel/wallet", 
               active: location === "/mypanel/wallet" 
+            },
+            { 
+              label: "My Points", 
+              icon: Award, 
+              href: "/mypanel/points", 
+              active: location === "/mypanel/points" 
             },
             { 
               label: "My WytApps", 
