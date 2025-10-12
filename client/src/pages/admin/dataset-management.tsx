@@ -49,11 +49,7 @@ export default function AdminDatasetManagement() {
   // Create collection mutation
   const createCollectionMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest('/api/admin/datasets', {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return apiRequest('/api/admin/datasets', 'POST', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/datasets'] });
@@ -68,11 +64,7 @@ export default function AdminDatasetManagement() {
   // Update collection mutation
   const updateCollectionMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      return apiRequest(`/api/admin/datasets/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return apiRequest(`/api/admin/datasets/${id}`, 'PUT', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/datasets'] });
@@ -88,9 +80,7 @@ export default function AdminDatasetManagement() {
   // Delete collection mutation
   const deleteCollectionMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/admin/datasets/${id}`, {
-        method: 'DELETE',
-      });
+      return apiRequest(`/api/admin/datasets/${id}`, 'DELETE');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/datasets'] });
@@ -107,11 +97,7 @@ export default function AdminDatasetManagement() {
   // Create item mutation
   const createItemMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest(`/api/admin/datasets/${selectedCollection?.id}/items`, {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return apiRequest(`/api/admin/datasets/${selectedCollection?.id}/items`, 'POST', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/datasets', selectedCollection?.id] });
@@ -126,11 +112,7 @@ export default function AdminDatasetManagement() {
   // Update item mutation
   const updateItemMutation = useMutation({
     mutationFn: async ({ itemId, data }: { itemId: string; data: any }) => {
-      return apiRequest(`/api/admin/datasets/${selectedCollection?.id}/items/${itemId}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return apiRequest(`/api/admin/datasets/${selectedCollection?.id}/items/${itemId}`, 'PUT', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/datasets', selectedCollection?.id] });
@@ -146,9 +128,7 @@ export default function AdminDatasetManagement() {
   // Delete item mutation
   const deleteItemMutation = useMutation({
     mutationFn: async (itemId: string) => {
-      return apiRequest(`/api/admin/datasets/${selectedCollection?.id}/items/${itemId}`, {
-        method: 'DELETE',
-      });
+      return apiRequest(`/api/admin/datasets/${selectedCollection?.id}/items/${itemId}`, 'DELETE');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/datasets', selectedCollection?.id] });
