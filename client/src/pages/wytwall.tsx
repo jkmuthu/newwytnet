@@ -118,7 +118,7 @@ export default function WytWall() {
                   WytWall
                   <TrendingUp className="h-5 w-5 animate-bounce" />
                 </h1>
-                <p className="text-white/90 text-xs font-medium">Offers Stream Marketplace</p>
+                <p className="text-white/90 text-xs font-medium">Offers Stream</p>
               </div>
             </div>
             

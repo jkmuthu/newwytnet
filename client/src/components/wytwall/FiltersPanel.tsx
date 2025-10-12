@@ -14,7 +14,7 @@ interface FiltersPanelProps {
 }
 
 const CATEGORIES = [
-  { id: "all", label: "All Needs", icon: Grid },
+  { id: "all", label: "All Offers", icon: Grid },
   { id: "jobs", label: "Jobs", icon: Briefcase },
   { id: "real_estate", label: "Real Estate", icon: Home },
   { id: "b2b_supply", label: "B2B Supply", icon: Package },
