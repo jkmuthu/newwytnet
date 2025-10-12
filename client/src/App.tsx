@@ -29,12 +29,8 @@ function PortalRouter() {
   });
 
   useEffect(() => {
-    // Show wizard if user is authenticated and profile is not complete
-    if (user && !(user as any)?.profileComplete) {
-      setShowWizard(true);
-    } else {
-      setShowWizard(false);
-    }
+    // Wizard disabled - user will build better form in admin
+    setShowWizard(false);
   }, [user]);
 
   return (

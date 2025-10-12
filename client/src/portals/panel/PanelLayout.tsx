@@ -1,5 +1,5 @@
-import { ReactNode, useState } from "react";
-import { Redirect } from "wouter";
+import { ReactNode, useState, useEffect } from "react";
+import { Redirect, useLocation } from "wouter";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
 import { useAuth } from "@/hooks/useAuth";
 import PanelHeader from "./PanelHeader";
@@ -26,12 +26,47 @@ export interface WorkspaceContext {
 export default function PanelLayout({ children }: PanelLayoutProps) {
   const { isMobile } = useDeviceDetection();
   const { isAuthenticated, isLoading } = useAuth();
+  const [location] = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [currentWorkspace, setCurrentWorkspace] = useState<WorkspaceContext>({
     type: 'personal',
     id: 'me',
     name: 'My Panel'
   });
+
+  // Auto-detect workspace based on current route
+  useEffect(() => {
+    // Normalize location path (ensure leading slash)
+    const normalizedPath = location.startsWith('/') ? location : `/${location}`;
+    
+    if (normalizedPath.includes('/orgpanel')) {
+      setCurrentWorkspace({
+        type: 'organization',
+        id: 'org',
+        name: 'Org Panel'
+      });
+    } else if (normalizedPath.includes('/mypanel')) {
+      setCurrentWorkspace({
+        type: 'personal',
+        id: 'me',
+        name: 'My Panel'
+      });
+    } else if (normalizedPath.includes('/panel/org')) {
+      // Handle legacy /panel/org routes before redirect
+      setCurrentWorkspace({
+        type: 'organization',
+        id: 'org',
+        name: 'Org Panel'
+      });
+    } else {
+      // Default to personal for /panel and /panel/me routes
+      setCurrentWorkspace({
+        type: 'personal',
+        id: 'me',
+        name: 'My Panel'
+      });
+    }
+  }, [location]);
 
   // Show loading state during authentication check
   if (isLoading) {
