@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,11 +33,27 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { CheckCircle2, Circle, Sparkles } from "lucide-react";
 
+// Validation: Date of birth must be at least 18 years ago
+const isAtLeast18 = (dateString: string) => {
+  if (!dateString) return true; // Optional field
+  const dob = new Date(dateString);
+  const today = new Date();
+  const age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    return age - 1 >= 18;
+  }
+  return age >= 18;
+};
+
 const basicInfoSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   gender: z.string().optional(),
-  dateOfBirth: z.string().optional(),
+  dateOfBirth: z.string().optional().refine(
+    (val) => !val || isAtLeast18(val),
+    "You must be at least 18 years old"
+  ),
 });
 
 const myNeedsSchema = z.object({
@@ -83,10 +99,10 @@ export default function ProfileWizard({ open, onClose }: ProfileWizardProps) {
   const basicInfoForm = useForm<BasicInfoForm>({
     resolver: zodResolver(basicInfoSchema),
     defaultValues: {
-      name: (user as any)?.name || "",
-      email: (user as any)?.email || "",
-      gender: (user as any)?.gender || "",
-      dateOfBirth: (user as any)?.dateOfBirth || "",
+      name: "",
+      email: "",
+      gender: "",
+      dateOfBirth: "",
     },
   });
 
@@ -112,6 +128,18 @@ export default function ProfileWizard({ open, onClose }: ProfileWizardProps) {
       instagram: "",
     },
   });
+
+  // Update form values when user data loads
+  useEffect(() => {
+    if (user && open) {
+      basicInfoForm.reset({
+        name: (user as any)?.name || "",
+        email: (user as any)?.email || "",
+        gender: (user as any)?.gender || "",
+        dateOfBirth: (user as any)?.dateOfBirth || "",
+      });
+    }
+  }, [user, open]);
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -248,7 +276,7 @@ export default function ProfileWizard({ open, onClose }: ProfileWizardProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Gender</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
                       <FormControl>
                         <SelectTrigger data-testid="select-gender">
                           <SelectValue placeholder="Select gender" />
@@ -272,8 +300,11 @@ export default function ProfileWizard({ open, onClose }: ProfileWizardProps) {
                   <FormItem>
                     <FormLabel>Date of Birth</FormLabel>
                     <FormControl>
-                      <Input {...field} type="date" data-testid="input-dob" />
+                      <Input {...field} type="date" data-testid="input-dob" max={new Date().toISOString().split('T')[0]} />
                     </FormControl>
+                    <FormDescription className="text-xs text-muted-foreground">
+                      You must be at least 18 years old
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -315,7 +346,7 @@ export default function ProfileWizard({ open, onClose }: ProfileWizardProps) {
                     </FormControl>
                     <FormDescription>
                       Share your needs to connect with others who can help. You'll earn points for
-                      posting!
+                      posting! (Please describe your needs - minimum 10 characters)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -365,7 +396,7 @@ export default function ProfileWizard({ open, onClose }: ProfileWizardProps) {
                       />
                     </FormControl>
                     <FormDescription>
-                      Share what you can offer to help others in the community.
+                      Share what you can offer to help others in the community. (Please describe your offers - minimum 10 characters)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
