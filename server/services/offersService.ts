@@ -236,7 +236,7 @@ export class OffersService {
       )`.as('user')
     })
       .from(offers)
-      .leftJoin(sql`users u`, sql`u.id = ${offers.userId}`)
+      .leftJoin(sql`whatsapp_users u`, sql`u.id = ${offers.userId}`)
       .where(
         and(
           eq(offers.isPublic, true),
@@ -259,7 +259,7 @@ export class OffersService {
         )`.as('user')
       })
         .from(offers)
-        .leftJoin(sql`users u`, sql`u.id = ${offers.userId}`)
+        .leftJoin(sql`whatsapp_users u`, sql`u.id = ${offers.userId}`)
         .where(
           and(
             eq(offers.isPublic, true),
@@ -311,7 +311,7 @@ export class OffersService {
       )`.as('user')
     })
       .from(offers)
-      .leftJoin(sql`users u`, sql`u.id = ${offers.userId}`)
+      .leftJoin(sql`whatsapp_users u`, sql`u.id = ${offers.userId}`)
       .where(and(...conditions))
       .orderBy(desc(offers.createdAt))
       .limit(limit)

@@ -19,8 +19,13 @@ export default function Home() {
   const [locationFilter, setLocationFilter] = useState("");
 
   // Fetch needs for WytWall stream
+  const needsUrl = user ? '/api/needs' : '/api/needs/public';
+  const needsQueryUrl = selectedCategory !== 'all' 
+    ? `${needsUrl}?category=${selectedCategory}` 
+    : needsUrl;
+
   const { data: needsData, isLoading } = useQuery({
-    queryKey: user ? ['/api/needs', selectedCategory] : ['/api/needs/public', selectedCategory],
+    queryKey: [needsQueryUrl],
     enabled: true,
   });
 

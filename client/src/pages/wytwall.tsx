@@ -20,21 +20,25 @@ export default function WytWall() {
   const [searchQuery, setSearchQuery] = useState("");
   const [postType, setPostType] = useState<"all" | "needs" | "offers">("all");
 
-  // Build query params conditionally to avoid undefined values
-  const needsQueryParams = selectedCategory !== 'all' ? { category: selectedCategory } : {};
-  const offersQueryParams = selectedCategory !== 'all' ? { category: selectedCategory } : {};
+  // Build query URLs with proper query string parameters
+  const needsUrl = user ? '/api/needs' : '/api/needs/public';
+  const offersUrl = user ? '/api/offers' : '/api/offers/public';
+  
+  const needsQueryUrl = selectedCategory !== 'all' 
+    ? `${needsUrl}?category=${selectedCategory}` 
+    : needsUrl;
+  
+  const offersQueryUrl = selectedCategory !== 'all' 
+    ? `${offersUrl}?category=${selectedCategory}` 
+    : offersUrl;
 
   const { data: needsData, isLoading: needsLoading } = useQuery({
-    queryKey: user 
-      ? ['/api/needs', needsQueryParams]
-      : ['/api/needs/public', needsQueryParams],
+    queryKey: [needsQueryUrl],
     enabled: postType === "all" || postType === "needs",
   });
 
   const { data: offersData, isLoading: offersLoading } = useQuery({
-    queryKey: user 
-      ? ['/api/offers', offersQueryParams]
-      : ['/api/offers/public', offersQueryParams],
+    queryKey: [offersQueryUrl],
     enabled: postType === "all" || postType === "offers",
   });
 
