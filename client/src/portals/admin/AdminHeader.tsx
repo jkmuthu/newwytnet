@@ -112,21 +112,29 @@ export default function AdminHeader({
               </Button>
             </Link>
 
-            <Button variant="ghost" size="sm" data-testid="admin-search">
-              <Search className="h-5 w-5" />
-            </Button>
+            <Link href="/admin/search">
+              <Button variant="ghost" size="sm" data-testid="admin-search">
+                <Search className="h-5 w-5" />
+              </Button>
+            </Link>
 
-            <Button variant="ghost" size="sm" data-testid="admin-notifications">
-              <Bell className="h-5 w-5" />
-            </Button>
+            <Link href="/admin/notifications">
+              <Button variant="ghost" size="sm" data-testid="admin-notifications">
+                <Bell className="h-5 w-5" />
+              </Button>
+            </Link>
 
-            <Button variant="ghost" size="sm" data-testid="admin-system-monitor">
-              <Activity className="h-5 w-5" />
-            </Button>
+            <Link href="/admin/system-status">
+              <Button variant="ghost" size="sm" data-testid="admin-system-monitor">
+                <Activity className="h-5 w-5" />
+              </Button>
+            </Link>
 
-            <Button variant="ghost" size="sm" data-testid="admin-help">
-              <HelpCircle className="h-5 w-5" />
-            </Button>
+            <Link href="/admin/help">
+              <Button variant="ghost" size="sm" data-testid="admin-help">
+                <HelpCircle className="h-5 w-5" />
+              </Button>
+            </Link>
 
             {/* Admin User Menu */}
             <DropdownMenu>
