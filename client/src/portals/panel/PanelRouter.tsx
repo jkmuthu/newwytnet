@@ -15,6 +15,8 @@ import PaymentHistory from "@/components/payments/PaymentHistory";
 import MyNeeds from "./pages/my-needs";
 import MyOffers from "./pages/my-offers";
 import MyWallet from "./pages/my-wallet";
+import MyAccount from "./pages/my-account";
+import MyProfile from "./pages/my-profile";
 import { 
   LayoutDashboard, 
   Zap, 
@@ -1561,8 +1563,8 @@ export default function PanelRouter() {
       <Route path="/mypanel/wytapps" component={MyPanelWytApps} />
       <Route path="/mypanel/wythubs" component={MyPanelWytHubs} />
       <Route path="/mypanel/wytgames" component={MyPanelWytGames} />
-      <Route path="/mypanel/profile" component={MyPanelProfile} />
-      <Route path="/mypanel/account" component={MyPanelAccount} />
+      <Route path="/mypanel/profile" component={MyProfile} />
+      <Route path="/mypanel/account" component={MyAccount} />
 
       {/* Organization Panel routes - Team/organization features */}
       <Route path="/orgpanel" component={OrgPanelDashboard} />
