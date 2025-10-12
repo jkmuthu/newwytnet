@@ -1,10 +1,14 @@
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
-  ChevronLeft, 
+  ChevronLeft,
+  ChevronDown,
+  ChevronRight,
   LayoutDashboard,
   Users,
   Building,
@@ -34,7 +38,11 @@ interface NavigationItem {
   icon: React.ElementType;
   href: string;
   active: boolean;
-  superAdminOnly?: boolean;
+}
+
+interface NavSection {
+  section: string;
+  items: NavigationItem[];
 }
 
 interface AdminSidebarProps {
@@ -49,6 +57,15 @@ interface AdminSidebarProps {
 export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSidebarProps) {
   const [location] = useLocation();
   const { adminUser } = useAdminAuth();
+  const [openSections, setOpenSections] = useState<string[]>(['Dashboard', 'Data Management']);
+
+  const toggleSection = (section: string) => {
+    setOpenSections(prev => 
+      prev.includes(section) 
+        ? prev.filter(s => s !== section)
+        : [...prev, section]
+    );
+  };
 
   // Navigation items based on admin role
   const getNavigationItems = () => {
@@ -165,7 +182,11 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
           },
         ]
       },
-      {
+    ];
+
+    // Add System & Config section only for Super Admin
+    if (isSuperAdmin) {
+      baseItems.push({
         section: "System & Config",
         items: [
           { 
@@ -229,8 +250,8 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
             active: location === "/admin/security"
           },
         ]
-      }
-    ];
+      });
+    }
 
     return baseItems;
   };
@@ -270,20 +291,31 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
 
         {/* Navigation */}
         <ScrollArea className="flex-1 p-4">
-          <nav className="space-y-6">
+          <nav className="space-y-2">
             {navigationItems.map((section) => (
-              <div key={section.section}>
+              <Collapsible
+                key={section.section}
+                open={openSections.includes(section.section)}
+                onOpenChange={() => toggleSection(section.section)}
+              >
                 {!collapsed && (
-                  <h3 className="px-2 mb-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1">
-                    {section.section}
-                    {section.section.includes('Super Admin') && (
-                      <Badge variant="secondary" className="text-xs px-1 py-0 h-4 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                        SA
-                      </Badge>
+                  <CollapsibleTrigger className="w-full px-2 py-2 flex items-center justify-between text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hover:bg-red-50 dark:hover:bg-red-950 rounded-lg">
+                    <div className="flex items-center gap-1">
+                      {section.section}
+                      {section.section === 'System & Config' && (
+                        <Badge variant="secondary" className="text-xs px-1 py-0 h-4 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                          SA
+                        </Badge>
+                      )}
+                    </div>
+                    {openSections.includes(section.section) ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
                     )}
-                  </h3>
+                  </CollapsibleTrigger>
                 )}
-                <div className="space-y-1">
+                <CollapsibleContent className={cn("space-y-1", !collapsed && "mt-1")}>
                   {section.items.map((item) => (
                     <Link key={item.href} href={item.href}>
                       <Button
@@ -302,20 +334,15 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
                           item.active ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400"
                         )} />
                         {!collapsed && (
-                          <span className="truncate flex items-center gap-2">
+                          <span className="truncate">
                             {item.label}
-                            {item.superAdminOnly && (
-                              <Badge variant="outline" className="text-xs px-1 py-0 h-4 border-yellow-500 text-yellow-600 dark:text-yellow-400">
-                                SA
-                              </Badge>
-                            )}
                           </span>
                         )}
                       </Button>
                     </Link>
                   ))}
-                </div>
-              </div>
+                </CollapsibleContent>
+              </Collapsible>
             ))}
           </nav>
         </ScrollArea>
