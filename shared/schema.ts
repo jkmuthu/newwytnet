@@ -12,6 +12,7 @@ import {
   uuid,
   decimal,
   primaryKey,
+  unique,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -1995,6 +1996,43 @@ export const wytLifeApplications = pgTable("wyt_life_applications", {
 });
 
 // ========================================
+// DATASET MANAGEMENT SYSTEM
+// ========================================
+
+// Dataset Collections - Reference data collections (Countries, Languages, etc.)
+export const datasetCollections = pgTable("dataset_collections", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key", { length: 100 }).notNull().unique(), // e.g., 'countries', 'languages', 'currencies'
+  name: varchar("name", { length: 255 }).notNull(), // Display name
+  description: text("description"),
+  scope: varchar("scope", { length: 20 }).notNull().default('global'), // 'global' or 'tenant'
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  metadata: jsonb("metadata").default({}), // { immutable: true, icon: '🌍', category: 'system' }
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Dataset Items - Individual items within a collection
+export const datasetItems = pgTable("dataset_items", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  collectionId: uuid("collection_id").notNull().references(() => datasetCollections.id, { onDelete: 'cascade' }),
+  code: varchar("code", { length: 100 }).notNull(), // ISO code or unique identifier
+  label: varchar("label", { length: 255 }).notNull(), // Display label
+  locale: varchar("locale", { length: 10 }).default('en'), // Language/locale for label
+  isDefault: boolean("is_default").default(false),
+  sortOrder: integer("sort_order").default(0),
+  metadata: jsonb("metadata").default({}), // Additional properties (phonePrefix, symbol, etc.)
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueCodePerCollection: unique().on(table.collectionId, table.code, table.locale),
+}));
+
+// ========================================
+// END DATASET MANAGEMENT SYSTEM
+// ========================================
+
+// ========================================
 // END WYTWALL MARKETPLACE SYSTEM
 // ========================================
 
@@ -2081,6 +2119,18 @@ export type Organization = typeof organizations.$inferSelect;
 export type InsertOrganization = typeof organizations.$inferInsert;
 export type OrganizationMember = typeof organizationMembers.$inferSelect;
 export type InsertOrganizationMember = typeof organizationMembers.$inferInsert;
+
+// Dataset Management schema exports
+export const insertDatasetCollectionSchema = createInsertSchema(datasetCollections).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectDatasetCollectionSchema = createSelectSchema(datasetCollections);
+export const insertDatasetItemSchema = createInsertSchema(datasetItems).omit({ id: true, createdAt: true });
+export const selectDatasetItemSchema = createSelectSchema(datasetItems);
+
+// Dataset Management type exports
+export type DatasetCollection = typeof datasetCollections.$inferSelect;
+export type InsertDatasetCollection = z.infer<typeof insertDatasetCollectionSchema>;
+export type DatasetItem = typeof datasetItems.$inferSelect;
+export type InsertDatasetItem = z.infer<typeof insertDatasetItemSchema>;
 
 // WytLife Applications schema exports
 export const insertWytLifeApplicationSchema = createInsertSchema(wytLifeApplications).omit({ id: true, createdAt: true, updatedAt: true });
