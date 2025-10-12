@@ -73,6 +73,12 @@ import {
   payments,
   orders,
   wytLifeApplications,
+  userProfiles,
+  userNeeds,
+  userOffers,
+  insertUserProfileSchema,
+  insertUserNeedSchema,
+  insertUserOfferSchema,
   offers
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
@@ -97,7 +103,7 @@ import {
   insertTrademarkSearchSchema
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql, gte, lte, like, or, ilike } from "drizzle-orm";
+import { eq, desc, and, sql, gte, lte, like, or, ilike, not } from "drizzle-orm";
 
 // Trademark analysis functions now imported from services/trademarkAnalysis.ts
 
@@ -5892,6 +5898,240 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error: any) {
       console.error('Error completing wizard:', error);
       res.status(500).json({ error: error.message || 'Failed to complete wizard' });
+    }
+  });
+
+  // ========================================
+  // ACCOUNT MANAGEMENT & PROFILE ROUTES
+  // ========================================
+
+  // Get user detailed profile
+  app.get('/api/account/profile', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const [profile] = await db.select()
+        .from(userProfiles)
+        .where(eq(userProfiles.userId, principal.id));
+
+      res.json(profile || null);
+    } catch (error: any) {
+      console.error('Error fetching profile:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch profile' });
+    }
+  });
+
+  // Update user detailed profile
+  app.patch('/api/account/profile', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const profileData = insertUserProfileSchema.parse({ ...req.body, userId: principal.id });
+
+      // Check if profile exists
+      const [existing] = await db.select()
+        .from(userProfiles)
+        .where(eq(userProfiles.userId, principal.id));
+
+      if (existing) {
+        // Update existing profile
+        await db.update(userProfiles)
+          .set({ ...profileData, updatedAt: new Date() })
+          .where(eq(userProfiles.userId, principal.id));
+      } else {
+        // Create new profile
+        await db.insert(userProfiles).values(profileData);
+      }
+
+      res.json({ success: true, message: 'Profile updated successfully' });
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      res.status(500).json({ error: error.message || 'Failed to update profile' });
+    }
+  });
+
+  // Change username
+  app.patch('/api/account/username', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { username } = req.body;
+      if (!username || username.length < 3) {
+        return res.status(400).json({ error: 'Username must be at least 3 characters' });
+      }
+
+      // Check if username is already taken
+      const [existing] = await db.select()
+        .from(userProfiles)
+        .where(and(
+          eq(userProfiles.username, username),
+          not(eq(userProfiles.userId, principal.id))
+        ));
+
+      if (existing) {
+        return res.status(400).json({ error: 'Username already taken' });
+      }
+
+      // Update or create profile with new username
+      const [profile] = await db.select()
+        .from(userProfiles)
+        .where(eq(userProfiles.userId, principal.id));
+
+      if (profile) {
+        await db.update(userProfiles)
+          .set({ username, updatedAt: new Date() })
+          .where(eq(userProfiles.userId, principal.id));
+      } else {
+        await db.insert(userProfiles).values({ userId: principal.id, username });
+      }
+
+      res.json({ success: true, message: 'Username updated successfully' });
+    } catch (error: any) {
+      console.error('Error updating username:', error);
+      res.status(500).json({ error: error.message || 'Failed to update username' });
+    }
+  });
+
+  // Change password
+  app.patch('/api/account/password', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { currentPassword, newPassword } = req.body;
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: 'Current and new passwords are required' });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: 'New password must be at least 6 characters' });
+      }
+
+      // Get user
+      const [user] = await db.select()
+        .from(whatsappUsers)
+        .where(eq(whatsappUsers.id, principal.id));
+
+      if (!user || !user.passwordHash) {
+        return res.status(400).json({ error: 'No password set for this account' });
+      }
+
+      // Verify current password
+      const bcrypt = await import('bcryptjs');
+      const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!isValid) {
+        return res.status(400).json({ error: 'Current password is incorrect' });
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Update password
+      await db.update(whatsappUsers)
+        .set({ passwordHash: hashedPassword, updatedAt: new Date() })
+        .where(eq(whatsappUsers.id, principal.id));
+
+      res.json({ success: true, message: 'Password updated successfully' });
+    } catch (error: any) {
+      console.error('Error updating password:', error);
+      res.status(500).json({ error: error.message || 'Failed to update password' });
+    }
+  });
+
+  // ========================================
+  // USER NEEDS & OFFERS ROUTES
+  // ========================================
+
+  // Get user's needs
+  app.get('/api/needs/my-needs', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const needs = await db.select()
+        .from(userNeeds)
+        .where(eq(userNeeds.userId, principal.id))
+        .orderBy(desc(userNeeds.createdAt));
+
+      res.json(needs);
+    } catch (error: any) {
+      console.error('Error fetching needs:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch needs' });
+    }
+  });
+
+  // Create a need
+  app.post('/api/needs', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const needData = insertUserNeedSchema.parse({ ...req.body, userId: principal.id });
+
+      const [need] = await db.insert(userNeeds)
+        .values(needData)
+        .returning();
+
+      res.json(need);
+    } catch (error: any) {
+      console.error('Error creating need:', error);
+      res.status(500).json({ error: error.message || 'Failed to create need' });
+    }
+  });
+
+  // Get user's offers
+  app.get('/api/offers/my-offers', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const userOffersList = await db.select()
+        .from(userOffers)
+        .where(eq(userOffers.userId, principal.id))
+        .orderBy(desc(userOffers.createdAt));
+
+      res.json(userOffersList);
+    } catch (error: any) {
+      console.error('Error fetching offers:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch offers' });
+    }
+  });
+
+  // Create an offer
+  app.post('/api/offers', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const offerData = insertUserOfferSchema.parse({ ...req.body, userId: principal.id });
+
+      const [offer] = await db.insert(userOffers)
+        .values(offerData)
+        .returning();
+
+      res.json(offer);
+    } catch (error: any) {
+      console.error('Error creating offer:', error);
+      res.status(500).json({ error: error.message || 'Failed to create offer' });
     }
   });
 

@@ -1958,7 +1958,7 @@ export const organizations = pgTable("organizations", {
 
 // Organization Members - Team members in organizations
 export const organizationMembers = pgTable("organization_members", {
-  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: uuid("id").default(sql`gen_random_uuid()`),
   organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
   userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
   role: varchar("role", { length: 50 }).notNull().default('member'), // owner, admin, member

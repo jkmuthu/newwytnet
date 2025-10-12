@@ -84,10 +84,10 @@ export default function MyOffers() {
 
   // Fetch user's offers
   const { data: offersData, isLoading } = useQuery({
-    queryKey: ["/api/offers/my"],
+    queryKey: ["/api/offers/my-offers"],
   });
 
-  const offers = (offersData as any)?.offers || [];
+  const offers = Array.isArray(offersData) ? offersData : [];
 
   // Create form
   const createForm = useForm<OfferFormData>({
@@ -98,7 +98,7 @@ export default function MyOffers() {
       category: "service",
       location: "",
       price: "",
-      currency: "INR",
+      currency: "USD",
     },
   });
 
@@ -111,7 +111,7 @@ export default function MyOffers() {
       category: "service",
       location: "",
       price: "",
-      currency: "INR",
+      currency: "USD",
     },
   });
 
@@ -121,7 +121,7 @@ export default function MyOffers() {
       return apiRequest("POST", "/api/offers", data);
     },
     onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/offers/my"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/offers/my-offers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallet/balance"] });
       setIsCreateOpen(false);
       createForm.reset();
@@ -146,7 +146,7 @@ export default function MyOffers() {
       return apiRequest("PUT", `/api/offers/${id}`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/offers/my"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/offers/my-offers"] });
       setIsEditOpen(false);
       setSelectedOffer(null);
       toast({
@@ -169,7 +169,7 @@ export default function MyOffers() {
       return apiRequest("DELETE", `/api/offers/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/offers/my"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/offers/my-offers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallet/balance"] });
       setIsDeleteOpen(false);
       setSelectedOffer(null);

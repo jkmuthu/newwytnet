@@ -59,7 +59,7 @@ export default function MyNeeds() {
 
   // Fetch user's needs
   const { data: needsData, isLoading } = useQuery({
-    queryKey: ["/api/needs/my"],
+    queryKey: ["/api/needs/my-needs"],
   });
 
   const form = useForm<NeedForm>({
@@ -84,11 +84,11 @@ export default function MyNeeds() {
       return response.json();
     },
     onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/needs/my"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/needs/my-needs"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wallet/balance"] });
       toast({
         title: "Need Created! 🎉",
-        description: `You've earned ${data.pointsEarned || 5} WytPoints for posting your need!`,
+        description: `Your need has been posted successfully!`,
       });
       form.reset();
       setDialogOpen(false);
@@ -113,7 +113,7 @@ export default function MyNeeds() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/needs/my"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/needs/my-needs"] });
       toast({
         title: "Need Updated",
         description: "Your need has been updated successfully",
@@ -133,7 +133,7 @@ export default function MyNeeds() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/needs/my"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/needs/my-needs"] });
       toast({
         title: "Need Deleted",
         description: "Your need has been removed",
@@ -156,7 +156,7 @@ export default function MyNeeds() {
       description: need.description,
       category: need.category,
       location: need.location || "",
-      budget: need.budget || "",
+      budget: need.budget ? need.budget.toString() : "",
     });
     setDialogOpen(true);
   };
@@ -167,7 +167,7 @@ export default function MyNeeds() {
     setDialogOpen(true);
   };
 
-  const needs = (needsData as any)?.success ? (needsData as any).needs : [];
+  const needs = Array.isArray(needsData) ? needsData : [];
 
   return (
     <div className="space-y-6">

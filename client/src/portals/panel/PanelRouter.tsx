@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Switch, Route, Redirect } from "wouter";
 import PanelLayout from "./PanelLayout";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import AppPurchaseModal from "@/components/marketplace/AppPurchaseModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -769,207 +772,489 @@ function MyPanelWallet() {
 // My Account - Profile and Settings
 function MyPanelAccount() {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const [isChangingUsername, setIsChangingUsername] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  
+  const { data: profile } = useQuery({
+    queryKey: ['/api/account/profile'],
+    refetchOnWindowFocus: false,
+  });
+
+  const usernameForm = useForm<{ username: string }>({
+    defaultValues: { username: '' },
+  });
+
+  const passwordForm = useForm<{ currentPassword: string; newPassword: string; confirmPassword: string }>({
+    defaultValues: { currentPassword: '', newPassword: '', confirmPassword: '' },
+  });
+
+  // Pre-fill username when profile loads
+  useEffect(() => {
+    if (profile?.username) {
+      usernameForm.reset({ username: profile.username });
+    }
+  }, [profile]);
+
+  const updateUsernameMutation = useMutation({
+    mutationFn: async (data: { username: string }) => {
+      return await apiRequest('PATCH', '/api/account/username', data);
+    },
+    onSuccess: () => {
+      toast({ title: 'Success', description: 'Username updated successfully' });
+      queryClient.invalidateQueries({ queryKey: ['/api/account/profile'] });
+      setIsChangingUsername(false);
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to update username', variant: 'destructive' });
+    },
+  });
+
+  const updatePasswordMutation = useMutation({
+    mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
+      return await apiRequest('PATCH', '/api/account/password', data);
+    },
+    onSuccess: () => {
+      toast({ title: 'Success', description: 'Password updated successfully' });
+      passwordForm.reset();
+      setIsChangingPassword(false);
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to update password', variant: 'destructive' });
+    },
+  });
+
+  const onUsernameSubmit = (data: { username: string }) => {
+    if (!data.username || data.username.length < 3) {
+      toast({ title: 'Error', description: 'Username must be at least 3 characters', variant: 'destructive' });
+      return;
+    }
+    updateUsernameMutation.mutate(data);
+  };
+
+  const onPasswordSubmit = (data: { currentPassword: string; newPassword: string; confirmPassword: string }) => {
+    if (data.newPassword !== data.confirmPassword) {
+      toast({ title: 'Error', description: 'Passwords do not match', variant: 'destructive' });
+      return;
+    }
+    if (data.newPassword.length < 6) {
+      toast({ title: 'Error', description: 'Password must be at least 6 characters', variant: 'destructive' });
+      return;
+    }
+    updatePasswordMutation.mutate({ currentPassword: data.currentPassword, newPassword: data.newPassword });
+  };
   
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold mb-2">My Account</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage your profile and account settings</p>
+          <p className="text-gray-600 dark:text-gray-400">Manage your account credentials and security</p>
         </div>
       </div>
       
-      <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="preferences">Preferences</TabsTrigger>
-          <TabsTrigger value="devices">Devices</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="profile">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Profile Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                    <User className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium">{(user as any)?.email?.split('@')[0] || 'User'}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{(user as any)?.email}</p>
-                    <Badge variant="outline">Verified</Badge>
-                  </div>
+      <div className="grid gap-6">
+        {/* Username Section */}
+        <Card data-testid="card-username">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Username
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!isChangingUsername ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Current username</p>
+                  <p className="text-lg font-medium mt-1" data-testid="text-current-username">
+                    {profile?.username || 'Not set'}
+                  </p>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Full Name</label>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{(user as any)?.email?.split('@')[0] || 'Not set'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Email</label>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{(user as any)?.email}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Member Since</label>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">September 2025</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Plan</label>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Starter</p>
-                  </div>
-                </div>
-                
-                <Button>
+                <Button 
+                  onClick={() => setIsChangingUsername(true)}
+                  variant="outline"
+                  data-testid="button-change-username"
+                >
                   <Edit className="h-4 w-4 mr-2" />
-                  Edit Profile
+                  Change Username
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="security">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Security Settings
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <h3 className="font-medium">Password</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Last changed 30 days ago</p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Change Password
+            ) : (
+              <form onSubmit={usernameForm.handleSubmit(onUsernameSubmit)} className="space-y-4">
+                <div>
+                  <label htmlFor="username" className="text-sm font-medium">New Username</label>
+                  <input
+                    id="username"
+                    type="text"
+                    {...usernameForm.register('username')}
+                    className="mt-1 w-full px-3 py-2 border rounded-md"
+                    placeholder="Enter new username"
+                    data-testid="input-username"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    type="submit" 
+                    disabled={updateUsernameMutation.isPending}
+                    data-testid="button-save-username"
+                  >
+                    {updateUsernameMutation.isPending ? 'Saving...' : 'Save'}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsChangingUsername(false)}
+                    data-testid="button-cancel-username"
+                  >
+                    Cancel
                   </Button>
                 </div>
-                
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <h3 className="font-medium">Two-Factor Authentication</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Add an extra layer of security</p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Enable 2FA
-                  </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Password Section */}
+        <Card data-testid="card-password">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Password
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!isChangingPassword ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Password</p>
+                  <p className="text-lg font-medium mt-1">••••••••</p>
                 </div>
-                
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <h3 className="font-medium">Login Notifications</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Get notified of new sign-ins</p>
-                  </div>
-                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                    Enabled
-                  </Badge>
-                </div>
+                <Button 
+                  onClick={() => setIsChangingPassword(true)}
+                  variant="outline"
+                  data-testid="button-change-password"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Change Password
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="preferences">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Preferences
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <h3 className="font-medium">Email Notifications</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Receive updates via email</p>
-                  </div>
-                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                    Enabled
-                  </Badge>
+            ) : (
+              <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
+                <div>
+                  <label htmlFor="currentPassword" className="text-sm font-medium">Current Password</label>
+                  <input
+                    id="currentPassword"
+                    type="password"
+                    {...passwordForm.register('currentPassword')}
+                    className="mt-1 w-full px-3 py-2 border rounded-md"
+                    placeholder="Enter current password"
+                    data-testid="input-current-password"
+                  />
                 </div>
-                
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <h3 className="font-medium">Marketing Communications</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Product updates and offers</p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Manage
+                <div>
+                  <label htmlFor="newPassword" className="text-sm font-medium">New Password</label>
+                  <input
+                    id="newPassword"
+                    type="password"
+                    {...passwordForm.register('newPassword')}
+                    className="mt-1 w-full px-3 py-2 border rounded-md"
+                    placeholder="Enter new password"
+                    data-testid="input-new-password"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="confirmPassword" className="text-sm font-medium">Confirm New Password</label>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    {...passwordForm.register('confirmPassword')}
+                    className="mt-1 w-full px-3 py-2 border rounded-md"
+                    placeholder="Confirm new password"
+                    data-testid="input-confirm-password"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    type="submit" 
+                    disabled={updatePasswordMutation.isPending}
+                    data-testid="button-save-password"
+                  >
+                    {updatePasswordMutation.isPending ? 'Saving...' : 'Save'}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => {
+                      passwordForm.reset();
+                      setIsChangingPassword(false);
+                    }}
+                    data-testid="button-cancel-password"
+                  >
+                    Cancel
                   </Button>
                 </div>
-                
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <h3 className="font-medium">Data Export</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Download your data</p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Request Export
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="devices">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Monitor className="h-5 w-5" />
-                Connected Devices
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Monitor className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    <div>
-                      <h3 className="font-medium">Chrome on Windows</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">Current session • India</p>
-                    </div>
-                  </div>
-                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                    Active
-                  </Badge>
-                </div>
-                
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Smartphone className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    <div>
-                      <h3 className="font-medium">Mobile Safari</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">2 days ago • India</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Revoke
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Email Section - Read Only */}
+        <Card data-testid="card-email">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Email Address
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Your email address</p>
+              <p className="text-lg font-medium mt-1" data-testid="text-email">{(user as any)?.email}</p>
+              <p className="text-xs text-gray-500 mt-2">Email cannot be changed</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
 
 function MyPanelProfile() {
-  return <MyPanelAccount />;
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ['/api/account/profile'],
+    refetchOnWindowFocus: false,
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest('PATCH', '/api/account/profile', data);
+    },
+    onSuccess: () => {
+      toast({ title: 'Success', description: 'Profile updated successfully' });
+      queryClient.invalidateQueries({ queryKey: ['/api/account/profile'] });
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message || 'Failed to update profile', variant: 'destructive' });
+    },
+  });
+
+  const profileForm = useForm({
+    defaultValues: {
+      bio: profile?.bio || '',
+      location: profile?.location || '',
+      website: profile?.website || '',
+      company: profile?.company || '',
+      jobTitle: profile?.jobTitle || '',
+      phone: profile?.phone || '',
+      address: profile?.address || '',
+      city: profile?.city || '',
+      state: profile?.state || '',
+      country: profile?.country || '',
+      zipCode: profile?.zipCode || '',
+    },
+  });
+
+  // Update form when profile loads
+  useEffect(() => {
+    if (profile) {
+      profileForm.reset({
+        bio: profile.bio || '',
+        location: profile.location || '',
+        website: profile.website || '',
+        company: profile.company || '',
+        jobTitle: profile.jobTitle || '',
+        phone: profile.phone || '',
+        address: profile.address || '',
+        city: profile.city || '',
+        state: profile.state || '',
+        country: profile.country || '',
+        zipCode: profile.zipCode || '',
+      });
+    }
+  }, [profile]);
+
+  const onSubmit = (data: any) => {
+    updateProfileMutation.mutate(data);
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold mb-2">My Profile</h1>
+        <p className="text-gray-600 dark:text-gray-400">Update your detailed profile information</p>
+      </div>
+
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-6">
+            <p>Loading profile...</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <form onSubmit={profileForm.handleSubmit(onSubmit)}>
+          <div className="grid gap-6">
+            {/* Personal Information */}
+            <Card data-testid="card-personal-info">
+              <CardHeader>
+                <CardTitle>Personal Information</CardTitle>
+              </CardHeader>
+              <CardContent className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="bio" className="text-sm font-medium">Bio</label>
+                  <textarea
+                    id="bio"
+                    {...profileForm.register('bio')}
+                    className="mt-1 w-full px-3 py-2 border rounded-md"
+                    rows={3}
+                    placeholder="Tell us about yourself"
+                    data-testid="input-bio"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="location" className="text-sm font-medium">Location</label>
+                  <input
+                    id="location"
+                    type="text"
+                    {...profileForm.register('location')}
+                    className="mt-1 w-full px-3 py-2 border rounded-md"
+                    placeholder="City, Country"
+                    data-testid="input-location"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="website" className="text-sm font-medium">Website</label>
+                  <input
+                    id="website"
+                    type="url"
+                    {...profileForm.register('website')}
+                    className="mt-1 w-full px-3 py-2 border rounded-md"
+                    placeholder="https://example.com"
+                    data-testid="input-website"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="phone" className="text-sm font-medium">Phone</label>
+                  <input
+                    id="phone"
+                    type="tel"
+                    {...profileForm.register('phone')}
+                    className="mt-1 w-full px-3 py-2 border rounded-md"
+                    placeholder="+1 234 567 8900"
+                    data-testid="input-phone"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Professional Information */}
+            <Card data-testid="card-professional-info">
+              <CardHeader>
+                <CardTitle>Professional Information</CardTitle>
+              </CardHeader>
+              <CardContent className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="company" className="text-sm font-medium">Company</label>
+                  <input
+                    id="company"
+                    type="text"
+                    {...profileForm.register('company')}
+                    className="mt-1 w-full px-3 py-2 border rounded-md"
+                    placeholder="Company name"
+                    data-testid="input-company"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="jobTitle" className="text-sm font-medium">Job Title</label>
+                  <input
+                    id="jobTitle"
+                    type="text"
+                    {...profileForm.register('jobTitle')}
+                    className="mt-1 w-full px-3 py-2 border rounded-md"
+                    placeholder="Your role"
+                    data-testid="input-job-title"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Address Information */}
+            <Card data-testid="card-address-info">
+              <CardHeader>
+                <CardTitle>Address</CardTitle>
+              </CardHeader>
+              <CardContent className="grid md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label htmlFor="address" className="text-sm font-medium">Street Address</label>
+                  <input
+                    id="address"
+                    type="text"
+                    {...profileForm.register('address')}
+                    className="mt-1 w-full px-3 py-2 border rounded-md"
+                    placeholder="123 Main St"
+                    data-testid="input-address"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="city" className="text-sm font-medium">City</label>
+                  <input
+                    id="city"
+                    type="text"
+                    {...profileForm.register('city')}
+                    className="mt-1 w-full px-3 py-2 border rounded-md"
+                    placeholder="City"
+                    data-testid="input-city"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="state" className="text-sm font-medium">State / Province</label>
+                  <input
+                    id="state"
+                    type="text"
+                    {...profileForm.register('state')}
+                    className="mt-1 w-full px-3 py-2 border rounded-md"
+                    placeholder="State"
+                    data-testid="input-state"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="country" className="text-sm font-medium">Country</label>
+                  <input
+                    id="country"
+                    type="text"
+                    {...profileForm.register('country')}
+                    className="mt-1 w-full px-3 py-2 border rounded-md"
+                    placeholder="Country"
+                    data-testid="input-country"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="zipCode" className="text-sm font-medium">ZIP / Postal Code</label>
+                  <input
+                    id="zipCode"
+                    type="text"
+                    {...profileForm.register('zipCode')}
+                    className="mt-1 w-full px-3 py-2 border rounded-md"
+                    placeholder="12345"
+                    data-testid="input-zip-code"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex gap-2">
+              <Button type="submit" disabled={updateProfileMutation.isPending} data-testid="button-save-profile">
+                {updateProfileMutation.isPending ? 'Saving...' : 'Save Profile'}
+              </Button>
+            </div>
+          </div>
+        </form>
+      )}
+    </div>
+  );
 }
 
 function MyPanelSettings() {
