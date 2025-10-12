@@ -37,140 +37,145 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
   // Navigation items based on workspace context
   const getNavigationItems = () => {
     if (currentWorkspace.type === 'personal') {
+      // MyPanel Navigation
       return [
         {
-          section: "Personal",
+          section: "MyPanel",
           items: [
             { 
-              label: "Dashboard", 
+              label: "My WytWall", 
               icon: Home, 
-              href: "/panel/me", 
-              active: location === "/panel/me" || location === "/panel/me/dashboard" 
+              href: "/mypanel/wytwall", 
+              active: location === "/mypanel" || location === "/mypanel/dashboard" || location === "/mypanel/wytwall" 
             },
             { 
-              label: "Profile", 
-              icon: User, 
-              href: "/panel/me/profile", 
-              active: location === "/panel/me/profile" 
-            },
-            { 
-              label: "Projects", 
-              icon: FolderOpen, 
-              href: "/panel/me/projects", 
-              active: location === "/panel/me/projects" 
-            },
-            { 
-              label: "Analytics", 
-              icon: BarChart3, 
-              href: "/panel/me/analytics", 
-              active: location === "/panel/me/analytics" 
-            },
-            { 
-              label: "Calendar", 
-              icon: Calendar, 
-              href: "/panel/me/calendar", 
-              active: location === "/panel/me/calendar" 
-            },
-          ]
-        },
-        {
-          section: "Marketplace",
-          items: [
-            { 
-              label: "MyNeeds", 
+              label: "My Needs", 
               icon: ShoppingCart, 
-              href: "/panel/me/my-needs", 
-              active: location === "/panel/me/my-needs" 
+              href: "/mypanel/needs", 
+              active: location === "/mypanel/needs" 
             },
             { 
-              label: "MyOffers", 
+              label: "My Offers", 
               icon: Package, 
-              href: "/panel/me/my-offers", 
-              active: location === "/panel/me/my-offers" 
+              href: "/mypanel/offers", 
+              active: location === "/mypanel/offers" 
             },
-          ]
-        },
-        {
-          section: "Tools",
-          items: [
             { 
-              label: "Documents", 
+              label: "My Duties", 
               icon: FileText, 
-              href: "/panel/me/documents", 
-              active: location === "/panel/me/documents" 
+              href: "/mypanel/duties", 
+              active: location === "/mypanel/duties" 
             },
             { 
-              label: "Messages", 
-              icon: MessageSquare, 
-              href: "/panel/me/messages", 
-              active: location === "/panel/me/messages" 
+              label: "My WytScore", 
+              icon: BarChart3, 
+              href: "/mypanel/wytscore", 
+              active: location === "/mypanel/wytscore" 
             },
-          ]
-        },
-        {
-          section: "Account",
-          items: [
             { 
-              label: "Settings", 
+              label: "My Circle", 
+              icon: Users, 
+              href: "/mypanel/circle", 
+              active: location === "/mypanel/circle" 
+            },
+            { 
+              label: "My WytWallet", 
+              icon: CreditCard, 
+              href: "/mypanel/wallet", 
+              active: location === "/mypanel/wallet" 
+            },
+            { 
+              label: "My WytApps", 
+              icon: Package, 
+              href: "/mypanel/wytapps", 
+              active: location === "/mypanel/wytapps" 
+            },
+            { 
+              label: "My WytHubs", 
+              icon: Building, 
+              href: "/mypanel/wythubs", 
+              active: location === "/mypanel/wythubs" 
+            },
+            { 
+              label: "My WytGames", 
+              icon: Calendar, 
+              href: "/mypanel/wytgames", 
+              active: location === "/mypanel/wytgames" 
+            },
+            { 
+              label: "My Profile", 
+              icon: User, 
+              href: "/mypanel/profile", 
+              active: location === "/mypanel/profile" 
+            },
+            { 
+              label: "My Account", 
               icon: Settings, 
-              href: "/panel/me/settings", 
-              active: location === "/panel/me/settings" 
+              href: "/mypanel/account", 
+              active: location === "/mypanel/account" 
             },
           ]
         }
       ];
     } else {
-      // Organization workspace navigation
+      // OrgPanel Navigation
       return [
         {
-          section: "Organization",
+          section: "OrgPanel",
           items: [
             { 
-              label: "Dashboard", 
+              label: "Our WytWall", 
               icon: Building, 
-              href: `/panel/org/${currentWorkspace.orgId}`, 
-              active: location === `/panel/org/${currentWorkspace.orgId}` 
+              href: "/orgpanel/wytwall", 
+              active: location === "/orgpanel" || location === "/orgpanel/dashboard" || location === "/orgpanel/wytwall" 
             },
             { 
-              label: "Members", 
-              icon: Users, 
-              href: `/panel/org/${currentWorkspace.orgId}/members`, 
-              active: location === `/panel/org/${currentWorkspace.orgId}/members` 
+              label: "Our Needs", 
+              icon: ShoppingCart, 
+              href: "/orgpanel/needs", 
+              active: location === "/orgpanel/needs" 
             },
             { 
-              label: "Projects", 
-              icon: FolderOpen, 
-              href: `/panel/org/${currentWorkspace.orgId}/projects`, 
-              active: location === `/panel/org/${currentWorkspace.orgId}/projects` 
+              label: "Our Offers", 
+              icon: Package, 
+              href: "/orgpanel/offers", 
+              active: location === "/orgpanel/offers" 
             },
             { 
-              label: "Analytics", 
-              icon: BarChart3, 
-              href: `/panel/org/${currentWorkspace.orgId}/analytics`, 
-              active: location === `/panel/org/${currentWorkspace.orgId}/analytics` 
+              label: "Our Duties", 
+              icon: FileText, 
+              href: "/orgpanel/duties", 
+              active: location === "/orgpanel/duties" 
             },
-          ]
-        },
-        {
-          section: "Management",
-          items: [
             { 
-              label: "Billing", 
+              label: "Our WytApps", 
+              icon: Package, 
+              href: "/orgpanel/wytapps", 
+              active: location === "/orgpanel/wytapps" 
+            },
+            { 
+              label: "Our WytWallet", 
               icon: CreditCard, 
-              href: `/panel/org/${currentWorkspace.orgId}/billing`, 
-              active: location === `/panel/org/${currentWorkspace.orgId}/billing` 
+              href: "/orgpanel/wallet", 
+              active: location === "/orgpanel/wallet" 
             },
             { 
-              label: "Security", 
-              icon: Shield, 
-              href: `/panel/org/${currentWorkspace.orgId}/security`, 
-              active: location === `/panel/org/${currentWorkspace.orgId}/security` 
+              label: "Our Team", 
+              icon: Users, 
+              href: "/orgpanel/team", 
+              active: location === "/orgpanel/team" 
             },
             { 
-              label: "Settings", 
+              label: "Our Profile", 
+              icon: User, 
+              href: "/orgpanel/profile", 
+              active: location === "/orgpanel/profile" 
+            },
+            { 
+              label: "Our Account", 
               icon: Settings, 
-              href: `/panel/org/${currentWorkspace.orgId}/settings`, 
-              active: location === `/panel/org/${currentWorkspace.orgId}/settings` 
+              href: "/orgpanel/account", 
+              active: location === "/orgpanel/account" 
             },
           ]
         }

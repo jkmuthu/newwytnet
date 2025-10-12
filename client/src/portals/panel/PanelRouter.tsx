@@ -1435,48 +1435,147 @@ function OrgPanelProjects() {
   );
 }
 
+// Placeholder components for missing pages
+function MyPanelDuties() {
+  return (
+    <div className="p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>My Duties</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">Duties and responsibilities tracking coming soon...</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function MyPanelWytScore() {
+  return (
+    <div className="p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>My WytScore</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">WytScore metrics and analytics coming soon...</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function MyPanelCircle() {
+  return (
+    <div className="p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>My Circle</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">Social circles and connections coming soon...</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function MyPanelWytHubs() {
+  return (
+    <div className="p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>My WytHubs</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">Hubs management coming soon...</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function MyPanelWytGames() {
+  return (
+    <div className="p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>My WytGames</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">Games and activities coming soon...</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function OrgPanelDuties() {
+  return (
+    <div className="p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Our Duties</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">Organization duties and responsibilities tracking coming soon...</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 /**
  * PanelRouter handles WytPanel routes for authenticated users
- * Routes: '/panel/me/*', '/panel/org/:orgId/*'
+ * Routes: '/mypanel/*', '/orgpanel/*'
  */
 export default function PanelRouter() {
   return (
     <PanelLayout>
       <Switch>
-      {/* Redirect /panel to /panel/me */}
+      {/* Redirect old routes to new structure */}
       <Route path="/panel">
-        <Redirect to="/panel/me" />
+        <Redirect to="/mypanel" />
+      </Route>
+      <Route path="/panel/me/:rest*">
+        {(params) => <Redirect to={`/mypanel/${params.rest || ''}`} />}
+      </Route>
+      <Route path="/panel/org/:rest*">
+        {(params) => <Redirect to={`/orgpanel/${params.rest || ''}`} />}
+      </Route>
+      <Route path="/panel/org">
+        <Redirect to="/orgpanel" />
       </Route>
 
       {/* My Panel routes - Personal dashboard and features */}
-      <Route path="/panel/me" component={MyPanelDashboard} />
-      <Route path="/panel/me/dashboard" component={MyPanelDashboard} />
-      <Route path="/panel/me/profile" component={MyPanelProfile} />
-      <Route path="/panel/me/settings" component={MyPanelSettings} />
-      <Route path="/panel/me/projects" component={MyPanelProjects} />
-      <Route path="/panel/me/wyttools" component={MyPanelWytTools} />
-      <Route path="/panel/me/wytapps" component={MyPanelWytApps} />
-      <Route path="/panel/me/wallet" component={MyWallet} />
-      <Route path="/panel/me/account" component={MyPanelAccount} />
-      <Route path="/panel/me/my-needs" component={MyNeeds} />
-      <Route path="/panel/me/my-offers" component={MyOffers} />
+      <Route path="/mypanel" component={MyPanelDashboard} />
+      <Route path="/mypanel/dashboard" component={MyPanelDashboard} />
+      <Route path="/mypanel/wytwall" component={MyPanelDashboard} />
+      <Route path="/mypanel/needs" component={MyNeeds} />
+      <Route path="/mypanel/offers" component={MyOffers} />
+      <Route path="/mypanel/duties" component={MyPanelDuties} />
+      <Route path="/mypanel/wytscore" component={MyPanelWytScore} />
+      <Route path="/mypanel/circle" component={MyPanelCircle} />
+      <Route path="/mypanel/wallet" component={MyWallet} />
+      <Route path="/mypanel/wytapps" component={MyPanelWytApps} />
+      <Route path="/mypanel/wythubs" component={MyPanelWytHubs} />
+      <Route path="/mypanel/wytgames" component={MyPanelWytGames} />
+      <Route path="/mypanel/profile" component={MyPanelProfile} />
+      <Route path="/mypanel/account" component={MyPanelAccount} />
 
       {/* Organization Panel routes - Team/organization features */}
-      <Route path="/panel/org/:orgId">
-        {(params) => <OrgPanelDashboard />}
-      </Route>
-      <Route path="/panel/org/:orgId/dashboard">
-        {(params) => <OrgPanelDashboard />}
-      </Route>
-      <Route path="/panel/org/:orgId/settings">
-        {(params) => <OrgPanelSettings />}
-      </Route>
-      <Route path="/panel/org/:orgId/members">
-        {(params) => <OrgPanelMembers />}
-      </Route>
-      <Route path="/panel/org/:orgId/projects">
-        {(params) => <OrgPanelProjects />}
-      </Route>
+      <Route path="/orgpanel" component={OrgPanelDashboard} />
+      <Route path="/orgpanel/dashboard" component={OrgPanelDashboard} />
+      <Route path="/orgpanel/wytwall" component={OrgPanelDashboard} />
+      <Route path="/orgpanel/needs" component={MyNeeds} />
+      <Route path="/orgpanel/offers" component={MyOffers} />
+      <Route path="/orgpanel/duties" component={OrgPanelDuties} />
+      <Route path="/orgpanel/wytapps" component={MyPanelWytApps} />
+      <Route path="/orgpanel/wallet" component={MyWallet} />
+      <Route path="/orgpanel/team" component={OrgPanelMembers} />
+      <Route path="/orgpanel/profile" component={OrgPanelSettings} />
+      <Route path="/orgpanel/account" component={OrgPanelSettings} />
 
         {/* 404 fallback for panel routes */}
         <Route>

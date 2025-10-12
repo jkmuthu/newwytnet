@@ -44,14 +44,22 @@ function PortalRouter() {
         <Route path="/admin" component={AdminRouter} />
         <Route path="/admin/:rest*" component={AdminRouter} />
         
-        {/* Panel Portal - Routes: /panel, /panel/me/*, /panel/org/:orgId/* */}
+        {/* Panel Portal - MyPanel and OrgPanel Routes */}
+        <Route path="/mypanel/:rest*">
+          {(params) => <PanelRouter />}
+        </Route>
+        <Route path="/orgpanel/:rest*">
+          {(params) => <PanelRouter />}
+        </Route>
+        
+        {/* Legacy panel routes - redirect to new structure */}
         <Route path="/panel/:rest*">
           {(params) => <PanelRouter />}
         </Route>
         
-        {/* Dashboard redirect - Move legacy /dashboard to panel */}
+        {/* Dashboard redirect - Move legacy /dashboard to mypanel */}
         <Route path="/dashboard">
-          {() => <Redirect to="/panel/me/dashboard" />}
+          {() => <Redirect to="/mypanel/dashboard" />}
         </Route>
         
         {/* Analytics redirect - Move legacy /analytics to admin */}
