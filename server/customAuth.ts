@@ -643,7 +643,26 @@ export const adminAuthMiddleware: RequestHandler = async (req, res, next) => {
       }
     }
 
-    // Method 3: Check legacy admin session structure
+    // Method 3: Check adminPrincipal session (from admin-auth.ts)
+    const adminPrincipal = (req.session as any)?.adminPrincipal;
+    
+    console.log('DEBUG: Admin principal session exists:', !!adminPrincipal);
+    
+    if (adminPrincipal) {
+      console.log('DEBUG: Found adminPrincipal session');
+      (req as AuthenticatedRequest).user = {
+        id: adminPrincipal.id,
+        tenantId: adminPrincipal.tenantId || 'admin_tenant',
+        role: adminPrincipal.role || 'super_admin',
+        isSuperAdmin: adminPrincipal.isSuperAdmin || false,
+        provider: 'admin',
+        claims: { sub: adminPrincipal.id }
+      };
+      console.log('DEBUG: Setting req.user from adminPrincipal:', (req as AuthenticatedRequest).user);
+      return next();
+    }
+
+    // Method 4: Check legacy admin session structure
     const adminUserId = req.session?.adminUserId;
     const adminRole = req.session?.adminRole;
     
