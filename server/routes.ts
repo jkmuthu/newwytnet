@@ -3614,8 +3614,14 @@ export async function registerRoutes(app: Express): Promise<void> {
           isSuperAdmin: whatsappUsers.isSuperAdmin,
           profileImageUrl: whatsappUsers.profileImageUrl,
           createdAt: whatsappUsers.createdAt,
-          tenantId: whatsappUsers.tenantId
-        }).from(whatsappUsers).limit(limit).offset(offset).orderBy(desc(whatsappUsers.createdAt)),
+          tenantId: whatsappUsers.tenantId,
+          profileCompletionPercentage: userProfiles.profileCompletionPercentage
+        })
+        .from(whatsappUsers)
+        .leftJoin(userProfiles, eq(userProfiles.userId, whatsappUsers.id))
+        .limit(limit)
+        .offset(offset)
+        .orderBy(desc(whatsappUsers.createdAt)),
         
         db.select({ count: sql<number>`cast(count(*) as integer)` }).from(whatsappUsers)
       ]);

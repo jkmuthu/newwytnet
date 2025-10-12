@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
 import { Users as UsersIcon, Settings, Award, Shield, CheckCircle, XCircle } from "lucide-react";
 import { format } from "date-fns";
 
@@ -21,6 +22,7 @@ interface User {
   profileImageUrl?: string;
   createdAt: string;
   tenantId?: string;
+  profileCompletionPercentage?: number;
 }
 
 export default function AdminUsers() {
@@ -99,6 +101,7 @@ export default function AdminUsers() {
                         <TableHead>User</TableHead>
                         <TableHead>Contact</TableHead>
                         <TableHead>Role</TableHead>
+                        <TableHead>Profile Completion</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Joined</TableHead>
                       </TableRow>
@@ -140,6 +143,20 @@ export default function AdminUsers() {
                             <Badge variant="secondary">
                               {user.role}
                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1 min-w-[120px]">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium">
+                                  {user.profileCompletionPercentage || 0}%
+                                </span>
+                              </div>
+                              <Progress 
+                                value={user.profileCompletionPercentage || 0} 
+                                className="h-2"
+                                data-testid={`progress-user-${user.id}`}
+                              />
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
