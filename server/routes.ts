@@ -6201,7 +6201,13 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      const profileData = insertUserProfileSchema.parse({ ...req.body, userId: principal.id });
+      // Convert dateOfBirth string to Date if present
+      const requestData = { ...req.body, userId: principal.id };
+      if (requestData.dateOfBirth && typeof requestData.dateOfBirth === 'string') {
+        requestData.dateOfBirth = new Date(requestData.dateOfBirth);
+      }
+
+      const profileData = insertUserProfileSchema.parse(requestData);
 
       // Calculate profile completion percentage
       const fieldWeights = await db.select()
