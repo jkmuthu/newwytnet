@@ -108,8 +108,8 @@ export default function WytWall() {
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
         
         <CardContent className="relative p-4 sm:p-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 flex-shrink-0">
               <div className="h-10 w-10 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center">
                 <Sparkles className="h-5 w-5 text-white animate-pulse" />
               </div>
@@ -121,9 +121,23 @@ export default function WytWall() {
                 <p className="text-white/90 text-xs font-medium">Offers Stream Marketplace</p>
               </div>
             </div>
+            
+            {/* Search Bar in Header */}
+            <div className="hidden md:flex relative flex-1 max-w-md">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/70" />
+              <Input
+                type="text"
+                placeholder="Search needs by keyword..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-12 h-10 text-sm border-0 bg-white/20 backdrop-blur-xl text-white placeholder:text-white/70 focus:ring-2 focus:ring-white/50 rounded-xl"
+                data-testid="input-search-needs"
+              />
+            </div>
+
             <Button
               onClick={handlePostNeed}
-              className="bg-white/90 hover:bg-white text-purple-600 font-bold shadow-xl hover:scale-105 transition-all rounded-xl backdrop-blur-xl h-9 text-sm"
+              className="bg-white/90 hover:bg-white text-purple-600 font-bold shadow-xl hover:scale-105 transition-all rounded-xl backdrop-blur-xl h-9 text-sm flex-shrink-0"
               data-testid="button-post-need"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -131,63 +145,19 @@ export default function WytWall() {
               <span className="sm:hidden">Post</span>
             </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Post Type Filter Pills */}
-      <div className="flex gap-3 justify-center">
-        {[
-          { value: 'all', label: 'All Posts', icon: Zap },
-          { value: 'needs', label: 'Needs', icon: Search },
-          { value: 'offers', label: 'Offers', icon: Package }
-        ].map((type) => {
-          const Icon = type.icon;
-          return (
-            <Button
-              key={type.value}
-              variant={postType === type.value ? "default" : "outline"}
-              onClick={() => setPostType(type.value as any)}
-              className={`font-bold transition-all ${
-                postType === type.value
-                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-xl border-0 scale-105"
-                  : "bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border-0 text-gray-700 dark:text-gray-300 hover:scale-105"
-              }`}
-              data-testid={`filter-${type.value}`}
-            >
-              <Icon className="h-4 w-4 mr-2" />
-              {type.label}
-            </Button>
-          );
-        })}
-      </div>
-
-      {/* Modern Search Bar */}
-      <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl">
-        <CardContent className="p-4">
-          <div className="flex gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          
+          {/* Mobile Search Bar (below header on mobile) */}
+          <div className="md:hidden mt-4">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/70" />
               <Input
                 type="text"
                 placeholder="Search needs by keyword..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-12 text-base border-0 bg-gray-100 dark:bg-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500"
-                data-testid="input-search-needs"
+                className="pl-12 h-10 text-sm border-0 bg-white/20 backdrop-blur-xl text-white placeholder:text-white/70 focus:ring-2 focus:ring-white/50 rounded-xl w-full"
+                data-testid="input-search-needs-mobile"
               />
-            </div>
-            
-            {/* Filter Button for Mobile */}
-            <div className="lg:hidden">
-              <Button
-                variant="outline"
-                className="h-12 px-4 border-0 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl"
-                onClick={() => console.log('Open mobile filters')}
-                data-testid="button-mobile-filters"
-              >
-                <Filter className="h-5 w-5 mr-2" />
-                <span className="font-semibold">Filters</span>
-              </Button>
             </div>
           </div>
         </CardContent>
