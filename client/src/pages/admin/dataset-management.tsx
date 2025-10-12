@@ -1,0 +1,523 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Plus, Edit, Trash2, Database, ChevronRight, Globe, Building } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import type { DatasetCollection, DatasetItem } from "@shared/schema";
+
+export default function AdminDatasetManagement() {
+  const [selectedCollection, setSelectedCollection] = useState<DatasetCollection | null>(null);
+  const [isCollectionDialogOpen, setIsCollectionDialogOpen] = useState(false);
+  const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
+  const [editingCollection, setEditingCollection] = useState<DatasetCollection | null>(null);
+  const [editingItem, setEditingItem] = useState<DatasetItem | null>(null);
+  const { toast } = useToast();
+
+  // Fetch all dataset collections
+  const { data: collectionsData, isLoading: collectionsLoading } = useQuery<{ success: boolean; collections: DatasetCollection[] }>({
+    queryKey: ['/api/admin/datasets'],
+  });
+
+  // Fetch selected collection details with items
+  const { data: collectionDetails } = useQuery<{ success: boolean; collection: DatasetCollection; items: DatasetItem[] }>({
+    queryKey: ['/api/admin/datasets', selectedCollection?.id],
+    enabled: !!selectedCollection,
+  });
+
+  // Create collection mutation
+  const createCollectionMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return apiRequest('/api/admin/datasets', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/datasets'] });
+      setIsCollectionDialogOpen(false);
+      toast({ title: "Success", description: "Dataset collection created successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create collection", variant: "destructive" });
+    },
+  });
+
+  // Update collection mutation
+  const updateCollectionMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      return apiRequest(`/api/admin/datasets/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/datasets'] });
+      setIsCollectionDialogOpen(false);
+      setEditingCollection(null);
+      toast({ title: "Success", description: "Dataset collection updated successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update collection", variant: "destructive" });
+    },
+  });
+
+  // Delete collection mutation
+  const deleteCollectionMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest(`/api/admin/datasets/${id}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/datasets'] });
+      if (selectedCollection) {
+        setSelectedCollection(null);
+      }
+      toast({ title: "Success", description: "Dataset collection deleted successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to delete collection", variant: "destructive" });
+    },
+  });
+
+  // Create item mutation
+  const createItemMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return apiRequest(`/api/admin/datasets/${selectedCollection?.id}/items`, {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/datasets', selectedCollection?.id] });
+      setIsItemDialogOpen(false);
+      toast({ title: "Success", description: "Dataset item created successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to create item", variant: "destructive" });
+    },
+  });
+
+  // Update item mutation
+  const updateItemMutation = useMutation({
+    mutationFn: async ({ itemId, data }: { itemId: string; data: any }) => {
+      return apiRequest(`/api/admin/datasets/${selectedCollection?.id}/items/${itemId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/datasets', selectedCollection?.id] });
+      setIsItemDialogOpen(false);
+      setEditingItem(null);
+      toast({ title: "Success", description: "Dataset item updated successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update item", variant: "destructive" });
+    },
+  });
+
+  // Delete item mutation
+  const deleteItemMutation = useMutation({
+    mutationFn: async (itemId: string) => {
+      return apiRequest(`/api/admin/datasets/${selectedCollection?.id}/items/${itemId}`, {
+        method: 'DELETE',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/datasets', selectedCollection?.id] });
+      toast({ title: "Success", description: "Dataset item deleted successfully" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to delete item", variant: "destructive" });
+    },
+  });
+
+  const handleCollectionSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      key: formData.get('key') as string,
+      name: formData.get('name') as string,
+      description: formData.get('description') as string,
+      scope: formData.get('scope') as string,
+      metadata: {},
+    };
+
+    if (editingCollection) {
+      updateCollectionMutation.mutate({ id: editingCollection.id, data });
+    } else {
+      createCollectionMutation.mutate(data);
+    }
+  };
+
+  const handleItemSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      code: formData.get('code') as string,
+      label: formData.get('label') as string,
+      locale: formData.get('locale') as string || 'en',
+      sortOrder: parseInt(formData.get('sortOrder') as string) || 0,
+      metadata: {},
+    };
+
+    if (editingItem) {
+      updateItemMutation.mutate({ itemId: editingItem.id, data });
+    } else {
+      createItemMutation.mutate(data);
+    }
+  };
+
+  const isImmutable = (collection: DatasetCollection) => {
+    return collection.metadata && (collection.metadata as any).immutable;
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Database className="h-8 w-8" />
+            Dataset Management
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Manage reference data collections (Countries, Languages, Currencies, etc.)
+          </p>
+        </div>
+        <Button 
+          onClick={() => {
+            setEditingCollection(null);
+            setIsCollectionDialogOpen(true);
+          }}
+          data-testid="button-add-collection"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Collection
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Collections List */}
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Collections</CardTitle>
+            <CardDescription>Available dataset collections</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {collectionsLoading ? (
+              <p className="text-sm text-gray-500">Loading collections...</p>
+            ) : (
+              collectionsData?.collections.map((collection) => (
+                <div
+                  key={collection.id}
+                  onClick={() => setSelectedCollection(collection)}
+                  className={`
+                    p-3 rounded-lg cursor-pointer transition-colors
+                    ${selectedCollection?.id === collection.id ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-500' : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'}
+                  `}
+                  data-testid={`collection-${collection.key}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{(collection.metadata as any)?.icon || '📊'}</span>
+                      <div>
+                        <p className="font-medium">{collection.name}</p>
+                        <p className="text-xs text-gray-500">{collection.key}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {collection.scope === 'global' ? (
+                        <Globe className="h-4 w-4 text-blue-500" />
+                      ) : (
+                        <Building className="h-4 w-4 text-green-500" />
+                      )}
+                      <ChevronRight className="h-4 w-4 text-gray-400" />
+                    </div>
+                  </div>
+                  {isImmutable(collection) && (
+                    <Badge variant="secondary" className="mt-2 text-xs">Protected</Badge>
+                  )}
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Collection Details & Items */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>
+                  {selectedCollection ? selectedCollection.name : 'Select a collection'}
+                </CardTitle>
+                <CardDescription>
+                  {selectedCollection ? selectedCollection.description || 'No description' : 'Choose a collection to view items'}
+                </CardDescription>
+              </div>
+              {selectedCollection && (
+                <div className="flex gap-2">
+                  {!isImmutable(selectedCollection) && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setEditingCollection(selectedCollection);
+                          setIsCollectionDialogOpen(true);
+                        }}
+                        data-testid="button-edit-collection"
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm('Are you sure you want to delete this collection?')) {
+                            deleteCollectionMutation.mutate(selectedCollection.id);
+                          }
+                        }}
+                        data-testid="button-delete-collection"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
+                    </>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setEditingItem(null);
+                      setIsItemDialogOpen(true);
+                    }}
+                    data-testid="button-add-item"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Item
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {selectedCollection && collectionDetails ? (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Code</TableHead>
+                      <TableHead>Label</TableHead>
+                      <TableHead>Locale</TableHead>
+                      <TableHead>Sort Order</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {collectionDetails.items.map((item) => (
+                      <TableRow key={item.id} data-testid={`item-row-${item.code}`}>
+                        <TableCell className="font-mono text-sm">{item.code}</TableCell>
+                        <TableCell>{item.label}</TableCell>
+                        <TableCell>{item.locale}</TableCell>
+                        <TableCell>{item.sortOrder}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingItem(item);
+                                setIsItemDialogOpen(true);
+                              }}
+                              data-testid={`button-edit-item-${item.code}`}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm('Are you sure you want to delete this item?')) {
+                                  deleteItemMutation.mutate(item.id);
+                                }
+                              }}
+                              data-testid={`button-delete-item-${item.code}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <p className="text-center text-gray-500 py-8">No collection selected</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Collection Dialog */}
+      <Dialog open={isCollectionDialogOpen} onOpenChange={setIsCollectionDialogOpen}>
+        <DialogContent data-testid="dialog-collection">
+          <DialogHeader>
+            <DialogTitle>{editingCollection ? 'Edit Collection' : 'Create Collection'}</DialogTitle>
+            <DialogDescription>
+              {editingCollection ? 'Update collection details' : 'Add a new dataset collection'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCollectionSubmit}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="key">Key *</Label>
+                <Input
+                  id="key"
+                  name="key"
+                  placeholder="countries"
+                  defaultValue={editingCollection?.key}
+                  required
+                  disabled={!!editingCollection}
+                  data-testid="input-collection-key"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="name">Name *</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  placeholder="Countries"
+                  defaultValue={editingCollection?.name}
+                  required
+                  data-testid="input-collection-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  placeholder="ISO 3166-1 country codes and names"
+                  defaultValue={editingCollection?.description || ''}
+                  data-testid="input-collection-description"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="scope">Scope *</Label>
+                <select
+                  id="scope"
+                  name="scope"
+                  defaultValue={editingCollection?.scope || 'global'}
+                  className="w-full border rounded-md px-3 py-2 dark:bg-gray-800"
+                  data-testid="select-collection-scope"
+                >
+                  <option value="global">Global</option>
+                  <option value="tenant">Tenant</option>
+                </select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={createCollectionMutation.isPending || updateCollectionMutation.isPending} data-testid="button-save-collection">
+                {createCollectionMutation.isPending || updateCollectionMutation.isPending ? 'Saving...' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Item Dialog */}
+      <Dialog open={isItemDialogOpen} onOpenChange={setIsItemDialogOpen}>
+        <DialogContent data-testid="dialog-item">
+          <DialogHeader>
+            <DialogTitle>{editingItem ? 'Edit Item' : 'Add Item'}</DialogTitle>
+            <DialogDescription>
+              {editingItem ? 'Update item details' : `Add a new item to ${selectedCollection?.name}`}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleItemSubmit}>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="code">Code *</Label>
+                <Input
+                  id="code"
+                  name="code"
+                  placeholder="US"
+                  defaultValue={editingItem?.code}
+                  required
+                  data-testid="input-item-code"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="label">Label *</Label>
+                <Input
+                  id="label"
+                  name="label"
+                  placeholder="United States"
+                  defaultValue={editingItem?.label}
+                  required
+                  data-testid="input-item-label"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="locale">Locale</Label>
+                <Input
+                  id="locale"
+                  name="locale"
+                  placeholder="en"
+                  defaultValue={editingItem?.locale || 'en'}
+                  data-testid="input-item-locale"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sortOrder">Sort Order</Label>
+                <Input
+                  id="sortOrder"
+                  name="sortOrder"
+                  type="number"
+                  placeholder="0"
+                  defaultValue={editingItem?.sortOrder || 0}
+                  data-testid="input-item-sort-order"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={createItemMutation.isPending || updateItemMutation.isPending} data-testid="button-save-item">
+                {createItemMutation.isPending || updateItemMutation.isPending ? 'Saving...' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

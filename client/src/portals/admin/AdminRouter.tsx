@@ -18,6 +18,7 @@ import AdminSystemOverview from "@/pages/admin/system-overview";
 import AdminSeoSettings from "@/pages/admin/seo-settings";
 import AppManagement from "@/pages/admin/AppManagement";
 import AdminWytPoints from "@/pages/admin/wytpoints";
+import AdminDatasetManagement from "@/pages/admin/dataset-management";
 
 // Import admin analytics (legacy)
 import AdminAnalytics from "@/pages/admin-analytics";
@@ -579,6 +580,7 @@ export default function AdminRouter() {
           <Route path="/admin/integrations" component={AdminIntegrations} />
           <Route path="/admin/security" component={AdminSecurity} />
           <Route path="/admin/logs" component={AdminLogs} />
+          <Route path="/admin/datasets" component={AdminDatasetManagement} />
           
           {/* WytPoints Management */}
           <Route path="/admin/wytpoints" component={AdminWytPoints} />
