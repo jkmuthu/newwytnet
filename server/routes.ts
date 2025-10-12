@@ -79,7 +79,9 @@ import {
   insertUserProfileSchema,
   insertUserNeedSchema,
   insertUserOfferSchema,
-  offers
+  offers,
+  datasetCollections,
+  datasetItems
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -5262,6 +5264,207 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error) {
       console.error('Error fetching points config:', error);
       res.status(500).json({ error: 'Failed to fetch configuration' });
+    }
+  });
+
+  // ========================================
+  // DATASET MANAGEMENT ROUTES (Admin)
+  // ========================================
+
+  // Get all dataset collections
+  app.get('/api/admin/datasets', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const collections = await db.select()
+        .from(datasetCollections)
+        .orderBy(datasetCollections.name);
+      
+      res.json({ success: true, collections });
+    } catch (error) {
+      console.error('Error fetching dataset collections:', error);
+      res.status(500).json({ error: 'Failed to fetch dataset collections' });
+    }
+  });
+
+  // Get single dataset collection with items
+  app.get('/api/admin/datasets/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      const [collection] = await db.select()
+        .from(datasetCollections)
+        .where(eq(datasetCollections.id, id))
+        .limit(1);
+
+      if (!collection) {
+        return res.status(404).json({ error: 'Dataset collection not found' });
+      }
+
+      const items = await db.select()
+        .from(datasetItems)
+        .where(eq(datasetItems.collectionId, id))
+        .orderBy(datasetItems.sortOrder, datasetItems.label);
+
+      res.json({ success: true, collection, items });
+    } catch (error) {
+      console.error('Error fetching dataset collection:', error);
+      res.status(500).json({ error: 'Failed to fetch dataset collection' });
+    }
+  });
+
+  // Create new dataset collection
+  app.post('/api/admin/datasets', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { key, name, description, scope, metadata } = req.body;
+
+      const [collection] = await db.insert(datasetCollections)
+        .values({
+          key,
+          name,
+          description,
+          scope: scope || 'global',
+          metadata: metadata || {},
+        })
+        .returning();
+
+      res.json({ success: true, collection });
+    } catch (error: any) {
+      console.error('Error creating dataset collection:', error);
+      res.status(500).json({ error: error.message || 'Failed to create dataset collection' });
+    }
+  });
+
+  // Update dataset collection
+  app.put('/api/admin/datasets/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { name, description, metadata } = req.body;
+
+      // Check if collection is immutable
+      const [existing] = await db.select()
+        .from(datasetCollections)
+        .where(eq(datasetCollections.id, id))
+        .limit(1);
+
+      if (!existing) {
+        return res.status(404).json({ error: 'Dataset collection not found' });
+      }
+
+      if (existing.metadata && (existing.metadata as any).immutable) {
+        return res.status(403).json({ error: 'Cannot modify immutable dataset collection' });
+      }
+
+      const [updated] = await db.update(datasetCollections)
+        .set({
+          name,
+          description,
+          metadata,
+          updatedAt: new Date(),
+        })
+        .where(eq(datasetCollections.id, id))
+        .returning();
+
+      res.json({ success: true, collection: updated });
+    } catch (error) {
+      console.error('Error updating dataset collection:', error);
+      res.status(500).json({ error: 'Failed to update dataset collection' });
+    }
+  });
+
+  // Delete dataset collection
+  app.delete('/api/admin/datasets/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+
+      // Check if collection is immutable
+      const [existing] = await db.select()
+        .from(datasetCollections)
+        .where(eq(datasetCollections.id, id))
+        .limit(1);
+
+      if (!existing) {
+        return res.status(404).json({ error: 'Dataset collection not found' });
+      }
+
+      if (existing.metadata && (existing.metadata as any).immutable) {
+        return res.status(403).json({ error: 'Cannot delete immutable dataset collection' });
+      }
+
+      await db.delete(datasetCollections)
+        .where(eq(datasetCollections.id, id));
+
+      res.json({ success: true, message: 'Dataset collection deleted' });
+    } catch (error) {
+      console.error('Error deleting dataset collection:', error);
+      res.status(500).json({ error: 'Failed to delete dataset collection' });
+    }
+  });
+
+  // Create dataset item
+  app.post('/api/admin/datasets/:collectionId/items', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { collectionId } = req.params;
+      const { code, label, locale, isDefault, sortOrder, metadata } = req.body;
+
+      const [item] = await db.insert(datasetItems)
+        .values({
+          collectionId,
+          code,
+          label,
+          locale: locale || 'en',
+          isDefault: isDefault || false,
+          sortOrder: sortOrder || 0,
+          metadata: metadata || {},
+        })
+        .returning();
+
+      res.json({ success: true, item });
+    } catch (error: any) {
+      console.error('Error creating dataset item:', error);
+      res.status(500).json({ error: error.message || 'Failed to create dataset item' });
+    }
+  });
+
+  // Update dataset item
+  app.put('/api/admin/datasets/:collectionId/items/:itemId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { itemId } = req.params;
+      const { code, label, locale, isDefault, sortOrder, metadata } = req.body;
+
+      const [updated] = await db.update(datasetItems)
+        .set({
+          code,
+          label,
+          locale,
+          isDefault,
+          sortOrder,
+          metadata,
+        })
+        .where(eq(datasetItems.id, itemId))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ error: 'Dataset item not found' });
+      }
+
+      res.json({ success: true, item: updated });
+    } catch (error) {
+      console.error('Error updating dataset item:', error);
+      res.status(500).json({ error: 'Failed to update dataset item' });
+    }
+  });
+
+  // Delete dataset item
+  app.delete('/api/admin/datasets/:collectionId/items/:itemId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { itemId } = req.params;
+
+      await db.delete(datasetItems)
+        .where(eq(datasetItems.id, itemId));
+
+      res.json({ success: true, message: 'Dataset item deleted' });
+    } catch (error) {
+      console.error('Error deleting dataset item:', error);
+      res.status(500).json({ error: 'Failed to delete dataset item' });
     }
   });
 
