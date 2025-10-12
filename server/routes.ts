@@ -5956,6 +5956,26 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Check username availability
+  app.get('/api/account/username/check', async (req: any, res) => {
+    try {
+      const { username } = req.query;
+      
+      if (!username || typeof username !== 'string' || username.length < 3) {
+        return res.json({ available: false, error: 'Username must be at least 3 characters' });
+      }
+
+      const [existing] = await db.select()
+        .from(userProfiles)
+        .where(eq(userProfiles.username, username));
+
+      res.json({ available: !existing });
+    } catch (error: any) {
+      console.error('Error checking username:', error);
+      res.status(500).json({ error: error.message || 'Failed to check username' });
+    }
+  });
+
   // Change username
   app.patch('/api/account/username', async (req: any, res) => {
     try {
