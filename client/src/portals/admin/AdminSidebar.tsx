@@ -195,6 +195,12 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
               active: location === "/admin/integrations"
             },
             { 
+              label: "Dataset Management", 
+              icon: Database, 
+              href: "/admin/datasets", 
+              active: location === "/admin/datasets"
+            },
+            { 
               label: "AI Management", 
               icon: Bot, 
               href: "/admin/ai", 
