@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from "@/components/ui/navigation-menu";
-import { Menu, Bell, User, Settings, LogOut, LayoutDashboard, Wrench, Smartphone, Wallet, UserCircle, Moon, Sun } from "lucide-react";
+import { Menu, Bell, LogOut, LayoutDashboard, Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +12,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 /**
  * PublicHeader - Navigation header for public pages
- * Features: Marketing navigation, login/signup buttons, no admin features
+ * Features: Marketing navigation, login/signup buttons, enterprise session management
  */
 export default function PublicHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -20,6 +20,7 @@ export default function PublicHeader() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   // Initialize theme from localStorage or system preference
   useEffect(() => {
@@ -84,6 +85,10 @@ export default function PublicHeader() {
       return `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase();
     }
     return name[0]?.toUpperCase() || 'U';
+  };
+
+  const goToPanel = () => {
+    setLocation('/mypanel');
   };
 
   return (
@@ -157,23 +162,21 @@ export default function PublicHeader() {
           {/* Right side - Conditional Based on Auth Status */}
           <div className="flex items-center gap-3">
             {isAuthenticated ? (
-              // Authenticated: Notification Icon → User DP → Theme Toggle
+              // Authenticated: Go to Panel Button → User DP → Theme Toggle
               <>
-                {/* Notification Icon */}
+                {/* Go to Panel Button */}
                 <Button 
-                  variant="ghost" 
+                  onClick={goToPanel}
                   size="sm"
-                  className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 relative"
-                  data-testid="button-notifications"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md font-medium"
+                  data-testid="button-go-to-panel"
                 >
-                  <Bell className="h-5 w-5" />
-                  {/* Notification Badge */}
-                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
-                    <span className="text-[10px] text-white font-bold">3</span>
-                  </span>
+                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">My Panel</span>
+                  <span className="sm:hidden">Panel</span>
                 </Button>
 
-                {/* User Display Picture with Dropdown */}
+                {/* User Display Picture with Minimal Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button 
@@ -195,37 +198,15 @@ export default function PublicHeader() {
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuItem className="cursor-pointer" asChild>
-                      <Link href="/panel/me/dashboard">
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        <span>My Dashboard</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer" asChild>
-                      <Link href="/panel/me/wyttools">
-                        <Wrench className="mr-2 h-4 w-4" />
-                        <span>My WytTools</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer" asChild>
-                      <Link href="/panel/me/wytapps">
-                        <Smartphone className="mr-2 h-4 w-4" />
-                        <span>My WytApps</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer" asChild>
-                      <Link href="/panel/me/wallet">
-                        <Wallet className="mr-2 h-4 w-4" />
-                        <span>My Wallet</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer" asChild>
-                      <Link href="/panel/me/account">
-                        <UserCircle className="mr-2 h-4 w-4" />
-                        <span>My Account</span>
-                      </Link>
-                    </DropdownMenuItem>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <div className="px-2 py-1.5">
+                      <p className="text-sm font-medium">
+                        {(user && typeof user === 'object' && 'name' in user ? user.name as string : '') || "User"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {user && typeof user === 'object' && 'email' in user ? user.email as string : ''}
+                      </p>
+                    </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="cursor-pointer text-red-600 dark:text-red-400"

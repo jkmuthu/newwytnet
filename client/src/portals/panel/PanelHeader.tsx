@@ -102,7 +102,7 @@ export default function PanelHeader({
           {/* Left section - Logo + Panel Switcher + Collapse */}
           <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
             {/* WytNet Logo */}
-            <Link href="/">
+            <Link href="/mypanel">
               <div className="flex items-center gap-2 cursor-pointer shrink-0">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-sm sm:text-lg">W</span>
