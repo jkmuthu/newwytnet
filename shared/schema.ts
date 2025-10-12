@@ -107,7 +107,21 @@ export const userProfiles = pgTable("user_profiles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
   username: varchar("username", { length: 50 }).unique(),
+  
+  // Personal Information (Personal Tab)
+  profilePhoto: varchar("profile_photo", { length: 500 }),
+  nickName: varchar("nick_name", { length: 100 }),
   bio: text("bio"),
+  mobileNumber: varchar("mobile_number", { length: 20 }),
+  gender: varchar("gender", { length: 50 }),
+  dateOfBirth: timestamp("date_of_birth"),
+  maritalStatus: varchar("marital_status", { length: 50 }),
+  motherTongue: varchar("mother_tongue", { length: 50 }).default('Tamil'),
+  homeLocation: varchar("home_location", { length: 255 }),
+  livingIn: varchar("living_in", { length: 255 }),
+  languagesKnown: jsonb("languages_known").default([]), // [{code: 'en', name: 'English', speak: true, write: true}]
+  
+  // Existing Professional Information
   location: varchar("location", { length: 255 }),
   website: varchar("website", { length: 500 }),
   company: varchar("company", { length: 255 }),
@@ -119,8 +133,27 @@ export const userProfiles = pgTable("user_profiles", {
   address: text("address"),
   city: varchar("city", { length: 100 }),
   state: varchar("state", { length: 100 }),
-  country: varchar("country", { length: 100 }),
+  country: varchar("country", { length: 100 }).default('IN'),
   zipCode: varchar("zip_code", { length: 20 }),
+  
+  // Privacy Settings - controls public/private for each field
+  privacySettings: jsonb("privacy_settings").default({}), // {email: 'private', mobileNumber: 'public', ...}
+  
+  // Profile Completion Tracking
+  profileCompletionPercentage: integer("profile_completion_percentage").default(0),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Profile Field Weights - Admin configuration for profile completion calculation
+export const profileFieldWeights = pgTable("profile_field_weights", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fieldName: varchar("field_name", { length: 100 }).notNull().unique(),
+  fieldLabel: varchar("field_label", { length: 255 }).notNull(),
+  weightPercentage: integer("weight_percentage").notNull().default(0), // 0-100
+  isRequired: boolean("is_required").default(false),
+  tabSection: varchar("tab_section", { length: 50 }).notNull().default('personal'), // personal, education, works, socials, interests
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
