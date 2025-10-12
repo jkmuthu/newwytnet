@@ -72,7 +72,8 @@ import {
   pointsConfig,
   payments,
   orders,
-  wytLifeApplications
+  wytLifeApplications,
+  offers
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -1402,12 +1403,28 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Admin logout
   app.post('/api/auth/admin/logout', async (req, res) => {
     try {
-      // Clear unified session
-      delete (req.session as any).user;
-      
-      return res.json({
-        success: true,
-        message: 'Logged out successfully'
+      // Destroy the session completely
+      req.session.destroy((err: any) => {
+        if (err) {
+          console.error('Session destruction error:', err);
+          return res.status(500).json({
+            success: false,
+            error: 'Logout failed'
+          });
+        }
+        
+        // Clear the session cookie
+        res.clearCookie('connect.sid', {
+          path: '/',
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax'
+        });
+        
+        return res.json({
+          success: true,
+          message: 'Logged out successfully'
+        });
       });
     } catch (error) {
       console.error('Admin logout error:', error);

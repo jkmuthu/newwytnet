@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -85,6 +86,7 @@ export default function AdminLayout({ children, user }: AdminLayoutProps) {
   const [location] = useLocation();
   const { isMobile, isTablet } = useDeviceDetection();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [layoutMode, setLayoutMode] = useState<'auto' | 'mobile' | 'desktop'>('auto');
 
   // Check for forced layout mode from URL params
@@ -102,11 +104,16 @@ export default function AdminLayout({ children, user }: AdminLayoutProps) {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/admin/logout', { method: 'POST' });
-      toast({
-        title: "Logged out",
-        description: "You have been logged out successfully",
+      await fetch('/api/auth/admin/logout', { 
+        method: 'POST',
+        credentials: 'include'
       });
+      
+      // Clear all cached queries
+      queryClient.clear();
+      
+      // Force a full page reload to the login page
+      // This ensures all session state is completely cleared
       window.location.href = '/admin/login';
     } catch (error) {
       toast({

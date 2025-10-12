@@ -37,11 +37,11 @@ export default function AdminHeader({
       return response.json();
     },
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Admin logged out successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: ['admin-auth'] });
+      // Clear all cached queries
+      queryClient.clear();
+      
+      // Force a full page reload to the login page
+      // This ensures all session state is completely cleared
       window.location.href = '/admin/login';
     },
     onError: () => {
