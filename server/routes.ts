@@ -5468,6 +5468,71 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Set item as default
+  app.post('/api/admin/datasets/:collectionId/items/:itemId/set-default', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { collectionId, itemId } = req.params;
+
+      // First, unset all defaults in this collection
+      await db.update(datasetItems)
+        .set({ isDefault: false })
+        .where(eq(datasetItems.collectionId, collectionId));
+
+      // Then set this item as default
+      const [updated] = await db.update(datasetItems)
+        .set({ isDefault: true })
+        .where(eq(datasetItems.id, itemId))
+        .returning();
+
+      res.json({ success: true, item: updated });
+    } catch (error) {
+      console.error('Error setting default item:', error);
+      res.status(500).json({ error: 'Failed to set default item' });
+    }
+  });
+
+  // Reorder dataset item
+  app.post('/api/admin/datasets/:collectionId/items/:itemId/reorder', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { collectionId, itemId } = req.params;
+      const { direction } = req.body;
+
+      // Get all items in this collection sorted by sortOrder
+      const allItems = await db.select()
+        .from(datasetItems)
+        .where(eq(datasetItems.collectionId, collectionId))
+        .orderBy(datasetItems.sortOrder);
+
+      const currentIndex = allItems.findIndex(item => item.id === itemId);
+      if (currentIndex === -1) {
+        return res.status(404).json({ error: 'Item not found' });
+      }
+
+      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      
+      if (targetIndex < 0 || targetIndex >= allItems.length) {
+        return res.status(400).json({ error: 'Cannot move item in that direction' });
+      }
+
+      // Swap sort orders
+      const currentItem = allItems[currentIndex];
+      const targetItem = allItems[targetIndex];
+      
+      await db.update(datasetItems)
+        .set({ sortOrder: targetItem.sortOrder })
+        .where(eq(datasetItems.id, currentItem.id));
+        
+      await db.update(datasetItems)
+        .set({ sortOrder: currentItem.sortOrder })
+        .where(eq(datasetItems.id, targetItem.id));
+
+      res.json({ success: true, message: 'Item reordered successfully' });
+    } catch (error) {
+      console.error('Error reordering item:', error);
+      res.status(500).json({ error: 'Failed to reorder item' });
+    }
+  });
+
   // ========================================
   // WYTWALL MARKETPLACE ROUTES
   // ========================================

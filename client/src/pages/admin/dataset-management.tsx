@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2, Database, ChevronRight, Globe, Building } from "lucide-react";
+import { Plus, Edit, Trash2, Database, ChevronRight, Globe, Building, Star, ChevronUp, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { DatasetCollection, DatasetItem } from "@shared/schema";
 
@@ -136,6 +136,33 @@ export default function AdminDatasetManagement() {
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message || "Failed to delete item", variant: "destructive" });
+    },
+  });
+
+  // Set default item mutation
+  const setDefaultMutation = useMutation({
+    mutationFn: async (itemId: string) => {
+      return apiRequest(`/api/admin/datasets/${selectedCollection?.id}/items/${itemId}/set-default`, 'POST');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/datasets', selectedCollection?.id] });
+      toast({ title: "Success", description: "Default item updated" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to set default", variant: "destructive" });
+    },
+  });
+
+  // Reorder item mutation
+  const reorderMutation = useMutation({
+    mutationFn: async ({ itemId, direction }: { itemId: string; direction: 'up' | 'down' }) => {
+      return apiRequest(`/api/admin/datasets/${selectedCollection?.id}/items/${itemId}/reorder`, 'POST', { direction });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/datasets', selectedCollection?.id] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to reorder", variant: "destructive" });
     },
   });
 
@@ -318,17 +345,55 @@ export default function AdminDatasetManagement() {
                       <TableHead>Code</TableHead>
                       <TableHead>Label</TableHead>
                       <TableHead>Locale</TableHead>
-                      <TableHead>Sort Order</TableHead>
+                      <TableHead className="w-20">Default</TableHead>
+                      <TableHead className="w-24">Order</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {collectionDetails.items.map((item) => (
+                    {collectionDetails.items
+                      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+                      .map((item, index, sortedItems) => (
                       <TableRow key={item.id} data-testid={`item-row-${item.code}`}>
                         <TableCell className="font-mono text-sm">{item.code}</TableCell>
                         <TableCell>{item.label}</TableCell>
                         <TableCell>{item.locale}</TableCell>
-                        <TableCell>{item.sortOrder}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDefaultMutation.mutate(item.id)}
+                            className={item.isDefault ? "text-yellow-500 hover:text-yellow-600" : "text-gray-300 hover:text-yellow-500"}
+                            data-testid={`button-default-${item.code}`}
+                            title={item.isDefault ? "Default item" : "Set as default"}
+                          >
+                            <Star className={`h-4 w-4 ${item.isDefault ? "fill-current" : ""}`} />
+                          </Button>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => reorderMutation.mutate({ itemId: item.id, direction: 'up' })}
+                              disabled={index === 0}
+                              data-testid={`button-move-up-${item.code}`}
+                              title="Move up"
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => reorderMutation.mutate({ itemId: item.id, direction: 'down' })}
+                              disabled={index === sortedItems.length - 1}
+                              data-testid={`button-move-down-${item.code}`}
+                              title="Move down"
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button
