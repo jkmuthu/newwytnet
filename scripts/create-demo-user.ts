@@ -1,7 +1,16 @@
 import { db } from "../server/db";
 import { whatsappUsers } from "@shared/schema";
-import bcrypt from "bcryptjs";
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
 import { eq } from "drizzle-orm";
+
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password: string): Promise<string> {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
 
 async function createDemoUser() {
   const email = "demo1@wytnet.com";
@@ -20,11 +29,19 @@ async function createDemoUser() {
       console.log(`   Name: ${existingUser[0].name}`);
       console.log(`   Email: ${existingUser[0].email}`);
       console.log(`   Password: demo1234`);
+      
+      // Update password hash to use scrypt
+      const passwordHash = await hashPassword(password);
+      await db.update(whatsappUsers)
+        .set({ passwordHash })
+        .where(eq(whatsappUsers.email, email));
+      
+      console.log(`✅ Password hash updated to use scrypt`);
       return;
     }
 
-    // Hash the password
-    const passwordHash = await bcrypt.hash(password, 10);
+    // Hash the password using scrypt
+    const passwordHash = await hashPassword(password);
 
     // Create the user
     const [newUser] = await db.insert(whatsappUsers).values({
