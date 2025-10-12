@@ -8,7 +8,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff, Mail, Chrome, Sparkles } from "lucide-react";
+import { Loader2, Eye, EyeOff, Mail, Sparkles } from "lucide-react";
+import { SiGoogle, SiFacebook, SiLinkedin } from "react-icons/si";
 import { apiRequest } from "@/lib/queryClient";
 
 const loginSchema = z.object({
@@ -371,30 +372,52 @@ export default function WytPassLoginForm() {
           </div>
         </div>
 
-        {/* Quick Access Methods - Now Second */}
+        {/* Quick Access Methods - Icon Grid */}
         <Card className="backdrop-blur-sm bg-white/60 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 shadow-xl animate-slide-up animation-delay-100">
-          <CardContent className="pt-6 space-y-3">
-            <Button
-              onClick={handleGoogleLogin}
-              variant="outline"
-              className="w-full h-12 border-2 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-300 transform hover:scale-[1.02] group"
-              data-testid="button-google-login"
-            >
-              <Chrome className="mr-2 h-5 w-5 text-blue-600 dark:text-blue-400 group-hover:rotate-12 transition-transform duration-300" />
-              <span className="font-medium">Continue with Google</span>
-            </Button>
+          <CardContent className="pt-6 pb-6">
+            <div className="grid grid-cols-4 gap-4">
+              {/* Google */}
+              <button
+                onClick={handleGoogleLogin}
+                className="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-300 transform hover:scale-110 group"
+                data-testid="button-google-login"
+              >
+                <SiGoogle className="h-8 w-8 text-blue-600 dark:text-blue-400 group-hover:rotate-12 transition-transform duration-300" />
+                <span className="text-xs mt-2 text-gray-600 dark:text-gray-400 font-medium">Google</span>
+              </button>
 
-            <Button
-              onClick={handleEmailOTPLogin}
-              variant="outline"
-              className="w-full h-12 border-2 hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 transition-all duration-300 transform hover:scale-[1.02] group"
-              data-testid="button-email-otp"
-            >
-              <Mail className="mr-2 h-5 w-5 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform duration-300" />
-              <span className="font-medium">Continue with Email OTP</span>
-            </Button>
+              {/* Facebook */}
+              <button
+                onClick={() => window.location.href = "/api/auth/facebook"}
+                className="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-gray-200 dark:border-gray-700 hover:border-[#1877F2] dark:hover:border-[#1877F2] hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-300 transform hover:scale-110 group"
+                data-testid="button-facebook-login"
+              >
+                <SiFacebook className="h-8 w-8 text-[#1877F2] group-hover:rotate-12 transition-transform duration-300" />
+                <span className="text-xs mt-2 text-gray-600 dark:text-gray-400 font-medium">Facebook</span>
+              </button>
 
-            <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-4">
+              {/* LinkedIn */}
+              <button
+                onClick={() => window.location.href = "/api/auth/linkedin"}
+                className="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-gray-200 dark:border-gray-700 hover:border-[#0A66C2] dark:hover:border-[#0A66C2] hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all duration-300 transform hover:scale-110 group"
+                data-testid="button-linkedin-login"
+              >
+                <SiLinkedin className="h-8 w-8 text-[#0A66C2] group-hover:rotate-12 transition-transform duration-300" />
+                <span className="text-xs mt-2 text-gray-600 dark:text-gray-400 font-medium">LinkedIn</span>
+              </button>
+
+              {/* Email OTP */}
+              <button
+                onClick={handleEmailOTPLogin}
+                className="flex flex-col items-center justify-center p-4 rounded-2xl border-2 border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/20 transition-all duration-300 transform hover:scale-110 group"
+                data-testid="button-email-otp"
+              >
+                <Mail className="h-8 w-8 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform duration-300" />
+                <span className="text-xs mt-2 text-gray-600 dark:text-gray-400 font-medium">Email</span>
+              </button>
+            </div>
+
+            <p className="text-xs text-center text-gray-500 dark:text-gray-400 mt-6">
               Secured by <span className="font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">WytPass</span> • Universal Identity & Validation
             </p>
           </CardContent>
