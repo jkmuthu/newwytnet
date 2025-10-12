@@ -83,26 +83,13 @@ export default function AdminHeader({
             </Button>
 
             <div className="flex items-center space-x-3">
-              <Link href="/" className="flex items-center">
+              <Link href="/admin" className="flex items-center">
                 <img 
                   src="/wytnet-logo.png" 
                   alt="WytNet" 
                   className="h-8 w-auto"
                 />
               </Link>
-              
-              <div className="hidden md:flex items-center space-x-2">
-                <Badge variant="destructive" className="bg-red-600 hover:bg-red-700">
-                  <Shield className="h-3 w-3 mr-1" />
-                  Admin Portal
-                </Badge>
-                
-                {adminUser?.isSuperAdmin && (
-                  <Badge variant="outline" className="border-yellow-500 text-yellow-600 dark:text-yellow-400">
-                    Super Admin
-                  </Badge>
-                )}
-              </div>
             </div>
           </div>
 
