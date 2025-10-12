@@ -73,6 +73,19 @@ export default function AdminDatasetManagement() {
     enabled: !!collectionsData,
   });
 
+  // Fetch languages for dropdown (used for Locale field)
+  const { data: languagesData } = useQuery<{ success: boolean; collection: DatasetCollection; items: DatasetItem[] }>({
+    queryKey: ['/api/admin/datasets/languages'],
+    queryFn: async () => {
+      const collections = collectionsData?.collections || [];
+      const languagesCollection = collections.find(c => c.key === 'languages');
+      if (!languagesCollection) return { success: false, collection: {} as DatasetCollection, items: [] };
+      const response = await fetch(`/api/admin/datasets/${languagesCollection.id}`, { credentials: 'include' });
+      return response.json();
+    },
+    enabled: !!collectionsData,
+  });
+
   // Create collection mutation
   const createCollectionMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -646,14 +659,24 @@ export default function AdminDatasetManagement() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="locale">Locale</Label>
-                <Input
+                <Label htmlFor="locale">Language *</Label>
+                <select
                   id="locale"
                   name="locale"
-                  placeholder="en"
                   defaultValue={editingItem?.locale || 'en'}
-                  data-testid="input-item-locale"
-                />
+                  className="w-full border rounded-md px-3 py-2 dark:bg-gray-800"
+                  required
+                  data-testid="select-item-language"
+                >
+                  {languagesData?.items?.map((language) => (
+                    <option key={language.id} value={language.code}>
+                      {language.label} ({language.code})
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Language/region code for this label
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="sortOrder">Sort Order</Label>
