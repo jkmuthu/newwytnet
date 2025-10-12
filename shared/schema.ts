@@ -41,7 +41,7 @@ export const tenants = pgTable("tenants", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Users table with RLS support
+// Users table with RLS support - unified for all authentication methods
 export const users = pgTable("users", {
   id: varchar("id").primaryKey(),
   email: varchar("email").unique(),
@@ -50,8 +50,26 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   passwordHash: varchar("password_hash", { length: 255 }),
   tenantId: uuid("tenant_id").references(() => tenants.id),
+  
+  // Role and permissions
+  role: userRoleEnum("role").default('user'),
+  isSuperAdmin: boolean("is_super_admin").default(false),
+  isVerified: boolean("is_verified").default(false),
+  permissions: jsonb("permissions").default({}),
+  
+  // Social Auth Integration
+  socialProviders: jsonb("social_providers").default([]), // ['google', 'linkedin', 'facebook']
+  socialIds: jsonb("social_ids").default({}), // {google: 'id123'}
+  authMethods: jsonb("auth_methods").default(['password']), // ['password', 'google', 'email_otp']
+  
+  // Referral System
   referralCode: varchar("referral_code", { length: 20 }).unique(),
   referredBy: varchar("referred_by", { length: 20 }),
+  
+  // Profile tracking
+  profileComplete: boolean("profile_complete").default(false),
+  lastLoginAt: timestamp("last_login_at"),
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
