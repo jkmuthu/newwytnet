@@ -134,6 +134,33 @@ export default function WytWall() {
         </CardContent>
       </Card>
 
+      {/* Post Type Filter Pills */}
+      <div className="flex gap-3 justify-center">
+        {[
+          { value: 'all', label: 'All Posts', icon: Zap },
+          { value: 'needs', label: 'Needs', icon: Search },
+          { value: 'offers', label: 'Offers', icon: Package }
+        ].map((type) => {
+          const Icon = type.icon;
+          return (
+            <Button
+              key={type.value}
+              variant={postType === type.value ? "default" : "outline"}
+              onClick={() => setPostType(type.value as any)}
+              className={`font-bold transition-all ${
+                postType === type.value
+                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-xl border-0 scale-105"
+                  : "bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border-0 text-gray-700 dark:text-gray-300 hover:scale-105"
+              }`}
+              data-testid={`filter-${type.value}`}
+            >
+              <Icon className="h-4 w-4 mr-2" />
+              {type.label}
+            </Button>
+          );
+        })}
+      </div>
+
       {/* Modern Search Bar */}
       <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl">
         <CardContent className="p-4">
@@ -165,33 +192,6 @@ export default function WytWall() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Post Type Filter Pills */}
-      <div className="flex gap-3 justify-center">
-        {[
-          { value: 'all', label: 'All Posts', icon: Zap },
-          { value: 'needs', label: 'Needs', icon: Search },
-          { value: 'offers', label: 'Offers', icon: Package }
-        ].map((type) => {
-          const Icon = type.icon;
-          return (
-            <Button
-              key={type.value}
-              variant={postType === type.value ? "default" : "outline"}
-              onClick={() => setPostType(type.value as any)}
-              className={`font-bold transition-all ${
-                postType === type.value
-                  ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-xl border-0 scale-105"
-                  : "bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border-0 text-gray-700 dark:text-gray-300 hover:scale-105"
-              }`}
-              data-testid={`filter-${type.value}`}
-            >
-              <Icon className="h-4 w-4 mr-2" />
-              {type.label}
-            </Button>
-          );
-        })}
-      </div>
 
       {/* Category Pills for Mobile */}
       <div className="lg:hidden flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
