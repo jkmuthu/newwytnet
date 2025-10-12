@@ -5166,15 +5166,6 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      // WytPoints are only available for WhatsApp-authenticated users
-      if (principal.provider !== 'whatsapp') {
-        return res.status(403).json({ 
-          error: 'WytPoints are only available for WhatsApp-authenticated users',
-          feature: 'wytpoints',
-          requiredProvider: 'whatsapp'
-        });
-      }
-
       const limit = parseInt(req.query.limit as string) || 20;
       const details = await pointsService.getWalletDetails(principal.id, limit);
       
@@ -5193,15 +5184,6 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      // WytPoints are only available for WhatsApp-authenticated users
-      if (principal.provider !== 'whatsapp') {
-        return res.status(403).json({ 
-          error: 'WytPoints are only available for WhatsApp-authenticated users',
-          feature: 'wytpoints',
-          requiredProvider: 'whatsapp'
-        });
-      }
-
       const limit = parseInt(req.query.limit as string) || 50;
       const transactions = await pointsService.getTransactions(principal.id, limit);
       
@@ -5209,6 +5191,106 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error) {
       console.error('Error fetching transactions:', error);
       res.status(500).json({ error: 'Failed to fetch transactions' });
+    }
+  });
+
+  // Get or generate referral code
+  app.get('/api/points/referral/code', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // Get user from database
+      const [user] = await db.select().from(users).where(eq(users.id, principal.id)).limit(1);
+      
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      let referralCode = user.referralCode;
+
+      // Generate referral code if not exists
+      if (!referralCode) {
+        referralCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+        await db.update(users).set({ referralCode }).where(eq(users.id, principal.id));
+      }
+
+      const referralLink = `${req.protocol}://${req.get('host')}/login?ref=${referralCode}`;
+
+      res.json({ 
+        success: true, 
+        referralCode,
+        referralLink 
+      });
+    } catch (error) {
+      console.error('Error getting referral code:', error);
+      res.status(500).json({ error: 'Failed to get referral code' });
+    }
+  });
+
+  // Get user's referrals
+  app.get('/api/points/referrals', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // Get user's referral code
+      const [user] = await db.select().from(users).where(eq(users.id, principal.id)).limit(1);
+      
+      if (!user || !user.referralCode) {
+        return res.json({ 
+          success: true, 
+          referrals: [],
+          totalReferrals: 0 
+        });
+      }
+
+      // Get all users who used this referral code
+      const referrals = await db.select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        profileImageUrl: users.profileImageUrl,
+        createdAt: users.createdAt
+      })
+      .from(users)
+      .where(eq(users.referredBy, user.referralCode))
+      .orderBy(desc(users.createdAt));
+
+      res.json({ 
+        success: true, 
+        referrals,
+        totalReferrals: referrals.length 
+      });
+    } catch (error) {
+      console.error('Error fetching referrals:', error);
+      res.status(500).json({ error: 'Failed to fetch referrals' });
+    }
+  });
+
+  // Get points configuration (public - for opportunities display)
+  app.get('/api/points/config', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const configs = await db
+        .select()
+        .from(pointsConfig)
+        .where(eq(pointsConfig.isActive, true))
+        .orderBy(pointsConfig.category, pointsConfig.action);
+      
+      res.json({ success: true, configs });
+    } catch (error) {
+      console.error('Error fetching points configuration:', error);
+      res.status(500).json({ error: 'Failed to fetch points configuration' });
     }
   });
 

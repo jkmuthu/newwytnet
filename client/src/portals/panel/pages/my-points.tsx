@@ -48,36 +48,68 @@ export default function MyPoints() {
   const [copiedLink, setCopiedLink] = useState(false);
 
   // Fetch points wallet data
-  const { data: walletData, isLoading: isLoadingWallet } = useQuery<{
-    balance: number;
-    totalEarned: number;
-    totalSpent: number;
+  const { data: walletResponse, isLoading: isLoadingWallet } = useQuery<{
+    success: boolean;
+    data: {
+      wallet: { balance: number; lifetimeEarned: number; lifetimeSpent: number };
+      recentTransactions: PointsTransaction[];
+    };
   }>({
     queryKey: ['/api/points/wallet'],
   });
 
   // Fetch transaction history
-  const { data: transactionsData, isLoading: isLoadingTransactions } = useQuery<{
+  const { data: transactionsResponse, isLoading: isLoadingTransactions } = useQuery<{
+    success: boolean;
     transactions: PointsTransaction[];
   }>({
     queryKey: ['/api/points/transactions'],
   });
 
-  // Fetch referral data
-  const { data: referralData, isLoading: isLoadingReferrals } = useQuery<ReferralInfo>({
+  // Fetch referral code
+  const { data: referralCodeResponse, isLoading: isLoadingReferralCode } = useQuery<{
+    success: boolean;
+    referralCode: string;
+    referralLink: string;
+  }>({
+    queryKey: ['/api/points/referral/code'],
+  });
+
+  // Fetch user's referrals
+  const { data: referralsResponse, isLoading: isLoadingReferrals } = useQuery<{
+    success: boolean;
+    referrals: Array<{
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      profileImageUrl: string;
+      createdAt: string;
+    }>;
+    totalReferrals: number;
+  }>({
     queryKey: ['/api/points/referrals'],
   });
 
-  // Fetch points earning opportunities
-  const { data: opportunitiesData } = useQuery<{
-    opportunities: Array<{ action: string; points: number; description: string; completed: boolean }>;
+  // Fetch points config for opportunities
+  const { data: pointsConfigResponse } = useQuery<{
+    success: boolean;
+    configs: Array<{ id: string; action: string; points: number; isActive: boolean }>;
   }>({
-    queryKey: ['/api/points/opportunities'],
+    queryKey: ['/api/points/config'],
   });
 
+  // Extract data from responses
+  const walletData = walletResponse?.data;
+  const transactions = transactionsResponse?.transactions || [];
+  const referralCode = referralCodeResponse?.referralCode;
+  const referralLink = referralCodeResponse?.referralLink;
+  const referrals = referralsResponse?.referrals || [];
+  const totalReferrals = referralsResponse?.totalReferrals || 0;
+
   const copyReferralCode = () => {
-    if (referralData?.referralCode) {
-      navigator.clipboard.writeText(referralData.referralCode);
+    if (referralCode) {
+      navigator.clipboard.writeText(referralCode);
       setCopiedCode(true);
       toast({ title: "Copied!", description: "Referral code copied to clipboard" });
       setTimeout(() => setCopiedCode(false), 2000);
@@ -85,8 +117,8 @@ export default function MyPoints() {
   };
 
   const copyReferralLink = () => {
-    if (referralData?.referralLink) {
-      navigator.clipboard.writeText(referralData.referralLink);
+    if (referralLink) {
+      navigator.clipboard.writeText(referralLink);
       setCopiedLink(true);
       toast({ title: "Copied!", description: "Referral link copied to clipboard" });
       setTimeout(() => setCopiedLink(false), 2000);
@@ -94,11 +126,11 @@ export default function MyPoints() {
   };
 
   const shareReferral = () => {
-    if (navigator.share && referralData?.referralLink) {
+    if (navigator.share && referralLink) {
       navigator.share({
         title: 'Join WytNet with my referral link',
-        text: 'Join WytNet and get 5 points as a welcome bonus!',
-        url: referralData.referralLink,
+        text: 'Join WytNet and get points as a welcome bonus!',
+        url: referralLink,
       }).catch(() => {
         // Fallback to copy
         copyReferralLink();
@@ -145,7 +177,7 @@ export default function MyPoints() {
               <div>
                 <p className="text-sm opacity-90">Current Balance</p>
                 <p className="text-4xl font-bold mt-2">
-                  {isLoadingWallet ? '...' : walletData?.balance || 0}
+                  {isLoadingWallet ? '...' : walletData?.wallet?.balance || 0}
                 </p>
                 <p className="text-sm opacity-80 mt-1">WytPoints</p>
               </div>
@@ -162,7 +194,7 @@ export default function MyPoints() {
               <div>
                 <p className="text-sm text-muted-foreground">Total Earned</p>
                 <p className="text-3xl font-bold text-green-600 mt-2">
-                  +{isLoadingWallet ? '...' : walletData?.totalEarned || 0}
+                  +{isLoadingWallet ? '...' : walletData?.wallet?.lifetimeEarned || 0}
                 </p>
               </div>
               <div className="bg-green-100 dark:bg-green-900 p-3 rounded-full">
@@ -178,7 +210,7 @@ export default function MyPoints() {
               <div>
                 <p className="text-sm text-muted-foreground">Total Spent</p>
                 <p className="text-3xl font-bold text-orange-600 mt-2">
-                  -{isLoadingWallet ? '...' : walletData?.totalSpent || 0}
+                  -{isLoadingWallet ? '...' : walletData?.wallet?.lifetimeSpent || 0}
                 </p>
               </div>
               <div className="bg-orange-100 dark:bg-orange-900 p-3 rounded-full">
@@ -217,33 +249,31 @@ export default function MyPoints() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {opportunitiesData?.opportunities?.map((opportunity, index) => (
-                  <div
-                    key={index}
-                    className={`flex items-center justify-between p-4 border rounded-lg ${
-                      opportunity.completed ? 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800' : ''
-                    }`}
-                    data-testid={`opportunity-${opportunity.action}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      {opportunity.completed ? (
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                      ) : (
-                        <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
-                      )}
-                      <div>
-                        <p className="font-medium">{opportunity.description}</p>
-                        <p className="text-sm text-muted-foreground">Action: {opportunity.action}</p>
+                {pointsConfigResponse?.configs && pointsConfigResponse.configs.length > 0 ? (
+                  pointsConfigResponse.configs
+                    .filter(config => config.isActive)
+                    .map((config) => (
+                      <div
+                        key={config.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                        data-testid={`opportunity-${config.action}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-5 w-5 rounded-full border-2 border-blue-500" />
+                          <div>
+                            <p className="font-medium capitalize">{config.action.replace(/_/g, ' ')}</p>
+                            <p className="text-sm text-muted-foreground">Earn points by this action</p>
+                          </div>
+                        </div>
+                        <Badge
+                          variant="default"
+                          className="text-lg px-3 py-1"
+                        >
+                          +{config.points}
+                        </Badge>
                       </div>
-                    </div>
-                    <Badge
-                      variant={opportunity.completed ? "secondary" : "default"}
-                      className="text-lg px-3 py-1"
-                    >
-                      +{opportunity.points}
-                    </Badge>
-                  </div>
-                )) || (
+                    ))
+                ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     No earning opportunities available
                   </div>
@@ -266,11 +296,11 @@ export default function MyPoints() {
             <CardContent>
               {isLoadingTransactions ? (
                 <div className="text-center py-8 text-muted-foreground">Loading transactions...</div>
-              ) : !transactionsData?.transactions || transactionsData.transactions.length === 0 ? (
+              ) : !transactions || transactions.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">No transactions yet</div>
               ) : (
                 <div className="space-y-2">
-                  {transactionsData.transactions.map((transaction) => (
+                  {transactions.map((transaction) => (
                     <div
                       key={transaction.id}
                       className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors"
@@ -313,7 +343,7 @@ export default function MyPoints() {
                   <div className="bg-blue-100 dark:bg-blue-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
                     <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <p className="text-2xl font-bold">{referralData?.totalReferrals || 0}</p>
+                  <p className="text-2xl font-bold">{totalReferrals}</p>
                   <p className="text-sm text-muted-foreground">Total Referrals</p>
                 </div>
               </CardContent>
@@ -325,8 +355,8 @@ export default function MyPoints() {
                   <div className="bg-green-100 dark:bg-green-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
                     <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
                   </div>
-                  <p className="text-2xl font-bold">{referralData?.completedReferrals || 0}</p>
-                  <p className="text-sm text-muted-foreground">Completed</p>
+                  <p className="text-2xl font-bold">{totalReferrals}</p>
+                  <p className="text-sm text-muted-foreground">Active Referrals</p>
                 </div>
               </CardContent>
             </Card>
@@ -337,8 +367,8 @@ export default function MyPoints() {
                   <div className="bg-orange-100 dark:bg-orange-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
                     <Clock className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                   </div>
-                  <p className="text-2xl font-bold">{referralData?.pendingReferrals || 0}</p>
-                  <p className="text-sm text-muted-foreground">Pending</p>
+                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-sm text-muted-foreground">Points Earned</p>
                 </div>
               </CardContent>
             </Card>
@@ -351,14 +381,14 @@ export default function MyPoints() {
                 <Share2 className="h-5 w-5" />
                 Share Your Referral Link
               </CardTitle>
-              <CardDescription>Invite friends and earn 5 points for each successful referral</CardDescription>
+              <CardDescription>Invite friends and earn points for each successful referral</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Your Referral Code</label>
                 <div className="flex gap-2">
                   <Input
-                    value={referralData?.referralCode || 'Loading...'}
+                    value={isLoadingReferralCode ? 'Loading...' : referralCode || 'N/A'}
                     readOnly
                     className="font-mono"
                     data-testid="input-referral-code"
@@ -367,6 +397,7 @@ export default function MyPoints() {
                     onClick={copyReferralCode}
                     variant="outline"
                     size="icon"
+                    disabled={!referralCode}
                     data-testid="button-copy-code"
                   >
                     {copiedCode ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
@@ -378,7 +409,7 @@ export default function MyPoints() {
                 <label className="text-sm font-medium">Your Referral Link</label>
                 <div className="flex gap-2">
                   <Input
-                    value={referralData?.referralLink || 'Loading...'}
+                    value={isLoadingReferralCode ? 'Loading...' : referralLink || 'N/A'}
                     readOnly
                     data-testid="input-referral-link"
                   />

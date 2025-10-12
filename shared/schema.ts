@@ -50,6 +50,8 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   passwordHash: varchar("password_hash", { length: 255 }),
   tenantId: uuid("tenant_id").references(() => tenants.id),
+  referralCode: varchar("referral_code", { length: 20 }).unique(),
+  referredBy: varchar("referred_by", { length: 20 }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
