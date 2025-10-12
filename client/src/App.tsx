@@ -45,7 +45,7 @@ function PortalRouter() {
         <Route path="/admin/:rest*" component={AdminRouter} />
         
         {/* Panel Portal - Routes: /panel, /panel/me/*, /panel/org/:orgId/* */}
-        <Route path="/panel">
+        <Route path="/panel/:rest*">
           {(params) => <PanelRouter />}
         </Route>
         
