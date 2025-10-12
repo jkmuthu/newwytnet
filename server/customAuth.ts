@@ -759,41 +759,21 @@ export async function getPrincipal(req: AuthenticatedRequest): Promise<Principal
   // First, try to resolve from custom auth session
   const sessionUser = req.session?.user;
   if (sessionUser) {
-    // Handle different session types
-    if (sessionUser.type === 'whatsapp') {
-      // WhatsApp user session
-      const whatsappAuthService = await import('./services/whatsappAuth');
-      const whatsappUser = await whatsappAuthService.findWhatsAppUserById(sessionUser.id);
-      if (whatsappUser) {
-        return {
-          id: whatsappUser.id,
-          tenantId: whatsappUser.tenantId!,
-          role: whatsappUser.role,
-          isSuperAdmin: whatsappUser.isSuperAdmin || false,
-          email: whatsappUser.email || undefined,
-          name: whatsappUser.name,
-          mobileNumber: whatsappUser.whatsappNumber,
-          profileImageUrl: whatsappUser.profileImageUrl || undefined,
-          provider: 'whatsapp'
-        };
-      }
-    } else {
-      // Legacy user session
-      const user = await storage.getUser(sessionUser.id);
-      if (user) {
-        return {
-          id: user.id,
-          tenantId: user.tenantId || '',
-          role: 'user',
-          isSuperAdmin: false,
-          email: user.email || undefined,
-          firstName: user.firstName || undefined,
-          lastName: user.lastName || undefined,
-          name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}`.trim() : undefined,
-          profileImageUrl: user.profileImageUrl || undefined,
-          provider: 'legacy'
-        };
-      }
+    // All users are now in the unified users table
+    const user = await storage.getUser(sessionUser.id);
+    if (user) {
+      return {
+        id: user.id,
+        tenantId: user.tenantId || '',
+        role: (user as any).role || 'user',
+        isSuperAdmin: (user as any).isSuperAdmin || false,
+        email: user.email || undefined,
+        firstName: user.firstName || undefined,
+        lastName: user.lastName || undefined,
+        name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}`.trim() : undefined,
+        profileImageUrl: user.profileImageUrl || undefined,
+        provider: 'unified'
+      };
     }
   }
 
