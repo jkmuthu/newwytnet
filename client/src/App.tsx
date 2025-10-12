@@ -45,17 +45,14 @@ function PortalRouter() {
         <Route path="/admin/:rest*" component={AdminRouter} />
         
         {/* Panel Portal - MyPanel and OrgPanel Routes */}
-        <Route path="/mypanel/:rest*">
-          {(params) => <PanelRouter />}
-        </Route>
-        <Route path="/orgpanel/:rest*">
-          {(params) => <PanelRouter />}
-        </Route>
+        <Route path="/mypanel" component={PanelRouter} />
+        <Route path="/mypanel/:rest*" component={PanelRouter} />
+        <Route path="/orgpanel" component={PanelRouter} />
+        <Route path="/orgpanel/:rest*" component={PanelRouter} />
         
         {/* Legacy panel routes - redirect to new structure */}
-        <Route path="/panel/:rest*">
-          {(params) => <PanelRouter />}
-        </Route>
+        <Route path="/panel" component={PanelRouter} />
+        <Route path="/panel/:rest*" component={PanelRouter} />
         
         {/* Dashboard redirect - Move legacy /dashboard to mypanel */}
         <Route path="/dashboard">
