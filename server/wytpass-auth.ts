@@ -231,6 +231,7 @@ export function setupWytPassAuth(app: Express) {
     }
     
     console.log(`🔧 LinkedIn OAuth Callback URL: ${baseUrl}/api/auth/linkedin/callback`);
+    console.log(`🔧 LinkedIn Client ID (masked): ${process.env.LINKEDIN_CLIENT_ID?.substring(0, 5)}...${process.env.LINKEDIN_CLIENT_ID?.slice(-3)}`);
     
     passport.use(
       new LinkedInStrategy(
