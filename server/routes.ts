@@ -5202,19 +5202,36 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      // Get user from database
-      const [user] = await db.select().from(users).where(eq(users.id, principal.id)).limit(1);
-      
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
+      let referralCode: string | null = null;
+      const provider = principal.provider;
+
+      // Query the correct table based on authentication provider
+      // OAuth/WhatsApp users (undefined, 'replit', 'google', 'whatsapp', etc.) are in whatsapp_users
+      // Only 'legacy' users are in the users table
+      if (provider === 'legacy') {
+        // Legacy users from users table
+        const [user] = await db.select().from(users).where(eq(users.id, principal.id)).limit(1);
+        if (user) {
+          referralCode = user.referralCode;
+          if (!referralCode) {
+            referralCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+            await db.update(users).set({ referralCode }).where(eq(users.id, principal.id));
+          }
+        }
+      } else {
+        // OAuth/WhatsApp users from whatsapp_users table (default for all non-legacy users)
+        const [user] = await db.select().from(whatsappUsers).where(eq(whatsappUsers.id, principal.id)).limit(1);
+        if (user) {
+          referralCode = user.referralCode;
+          if (!referralCode) {
+            referralCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+            await db.update(whatsappUsers).set({ referralCode }).where(eq(whatsappUsers.id, principal.id));
+          }
+        }
       }
 
-      let referralCode = user.referralCode;
-
-      // Generate referral code if not exists
       if (!referralCode) {
-        referralCode = Math.random().toString(36).substring(2, 10).toUpperCase();
-        await db.update(users).set({ referralCode }).where(eq(users.id, principal.id));
+        return res.status(404).json({ error: 'User not found' });
       }
 
       const referralLink = `${req.protocol}://${req.get('host')}/login?ref=${referralCode}`;
@@ -5238,10 +5255,21 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      // Get user's referral code
-      const [user] = await db.select().from(users).where(eq(users.id, principal.id)).limit(1);
+      let referralCode: string | null = null;
+      const provider = principal.provider;
+
+      // Get user's referral code from the correct table
+      // OAuth/WhatsApp users (undefined, 'replit', 'google', 'whatsapp', etc.) are in whatsapp_users
+      // Only 'legacy' users are in the users table
+      if (provider === 'legacy') {
+        const [user] = await db.select().from(users).where(eq(users.id, principal.id)).limit(1);
+        referralCode = user?.referralCode || null;
+      } else {
+        const [user] = await db.select().from(whatsappUsers).where(eq(whatsappUsers.id, principal.id)).limit(1);
+        referralCode = user?.referralCode || null;
+      }
       
-      if (!user || !user.referralCode) {
+      if (!referralCode) {
         return res.json({ 
           success: true, 
           referrals: [],
@@ -5249,8 +5277,8 @@ export async function registerRoutes(app: Express): Promise<void> {
         });
       }
 
-      // Get all users who used this referral code
-      const referrals = await db.select({
+      // Get all users who used this referral code (check both tables)
+      const legacyReferrals = await db.select({
         id: users.id,
         email: users.email,
         firstName: users.firstName,
@@ -5259,13 +5287,30 @@ export async function registerRoutes(app: Express): Promise<void> {
         createdAt: users.createdAt
       })
       .from(users)
-      .where(eq(users.referredBy, user.referralCode))
+      .where(eq(users.referredBy, referralCode))
       .orderBy(desc(users.createdAt));
+
+      const oauthReferrals = await db.select({
+        id: whatsappUsers.id,
+        email: whatsappUsers.email,
+        firstName: sql<string>`NULL`.as('firstName'),
+        lastName: sql<string>`NULL`.as('lastName'),
+        profileImageUrl: whatsappUsers.profileImageUrl,
+        createdAt: whatsappUsers.createdAt
+      })
+      .from(whatsappUsers)
+      .where(eq(whatsappUsers.referredBy, referralCode))
+      .orderBy(desc(whatsappUsers.createdAt));
+
+      // Combine and sort all referrals
+      const allReferrals = [...legacyReferrals, ...oauthReferrals].sort((a, b) => 
+        new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+      );
 
       res.json({ 
         success: true, 
-        referrals,
-        totalReferrals: referrals.length 
+        referrals: allReferrals,
+        totalReferrals: allReferrals.length 
       });
     } catch (error) {
       console.error('Error fetching referrals:', error);

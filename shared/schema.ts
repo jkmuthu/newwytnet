@@ -82,6 +82,10 @@ export const whatsappUsers = pgTable("whatsapp_users", {
   socialIds: jsonb("social_ids").default({}), // {google: 'id123', facebook: 'id456'}
   profileImageUrl: varchar("profile_image_url", { length: 500 }),
   
+  // Referral System
+  referralCode: varchar("referral_code", { length: 20 }).unique(),
+  referredBy: varchar("referred_by", { length: 20 }),
+  
   // Authentication Methods
   authMethods: jsonb("auth_methods").default(['whatsapp']), // ['whatsapp', 'password', 'google', 'facebook']
   passwordHash: varchar("password_hash", { length: 255 }),
