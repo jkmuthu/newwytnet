@@ -73,14 +73,26 @@ export default function PanelHeader({
     return name[0]?.toUpperCase() || 'U';
   };
 
-  const handlePanelSwitch = () => {
-    if (currentWorkspace.type === 'personal') {
-      // Switch to Org Panel
-      setLocation('/orgpanel');
-    } else {
-      // Switch to My Panel
-      setLocation('/mypanel');
-    }
+  // Determine active panel based on current location
+  const isMyPanel = location.includes('/mypanel') || (!location.includes('/orgpanel') && !location.includes('/panel/org'));
+  const isOrgPanel = location.includes('/orgpanel') || location.includes('/panel/org');
+
+  const switchToMyPanel = () => {
+    onWorkspaceChange({
+      type: 'personal',
+      id: 'me',
+      name: 'My Panel'
+    });
+    setLocation('/mypanel');
+  };
+
+  const switchToOrgPanel = () => {
+    onWorkspaceChange({
+      type: 'organization',
+      id: 'org',
+      name: 'Org Panel'
+    });
+    setLocation('/orgpanel');
   };
 
   return (
@@ -104,12 +116,12 @@ export default function PanelHeader({
             {/* Panel Switcher */}
             <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
               <Button
-                variant={currentWorkspace.type === 'personal' ? 'default' : 'ghost'}
+                variant={isMyPanel ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => currentWorkspace.type !== 'personal' && setLocation('/mypanel')}
+                onClick={switchToMyPanel}
                 className={cn(
                   "h-8 text-xs sm:text-sm px-2 sm:px-4",
-                  currentWorkspace.type === 'personal' && "bg-blue-600 hover:bg-blue-700 text-white"
+                  isMyPanel && "bg-blue-600 hover:bg-blue-700 text-white"
                 )}
                 data-testid="switch-my-panel"
               >
@@ -118,12 +130,12 @@ export default function PanelHeader({
                 <span className="xs:hidden">My</span>
               </Button>
               <Button
-                variant={currentWorkspace.type === 'organization' ? 'default' : 'ghost'}
+                variant={isOrgPanel ? 'default' : 'ghost'}
                 size="sm"
-                onClick={() => currentWorkspace.type !== 'organization' && setLocation('/orgpanel')}
+                onClick={switchToOrgPanel}
                 className={cn(
                   "h-8 text-xs sm:text-sm px-2 sm:px-4",
-                  currentWorkspace.type === 'organization' && "bg-green-600 hover:bg-green-700 text-white"
+                  isOrgPanel && "bg-green-600 hover:bg-green-700 text-white"
                 )}
                 data-testid="switch-org-panel"
               >
