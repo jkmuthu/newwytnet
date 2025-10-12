@@ -44,6 +44,18 @@ interface ProfileField {
   updatedAt: string;
 }
 
+interface PointsConfig {
+  id: string;
+  action: string;
+  points: number;
+  description: string;
+  isActive: boolean;
+  category: string;
+  updatedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function AdminUsers() {
   const [activeTab, setActiveTab] = useState("users");
   const [isFieldDialogOpen, setIsFieldDialogOpen] = useState(false);
@@ -55,6 +67,7 @@ export default function AdminUsers() {
     isRequired: false,
     tabSection: "personal"
   });
+  const [editingPointConfig, setEditingPointConfig] = useState<PointsConfig | null>(null);
   const { toast } = useToast();
 
   const { data: usersData, isLoading } = useQuery<{
@@ -75,6 +88,13 @@ export default function AdminUsers() {
     fields: ProfileField[];
   }>({
     queryKey: ['/api/admin/profile-fields'],
+  });
+
+  const { data: pointsConfigData, isLoading: isLoadingPoints } = useQuery<{
+    success: boolean;
+    configs: PointsConfig[];
+  }>({
+    queryKey: ['/api/admin/points-config'],
   });
 
   const createFieldMutation = useMutation({
@@ -176,6 +196,31 @@ export default function AdminUsers() {
     } else {
       createFieldMutation.mutate(fieldFormData);
     }
+  };
+
+  const updatePointsMutation = useMutation({
+    mutationFn: async (data: { id: string; points: number }) => {
+      const response = await fetch(`/api/admin/points-config/${data.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ points: data.points }),
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to update points');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/points-config'] });
+      toast({ title: "Success", description: "Points configuration updated successfully" });
+      setEditingPointConfig(null);
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update points configuration", variant: "destructive" });
+    }
+  });
+
+  const handlePointsUpdate = (config: PointsConfig, newPoints: number) => {
+    updatePointsMutation.mutate({ id: config.id, points: newPoints });
   };
 
   const getUserInitials = (name: string) => {
@@ -521,7 +566,7 @@ export default function AdminUsers() {
               <CardDescription>Configure points allocation for profile completion and engagement</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="bg-purple-50 dark:bg-purple-950 p-4 rounded-lg">
                   <h3 className="font-semibold text-purple-900 dark:text-purple-100 mb-2">WytPoints Economy</h3>
                   <p className="text-sm text-purple-700 dark:text-purple-300">
@@ -530,9 +575,224 @@ export default function AdminUsers() {
                   </p>
                 </div>
 
-                <div className="text-muted-foreground py-8 text-center">
-                  Points setup interface coming soon...
-                </div>
+                {isLoadingPoints ? (
+                  <div className="text-center py-8 text-muted-foreground">Loading points configuration...</div>
+                ) : !pointsConfigData?.configs || pointsConfigData.configs.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No points configuration found
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Onboarding Points */}
+                    <div className="space-y-3">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Award className="h-5 w-5 text-blue-600" />
+                        Onboarding & Registration
+                      </h3>
+                      <div className="grid gap-3">
+                        {pointsConfigData.configs
+                          .filter(config => config.category === 'onboarding')
+                          .map((config) => (
+                            <div
+                              key={config.id}
+                              className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                              data-testid={`config-${config.action}`}
+                            >
+                              <div className="flex-1">
+                                <div className="font-medium">{config.description}</div>
+                                <div className="text-sm text-muted-foreground mt-1">Action: {config.action}</div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                {editingPointConfig?.id === config.id ? (
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      defaultValue={config.points}
+                                      className="w-20"
+                                      onBlur={(e) => {
+                                        const newPoints = parseInt(e.target.value);
+                                        if (!isNaN(newPoints)) {
+                                          handlePointsUpdate(config, newPoints);
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          const newPoints = parseInt(e.currentTarget.value);
+                                          if (!isNaN(newPoints)) {
+                                            handlePointsUpdate(config, newPoints);
+                                          }
+                                        }
+                                      }}
+                                      autoFocus
+                                      data-testid={`input-points-${config.action}`}
+                                    />
+                                    <span className="text-sm text-muted-foreground">pts</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <Badge 
+                                      variant={config.points >= 0 ? "default" : "destructive"}
+                                      className="text-lg px-3 py-1"
+                                    >
+                                      {config.points >= 0 ? '+' : ''}{config.points}
+                                    </Badge>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setEditingPointConfig(config)}
+                                      data-testid={`button-edit-points-${config.action}`}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Engagement Points */}
+                    <div className="space-y-3">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Shield className="h-5 w-5 text-green-600" />
+                        Engagement & Activity
+                      </h3>
+                      <div className="grid gap-3">
+                        {pointsConfigData.configs
+                          .filter(config => config.category === 'engagement')
+                          .map((config) => (
+                            <div
+                              key={config.id}
+                              className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                              data-testid={`config-${config.action}`}
+                            >
+                              <div className="flex-1">
+                                <div className="font-medium">{config.description}</div>
+                                <div className="text-sm text-muted-foreground mt-1">Action: {config.action}</div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                {editingPointConfig?.id === config.id ? (
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      defaultValue={config.points}
+                                      className="w-20"
+                                      onBlur={(e) => {
+                                        const newPoints = parseInt(e.target.value);
+                                        if (!isNaN(newPoints)) {
+                                          handlePointsUpdate(config, newPoints);
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          const newPoints = parseInt(e.currentTarget.value);
+                                          if (!isNaN(newPoints)) {
+                                            handlePointsUpdate(config, newPoints);
+                                          }
+                                        }
+                                      }}
+                                      autoFocus
+                                      data-testid={`input-points-${config.action}`}
+                                    />
+                                    <span className="text-sm text-muted-foreground">pts</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <Badge 
+                                      variant={config.points >= 0 ? "default" : "destructive"}
+                                      className="text-lg px-3 py-1"
+                                    >
+                                      {config.points >= 0 ? '+' : ''}{config.points}
+                                    </Badge>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setEditingPointConfig(config)}
+                                      data-testid={`button-edit-points-${config.action}`}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Marketplace Points */}
+                    <div className="space-y-3">
+                      <h3 className="text-lg font-semibold flex items-center gap-2">
+                        <Award className="h-5 w-5 text-purple-600" />
+                        Marketplace Actions
+                      </h3>
+                      <div className="grid gap-3">
+                        {pointsConfigData.configs
+                          .filter(config => config.category === 'marketplace')
+                          .map((config) => (
+                            <div
+                              key={config.id}
+                              className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                              data-testid={`config-${config.action}`}
+                            >
+                              <div className="flex-1">
+                                <div className="font-medium">{config.description}</div>
+                                <div className="text-sm text-muted-foreground mt-1">
+                                  Action: {config.action} {config.points < 0 && '(Subject to Approval)'}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                {editingPointConfig?.id === config.id ? (
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      defaultValue={config.points}
+                                      className="w-20"
+                                      onBlur={(e) => {
+                                        const newPoints = parseInt(e.target.value);
+                                        if (!isNaN(newPoints)) {
+                                          handlePointsUpdate(config, newPoints);
+                                        }
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          const newPoints = parseInt(e.currentTarget.value);
+                                          if (!isNaN(newPoints)) {
+                                            handlePointsUpdate(config, newPoints);
+                                          }
+                                        }
+                                      }}
+                                      autoFocus
+                                      data-testid={`input-points-${config.action}`}
+                                    />
+                                    <span className="text-sm text-muted-foreground">pts</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <Badge 
+                                      variant={config.points >= 0 ? "default" : "destructive"}
+                                      className="text-lg px-3 py-1"
+                                    >
+                                      {config.points >= 0 ? '+' : ''}{config.points}
+                                    </Badge>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setEditingPointConfig(config)}
+                                      data-testid={`button-edit-points-${config.action}`}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

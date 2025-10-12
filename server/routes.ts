@@ -2457,6 +2457,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const configs = await db
         .select()
         .from(pointsConfig)
+        .where(eq(pointsConfig.isActive, true))
         .orderBy(pointsConfig.category, pointsConfig.action);
       
       res.json({ success: true, configs });
