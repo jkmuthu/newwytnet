@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from "@/components/ui/navigation-menu";
-import { Menu, Bell, User, Settings, LogOut, LayoutDashboard, Wrench, Smartphone, Wallet, UserCircle } from "lucide-react";
+import { Menu, Bell, User, Settings, LogOut, LayoutDashboard, Wrench, Smartphone, Wallet, UserCircle, Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -16,9 +16,28 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
  */
 export default function PublicHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDark, setIsDark] = useState(false);
   const { user, isAuthenticated, isLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Initialize theme from localStorage or system preference
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const shouldBeDark = savedTheme === 'dark' || (!savedTheme && systemPrefersDark);
+    
+    setIsDark(shouldBeDark);
+    document.documentElement.classList.toggle('dark', shouldBeDark);
+  }, []);
+
+  // Toggle theme function
+  const toggleTheme = () => {
+    const newTheme = !isDark;
+    setIsDark(newTheme);
+    document.documentElement.classList.toggle('dark', newTheme);
+    localStorage.setItem('theme', newTheme ? 'dark' : 'light');
+  };
 
   const wytHubsNavItems = [
     { label: "AI Directory", href: "/ai-directory" },
@@ -136,27 +155,51 @@ export default function PublicHeader() {
           </NavigationMenu>
 
           {/* Right side - Conditional Based on Auth Status */}
-          <div className="flex items-center space-x-2 md:space-x-3">
+          <div className="flex items-center gap-3">
             {isAuthenticated ? (
-              // Authenticated: Right to Left order - Hamburger menu, User DP, Notification Icon
+              // Authenticated: Notification Icon → User DP → Theme Toggle
               <>
-                {/* Hamburger Menu - WytPanel Navigation */}
+                {/* Notification Icon */}
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 relative"
+                  data-testid="button-notifications"
+                >
+                  <Bell className="h-5 w-5" />
+                  {/* Notification Badge */}
+                  <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
+                    <span className="text-[10px] text-white font-bold">3</span>
+                  </span>
+                </Button>
+
+                {/* User Display Picture with Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button 
                       variant="ghost" 
-                      size="sm"
-                      className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                      data-testid="button-hamburger-menu"
+                      className="relative h-9 w-9 rounded-full p-0 hover:scale-105 transition-transform"
+                      data-testid="user-avatar"
                     >
-                      <Menu className="h-5 w-5" />
+                      <Avatar className="h-9 w-9">
+                        {user && typeof user === 'object' && 'profileImageUrl' in user && user.profileImageUrl && 
+                         typeof user.profileImageUrl === 'string' ? (
+                          <AvatarImage 
+                            src={user.profileImageUrl} 
+                            alt={(user && 'name' in user && typeof user.name === 'string' ? user.name : "User")} 
+                          />
+                        ) : null}
+                        <AvatarFallback className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-semibold">
+                          {getUserInitials(user)}
+                        </AvatarFallback>
+                      </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuItem className="cursor-pointer" asChild>
                       <Link href="/panel/me/dashboard">
                         <LayoutDashboard className="mr-2 h-4 w-4" />
-                        <span>My Dash</span>
+                        <span>My Dashboard</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem className="cursor-pointer" asChild>
@@ -195,67 +238,50 @@ export default function PublicHeader() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {/* User Display Picture */}
-                <Button 
-                  variant="ghost" 
-                  className="relative h-8 w-8 rounded-full p-0 hover:scale-105 transition-transform"
-                  data-testid="user-avatar"
-                  asChild
-                >
-                  <Link href="/panel/me/profile">
-                    <Avatar className="h-8 w-8">
-                      {user && typeof user === 'object' && 'profileImageUrl' in user && user.profileImageUrl && 
-                       typeof user.profileImageUrl === 'string' ? (
-                        <AvatarImage 
-                          src={user.profileImageUrl} 
-                          alt={(user && 'name' in user && typeof user.name === 'string' ? user.name : "User")} 
-                        />
-                      ) : null}
-                      <AvatarFallback className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-semibold">
-                        {getUserInitials(user)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Link>
-                </Button>
-
-                {/* Notification Icon */}
-                <Button 
-                  variant="ghost" 
+                {/* Theme Toggle */}
+                <Button
+                  onClick={toggleTheme}
+                  variant="ghost"
                   size="sm"
-                  className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 relative"
-                  data-testid="button-notifications"
+                  className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 h-9 w-9 p-0"
+                  data-testid="button-theme-toggle"
+                  aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
                 >
-                  <Bell className="h-5 w-5" />
-                  {/* Notification Badge */}
-                  <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full flex items-center justify-center">
-                    <span className="text-xs text-white font-bold">3</span>
-                  </span>
+                  {isDark ? (
+                    <Sun className="h-5 w-5 text-yellow-500" />
+                  ) : (
+                    <Moon className="h-5 w-5 text-slate-600" />
+                  )}
                 </Button>
               </>
             ) : (
-              // Not Authenticated: Get WytPass Button, Access WytPanel
+              // Not Authenticated: Login/Join Button → Theme Toggle
               <>
-                <Link href="/panel" className="hidden sm:block">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
-                    data-testid="button-access-panel"
-                  >
-                    <span className="hidden md:inline">Access WytPanel</span>
-                    <span className="md:hidden">Panel</span>
-                  </Button>
-                </Link>
                 <Link href="/wytpass-login">
                   <Button 
                     size="sm"
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md"
-                    data-testid="button-get-wytpass"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md font-medium"
+                    data-testid="button-login-join"
                   >
-                    <span className="hidden md:inline">Get WytPass</span>
-                    <span className="md:hidden">WytPass</span>
+                    Login / Join
                   </Button>
                 </Link>
+
+                {/* Theme Toggle */}
+                <Button
+                  onClick={toggleTheme}
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 h-9 w-9 p-0"
+                  data-testid="button-theme-toggle"
+                  aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+                >
+                  {isDark ? (
+                    <Sun className="h-5 w-5 text-yellow-500" />
+                  ) : (
+                    <Moon className="h-5 w-5 text-slate-600" />
+                  )}
+                </Button>
               </>
             )}
           </div>
