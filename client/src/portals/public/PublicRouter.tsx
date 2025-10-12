@@ -81,8 +81,6 @@ export default function PublicRouter() {
 
       {/* Authentication routes */}
       <Route path="/login" component={WytPassLoginPage} />
-      <Route path="/wytpass-login" component={WytPassLoginPage} />
-      <Route path="/wytpass" component={WytPassLoginPage} />
       <Route path="/email-otp-login" component={EmailOTPLoginPage} />
       <Route path="/user-auth-methods" component={UserAuthMethods} />
 

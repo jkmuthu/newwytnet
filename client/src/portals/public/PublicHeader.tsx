@@ -257,7 +257,7 @@ export default function PublicHeader() {
             ) : (
               // Not Authenticated: Login/Join Button → Theme Toggle
               <>
-                <Link href="/wytpass-login">
+                <Link href="/login">
                   <Button 
                     size="sm"
                     className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md font-medium"

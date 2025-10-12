@@ -52,7 +52,7 @@ WytNet uses modern OAuth-based authentication following global best practices. *
 ## Login Instructions
 
 ### For Regular Users:
-1. Go to `/wytpass-login` page (WytPass authentication)
+1. Go to `/login` page (WytPass authentication)
 2. Choose your preferred method:
    - **Google OAuth:** Click "Sign in with Google"
    - **Email OTP:** Click "Email OTP" → Enter email → Verify OTP
@@ -66,7 +66,7 @@ WytNet uses modern OAuth-based authentication following global best practices. *
 
 ## Login Routes
 
-- **Main Login:** `/login` or `/wytpass-login` (OAuth authentication portal)
+- **Main Login:** `/login` (OAuth authentication portal)
 - **Email OTP Only:** `/email-otp-login` (Direct passwordless authentication)
 - **Admin Portal:** `/admin` (Super admin access)
 

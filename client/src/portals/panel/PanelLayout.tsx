@@ -45,9 +45,9 @@ export default function PanelLayout({ children }: PanelLayoutProps) {
     );
   }
 
-  // Redirect to WytPass login if not authenticated
+  // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    return <Redirect to="/wytpass-login" />;
+    return <Redirect to="/login" />;
   }
 
   // Use mobile-specific layout for small screens

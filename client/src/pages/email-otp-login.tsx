@@ -46,7 +46,7 @@ export default function EmailOTPLoginPage() {
 
         {/* Email OTP Form */}
         <EmailOTPForm 
-          onBack={() => window.location.href = "/wytpass-login"} 
+          onBack={() => window.location.href = "/login"} 
         />
 
         {/* Footer */}
