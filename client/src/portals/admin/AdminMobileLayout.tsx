@@ -112,37 +112,56 @@ export default function AdminMobileLayout({ children }: AdminMobileLayoutProps) 
   // Sidebar sections for mobile menu
   const sidebarSections = [
     {
-      section: "Core Admin",
+      section: "Dashboard",
       items: [
-        { icon: LayoutDashboard, label: 'Dashboard', href: '/admin' },
-        { icon: Users, label: 'Users', href: '/admin/users' },
-        { icon: Building, label: 'Tenants', href: '/admin/tenants' },
+        { icon: LayoutDashboard, label: 'Overview', href: '/admin' },
+      ]
+    },
+    {
+      section: "Data Management",
+      items: [
+        { icon: Users, label: 'All Users', href: '/admin/users' },
+        { icon: Building, label: 'All Orgs', href: '/admin/tenants' },
+        { icon: Package, label: 'DataSets', href: '/admin/datasets' },
+        { icon: Package, label: 'Media', href: '/admin/media' },
+      ]
+    },
+    {
+      section: "Platform Management",
+      items: [
         { icon: Package, label: 'Modules', href: '/admin/modules' },
+        { icon: Package, label: 'Apps', href: '/admin/apps' },
+        { icon: Package, label: 'Hubs', href: '/admin/hubs' },
+        { icon: Package, label: 'CMS', href: '/admin/cms' },
+        { icon: Package, label: 'Themes', href: '/admin/themes' },
+      ]
+    },
+    {
+      section: "Operations",
+      items: [
+        { icon: Package, label: 'Plans & Prices', href: '/admin/plans-prices' },
+        { icon: Package, label: 'Help & Support', href: '/admin/help-support' },
+        { icon: Package, label: 'Billing', href: '/admin/billing' },
+        { icon: Package, label: 'Transactions', href: '/admin/transactions' },
         { icon: BarChart3, label: 'Analytics', href: '/admin/analytics' },
       ]
     },
     {
-      section: "Platform",
+      section: "System & Config",
       items: [
-        { icon: Package, label: 'Apps', href: '/admin/apps' },
-        { icon: Package, label: 'Hubs', href: '/admin/hubs' },
-        { icon: Package, label: 'CMS', href: '/admin/cms' },
+        { icon: Package, label: 'Integrations', href: '/admin/integrations' },
         { icon: Settings, label: 'SEO Settings', href: '/admin/seo-settings' },
+        { icon: Settings, label: 'Global Settings', href: '/admin/global-settings' },
+        { icon: Shield, label: 'Roles & Permissions', href: '/admin/roles-permissions' },
+        { icon: Users, label: 'Admin Users', href: '/admin/admin-users' },
+        { icon: Package, label: 'Backups', href: '/admin/backups' },
+        { icon: Package, label: 'System Logs', href: '/admin/system-logs' },
+        { icon: Package, label: 'System Monitor', href: '/admin/system-monitor' },
+        { icon: Package, label: 'System Status', href: '/admin/system-status' },
+        { icon: Shield, label: 'Security', href: '/admin/security' },
       ]
     }
   ];
-
-  // Add super admin sections if applicable
-  if (adminUser?.isSuperAdmin) {
-    sidebarSections.unshift({
-      section: "🦸‍♂️ Super Admin",
-      items: [
-        { icon: Settings, label: 'Global Settings', href: '/admin/global-settings' },
-        { icon: Shield, label: 'Security', href: '/admin/security' },
-        { icon: Package, label: 'System Logs', href: '/admin/logs' },
-      ]
-    });
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">

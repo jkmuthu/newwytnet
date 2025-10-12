@@ -64,28 +64,34 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
             href: "/admin", 
             active: location === "/admin"
           },
-          { 
-            label: "System Status", 
-            icon: Server, 
-            href: "/admin/system-overview", 
-            active: location === "/admin/system-overview"
-          },
         ]
       },
       {
-        section: "User Management",
+        section: "Data Management",
         items: [
           { 
-            label: "Users", 
+            label: "All Users", 
             icon: Users, 
             href: "/admin/users", 
             active: location === "/admin/users"
           },
           { 
-            label: "Tenants", 
+            label: "All Orgs", 
             icon: Building, 
             href: "/admin/tenants", 
             active: location === "/admin/tenants"
+          },
+          { 
+            label: "DataSets", 
+            icon: Database, 
+            href: "/admin/datasets", 
+            active: location === "/admin/datasets"
+          },
+          { 
+            label: "Media", 
+            icon: Images, 
+            href: "/admin/media", 
+            active: location === "/admin/media"
           },
         ]
       },
@@ -116,11 +122,41 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
             href: "/admin/cms", 
             active: location === "/admin/cms"
           },
+          { 
+            label: "Themes", 
+            icon: Palette, 
+            href: "/admin/themes", 
+            active: location === "/admin/themes"
+          },
         ]
       },
       {
-        section: "Analytics & Reports",
+        section: "Operations",
         items: [
+          { 
+            label: "Plans & Prices", 
+            icon: CreditCard, 
+            href: "/admin/plans-prices", 
+            active: location === "/admin/plans-prices"
+          },
+          { 
+            label: "Help & Support", 
+            icon: FileImage, 
+            href: "/admin/help-support", 
+            active: location === "/admin/help-support"
+          },
+          { 
+            label: "Billing", 
+            icon: CreditCard, 
+            href: "/admin/billing", 
+            active: location === "/admin/billing"
+          },
+          { 
+            label: "Transactions", 
+            icon: List, 
+            href: "/admin/transactions", 
+            active: location === "/admin/transactions"
+          },
           { 
             label: "Analytics", 
             icon: BarChart3, 
@@ -130,8 +166,14 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
         ]
       },
       {
-        section: "Configuration",
+        section: "System & Config",
         items: [
+          { 
+            label: "Integrations", 
+            icon: Plug, 
+            href: "/admin/integrations", 
+            active: location === "/admin/integrations"
+          },
           { 
             label: "SEO Settings", 
             icon: Globe, 
@@ -139,89 +181,56 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
             active: location === "/admin/seo-settings"
           },
           { 
-            label: "Themes", 
-            icon: Palette, 
-            href: "/admin/themes", 
-            active: location === "/admin/themes"
-          },
-          { 
-            label: "Media", 
-            icon: Images, 
-            href: "/admin/media", 
-            active: location === "/admin/media"
-          },
-        ]
-      }
-    ];
-
-    // Add super admin only sections
-    if (isSuperAdmin) {
-      baseItems.splice(1, 0, {
-        section: "🦸‍♂️ Super Admin",
-        items: [
-          { 
             label: "Global Settings", 
             icon: Settings, 
             href: "/admin/global-settings", 
-            active: location === "/admin/global-settings",
-            superAdminOnly: true
+            active: location === "/admin/global-settings"
+          },
+          { 
+            label: "Roles & Permissions", 
+            icon: Shield, 
+            href: "/admin/roles-permissions", 
+            active: location === "/admin/roles-permissions"
+          },
+          { 
+            label: "Admin Users", 
+            icon: Users, 
+            href: "/admin/admin-users", 
+            active: location === "/admin/admin-users"
+          },
+          { 
+            label: "Backups", 
+            icon: Database, 
+            href: "/admin/backups", 
+            active: location === "/admin/backups"
           },
           { 
             label: "System Logs", 
             icon: List, 
-            href: "/admin/logs", 
-            active: location === "/admin/logs",
-            superAdminOnly: true
+            href: "/admin/system-logs", 
+            active: location === "/admin/system-logs"
           },
           { 
             label: "System Monitor", 
             icon: Eye, 
-            href: "/admin/monitor", 
-            active: location === "/admin/monitor",
-            superAdminOnly: true
+            href: "/admin/system-monitor", 
+            active: location === "/admin/system-monitor"
+          },
+          { 
+            label: "System Status", 
+            icon: Server, 
+            href: "/admin/system-status", 
+            active: location === "/admin/system-status"
+          },
+          { 
+            label: "Security", 
+            icon: Shield, 
+            href: "/admin/security", 
+            active: location === "/admin/security"
           },
         ]
-      });
-      
-      // Add advanced sections for super admin
-      baseItems.push(
-        {
-          section: "Advanced",
-          items: [
-            { 
-              label: "Integrations", 
-              icon: Plug, 
-              href: "/admin/integrations", 
-              active: location === "/admin/integrations"
-            },
-            { 
-              label: "Dataset Management", 
-              icon: Database, 
-              href: "/admin/datasets", 
-              active: location === "/admin/datasets"
-            },
-            { 
-              label: "AI Management", 
-              icon: Bot, 
-              href: "/admin/ai", 
-              active: location === "/admin/ai"
-            },
-            { 
-              label: "Billing", 
-              icon: CreditCard, 
-              href: "/admin/billing", 
-              active: location === "/admin/billing"
-            },
-            { 
-              label: "Security", 
-              icon: Shield, 
-              href: "/admin/security", 
-              active: location === "/admin/security"
-            },
-          ]
-        }
-      );
-    }
+      }
+    ];
 
     return baseItems;
   };
