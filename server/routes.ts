@@ -2366,6 +2366,91 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Profile Fields Management API Routes (Admin)
+  app.get('/api/admin/profile-fields', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const fields = await db
+        .select()
+        .from(profileFieldWeights)
+        .orderBy(profileFieldWeights.tabSection, profileFieldWeights.fieldName);
+      
+      res.json({ success: true, fields });
+    } catch (error) {
+      console.error("Error fetching profile fields:", error);
+      res.status(500).json({ message: "Failed to fetch profile fields" });
+    }
+  });
+
+  app.post('/api/admin/profile-fields', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { fieldName, fieldLabel, weightPercentage, isRequired, tabSection } = req.body;
+      
+      const [newField] = await db
+        .insert(profileFieldWeights)
+        .values({
+          fieldName,
+          fieldLabel,
+          weightPercentage,
+          isRequired,
+          tabSection
+        })
+        .returning();
+      
+      res.json({ success: true, field: newField });
+    } catch (error) {
+      console.error("Error creating profile field:", error);
+      res.status(500).json({ message: "Failed to create profile field" });
+    }
+  });
+
+  app.put('/api/admin/profile-fields/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { fieldLabel, weightPercentage, isRequired, tabSection } = req.body;
+      
+      const [updatedField] = await db
+        .update(profileFieldWeights)
+        .set({
+          fieldLabel,
+          weightPercentage,
+          isRequired,
+          tabSection,
+          updatedAt: new Date()
+        })
+        .where(eq(profileFieldWeights.id, id))
+        .returning();
+      
+      if (!updatedField) {
+        return res.status(404).json({ message: "Profile field not found" });
+      }
+      
+      res.json({ success: true, field: updatedField });
+    } catch (error) {
+      console.error("Error updating profile field:", error);
+      res.status(500).json({ message: "Failed to update profile field" });
+    }
+  });
+
+  app.delete('/api/admin/profile-fields/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      const [deletedField] = await db
+        .delete(profileFieldWeights)
+        .where(eq(profileFieldWeights.id, id))
+        .returning();
+      
+      if (!deletedField) {
+        return res.status(404).json({ message: "Profile field not found" });
+      }
+      
+      res.json({ success: true, message: "Profile field deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting profile field:", error);
+      res.status(500).json({ message: "Failed to delete profile field" });
+    }
+  });
+
   // RealBro Enhanced API Routes
   app.get('/api/realbro/demo-properties', async (req, res) => {
     try {
