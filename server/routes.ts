@@ -81,7 +81,8 @@ import {
   insertUserOfferSchema,
   offers,
   datasetCollections,
-  datasetItems
+  datasetItems,
+  profileFieldWeights
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -105,7 +106,7 @@ import {
   insertTrademarkSearchSchema
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql, gte, lte, like, or, ilike, not } from "drizzle-orm";
+import { eq, desc, and, sql, gte, lte, like, or, ilike, not, asc } from "drizzle-orm";
 
 // Trademark analysis functions now imported from services/trademarkAnalysis.ts
 
@@ -6202,6 +6203,33 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       const profileData = insertUserProfileSchema.parse({ ...req.body, userId: principal.id });
 
+      // Calculate profile completion percentage
+      const fieldWeights = await db.select()
+        .from(profileFieldWeights)
+        .where(eq(profileFieldWeights.tabSection, 'personal'));
+      
+      let totalWeight = 0;
+      let completedWeight = 0;
+      
+      for (const weight of fieldWeights) {
+        totalWeight += weight.weightPercentage;
+        
+        // Check if field is filled
+        const fieldValue = (profileData as any)[weight.fieldName];
+        const isFilled = fieldValue && 
+          (typeof fieldValue === 'string' ? fieldValue.trim() !== '' : 
+           Array.isArray(fieldValue) ? fieldValue.length > 0 : 
+           true);
+        
+        if (isFilled) {
+          completedWeight += weight.weightPercentage;
+        }
+      }
+      
+      const completionPercentage = totalWeight > 0 
+        ? Math.round((completedWeight / totalWeight) * 100) 
+        : 0;
+
       // Check if profile exists
       const [existing] = await db.select()
         .from(userProfiles)
@@ -6210,14 +6238,21 @@ export async function registerRoutes(app: Express): Promise<void> {
       if (existing) {
         // Update existing profile
         await db.update(userProfiles)
-          .set({ ...profileData, updatedAt: new Date() })
+          .set({ 
+            ...profileData, 
+            profileCompletionPercentage: completionPercentage,
+            updatedAt: new Date() 
+          })
           .where(eq(userProfiles.userId, principal.id));
       } else {
         // Create new profile
-        await db.insert(userProfiles).values(profileData);
+        await db.insert(userProfiles).values({
+          ...profileData,
+          profileCompletionPercentage: completionPercentage
+        });
       }
 
-      res.json({ success: true, message: 'Profile updated successfully' });
+      res.json({ success: true, message: 'Profile updated successfully', completionPercentage });
     } catch (error: any) {
       console.error('Error updating profile:', error);
       res.status(500).json({ error: error.message || 'Failed to update profile' });
@@ -6334,6 +6369,37 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error: any) {
       console.error('Error updating password:', error);
       res.status(500).json({ error: error.message || 'Failed to update password' });
+    }
+  });
+
+  // ========================================
+  // DATASET API ROUTES (for frontend dropdowns)
+  // ========================================
+
+  // Get dataset items by collection key
+  app.get('/api/datasets/:key', async (req: any, res) => {
+    try {
+      const { key } = req.params;
+      
+      // Find collection by key
+      const [collection] = await db.select()
+        .from(datasetCollections)
+        .where(eq(datasetCollections.key, key));
+      
+      if (!collection) {
+        return res.status(404).json({ error: 'Dataset not found' });
+      }
+      
+      // Get items for this collection
+      const items = await db.select()
+        .from(datasetItems)
+        .where(eq(datasetItems.collectionId, collection.id))
+        .orderBy(asc(datasetItems.sortOrder), asc(datasetItems.label));
+      
+      res.json({ items });
+    } catch (error: any) {
+      console.error('Error fetching dataset:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch dataset' });
     }
   });
 
