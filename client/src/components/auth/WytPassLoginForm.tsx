@@ -59,7 +59,7 @@ export default function WytPassLoginForm() {
   const onLogin = async (data: LoginFormData) => {
     setIsLoading(true);
     try {
-      const response = await apiRequest("POST", "/api/auth/login", data);
+      const response = await apiRequest("/api/auth/login", "POST", data);
       const userData = await response.json();
       
       toast({
@@ -82,7 +82,7 @@ export default function WytPassLoginForm() {
   const onRegister = async (data: RegisterFormData) => {
     setIsLoading(true);
     try {
-      const response = await apiRequest("POST", "/api/auth/register", data);
+      const response = await apiRequest("/api/auth/register", "POST", data);
       const userData = await response.json();
       
       toast({
