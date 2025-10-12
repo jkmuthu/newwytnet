@@ -33,6 +33,7 @@ export default function AdminDatasetManagement() {
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
   const [editingCollection, setEditingCollection] = useState<DatasetCollection | null>(null);
   const [editingItem, setEditingItem] = useState<DatasetItem | null>(null);
+  const [selectedCountryForFilter, setSelectedCountryForFilter] = useState<string>('');
   const { toast } = useToast();
 
   // Fetch all dataset collections
@@ -44,6 +45,32 @@ export default function AdminDatasetManagement() {
   const { data: collectionDetails } = useQuery<{ success: boolean; collection: DatasetCollection; items: DatasetItem[] }>({
     queryKey: ['/api/admin/datasets', selectedCollection?.id],
     enabled: !!selectedCollection,
+  });
+
+  // Fetch countries for dropdown (used in States and Cities)
+  const { data: countriesData } = useQuery<{ success: boolean; collection: DatasetCollection; items: DatasetItem[] }>({
+    queryKey: ['/api/admin/datasets/countries'],
+    queryFn: async () => {
+      const collections = collectionsData?.collections || [];
+      const countriesCollection = collections.find(c => c.key === 'countries');
+      if (!countriesCollection) return { success: false, collection: {} as DatasetCollection, items: [] };
+      const response = await fetch(`/api/admin/datasets/${countriesCollection.id}`, { credentials: 'include' });
+      return response.json();
+    },
+    enabled: !!collectionsData,
+  });
+
+  // Fetch states for dropdown (used in Cities)
+  const { data: statesData } = useQuery<{ success: boolean; collection: DatasetCollection; items: DatasetItem[] }>({
+    queryKey: ['/api/admin/datasets/states'],
+    queryFn: async () => {
+      const collections = collectionsData?.collections || [];
+      const statesCollection = collections.find(c => c.key === 'states');
+      if (!statesCollection) return { success: false, collection: {} as DatasetCollection, items: [] };
+      const response = await fetch(`/api/admin/datasets/${statesCollection.id}`, { credentials: 'include' });
+      return response.json();
+    },
+    enabled: !!collectionsData,
   });
 
   // Create collection mutation
@@ -187,12 +214,29 @@ export default function AdminDatasetManagement() {
   const handleItemSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    
+    // Build metadata based on collection type
+    const metadata: any = {};
+    
+    if (selectedCollection?.key === 'states') {
+      const countryCode = formData.get('countryCode') as string;
+      if (countryCode) {
+        metadata.countryCode = countryCode;
+        metadata.type = formData.get('stateType') as string || 'State';
+      }
+    } else if (selectedCollection?.key === 'cities') {
+      const countryCode = formData.get('countryCode') as string;
+      const stateCode = formData.get('stateCode') as string;
+      if (countryCode) metadata.countryCode = countryCode;
+      if (stateCode) metadata.stateCode = stateCode;
+    }
+    
     const data = {
       code: formData.get('code') as string,
       label: formData.get('label') as string,
       locale: formData.get('locale') as string || 'en',
       sortOrder: parseInt(formData.get('sortOrder') as string) || 0,
-      metadata: {},
+      metadata,
     };
 
     if (editingItem) {
@@ -325,6 +369,7 @@ export default function AdminDatasetManagement() {
                     size="sm"
                     onClick={() => {
                       setEditingItem(null);
+                      setSelectedCountryForFilter('');
                       setIsItemDialogOpen(true);
                     }}
                     data-testid="button-add-item"
@@ -401,6 +446,7 @@ export default function AdminDatasetManagement() {
                               size="sm"
                               onClick={() => {
                                 setEditingItem(item);
+                                setSelectedCountryForFilter((item.metadata as any)?.countryCode || '');
                                 setIsItemDialogOpen(true);
                               }}
                               data-testid={`button-edit-item-${item.code}`}
@@ -533,6 +579,72 @@ export default function AdminDatasetManagement() {
                   data-testid="input-item-label"
                 />
               </div>
+
+              {/* Show Country dropdown for States and Cities */}
+              {(selectedCollection?.key === 'states' || selectedCollection?.key === 'cities') && (
+                <div className="space-y-2">
+                  <Label htmlFor="countryCode">Country *</Label>
+                  <select
+                    id="countryCode"
+                    name="countryCode"
+                    defaultValue={(editingItem?.metadata as any)?.countryCode || ''}
+                    onChange={(e) => setSelectedCountryForFilter(e.target.value)}
+                    className="w-full border rounded-md px-3 py-2 dark:bg-gray-800"
+                    required
+                    data-testid="select-item-country"
+                  >
+                    <option value="">Select Country</option>
+                    {countriesData?.items?.map((country) => (
+                      <option key={country.id} value={country.code}>
+                        {country.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Show State Type for States */}
+              {selectedCollection?.key === 'states' && (
+                <div className="space-y-2">
+                  <Label htmlFor="stateType">Type</Label>
+                  <select
+                    id="stateType"
+                    name="stateType"
+                    defaultValue={(editingItem?.metadata as any)?.type || 'State'}
+                    className="w-full border rounded-md px-3 py-2 dark:bg-gray-800"
+                    data-testid="select-state-type"
+                  >
+                    <option value="State">State</option>
+                    <option value="Province">Province</option>
+                    <option value="Union Territory">Union Territory</option>
+                    <option value="Country">Country</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Show State dropdown for Cities */}
+              {selectedCollection?.key === 'cities' && (
+                <div className="space-y-2">
+                  <Label htmlFor="stateCode">State/Province</Label>
+                  <select
+                    id="stateCode"
+                    name="stateCode"
+                    defaultValue={(editingItem?.metadata as any)?.stateCode || ''}
+                    className="w-full border rounded-md px-3 py-2 dark:bg-gray-800"
+                    data-testid="select-item-state"
+                  >
+                    <option value="">Select State (Optional)</option>
+                    {statesData?.items
+                      ?.filter((state) => !selectedCountryForFilter || (state.metadata as any)?.countryCode === selectedCountryForFilter)
+                      .map((state) => (
+                        <option key={state.id} value={state.code}>
+                          {state.label}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="locale">Locale</Label>
                 <Input
