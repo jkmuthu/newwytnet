@@ -33,6 +33,8 @@ import {
 } from "./services/trademarkAnalysis";
 import { razorpayService } from "./services/razorpayService";
 import path from "path";
+import multer from "multer";
+import { Storage } from "@google-cloud/storage";
 // NOTE: whatsappAuthService is only used by legacy social auth routes (/api/auth/social/*)
 // Main WytPass OAuth authentication (Google, Email OTP, Email/Password) is in wytpass-auth.ts
 import * as whatsappAuthService from "./services/whatsappAuth";
@@ -6167,6 +6169,70 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error: any) {
       console.error('Error completing wizard:', error);
       res.status(500).json({ error: error.message || 'Failed to complete wizard' });
+    }
+  });
+
+  // ========================================
+  // FILE UPLOAD ROUTES
+  // ========================================
+
+  // Configure multer for memory storage
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB limit
+    },
+    fileFilter: (req, file, cb) => {
+      // Accept only images
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed'));
+      }
+    },
+  });
+
+  // Initialize Google Cloud Storage
+  const gcsStorage = new Storage();
+  const bucketName = process.env.REPLIT_BUCKET_ID || 'replit-objstore-f99ecc31-a513-406e-afc5-c84fcbc3d8c7';
+  const bucket = gcsStorage.bucket(bucketName);
+
+  // Upload profile photo
+  app.post('/api/upload/profile-photo', upload.single('photo'), async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file provided' });
+      }
+
+      // Generate unique filename
+      const timestamp = Date.now();
+      const extension = path.extname(req.file.originalname);
+      const filename = `profile-photos/${principal.id}_${timestamp}${extension}`;
+      
+      // Upload to GCS
+      const file = bucket.file(filename);
+      await file.save(req.file.buffer, {
+        contentType: req.file.mimetype,
+        metadata: {
+          contentType: req.file.mimetype,
+        },
+      });
+
+      // Make file publicly readable
+      await file.makePublic();
+
+      // Get public URL
+      const publicUrl = `https://storage.googleapis.com/${bucketName}/${filename}`;
+
+      res.json({ success: true, url: publicUrl });
+    } catch (error: any) {
+      console.error('Error uploading file:', error);
+      res.status(500).json({ error: error.message || 'Failed to upload file' });
     }
   });
 

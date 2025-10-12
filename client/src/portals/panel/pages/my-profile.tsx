@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { User, Save, Camera, Globe, Lock, Unlock, Check } from "lucide-react";
+import ProfilePhotoUpload from "@/components/ProfilePhotoUpload";
 
 const personalFormSchema = z.object({
   profilePhoto: z.string().optional(),
@@ -246,37 +247,10 @@ export default function MyProfile() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Profile Photo */}
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      <div className="h-24 w-24 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-2 border-primary/20">
-                        {profile?.profilePhoto ? (
-                          <img src={profile.profilePhoto} alt="Profile" className="h-full w-full rounded-full object-cover" />
-                        ) : (
-                          <Camera className="h-10 w-10 text-primary/40" />
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <FormField
-                        control={form.control}
-                        name="profilePhoto"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Profile Photo URL</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="https://example.com/photo.jpg" 
-                                data-testid="input-profile-photo"
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormDescription className="text-xs">Upload a photo to cloud storage and paste the URL here</FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
+                  <ProfilePhotoUpload
+                    currentPhoto={form.watch('profilePhoto')}
+                    onPhotoChange={(url) => form.setValue('profilePhoto', url)}
+                  />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Full Name - Read Only */}
