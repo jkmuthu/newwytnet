@@ -2451,6 +2451,93 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Points Configuration Management API Routes (Admin)
+  app.get('/api/admin/points-config', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const configs = await db
+        .select()
+        .from(pointsConfig)
+        .orderBy(pointsConfig.category, pointsConfig.action);
+      
+      res.json({ success: true, configs });
+    } catch (error) {
+      console.error("Error fetching points configuration:", error);
+      res.status(500).json({ message: "Failed to fetch points configuration" });
+    }
+  });
+
+  app.post('/api/admin/points-config', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { action, points, description, category } = req.body;
+      
+      const [newConfig] = await db
+        .insert(pointsConfig)
+        .values({
+          action,
+          points,
+          description,
+          category,
+          isActive: true,
+          updatedBy: req.user.id
+        })
+        .returning();
+      
+      res.json({ success: true, config: newConfig });
+    } catch (error) {
+      console.error("Error creating points configuration:", error);
+      res.status(500).json({ message: "Failed to create points configuration" });
+    }
+  });
+
+  app.put('/api/admin/points-config/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { points, description, isActive, category } = req.body;
+      
+      const [updatedConfig] = await db
+        .update(pointsConfig)
+        .set({
+          points,
+          description,
+          isActive,
+          category,
+          updatedBy: req.user.id,
+          updatedAt: new Date()
+        })
+        .where(eq(pointsConfig.id, id))
+        .returning();
+      
+      if (!updatedConfig) {
+        return res.status(404).json({ message: "Points configuration not found" });
+      }
+      
+      res.json({ success: true, config: updatedConfig });
+    } catch (error) {
+      console.error("Error updating points configuration:", error);
+      res.status(500).json({ message: "Failed to update points configuration" });
+    }
+  });
+
+  app.delete('/api/admin/points-config/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      const [deletedConfig] = await db
+        .delete(pointsConfig)
+        .where(eq(pointsConfig.id, id))
+        .returning();
+      
+      if (!deletedConfig) {
+        return res.status(404).json({ message: "Points configuration not found" });
+      }
+      
+      res.json({ success: true, message: "Points configuration deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting points configuration:", error);
+      res.status(500).json({ message: "Failed to delete points configuration" });
+    }
+  });
+
   // RealBro Enhanced API Routes
   app.get('/api/realbro/demo-properties', async (req, res) => {
     try {
