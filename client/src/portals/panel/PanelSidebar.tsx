@@ -1,6 +1,8 @@
 import { Link, useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   ChevronLeft, 
@@ -22,6 +24,17 @@ import {
 } from "lucide-react";
 import type { WorkspaceContext } from "./PanelLayout";
 
+interface NavItem {
+  label: string;
+  icon: any;
+  href: string;
+  active: boolean;
+  badge?: {
+    content: number | string;
+    tone?: 'default' | 'muted';
+  };
+}
+
 interface PanelSidebarProps {
   currentWorkspace: WorkspaceContext;
   collapsed: boolean;
@@ -34,6 +47,16 @@ interface PanelSidebarProps {
  */
 export default function PanelSidebar({ currentWorkspace, collapsed, onToggleCollapse }: PanelSidebarProps) {
   const [location] = useLocation();
+
+  // Fetch installed apps count for badge
+  const { data: myAppsData } = useQuery({
+    queryKey: ['/api/apps/my-apps'],
+    enabled: currentWorkspace.type === 'personal',
+    staleTime: 30000, // 30 seconds
+  });
+
+  const installedAppsCount = (myAppsData as any)?.apps?.length || 0;
+  const appsCountBadge = installedAppsCount > 99 ? '99+' : installedAppsCount.toString();
 
   // Navigation items based on workspace context
   const getNavigationItems = () => {
@@ -95,7 +118,8 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               label: "My WytApps", 
               icon: Package, 
               href: "/mypanel/wytapps", 
-              active: location === "/mypanel/wytapps" 
+              active: location === "/mypanel/wytapps" || location.startsWith("/mypanel/wytapps/"),
+              badge: installedAppsCount > 0 ? { content: appsCountBadge, tone: 'default' as const } : undefined
             },
             { 
               label: "My WytHubs", 
@@ -243,19 +267,37 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
                       <Button
                         variant={item.active ? "secondary" : "ghost"}
                         className={cn(
-                          "w-full justify-start h-10",
+                          "w-full justify-start h-10 relative",
                           collapsed ? "px-2" : "px-3",
                           item.active && "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300"
                         )}
                         data-testid={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
                       >
-                        <item.icon className={cn(
-                          "h-5 w-5 flex-shrink-0",
-                          collapsed ? "" : "mr-3",
-                          item.active ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"
-                        )} />
+                        <div className="relative">
+                          <item.icon className={cn(
+                            "h-5 w-5 flex-shrink-0",
+                            collapsed ? "" : "mr-3",
+                            item.active ? "text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400"
+                          )} />
+                          {item.badge && collapsed && (
+                            <Badge 
+                              className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]"
+                            >
+                              {item.badge.content}
+                            </Badge>
+                          )}
+                        </div>
                         {!collapsed && (
-                          <span className="truncate">{item.label}</span>
+                          <div className="flex items-center justify-between flex-1 min-w-0">
+                            <span className="truncate">{item.label}</span>
+                            {item.badge && (
+                              <Badge 
+                                className="ml-2 h-5 px-1.5 text-xs flex-shrink-0"
+                              >
+                                {item.badge.content}
+                              </Badge>
+                            )}
+                          </div>
                         )}
                       </Button>
                     </Link>
