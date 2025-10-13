@@ -7209,6 +7209,122 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // ========================================
+  // BUCKET LIST API ROUTES
+  // ========================================
+
+  // Get user's bucket list items
+  app.get('/api/bucket-list', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const items = await db.select()
+        .from(bucketList)
+        .where(eq(bucketList.userId, principal.id))
+        .orderBy(desc(bucketList.createdAt));
+
+      res.json({ success: true, items });
+    } catch (error: any) {
+      console.error('Error fetching bucket list:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch bucket list' });
+    }
+  });
+
+  // Create bucket list item
+  app.post('/api/bucket-list', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const itemData = insertBucketListSchema.parse({ ...req.body, userId: principal.id });
+      
+      const [newItem] = await db.insert(bucketList)
+        .values(itemData)
+        .returning();
+
+      res.json({ success: true, item: newItem });
+    } catch (error: any) {
+      console.error('Error creating bucket list item:', error);
+      res.status(500).json({ error: error.message || 'Failed to create bucket list item' });
+    }
+  });
+
+  // Update bucket list item
+  app.patch('/api/bucket-list/:id', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { id } = req.params;
+      
+      // Verify ownership
+      const [existing] = await db.select()
+        .from(bucketList)
+        .where(and(
+          eq(bucketList.id, id),
+          eq(bucketList.userId, principal.id)
+        ));
+
+      if (!existing) {
+        return res.status(404).json({ error: 'Bucket list item not found' });
+      }
+
+      // Handle completion
+      const updateData: any = { ...req.body, updatedAt: new Date() };
+      if (req.body.status === 'completed' && !existing.completedAt) {
+        updateData.completedAt = new Date();
+      } else if (req.body.status !== 'completed') {
+        updateData.completedAt = null;
+      }
+
+      const [updatedItem] = await db.update(bucketList)
+        .set(updateData)
+        .where(eq(bucketList.id, id))
+        .returning();
+
+      res.json({ success: true, item: updatedItem });
+    } catch (error: any) {
+      console.error('Error updating bucket list item:', error);
+      res.status(500).json({ error: error.message || 'Failed to update bucket list item' });
+    }
+  });
+
+  // Delete bucket list item
+  app.delete('/api/bucket-list/:id', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { id } = req.params;
+      
+      // Verify ownership and delete
+      const deleted = await db.delete(bucketList)
+        .where(and(
+          eq(bucketList.id, id),
+          eq(bucketList.userId, principal.id)
+        ))
+        .returning();
+
+      if (!deleted.length) {
+        return res.status(404).json({ error: 'Bucket list item not found' });
+      }
+
+      res.json({ success: true, message: 'Bucket list item deleted' });
+    } catch (error: any) {
+      console.error('Error deleting bucket list item:', error);
+      res.status(500).json({ error: error.message || 'Failed to delete bucket list item' });
+    }
+  });
+
+  // ========================================
   // DATASET API ROUTES (for frontend dropdowns)
   // ========================================
 
