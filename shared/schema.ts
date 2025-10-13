@@ -184,14 +184,11 @@ export const profileFieldWeights = pgTable("profile_field_weights", {
 export const bucketList = pgTable("bucket_list", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  title: varchar("title", { length: 255 }).notNull(),
-  description: text("description"),
-  category: varchar("category", { length: 100 }), // travel, career, learning, experience, etc.
-  priority: varchar("priority", { length: 20 }).default('medium'), // low, medium, high
-  status: varchar("status", { length: 20 }).default('pending'), // pending, in_progress, completed
+  title: varchar("title", { length: 100 }).notNull(),
+  description: varchar("description", { length: 200 }),
+  category: varchar("category", { length: 100 }),
   targetDate: timestamp("target_date"),
-  completedAt: timestamp("completed_at"),
-  tags: jsonb("tags").default([]),
+  isDone: boolean("is_done").default(false),
   isPublic: boolean("is_public").default(true), // For WytMatch matching
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -929,7 +926,17 @@ export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 
 // Bucket List schemas
-export const insertBucketListSchema = createInsertSchema(bucketList).omit({ id: true, createdAt: true, updatedAt: true, completedAt: true });
+export const insertBucketListSchema = createInsertSchema(bucketList).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or less"),
+  description: z.string().max(200, "Description must be 200 characters or less").optional(),
+  targetDate: z.string().refine((val) => {
+    if (!val) return true; // Optional field
+    const date = new Date(val);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date >= today;
+  }, { message: "Target date must be today or in the future" }).optional(),
+});
 export const selectBucketListSchema = createSelectSchema(bucketList);
 export type BucketListItem = typeof bucketList.$inferSelect;
 export type InsertBucketListItem = z.infer<typeof insertBucketListSchema>;
