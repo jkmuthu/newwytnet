@@ -1,0 +1,512 @@
+import { db } from "../server/db";
+import { 
+  whatsappUsers, 
+  userProfiles, 
+  pointsWallets, 
+  pointsTransactions,
+  pointsConfig,
+  organizations,
+  organizationMembers,
+  payments,
+  orders,
+  userAppSubscriptions,
+  entitlements
+} from "../shared/schema";
+import { eq } from "drizzle-orm";
+import { scrypt, randomBytes } from "crypto";
+import { promisify } from "util";
+
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password: string): Promise<string> {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
+
+async function seedDemoData() {
+  try {
+    console.log("🌱 Starting comprehensive demo data seeding...\n");
+
+    // ========================================
+    // 1. CREATE DEMO USERS
+    // ========================================
+    console.log("👥 Creating demo users...");
+
+    const demoUsers = [
+      {
+        id: 'demo-user-001',
+        name: 'Sarah Johnson',
+        email: 'sarah@wytnet.com',
+        whatsappNumber: '+919876543210',
+        password: 'Demo@123',
+        country: 'IN',
+        gender: 'female' as const,
+        role: 'user' as const,
+        authMethods: ['password', 'email'],
+        socialProviders: [],
+        isVerified: true,
+        profileComplete: true,
+        referralCode: 'SARAH2024'
+      },
+      {
+        id: 'demo-user-002',
+        name: 'Rajesh Kumar',
+        email: 'rajesh@wytnet.com',
+        whatsappNumber: '+919876543211',
+        password: 'Demo@123',
+        country: 'IN',
+        gender: 'male' as const,
+        role: 'user' as const,
+        authMethods: ['google', 'password'],
+        socialProviders: ['google'],
+        isVerified: true,
+        profileComplete: true,
+        referralCode: 'RAJESH2024',
+        referredBy: 'SARAH2024' // Referred by Sarah
+      },
+      {
+        id: 'demo-user-003',
+        name: 'Priya Sharma',
+        email: 'priya@wytnet.com',
+        whatsappNumber: '+919876543212',
+        password: 'Demo@123',
+        country: 'IN',
+        gender: 'female' as const,
+        role: 'user' as const,
+        authMethods: ['email'],
+        socialProviders: [],
+        isVerified: true,
+        profileComplete: false,
+        referralCode: 'PRIYA2024',
+        referredBy: 'SARAH2024' // Referred by Sarah
+      },
+      {
+        id: 'demo-user-004',
+        name: 'Michael Chen',
+        email: 'michael@wytnet.com',
+        whatsappNumber: '+919876543213',
+        password: 'Demo@123',
+        country: 'IN',
+        gender: 'male' as const,
+        role: 'manager' as const,
+        authMethods: ['google', 'password'],
+        socialProviders: ['google'],
+        isVerified: true,
+        profileComplete: true,
+        referralCode: 'MICHAEL2024'
+      }
+    ];
+
+    for (const userData of demoUsers) {
+      // Check if user already exists
+      const existing = await db
+        .select()
+        .from(whatsappUsers)
+        .where(eq(whatsappUsers.id, userData.id))
+        .limit(1);
+
+      if (existing.length === 0) {
+        const passwordHash = await hashPassword(userData.password);
+        
+        await db.insert(whatsappUsers).values({
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+          whatsappNumber: userData.whatsappNumber,
+          passwordHash,
+          country: userData.country,
+          gender: userData.gender,
+          role: userData.role,
+          authMethods: userData.authMethods,
+          socialProviders: userData.socialProviders,
+          isVerified: userData.isVerified,
+          profileComplete: userData.profileComplete,
+          referralCode: userData.referralCode,
+          referredBy: userData.referredBy,
+          lastLoginAt: new Date(),
+        });
+        console.log(`  ✅ Created user: ${userData.name} (${userData.email})`);
+      } else {
+        console.log(`  ⏭️  User already exists: ${userData.name}`);
+      }
+    }
+
+    // ========================================
+    // 2. CREATE USER PROFILES
+    // ========================================
+    console.log("\n📝 Creating user profiles...");
+
+    const profilesData = [
+      {
+        userId: 'demo-user-001',
+        username: 'sarahjohnson',
+        bio: 'Digital marketing enthusiast and content creator. Love exploring new tools and sharing knowledge!',
+        location: 'Mumbai, Maharashtra',
+        website: 'https://sarahjohnson.com',
+        company: 'Digital Dynamics Ltd',
+        jobTitle: 'Senior Marketing Manager',
+        phone: '+919876543210',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        country: 'IN',
+        skills: ['Digital Marketing', 'Content Strategy', 'SEO', 'Social Media'],
+        interests: ['Technology', 'Travel', 'Photography'],
+        profileCompletionPercentage: 95,
+        socialLinks: {
+          linkedin: 'https://linkedin.com/in/sarahjohnson',
+          twitter: 'https://twitter.com/sarahjohnson'
+        }
+      },
+      {
+        userId: 'demo-user-002',
+        username: 'rajeshkumar',
+        bio: 'Full-stack developer passionate about building scalable web applications. Tech speaker and open-source contributor.',
+        location: 'Bangalore, Karnataka',
+        website: 'https://rajeshkumar.dev',
+        company: 'Tech Innovators Pvt Ltd',
+        jobTitle: 'Lead Software Engineer',
+        phone: '+919876543211',
+        city: 'Bangalore',
+        state: 'Karnataka',
+        country: 'IN',
+        skills: ['React', 'Node.js', 'Python', 'AWS', 'PostgreSQL'],
+        interests: ['Coding', 'AI/ML', 'Gaming'],
+        profileCompletionPercentage: 90,
+        socialLinks: {
+          github: 'https://github.com/rajeshkumar',
+          linkedin: 'https://linkedin.com/in/rajeshkumar'
+        }
+      },
+      {
+        userId: 'demo-user-003',
+        username: 'priyasharma',
+        bio: 'Product designer creating delightful user experiences.',
+        location: 'Delhi NCR',
+        company: 'Creative Solutions Inc',
+        jobTitle: 'UI/UX Designer',
+        phone: '+919876543212',
+        city: 'New Delhi',
+        state: 'Delhi',
+        country: 'IN',
+        skills: ['UI/UX Design', 'Figma', 'User Research'],
+        interests: ['Design', 'Art'],
+        profileCompletionPercentage: 60,
+        socialLinks: {
+          behance: 'https://behance.net/priyasharma'
+        }
+      },
+      {
+        userId: 'demo-user-004',
+        username: 'michaelchen',
+        bio: 'Startup founder and tech entrepreneur. Building the future of SaaS.',
+        location: 'Pune, Maharashtra',
+        website: 'https://michaelchen.io',
+        company: 'NextGen Ventures',
+        jobTitle: 'CEO & Founder',
+        phone: '+919876543213',
+        city: 'Pune',
+        state: 'Maharashtra',
+        country: 'IN',
+        skills: ['Business Strategy', 'Product Management', 'Leadership'],
+        interests: ['Startups', 'Innovation', 'Investing'],
+        profileCompletionPercentage: 85,
+        socialLinks: {
+          linkedin: 'https://linkedin.com/in/michaelchen',
+          twitter: 'https://twitter.com/michaelchen'
+        }
+      }
+    ];
+
+    for (const profile of profilesData) {
+      const existing = await db
+        .select()
+        .from(userProfiles)
+        .where(eq(userProfiles.userId, profile.userId))
+        .limit(1);
+
+      if (existing.length === 0) {
+        await db.insert(userProfiles).values(profile);
+        console.log(`  ✅ Created profile for: ${profile.username}`);
+      } else {
+        console.log(`  ⏭️  Profile already exists for: ${profile.username}`);
+      }
+    }
+
+    // ========================================
+    // 3. SETUP WYTPOINTS ECONOMY
+    // ========================================
+    console.log("\n💰 Setting up WytPoints economy...");
+
+    // Create points config if not exists
+    const configActions = [
+      { action: 'registration', points: 100, description: 'Welcome bonus for new users', category: 'onboarding' },
+      { action: 'profile_complete', points: 50, description: 'Complete your profile', category: 'onboarding' },
+      { action: 'referral_bonus', points: 25, description: 'Bonus for successful referral', category: 'referral' },
+      { action: 'daily_login', points: 5, description: 'Daily login streak bonus', category: 'engagement' },
+    ];
+
+    for (const config of configActions) {
+      const existing = await db
+        .select()
+        .from(pointsConfig)
+        .where(eq(pointsConfig.action, config.action))
+        .limit(1);
+
+      if (existing.length === 0) {
+        await db.insert(pointsConfig).values(config);
+      }
+    }
+
+    // Create wallets and transactions
+    const walletData = [
+      { userId: 'demo-user-001', balance: 550, lifetimeEarned: 850, lifetimeSpent: 300 },
+      { userId: 'demo-user-002', balance: 225, lifetimeEarned: 375, lifetimeSpent: 150 },
+      { userId: 'demo-user-003', balance: 175, lifetimeEarned: 225, lifetimeSpent: 50 },
+      { userId: 'demo-user-004', balance: 800, lifetimeEarned: 1200, lifetimeSpent: 400 },
+    ];
+
+    for (const wallet of walletData) {
+      const existing = await db
+        .select()
+        .from(pointsWallets)
+        .where(eq(pointsWallets.userId, wallet.userId))
+        .limit(1);
+
+      if (existing.length === 0) {
+        await db.insert(pointsWallets).values(wallet);
+        console.log(`  ✅ Created wallet for user: ${wallet.userId} (${wallet.balance} points)`);
+      }
+    }
+
+    // Create sample transactions
+    const transactions = [
+      // Sarah's transactions
+      { userId: 'demo-user-001', amount: 100, balanceAfter: 100, type: 'registration', description: 'Welcome bonus' },
+      { userId: 'demo-user-001', amount: 50, balanceAfter: 150, type: 'profile_complete', description: 'Profile completed' },
+      { userId: 'demo-user-001', amount: 25, balanceAfter: 175, type: 'referral_bonus', description: 'Referral bonus for Rajesh' },
+      { userId: 'demo-user-001', amount: 25, balanceAfter: 200, type: 'referral_bonus', description: 'Referral bonus for Priya' },
+      { userId: 'demo-user-001', amount: -50, balanceAfter: 150, type: 'app_purchase', description: 'QR Generator Pro subscription' },
+      
+      // Rajesh's transactions
+      { userId: 'demo-user-002', amount: 100, balanceAfter: 100, type: 'registration', description: 'Welcome bonus' },
+      { userId: 'demo-user-002', amount: 50, balanceAfter: 150, type: 'profile_complete', description: 'Profile completed' },
+      { userId: 'demo-user-002', amount: 25, balanceAfter: 175, type: 'referred_by', description: 'Joined via Sarah\'s referral' },
+      
+      // Priya's transactions  
+      { userId: 'demo-user-003', amount: 100, balanceAfter: 100, type: 'registration', description: 'Welcome bonus' },
+      { userId: 'demo-user-003', amount: 25, balanceAfter: 125, type: 'referred_by', description: 'Joined via Sarah\'s referral' },
+      
+      // Michael's transactions
+      { userId: 'demo-user-004', amount: 100, balanceAfter: 100, type: 'registration', description: 'Welcome bonus' },
+      { userId: 'demo-user-004', amount: 50, balanceAfter: 150, type: 'profile_complete', description: 'Profile completed' },
+      { userId: 'demo-user-004', amount: -100, balanceAfter: 50, type: 'app_purchase', description: 'Premium apps bundle' },
+    ];
+
+    for (const txn of transactions) {
+      await db.insert(pointsTransactions).values({
+        ...txn,
+        createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000) // Random time in last 7 days
+      });
+    }
+    console.log(`  ✅ Created ${transactions.length} point transactions`);
+
+    // ========================================
+    // 4. CREATE ORGANIZATIONS
+    // ========================================
+    console.log("\n🏢 Creating organizations...");
+
+    const orgs = [
+      {
+        id: 'org-001',
+        name: 'Digital Dynamics Ltd',
+        slug: 'digital-dynamics',
+        ownerId: 'demo-user-001',
+        description: 'Leading digital marketing agency helping brands grow online',
+        logo: 'https://ui-avatars.com/api/?name=Digital+Dynamics&background=0D8ABC&color=fff',
+      },
+      {
+        id: 'org-002',
+        name: 'Tech Innovators Pvt Ltd',
+        slug: 'tech-innovators',
+        ownerId: 'demo-user-002',
+        description: 'Building cutting-edge web and mobile applications',
+        logo: 'https://ui-avatars.com/api/?name=Tech+Innovators&background=7C3AED&color=fff',
+      },
+      {
+        id: 'org-003',
+        name: 'NextGen Ventures',
+        slug: 'nextgen-ventures',
+        ownerId: 'demo-user-004',
+        description: 'Venture capital firm investing in early-stage startups',
+        logo: 'https://ui-avatars.com/api/?name=NextGen+Ventures&background=059669&color=fff',
+      }
+    ];
+
+    for (const org of orgs) {
+      const existing = await db
+        .select()
+        .from(organizations)
+        .where(eq(organizations.id, org.id))
+        .limit(1);
+
+      if (existing.length === 0) {
+        await db.insert(organizations).values(org);
+        console.log(`  ✅ Created organization: ${org.name}`);
+      }
+    }
+
+    // Create organization memberships
+    const memberships = [
+      // Digital Dynamics team
+      { organizationId: 'org-001', userId: 'demo-user-001', role: 'owner' },
+      { organizationId: 'org-001', userId: 'demo-user-003', role: 'member' },
+      
+      // Tech Innovators team
+      { organizationId: 'org-002', userId: 'demo-user-002', role: 'owner' },
+      { organizationId: 'org-002', userId: 'demo-user-004', role: 'admin' },
+      
+      // NextGen Ventures team
+      { organizationId: 'org-003', userId: 'demo-user-004', role: 'owner' },
+      { organizationId: 'org-003', userId: 'demo-user-001', role: 'member' },
+    ];
+
+    for (const membership of memberships) {
+      const existing = await db
+        .select()
+        .from(organizationMembers)
+        .where(eq(organizationMembers.organizationId, membership.organizationId))
+        .limit(1);
+
+      if (existing.length === 0) {
+        await db.insert(organizationMembers).values(membership);
+      }
+    }
+    console.log(`  ✅ Created ${memberships.length} organization memberships`);
+
+    // ========================================
+    // 5. CREATE SAMPLE PAYMENTS & ORDERS
+    // ========================================
+    console.log("\n💳 Creating payment history...");
+
+    const sampleOrders = [
+      {
+        id: 'order-001',
+        userId: 'demo-user-001',
+        orderNumber: 'WYT-2024-001',
+        status: 'completed' as const,
+        subtotal: '499.00',
+        tax: '89.82',
+        total: '588.82',
+        currency: 'INR',
+        items: [{ name: 'QR Generator Pro', quantity: 1, price: 499 }]
+      },
+      {
+        id: 'order-002',
+        userId: 'demo-user-004',
+        orderNumber: 'WYT-2024-002',
+        status: 'completed' as const,
+        subtotal: '1999.00',
+        tax: '359.82',
+        total: '2358.82',
+        currency: 'INR',
+        items: [{ name: 'Premium Apps Bundle', quantity: 1, price: 1999 }]
+      },
+      {
+        id: 'order-003',
+        userId: 'demo-user-002',
+        orderNumber: 'WYT-2024-003',
+        status: 'pending' as const,
+        subtotal: '299.00',
+        tax: '53.82',
+        total: '352.82',
+        currency: 'INR',
+        items: [{ name: 'Starter Plan', quantity: 1, price: 299 }]
+      }
+    ];
+
+    for (const order of sampleOrders) {
+      const existing = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.id, order.id))
+        .limit(1);
+
+      if (existing.length === 0) {
+        await db.insert(orders).values(order);
+      }
+    }
+
+    const samplePayments = [
+      {
+        orderId: 'order-001',
+        userId: 'demo-user-001',
+        provider: 'razorpay',
+        providerPaymentId: 'pay_demo001',
+        providerOrderId: 'order_demo001',
+        amount: '588.82',
+        currency: 'INR',
+        status: 'completed' as const,
+        method: 'upi',
+        paidAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      },
+      {
+        orderId: 'order-002',
+        userId: 'demo-user-004',
+        provider: 'razorpay',
+        providerPaymentId: 'pay_demo002',
+        providerOrderId: 'order_demo002',
+        amount: '2358.82',
+        currency: 'INR',
+        status: 'completed' as const,
+        method: 'card',
+        paidAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      },
+      {
+        orderId: 'order-003',
+        userId: 'demo-user-002',
+        provider: 'razorpay',
+        providerOrderId: 'order_demo003',
+        amount: '352.82',
+        currency: 'INR',
+        status: 'pending' as const,
+        method: null,
+      }
+    ];
+
+    for (const payment of samplePayments) {
+      await db.insert(payments).values(payment);
+    }
+    console.log(`  ✅ Created ${samplePayments.length} payment records`);
+
+    // ========================================
+    // COMPLETION
+    // ========================================
+    console.log("\n✨ Demo data seeding completed successfully!");
+    console.log("\n📊 Summary:");
+    console.log(`  - Created ${demoUsers.length} demo users`);
+    console.log(`  - Created ${profilesData.length} user profiles`);
+    console.log(`  - Setup WytPoints with ${walletData.length} wallets and ${transactions.length} transactions`);
+    console.log(`  - Created ${orgs.length} organizations with ${memberships.length} members`);
+    console.log(`  - Created ${sampleOrders.length} orders and ${samplePayments.length} payments`);
+    console.log("\n🔐 Demo User Credentials:");
+    console.log("  - sarah@wytnet.com / Demo@123");
+    console.log("  - rajesh@wytnet.com / Demo@123");
+    console.log("  - priya@wytnet.com / Demo@123");
+    console.log("  - michael@wytnet.com / Demo@123");
+    console.log("\n");
+
+  } catch (error) {
+    console.error("❌ Error seeding demo data:", error);
+    throw error;
+  } finally {
+    process.exit(0);
+  }
+}
+
+// Run if called directly
+if (import.meta.url.endsWith(process.argv[1])) {
+  seedDemoData();
+}
+
+export { seedDemoData };
