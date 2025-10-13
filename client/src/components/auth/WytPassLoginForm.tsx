@@ -122,16 +122,6 @@ export default function WytPassLoginForm() {
       <div className="w-full max-w-md space-y-6 relative z-10">
         {/* WytPass Header with Animation */}
         <div className="text-center space-y-3 animate-fade-in">
-          <div className="flex justify-center mb-4">
-            <div className="relative group">
-              <img 
-                src="/wytnet-logo.png" 
-                alt="WytNet" 
-                className="h-14 w-auto transition-all duration-300 group-hover:scale-110 group-hover:rotate-3"
-              />
-              <div className="absolute -inset-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full opacity-0 group-hover:opacity-20 blur-xl transition-opacity duration-300"></div>
-            </div>
-          </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent animate-gradient">
             WytPass
           </h1>
