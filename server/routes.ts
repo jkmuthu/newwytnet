@@ -6454,7 +6454,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     },
   });
 
-  // Upload profile photo using Replit Object Storage (file system)
+  // Upload profile photo using Replit Object Storage (Google Cloud Storage SDK)
   app.post('/api/upload/profile-photo', upload.single('photo'), async (req: any, res) => {
     try {
       const principal = await getPrincipal(req);
@@ -6492,13 +6492,6 @@ export async function registerRoutes(app: Express): Promise<void> {
       };
       const safeExtension = mimeToExt[fileType.mime];
 
-      // Get the private object directory from environment
-      const privateDir = process.env.PRIVATE_OBJECT_DIR || '/replit-objstore-f99ecc31-a513-406e-afc5-c84fcbc3d8c7/.private';
-      const profilePhotosDir = path.join(privateDir, 'profile-photos');
-      
-      // Ensure directory exists
-      await fs.mkdir(profilePhotosDir, { recursive: true });
-
       // Sanitize principal ID to prevent directory traversal (whitelist alphanumeric, hyphens, underscores only)
       const safePrincipalId = principal.id.replace(/[^a-zA-Z0-9_-]/g, '');
       
@@ -6506,10 +6499,27 @@ export async function registerRoutes(app: Express): Promise<void> {
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).substring(2, 15);
       const filename = `${safePrincipalId}_${timestamp}_${randomId}${safeExtension}`;
-      const filePath = path.join(profilePhotosDir, filename);
+
+      // Get the private object directory from environment
+      const privateDir = process.env.PRIVATE_OBJECT_DIR || '/replit-objstore-f99ecc31-a513-406e-afc5-c84fcbc3d8c7/.private';
+      const fullPath = `${privateDir}/profile-photos/${filename}`;
       
-      // Write file to object storage
-      await fs.writeFile(filePath, req.file.buffer);
+      // Parse the path to get bucket and object name
+      const pathParts = fullPath.split('/').filter(p => p);
+      const bucketName = pathParts[0];
+      const objectName = pathParts.slice(1).join('/');
+
+      // Upload to Google Cloud Storage using the SDK
+      const { objectStorageClient } = await import('./objectStorage');
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      
+      await file.save(req.file.buffer, {
+        contentType: fileType.mime,
+        metadata: {
+          contentType: fileType.mime,
+        },
+      });
 
       // Return relative URL path
       const publicUrl = `/uploads/profile-photos/${filename}`;
@@ -6532,28 +6542,52 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(400).json({ error: 'Invalid filename format' });
       }
 
+      // Get the private object directory from environment
       const privateDir = process.env.PRIVATE_OBJECT_DIR || '/replit-objstore-f99ecc31-a513-406e-afc5-c84fcbc3d8c7/.private';
-      const filePath = path.join(privateDir, 'profile-photos', filename);
+      const fullPath = `${privateDir}/profile-photos/${filename}`;
       
-      // Verify the resolved path is still within the expected directory (prevent traversal)
-      const resolvedPath = path.resolve(filePath);
-      const expectedDir = path.resolve(privateDir, 'profile-photos');
-      if (!resolvedPath.startsWith(expectedDir)) {
-        return res.status(403).json({ error: 'Access denied' });
-      }
+      // Parse the path to get bucket and object name
+      const pathParts = fullPath.split('/').filter(p => p);
+      const bucketName = pathParts[0];
+      const objectName = pathParts.slice(1).join('/');
 
+      // Get file from Google Cloud Storage using the SDK
+      const { objectStorageClient } = await import('./objectStorage');
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      
       // Check if file exists
-      try {
-        await fs.access(filePath);
-      } catch {
+      const [exists] = await file.exists();
+      if (!exists) {
         return res.status(404).json({ error: 'File not found' });
       }
 
-      // Serve the file
-      res.sendFile(filePath);
+      // Get file metadata
+      const [metadata] = await file.getMetadata();
+      
+      // Set appropriate headers
+      res.set({
+        'Content-Type': metadata.contentType || 'image/jpeg',
+        'Content-Length': metadata.size,
+        'Cache-Control': 'private, max-age=3600',
+      });
+
+      // Stream the file to the response
+      const stream = file.createReadStream();
+      
+      stream.on('error', (err) => {
+        console.error('Stream error:', err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Error streaming file' });
+        }
+      });
+
+      stream.pipe(res);
     } catch (error: any) {
       console.error('Error serving file:', error);
-      res.status(500).json({ error: 'Failed to serve file' });
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Failed to serve file' });
+      }
     }
   });
 
