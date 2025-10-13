@@ -233,6 +233,154 @@ function MyPanelDashboard() {
   );
 }
 
+// My WytWall - Personal Needs/Offers Stream
+function MyPanelWytWall() {
+  const { user } = useAuth();
+  const [, navigate] = useLocation();
+  const [postType, setPostType] = useState<"all" | "needs" | "offers">("all");
+  
+  const { data: needsData, isLoading: needsLoading } = useQuery({
+    queryKey: ['/api/needs'],
+  });
+
+  const { data: offersData, isLoading: offersLoading } = useQuery({
+    queryKey: ['/api/offers'],
+  });
+
+  const allNeeds = (needsData as any)?.needs || [];
+  const allOffers = (offersData as any)?.offers || [];
+  
+  // Combine and sort by date
+  const allPosts = [...allNeeds.map((n: any) => ({ ...n, type: 'need' })), ...allOffers.map((o: any) => ({ ...o, type: 'offer' }))].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  const filteredPosts = postType === "all" ? allPosts :
+    allPosts.filter((p: any) => p.type === (postType === "needs" ? "need" : "offer"));
+
+  const isLoading = needsLoading || offersLoading;
+  
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <Card className="relative overflow-hidden border-0 shadow-2xl rounded-2xl">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600"></div>
+        <CardContent className="relative p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center">
+                <Package className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">My WytWall</h1>
+                <p className="text-white/90 text-sm">Your personal needs & offers stream</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => navigate('/mypanel/needs')}
+                className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-xl"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Post Need
+              </Button>
+              <Button 
+                onClick={() => navigate('/mypanel/offers')}
+                className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-xl"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Post Offer
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Filter Tabs */}
+      <div className="flex gap-2">
+        <Button
+          variant={postType === "all" ? "default" : "outline"}
+          onClick={() => setPostType("all")}
+          className="rounded-full"
+        >
+          All Posts ({allPosts.length})
+        </Button>
+        <Button
+          variant={postType === "needs" ? "default" : "outline"}
+          onClick={() => setPostType("needs")}
+          className="rounded-full"
+        >
+          Needs ({allNeeds.length})
+        </Button>
+        <Button
+          variant={postType === "offers" ? "default" : "outline"}
+          onClick={() => setPostType("offers")}
+          className="rounded-full"
+        >
+          Offers ({allOffers.length})
+        </Button>
+      </div>
+
+      {/* Posts Stream */}
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="p-6">
+              <div className="h-24 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
+            </Card>
+          ))}
+        </div>
+      ) : filteredPosts.length === 0 ? (
+        <Card className="p-12 text-center">
+          <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Package className="h-12 w-12 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium mb-2">No {postType === "all" ? "posts" : postType} yet</h3>
+          <p className="text-muted-foreground mb-4">Start by posting your first {postType === "all" ? "need or offer" : postType === "needs" ? "need" : "offer"}</p>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={() => navigate('/mypanel/needs')}>
+              <Plus className="h-4 w-4 mr-2" />
+              Post Need
+            </Button>
+            <Button onClick={() => navigate('/mypanel/offers')} variant="outline">
+              <Plus className="h-4 w-4 mr-2" />
+              Post Offer
+            </Button>
+          </div>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {filteredPosts.map((post: any) => (
+            <Card key={post.id} className="p-6 hover:shadow-lg transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge className={post.type === 'need' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}>
+                      {post.type === 'need' ? 'Need' : 'Offer'}
+                    </Badge>
+                    <Badge variant="outline">{post.category || 'Other'}</Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(post.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">{post.title}</h3>
+                  <p className="text-muted-foreground text-sm">{post.description}</p>
+                </div>
+                <Button size="sm" variant="outline">View Details</Button>
+              </div>
+              {post.budget && (
+                <div className="text-sm text-muted-foreground">
+                  Budget: ₹{post.budget}
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // My WytApps Marketplace - where users can browse and purchase apps
 function MyPanelMarketplace() {
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -1554,7 +1702,7 @@ export default function PanelRouter() {
       {/* My Panel routes - Personal dashboard and features */}
       <Route path="/mypanel" component={MyPanelDashboard} />
       <Route path="/mypanel/dashboard" component={MyPanelDashboard} />
-      <Route path="/mypanel/wytwall" component={MyPanelDashboard} />
+      <Route path="/mypanel/wytwall" component={MyPanelWytWall} />
       <Route path="/mypanel/needs" component={MyNeeds} />
       <Route path="/mypanel/offers" component={MyOffers} />
       <Route path="/mypanel/duties" component={MyPanelDuties} />
