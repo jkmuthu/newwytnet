@@ -85,12 +85,6 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               active: location === "/mypanel/posts" 
             },
             { 
-              label: "My Circle", 
-              icon: Users, 
-              href: "/mypanel/circle", 
-              active: location === "/mypanel/circle" 
-            },
-            { 
               label: "My WytApps", 
               icon: Package, 
               href: "/mypanel/wytapps", 
