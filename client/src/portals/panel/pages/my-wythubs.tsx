@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation, useSearch } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
@@ -35,7 +37,17 @@ interface UserSubscription {
 
 export default function MyWytHubs() {
   const { toast } = useToast();
+  const [location, setLocation] = useLocation();
+  const searchString = useSearch();
   const [subscribedHubs, setSubscribedHubs] = useState<Set<string>>(new Set());
+
+  // Parse tab from URL query params
+  const params = new URLSearchParams(searchString);
+  const currentTab = params.get('tab') || 'available';
+
+  const handleTabChange = (value: string) => {
+    setLocation(`/mypanel/wythubs?tab=${value}`);
+  };
 
   // Fetch hubs catalog
   const { data: catalogData, isLoading: catalogLoading } = useQuery({
@@ -45,9 +57,12 @@ export default function MyWytHubs() {
   const allModules: Hub[] = (catalogData as any)?.apps || [];
   
   // Filter to show only WytHubs
-  const hubs = allModules.filter(module => 
+  const allHubs = allModules.filter(module => 
     module.category === 'wythubs'
   );
+
+  const subscribedHubsList = allHubs.filter(hub => subscribedHubs.has(hub.id));
+  const availableHubsList = allHubs.filter(hub => !subscribedHubs.has(hub.id));
 
   // Subscribe mutation (mock for now)
   const subscribeMutation = useMutation({
@@ -217,41 +232,88 @@ export default function MyWytHubs() {
           </p>
         </div>
         <Badge variant="secondary" className="text-lg px-4 py-2" data-testid="badge-hub-count">
-          {hubs.length} Hubs
+          {allHubs.length} Hubs
         </Badge>
       </div>
 
-      {catalogLoading ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-16 w-16 bg-gray-200 dark:bg-gray-700 rounded-2xl" />
-                <div className="h-6 w-32 bg-gray-200 dark:bg-gray-700 rounded mt-4" />
-                <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded mt-2" />
-              </CardHeader>
+      <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="subscribed" data-testid="tab-subscribed">
+            Subscribed ({subscribedHubsList.length})
+          </TabsTrigger>
+          <TabsTrigger value="available" data-testid="tab-available">
+            Available ({availableHubsList.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="subscribed" className="mt-6">
+          {catalogLoading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardHeader>
+                    <div className="h-16 w-16 bg-gray-200 dark:bg-gray-700 rounded-2xl" />
+                    <div className="h-6 w-32 bg-gray-200 dark:bg-gray-700 rounded mt-4" />
+                    <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded mt-2" />
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          ) : subscribedHubsList.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Package className="h-16 w-16 text-gray-400 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  No Subscriptions
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 text-center mb-4">
+                  Browse available hubs and subscribe to stay updated
+                </p>
+              </CardContent>
             </Card>
-          ))}
-        </div>
-      ) : hubs.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Package className="h-16 w-16 text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              No Hubs Available
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 text-center">
-              Check back soon for new hubs
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {hubs.map(hub => (
-            <HubCard key={hub.id} hub={hub} />
-          ))}
-        </div>
-      )}
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {subscribedHubsList.map(hub => (
+                <HubCard key={hub.id} hub={hub} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="available" className="mt-6">
+          {catalogLoading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardHeader>
+                    <div className="h-16 w-16 bg-gray-200 dark:bg-gray-700 rounded-2xl" />
+                    <div className="h-6 w-32 bg-gray-200 dark:bg-gray-700 rounded mt-4" />
+                    <div className="h-4 w-48 bg-gray-200 dark:bg-gray-700 rounded mt-2" />
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          ) : availableHubsList.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Package className="h-16 w-16 text-gray-400 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  No Hubs Available
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 text-center">
+                  Check back soon for new hubs
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {availableHubsList.map(hub => (
+                <HubCard key={hub.id} hub={hub} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
