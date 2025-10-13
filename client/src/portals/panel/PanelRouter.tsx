@@ -14,8 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import WytWallPostForm from "@/components/WytWallPostForm";
 import PaymentHistory from "@/components/payments/PaymentHistory";
-import MyNeeds from "./pages/my-needs";
-import MyOffers from "./pages/my-offers";
+import MyPosts from "./pages/my-posts";
 import MyWallet from "./pages/my-wallet";
 import MyPoints from "./pages/my-points";
 import MyAccount from "./pages/my-account";
@@ -1723,8 +1722,7 @@ export default function PanelRouter() {
       <Route path="/mypanel" component={MyPanelDashboard} />
       <Route path="/mypanel/dashboard" component={MyPanelDashboard} />
       <Route path="/mypanel/wytwall" component={MyPanelWytWall} />
-      <Route path="/mypanel/needs" component={MyNeeds} />
-      <Route path="/mypanel/offers" component={MyOffers} />
+      <Route path="/mypanel/posts" component={MyPosts} />
       <Route path="/mypanel/duties" component={MyPanelDuties} />
       <Route path="/mypanel/wytscore" component={MyPanelWytScore} />
       <Route path="/mypanel/circle" component={MyPanelCircle} />
@@ -1740,8 +1738,7 @@ export default function PanelRouter() {
       <Route path="/orgpanel" component={OrgPanelDashboard} />
       <Route path="/orgpanel/dashboard" component={OrgPanelDashboard} />
       <Route path="/orgpanel/wytwall" component={OrgPanelDashboard} />
-      <Route path="/orgpanel/needs" component={MyNeeds} />
-      <Route path="/orgpanel/offers" component={MyOffers} />
+      <Route path="/orgpanel/posts" component={MyPosts} />
       <Route path="/orgpanel/duties" component={OrgPanelDuties} />
       <Route path="/orgpanel/wytapps" component={MyPanelWytApps} />
       <Route path="/orgpanel/wallet" component={MyWallet} />
