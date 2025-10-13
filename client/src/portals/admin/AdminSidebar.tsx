@@ -358,12 +358,22 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
             ))}
             {/* Developer Documentation Link */}
             <Link href="/devdoc">
-              <a 
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50"
+              <Button
+                variant="ghost"
+                className="w-full justify-start h-10 px-3"
+                data-testid="admin-nav-dev-documentation"
               >
-                <FileText className="h-4 w-4" />
-                Dev Documentation
-              </a>
+                <FileText className={cn(
+                  "h-5 w-5 flex-shrink-0",
+                  collapsed ? "" : "mr-3",
+                  "text-gray-500 dark:text-gray-400"
+                )} />
+                {!collapsed && (
+                  <span className="truncate">
+                    Dev Documentation
+                  </span>
+                )}
+              </Button>
             </Link>
           </nav>
         </ScrollArea>

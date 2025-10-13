@@ -21,6 +21,8 @@ import APIReference from "@/pages/api-reference";
 import UserAuthMethods from "@/pages/user-auth-methods";
 import NotFound from "@/pages/not-found";
 import ComingSoon from "@/pages/coming-soon";
+// Import the DevDocumentation component
+import DevDocumentation from "@/pages/dev-documentation";
 
 // Tool pages
 import Assessment from "@/pages/assessment";
@@ -74,7 +76,9 @@ export default function PublicRouter() {
       <Route path="/shipping" component={ShippingPolicy} />
 
       {/* Documentation and API */}
-      <Route path="/devdoc" component={Documentation} />
+      <Route path="/docs" component={Documentation} />
+      <Route path="/devdoc" component={DevDocumentation} />
+      <Route path="/dev-documentation" component={DevDocumentation} />
       <Route path="/api" component={APIReference} />
       <Route path="/api-reference" component={APIReference} />
 
