@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,8 @@ import {
   Award,
   FileText,
   CreditCard,
-  Package
+  Package,
+  ExternalLink
 } from "lucide-react";
 import {
   AlertDialog,
@@ -170,17 +172,24 @@ export default function MyWytApps() {
             </div>
           ))}
         </div>
-        {isInstalled ? (
-          <Button
-            variant="outline"
-            className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-            onClick={() => setAppToRemove({ slug: app.id, name: app.name })}
-            disabled={uninstallMutation.isPending}
-            data-testid={`button-remove-${app.id}`}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Remove
-          </Button>
+{isInstalled ? (
+          <div className="flex gap-2">
+            <Link href={`/mypanel/wytapps/${app.id}`} className="flex-1">
+              <Button className="w-full" data-testid={`button-open-${app.id}`}>
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Open
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+              onClick={() => setAppToRemove({ slug: app.id, name: app.name })}
+              disabled={uninstallMutation.isPending}
+              data-testid={`button-remove-${app.id}`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         ) : (
           <Button
             className="w-full"
