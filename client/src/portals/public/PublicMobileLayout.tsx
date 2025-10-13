@@ -57,15 +57,10 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
       ]
     },
     { 
-      section: "WytTools",
+      section: "WytApps & More",
       items: [
         { icon: QrCode, label: 'QR Generator', href: '/qr-generator' },
         { icon: Activity, label: 'DISC Assessment', href: '/assessment' },
-      ]
-    },
-    { 
-      section: "WytApps & More",
-      items: [
         { icon: Briefcase, label: 'WytApps', href: '/wytapps' },
         { icon: Smartphone, label: 'Install App', href: '/mobile-app' },
         { icon: Info, label: 'About Us', href: '/about' },
@@ -132,7 +127,7 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
                         alt="WytNet" 
                         className="h-6 w-auto"
                       />
-                      WytNet - All Tools
+                      WytNet
                     </SheetTitle>
                   </SheetHeader>
                   <nav className="mt-6 space-y-4">
