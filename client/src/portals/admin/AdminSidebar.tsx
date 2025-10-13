@@ -70,7 +70,7 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
   // Navigation items based on admin role
   const getNavigationItems = () => {
     const isSuperAdmin = adminUser?.isSuperAdmin;
-    
+
     const baseItems = [
       {
         section: "Dashboard",
@@ -190,6 +190,18 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
         section: "System & Config",
         items: [
           { 
+            label: "Platform Registry", 
+            icon: Server, 
+            href: "/admin/platform-registry", 
+            active: location === "/admin/platform-registry"
+          },
+          { 
+            label: "System Overview", 
+            icon: Settings, 
+            href: "/admin/system-overview", 
+            active: location === "/admin/system-overview"
+          },
+          { 
             label: "Integrations", 
             icon: Plug, 
             href: "/admin/integrations", 
@@ -274,7 +286,7 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
               </span>
             </div>
           )}
-          
+
           <Button
             variant="ghost"
             size="sm"
