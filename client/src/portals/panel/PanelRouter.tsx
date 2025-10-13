@@ -85,8 +85,8 @@ function MyPanelDashboard() {
                 <Zap className="h-4 w-4 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Tools Used</p>
-                <p className="text-2xl font-bold">{(stats as any)?.toolsUsed || 12}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Apps Used</p>
+                <p className="text-2xl font-bold">{(stats as any)?.appsUsed || 12}</p>
               </div>
             </div>
           </CardContent>
@@ -233,14 +233,14 @@ function MyPanelDashboard() {
   );
 }
 
-// My WytTools - Marketplace where users can browse and purchase tools
-function MyPanelWytTools() {
+// My WytApps Marketplace - where users can browse and purchase apps
+function MyPanelMarketplace() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [purchaseModalTool, setPurchaseModalTool] = useState<any>(null);
+  const [purchaseModalApp, setPurchaseModalApp] = useState<any>(null);
   
   // Mock marketplace data - will be replaced with API calls
-  const marketplaceTools = [
+  const marketplaceApps = [
     {
       id: 'qr-generator',
       name: 'QR Generator',
@@ -317,15 +317,15 @@ function MyPanelWytTools() {
   ];
   
   const categories = [
-    { id: 'all', label: 'All Tools', count: marketplaceTools.length },
-    { id: 'utilities', label: 'Utilities', count: marketplaceTools.filter(t => t.category === 'utilities').length },
-    { id: 'ai-tools', label: 'AI Tools', count: marketplaceTools.filter(t => t.category === 'ai-tools').length },
-    { id: 'assessment', label: 'Assessment', count: marketplaceTools.filter(t => t.category === 'assessment').length },
-    { id: 'design', label: 'Design', count: marketplaceTools.filter(t => t.category === 'design').length },
-    { id: 'business', label: 'Business', count: marketplaceTools.filter(t => t.category === 'business').length }
+    { id: 'all', label: 'All Apps', count: marketplaceApps.length },
+    { id: 'utilities', label: 'Utilities', count: marketplaceApps.filter(t => t.category === 'utilities').length },
+    { id: 'ai-tools', label: 'AI Apps', count: marketplaceApps.filter(t => t.category === 'ai-tools').length },
+    { id: 'assessment', label: 'Assessment', count: marketplaceApps.filter(t => t.category === 'assessment').length },
+    { id: 'design', label: 'Design', count: marketplaceApps.filter(t => t.category === 'design').length },
+    { id: 'business', label: 'Business', count: marketplaceApps.filter(t => t.category === 'business').length }
   ];
   
-  const filteredTools = marketplaceTools
+  const filteredApps = marketplaceApps
     .filter(tool => selectedCategory === 'all' || tool.category === selectedCategory)
     .filter(tool => tool.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                    tool.description.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -352,14 +352,14 @@ function MyPanelWytTools() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold mb-2">WytTools Marketplace</h1>
-          <p className="text-gray-600 dark:text-gray-400">Browse and purchase tools to enhance your workflow</p>
+          <h1 className="text-2xl font-bold mb-2">WytApps Marketplace</h1>
+          <p className="text-gray-600 dark:text-gray-400">Browse and purchase apps to enhance your workflow</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
             <input
               type="text"
-              placeholder="Search tools..."
+              placeholder="Search apps..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-64 px-3 py-2 border rounded-lg text-sm"
@@ -393,8 +393,8 @@ function MyPanelWytTools() {
               <div className="bg-blue-100 dark:bg-blue-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
                 <Zap className="h-6 w-6 text-blue-600 dark:text-blue-400" />
               </div>
-              <p className="text-2xl font-bold">{marketplaceTools.length}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Available Tools</p>
+              <p className="text-2xl font-bold">{marketplaceApps.length}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Available Apps</p>
             </div>
           </CardContent>
         </Card>
@@ -405,8 +405,8 @@ function MyPanelWytTools() {
               <div className="bg-green-100 dark:bg-green-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
                 <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
-              <p className="text-2xl font-bold">{marketplaceTools.filter(t => t.owned).length}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Owned Tools</p>
+              <p className="text-2xl font-bold">{marketplaceApps.filter(t => t.owned).length}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Owned Apps</p>
             </div>
           </CardContent>
         </Card>
@@ -417,8 +417,8 @@ function MyPanelWytTools() {
               <div className="bg-purple-100 dark:bg-purple-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
                 <Crown className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
-              <p className="text-2xl font-bold">{marketplaceTools.filter(t => t.pricing.some(p => p.type === 'free')).length}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Free Tools</p>
+              <p className="text-2xl font-bold">{marketplaceApps.filter(t => t.pricing.some(p => p.type === 'free')).length}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Free Apps</p>
             </div>
           </CardContent>
         </Card>
@@ -429,16 +429,16 @@ function MyPanelWytTools() {
               <div className="bg-orange-100 dark:bg-orange-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
                 <TrendingUp className="h-6 w-6 text-orange-600 dark:text-orange-400" />
               </div>
-              <p className="text-2xl font-bold">{Math.round(marketplaceTools.reduce((acc, t) => acc + t.rating, 0) / marketplaceTools.length * 10) / 10}</p>
+              <p className="text-2xl font-bold">{Math.round(marketplaceApps.reduce((acc, t) => acc + t.rating, 0) / marketplaceApps.length * 10) / 10}</p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Avg Rating</p>
             </div>
           </CardContent>
         </Card>
       </div>
       
-      {/* Tools Grid */}
+      {/* Apps Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredTools.map((tool) => {
+        {filteredApps.map((tool) => {
           const IconComponent = getIconComponent(tool.icon);
           const cheapestPrice = tool.pricing.reduce((min, p) => p.price < min.price ? p : min);
           
@@ -518,24 +518,24 @@ function MyPanelWytTools() {
         })}
       </div>
       
-      {filteredTools.length === 0 && (
+      {filteredApps.length === 0 && (
         <div className="text-center py-12">
           <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
             <QrCode className="h-12 w-12 text-gray-400" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No tools found</h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No apps found</h3>
           <p className="text-gray-600 dark:text-gray-400">Try adjusting your search or filters</p>
         </div>
       )}
       
       {/* Purchase Modal */}
-      {purchaseModalTool && (
+      {purchaseModalApp && (
         <AppPurchaseModal
-          app={purchaseModalTool}
-          isOpen={!!purchaseModalTool}
-          onClose={() => setPurchaseModalTool(null)}
+          app={purchaseModalApp}
+          isOpen={!!purchaseModalApp}
+          onClose={() => setPurchaseModalApp(null)}
           onPurchaseSuccess={() => {
-            // Refresh the tools data
+            // Refresh the apps data
             window.location.reload(); // Simple refresh for now
           }}
         />

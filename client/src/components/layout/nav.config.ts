@@ -17,7 +17,7 @@ export const bottomNavItems = [
   },
   { 
     icon: QrCode, 
-    label: 'WytTools', 
+    label: 'Apps', 
     href: '/qr-generator', 
     badge: 'LIVE',
     activeRoutes: ['/qr-generator', '/assessment']
@@ -41,8 +41,8 @@ export const wytHubsItems = [
   { icon: Bot, label: 'AI Directory', href: '/ai-directory' },
 ];
 
-// WytTools submenu items
-export const wytToolsItems = [
+// WytApps submenu items  
+export const wytAppsItems = [
   { icon: QrCode, label: 'QR Generator', href: '/qr-generator' },
   { icon: Activity, label: 'DISC Assessment', href: '/assessment' },
 ];

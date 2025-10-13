@@ -206,7 +206,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                   </Link>
                   
                   <div className="px-3 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400 mt-4">
-                    Available Tools
+                    Available Apps
                   </div>
                   
                   <Link href="/" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>

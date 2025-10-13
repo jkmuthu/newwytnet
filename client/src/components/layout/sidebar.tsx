@@ -133,7 +133,7 @@ export default function Sidebar({ open, onClose, isCollapsed, onToggleCollapse }
       return [
         ...baseItems,
         {
-          section: "Tools",
+          section: "Apps",
           items: [
             { label: "Search", icon: "search", href: "/search" },
             { label: "My Content", icon: "folder", href: "#my-content" },

@@ -37,7 +37,7 @@ export default function MobileLayout({ children, isMobile }: MobileLayoutProps) 
     {
       href: "/qr-generator",
       icon: Wrench,
-      label: "WytTools",
+      label: "Apps",
       active: location === "/qr-generator" || location === "/assessment"
     },
     {
@@ -52,7 +52,7 @@ export default function MobileLayout({ children, isMobile }: MobileLayoutProps) 
   const sidebarItems = [
     { icon: Network, label: 'WytHubs', href: '/ai-directory', isCategory: true },
     { icon: Bot, label: '• AI Directory', href: '/ai-directory', indent: true },
-    { icon: Wrench, label: 'WytTools', href: '/qr-generator', isCategory: true },
+    { icon: Wrench, label: 'Apps', href: '/qr-generator', isCategory: true },
     { icon: QrCode, label: '• QR Generator', href: '/qr-generator', indent: true },
     { icon: Activity, label: '• DISC Assessment', href: '/assessment', indent: true },
     { icon: Smartphone, label: 'Install App', href: '/mobile-app' },
@@ -122,7 +122,7 @@ export default function MobileLayout({ children, isMobile }: MobileLayoutProps) 
                       alt="WytNet" 
                       className="h-6 w-auto"
                     />
-                    WytPanel - All Tools
+                    WytPanel
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="mt-6 space-y-2">
