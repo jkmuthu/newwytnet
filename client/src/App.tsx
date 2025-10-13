@@ -17,6 +17,11 @@ import AdminRouter from "@/portals/admin/AdminRouter";
 // Profile Wizard
 import ProfileWizard from "@/components/ProfileWizard";
 
+// Page Components
+import APIReference from "@/pages/api-reference";
+import Documentation from "@/pages/documentation";
+import DevDocumentation from "@/pages/dev-documentation";
+
 /**
  * PortalRouter - Top-level router that determines which portal to use
  * Routes are separated into three distinct portals with no content mixing
@@ -39,27 +44,36 @@ function PortalRouter() {
         {/* Admin Portal - Routes: /admin, /admin/* */}
         <Route path="/admin" component={AdminRouter} />
         <Route path="/admin/:rest*" component={AdminRouter} />
-        
+
         {/* Panel Portal - MyPanel and OrgPanel Routes */}
         <Route path="/mypanel" component={PanelRouter} />
         <Route path="/mypanel/:rest*" component={PanelRouter} />
         <Route path="/orgpanel" component={PanelRouter} />
         <Route path="/orgpanel/:rest*" component={PanelRouter} />
-        
+
         {/* Legacy panel routes - redirect to new structure */}
         <Route path="/panel" component={PanelRouter} />
         <Route path="/panel/:rest*" component={PanelRouter} />
-        
+
         {/* Dashboard redirect - Move legacy /dashboard to mypanel */}
         <Route path="/dashboard">
           {() => <Redirect to="/mypanel/dashboard" />}
         </Route>
-        
+
         {/* Analytics redirect - Move legacy /analytics to admin */}
         <Route path="/analytics">
           {() => <Redirect to="/admin/analytics" />}
         </Route>
-        
+
+        {/* API Reference */}
+        <Route path="/api" component={APIReference} />
+
+        {/* Documentation */}
+        <Route path="/documentation" component={Documentation} />
+
+        {/* Dev Documentation */}
+        <Route path="/dev-docs" component={DevDocumentation} />
+
         {/* Public Portal - All other routes: /, /features, /pricing, /login, tools, etc. */}
         <Route>
           {(params) => <PublicRouter />}
