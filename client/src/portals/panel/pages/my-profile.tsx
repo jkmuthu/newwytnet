@@ -73,10 +73,10 @@ const bucketListSchema = z.object({
   category: z.string().optional(),
   targetDate: z.string().refine((val) => {
     if (!val) return true;
-    const date = new Date(val);
+    const selectedDate = new Date(val + 'T00:00:00');
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return date >= today;
+    return selectedDate >= today;
   }, { message: "Target date must be today or in the future" }).optional(),
   isDone: z.boolean().optional(),
   isPublic: z.boolean().optional(),

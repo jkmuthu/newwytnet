@@ -19,6 +19,18 @@ The system is built as a monorepo with Express.js backend, React frontend using 
 Preferred communication style: Simple, everyday language.
 Focus: Fully white-label multi-tenant SaaS platform with identity validation.
 
+## Recent Updates (October 13, 2025)
+
+**Bucket List & WytMatch Feature:**
+- ✅ Bucket List as first tab in My Profile: Users can add personal goals and aspirations
+- ✅ Simplified form fields: Title (100 chars max), Description (200 chars max), Category, Target Date, Done/Undone toggle
+- ✅ Future date validation: Target date must be today or in the future (timezone-safe validation)
+- ✅ Public/Private visibility: Users can make bucket list items public for WytMatch matching
+- ✅ WytMatch tab in My WytWall: Shows other users' public bucket list items for cross-user opportunity matching
+- ✅ Core concept: "One person's requirement is another person's opportunity"
+- ✅ Database schema: bucket_list table with isDone boolean, removed priority/status fields
+- ✅ API endpoints: Full CRUD operations for bucket list items, public endpoint for WytMatch
+
 ## Recent Updates (October 12, 2025)
 
 **Login Page Improvements:**

@@ -931,10 +931,10 @@ export const insertBucketListSchema = createInsertSchema(bucketList).omit({ id: 
   description: z.string().max(200, "Description must be 200 characters or less").optional(),
   targetDate: z.string().refine((val) => {
     if (!val) return true; // Optional field
-    const date = new Date(val);
+    const selectedDate = new Date(val + 'T00:00:00');
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return date >= today;
+    return selectedDate >= today;
   }, { message: "Target date must be today or in the future" }).optional(),
 });
 export const selectBucketListSchema = createSelectSchema(bucketList);
