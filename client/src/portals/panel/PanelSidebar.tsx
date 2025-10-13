@@ -56,16 +56,10 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               active: location === "/mypanel/wytwall" 
             },
             { 
-              label: "My Needs", 
-              icon: ShoppingCart, 
-              href: "/mypanel/needs", 
-              active: location === "/mypanel/needs" 
-            },
-            { 
-              label: "My Offers", 
+              label: "My Posts", 
               icon: Package, 
-              href: "/mypanel/offers", 
-              active: location === "/mypanel/offers" 
+              href: "/mypanel/posts", 
+              active: location === "/mypanel/posts" 
             },
             { 
               label: "My Duties", 
@@ -149,16 +143,10 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               active: location === "/orgpanel/wytwall" 
             },
             { 
-              label: "Our Needs", 
-              icon: ShoppingCart, 
-              href: "/orgpanel/needs", 
-              active: location === "/orgpanel/needs" 
-            },
-            { 
-              label: "Our Offers", 
+              label: "Our Posts", 
               icon: Package, 
-              href: "/orgpanel/offers", 
-              active: location === "/orgpanel/offers" 
+              href: "/orgpanel/posts", 
+              active: location === "/orgpanel/posts" 
             },
             { 
               label: "Our Duties", 
