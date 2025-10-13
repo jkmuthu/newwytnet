@@ -198,6 +198,15 @@ export function setupWytPassAuth(app: Express) {
                 })
                 .returning();
 
+              // Auto-install core free apps
+              try {
+                const { autoInstallCoreApps } = await import('./services/appInstallService');
+                await autoInstallCoreApps(newUser.id);
+              } catch (error) {
+                console.error('Failed to auto-install core apps:', error);
+                // Don't throw - user creation succeeded
+              }
+
               return done(null, {
                 id: newUser.id,
                 name: newUser.name,
@@ -305,6 +314,15 @@ export function setupWytPassAuth(app: Express) {
                   lastLoginAt: new Date(),
                 })
                 .returning();
+
+              // Auto-install core free apps
+              try {
+                const { autoInstallCoreApps } = await import('./services/appInstallService');
+                await autoInstallCoreApps(newUser.id);
+              } catch (error) {
+                console.error('Failed to auto-install core apps:', error);
+                // Don't throw - user creation succeeded
+              }
 
               return done(null, {
                 id: newUser.id,
