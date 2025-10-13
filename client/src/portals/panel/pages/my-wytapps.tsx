@@ -73,7 +73,12 @@ export default function MyWytApps() {
   const allApps: App[] = catalogData?.apps || [];
   const myApps: UserApp[] = myAppsData?.apps || [];
   const installedSlugs = new Set(myApps.map(ua => ua.app.id));
-  const availableApps = allApps.filter(app => !installedSlugs.has(app.id));
+  
+  // Filter to show only WytApps (exclude WytHubs and admin modules)
+  const wytAppsOnly = allApps.filter(app => 
+    app.category === 'wytapps' || app.category === 'social'
+  );
+  const availableApps = wytAppsOnly.filter(app => !installedSlugs.has(app.id));
 
   // Install app mutation
   const installMutation = useMutation({
