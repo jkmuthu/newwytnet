@@ -78,10 +78,7 @@ export default function MyWytApps() {
   // Install app mutation
   const installMutation = useMutation({
     mutationFn: async (appSlug: string) => {
-      return apiRequest('/api/apps/install', {
-        method: 'POST',
-        body: JSON.stringify({ appSlug }),
-      });
+      return apiRequest('/api/apps/install', 'POST', { appSlug });
     },
     onSuccess: (data, appSlug) => {
       toast({
@@ -103,9 +100,7 @@ export default function MyWytApps() {
   // Uninstall app mutation
   const uninstallMutation = useMutation({
     mutationFn: async (appSlug: string) => {
-      return apiRequest(`/api/apps/uninstall/${appSlug}`, {
-        method: 'DELETE',
-      });
+      return apiRequest(`/api/apps/uninstall/${appSlug}`, 'DELETE');
     },
     onSuccess: () => {
       toast({

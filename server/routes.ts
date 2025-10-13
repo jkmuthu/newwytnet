@@ -3545,10 +3545,16 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Get user's installed apps
-  app.get('/api/apps/my-apps', isAuthenticated, async (req: any, res) => {
+  app.get('/api/apps/my-apps', async (req: any, res) => {
     try {
-      const principal = await getPrincipal(req);
-      if (!principal) {
+      // Check if user is authenticated (Passport or custom session)
+      if (!req.user && !req.session?.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      // Get user ID from either Passport or custom session
+      const userId = req.user?.id || req.session?.user?.id;
+      if (!userId) {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
@@ -3559,7 +3565,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         })
         .from(userAppInstallations)
         .innerJoin(platformModules, eq(userAppInstallations.appSlug, platformModules.id))
-        .where(eq(userAppInstallations.userId, principal.id));
+        .where(eq(userAppInstallations.userId, userId));
 
       res.json({
         success: true,
@@ -3576,10 +3582,16 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Install an app for user
-  app.post('/api/apps/install', isAuthenticated, async (req: any, res) => {
+  app.post('/api/apps/install', async (req: any, res) => {
     try {
-      const principal = await getPrincipal(req);
-      if (!principal) {
+      // Check if user is authenticated (Passport or custom session)
+      if (!req.user && !req.session?.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      // Get user ID from either Passport or custom session
+      const userId = req.user?.id || req.session?.user?.id;
+      if (!userId) {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
@@ -3617,8 +3629,10 @@ export async function registerRoutes(app: Express): Promise<void> {
       const existing = await db
         .select()
         .from(userAppInstallations)
-        .where(eq(userAppInstallations.userId, principal.id))
-        .where(eq(userAppInstallations.appSlug, appSlug))
+        .where(and(
+          eq(userAppInstallations.userId, userId),
+          eq(userAppInstallations.appSlug, appSlug)
+        ))
         .limit(1);
 
       if (existing.length > 0) {
@@ -3632,7 +3646,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const installation = await db
         .insert(userAppInstallations)
         .values({
-          userId: principal.id,
+          userId: userId,
           appSlug,
           subscriptionTier,
           status: 'active',
@@ -3665,10 +3679,16 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Uninstall an app
-  app.delete('/api/apps/uninstall/:appSlug', isAuthenticated, async (req: any, res) => {
+  app.delete('/api/apps/uninstall/:appSlug', async (req: any, res) => {
     try {
-      const principal = await getPrincipal(req);
-      if (!principal) {
+      // Check if user is authenticated (Passport or custom session)
+      if (!req.user && !req.session?.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      // Get user ID from either Passport or custom session
+      const userId = req.user?.id || req.session?.user?.id;
+      if (!userId) {
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
@@ -3678,8 +3698,10 @@ export async function registerRoutes(app: Express): Promise<void> {
       const installation = await db
         .select()
         .from(userAppInstallations)
-        .where(eq(userAppInstallations.userId, principal.id))
-        .where(eq(userAppInstallations.appSlug, appSlug))
+        .where(and(
+          eq(userAppInstallations.userId, userId),
+          eq(userAppInstallations.appSlug, appSlug)
+        ))
         .limit(1);
 
       if (installation.length === 0) {
@@ -3692,8 +3714,10 @@ export async function registerRoutes(app: Express): Promise<void> {
       // Delete the installation
       await db
         .delete(userAppInstallations)
-        .where(eq(userAppInstallations.userId, principal.id))
-        .where(eq(userAppInstallations.appSlug, appSlug));
+        .where(and(
+          eq(userAppInstallations.userId, userId),
+          eq(userAppInstallations.appSlug, appSlug)
+        ));
 
       // Decrement install count
       await db

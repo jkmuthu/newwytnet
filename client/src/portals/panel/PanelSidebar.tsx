@@ -85,34 +85,10 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               active: location === "/mypanel/posts" 
             },
             { 
-              label: "My Duties", 
-              icon: FileText, 
-              href: "/mypanel/duties", 
-              active: location === "/mypanel/duties" 
-            },
-            { 
-              label: "My WytScore", 
-              icon: BarChart3, 
-              href: "/mypanel/wytscore", 
-              active: location === "/mypanel/wytscore" 
-            },
-            { 
               label: "My Circle", 
               icon: Users, 
               href: "/mypanel/circle", 
               active: location === "/mypanel/circle" 
-            },
-            { 
-              label: "My WytWallet", 
-              icon: CreditCard, 
-              href: "/mypanel/wallet", 
-              active: location === "/mypanel/wallet" 
-            },
-            { 
-              label: "My WytPoints", 
-              icon: Award, 
-              href: "/mypanel/points", 
-              active: location === "/mypanel/points" 
             },
             { 
               label: "My WytApps", 
