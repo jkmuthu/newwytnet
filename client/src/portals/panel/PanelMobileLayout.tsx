@@ -80,11 +80,11 @@ export default function PanelMobileLayout({
 
   const getUserInitials = (user: any) => {
     if (!user?.name) return 'U';
-    const nameParts = user.name.split(' ');
+    const nameParts = String(user.name).split(' ');
     if (nameParts.length >= 2) {
       return `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase();
     }
-    return user.name[0]?.toUpperCase() || 'U';
+    return String(user.name)[0]?.toUpperCase() || 'U';
   };
 
   // Bottom navigation items based on workspace
