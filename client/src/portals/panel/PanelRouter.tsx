@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import WytWallPostForm from "@/components/WytWallPostForm";
 import PaymentHistory from "@/components/payments/PaymentHistory";
 import MyNeeds from "./pages/my-needs";
 import MyOffers from "./pages/my-offers";
@@ -239,28 +241,32 @@ function MyPanelDashboard() {
 function MyPanelWytWall() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
-  const [postType, setPostType] = useState<"all" | "needs" | "offers">("all");
+  const [postType, setPostType] = useState<"all" | "need" | "offer">("all");
+  const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
+  const [defaultPostType, setDefaultPostType] = useState<"need" | "offer">("need");
   
-  const { data: needsData, isLoading: needsLoading } = useQuery({
-    queryKey: ['/api/needs'],
+  const { data: postsData, isLoading } = useQuery({
+    queryKey: ['/api/wytwall/my-posts', postType !== "all" ? postType : undefined],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (postType !== "all") {
+        params.set('postType', postType);
+      }
+      return await fetch(`/api/wytwall/my-posts?${params.toString()}`).then(r => r.json());
+    },
   });
 
-  const { data: offersData, isLoading: offersLoading } = useQuery({
-    queryKey: ['/api/offers'],
-  });
-
-  const allNeeds = (needsData as any)?.needs || [];
-  const allOffers = (offersData as any)?.offers || [];
+  const posts = (postsData as any)?.posts || [];
   
-  // Combine and sort by date
-  const allPosts = [...allNeeds.map((n: any) => ({ ...n, type: 'need' })), ...allOffers.map((o: any) => ({ ...o, type: 'offer' }))].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  const needsCount = posts.filter((p: any) => p.postType === 'need').length;
+  const offersCount = posts.filter((p: any) => p.postType === 'offer').length;
+  
+  const handleOpenPostDialog = (type: "need" | "offer") => {
+    setDefaultPostType(type);
+    setIsPostDialogOpen(true);
+  };
 
-  const filteredPosts = postType === "all" ? allPosts :
-    allPosts.filter((p: any) => p.type === (postType === "needs" ? "need" : "offer"));
-
-  const isLoading = needsLoading || offersLoading;
+  const filteredPosts = postType === "all" ? posts : posts.filter((p: any) => p.postType === postType);
   
   return (
     <div className="p-6 space-y-6">
@@ -280,15 +286,17 @@ function MyPanelWytWall() {
             </div>
             <div className="flex gap-2">
               <Button 
-                onClick={() => navigate('/mypanel/needs')}
+                onClick={() => handleOpenPostDialog('need')}
                 className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-xl"
+                data-testid="button-post-need"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Post Need
               </Button>
               <Button 
-                onClick={() => navigate('/mypanel/offers')}
+                onClick={() => handleOpenPostDialog('offer')}
                 className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-xl"
+                data-testid="button-post-offer"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Post Offer
@@ -304,22 +312,25 @@ function MyPanelWytWall() {
           variant={postType === "all" ? "default" : "outline"}
           onClick={() => setPostType("all")}
           className="rounded-full"
+          data-testid="filter-all"
         >
-          All Posts ({allPosts.length})
+          All Posts ({posts.length})
         </Button>
         <Button
-          variant={postType === "needs" ? "default" : "outline"}
-          onClick={() => setPostType("needs")}
+          variant={postType === "need" ? "default" : "outline"}
+          onClick={() => setPostType("need")}
           className="rounded-full"
+          data-testid="filter-needs"
         >
-          Needs ({allNeeds.length})
+          Needs ({needsCount})
         </Button>
         <Button
-          variant={postType === "offers" ? "default" : "outline"}
-          onClick={() => setPostType("offers")}
+          variant={postType === "offer" ? "default" : "outline"}
+          onClick={() => setPostType("offer")}
           className="rounded-full"
+          data-testid="filter-offers"
         >
-          Offers ({allOffers.length})
+          Offers ({offersCount})
         </Button>
       </div>
 
@@ -337,14 +348,14 @@ function MyPanelWytWall() {
           <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
             <Package className="h-12 w-12 text-gray-400" />
           </div>
-          <h3 className="text-lg font-medium mb-2">No {postType === "all" ? "posts" : postType} yet</h3>
-          <p className="text-muted-foreground mb-4">Start by posting your first {postType === "all" ? "need or offer" : postType === "needs" ? "need" : "offer"}</p>
+          <h3 className="text-lg font-medium mb-2">No {postType === "all" ? "posts" : postType === "need" ? "needs" : "offers"} yet</h3>
+          <p className="text-muted-foreground mb-4">Start by posting your first {postType === "all" ? "need or offer" : postType === "need" ? "need" : "offer"}</p>
           <div className="flex gap-2 justify-center">
-            <Button onClick={() => navigate('/mypanel/needs')}>
+            <Button onClick={() => handleOpenPostDialog('need')}>
               <Plus className="h-4 w-4 mr-2" />
               Post Need
             </Button>
-            <Button onClick={() => navigate('/mypanel/offers')} variant="outline">
+            <Button onClick={() => handleOpenPostDialog('offer')} variant="outline">
               <Plus className="h-4 w-4 mr-2" />
               Post Offer
             </Button>
@@ -353,32 +364,39 @@ function MyPanelWytWall() {
       ) : (
         <div className="space-y-4">
           {filteredPosts.map((post: any) => (
-            <Card key={post.id} className="p-6 hover:shadow-lg transition-shadow">
+            <Card key={post.id} className="p-6 hover:shadow-lg transition-shadow" data-testid={`post-card-${post.id}`}>
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <Badge className={post.type === 'need' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}>
-                      {post.type === 'need' ? 'Need' : 'Offer'}
+                    <Badge className={post.postType === 'need' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}>
+                      {post.postType === 'need' ? 'Need' : 'Offer'}
                     </Badge>
                     <Badge variant="outline">{post.category || 'Other'}</Badge>
                     <span className="text-sm text-muted-foreground">
                       {new Date(post.createdAt).toLocaleDateString()}
                     </span>
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{post.title}</h3>
                   <p className="text-muted-foreground text-sm">{post.description}</p>
                 </div>
-                <Button size="sm" variant="outline">View Details</Button>
+                <Button size="sm" variant="outline" data-testid={`button-view-${post.id}`}>View Details</Button>
               </div>
-              {post.budget && (
-                <div className="text-sm text-muted-foreground">
-                  Budget: ₹{post.budget}
-                </div>
-              )}
             </Card>
           ))}
         </div>
       )}
+
+      {/* Post Creation Dialog */}
+      <Dialog open={isPostDialogOpen} onOpenChange={setIsPostDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Create a Post</DialogTitle>
+          </DialogHeader>
+          <WytWallPostForm 
+            defaultPostType={defaultPostType}
+            onSuccess={() => setIsPostDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

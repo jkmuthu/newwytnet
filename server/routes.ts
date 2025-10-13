@@ -85,7 +85,9 @@ import {
   offers,
   datasetCollections,
   datasetItems,
-  profileFieldWeights
+  profileFieldWeights,
+  wytWallPosts,
+  insertWytWallPostSchema
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -6174,6 +6176,125 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error: any) {
       console.error('Error fetching offers:', error);
       res.status(500).json({ error: error.message || 'Failed to fetch offers' });
+    }
+  });
+
+  // ========================================
+  // WYTWALL POSTS - Simplified Needs/Offers
+  // ========================================
+
+  // Create a new WytWall post
+  app.post('/api/wytwall/posts', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // Validate request body
+      const validatedData = insertWytWallPostSchema.parse({
+        ...req.body,
+        userId: principal.id,
+      });
+
+      const [post] = await db.insert(wytWallPosts).values(validatedData).returning();
+
+      res.json({ success: true, post });
+    } catch (error: any) {
+      console.error('Error creating WytWall post:', error);
+      res.status(400).json({ error: error.message || 'Failed to create post' });
+    }
+  });
+
+  // Get user's WytWall posts
+  app.get('/api/wytwall/my-posts', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const postType = req.query.postType as string;
+
+      let query = db.select().from(wytWallPosts).where(eq(wytWallPosts.userId, principal.id));
+      
+      if (postType && (postType === 'need' || postType === 'offer')) {
+        query = query.where(and(
+          eq(wytWallPosts.userId, principal.id),
+          eq(wytWallPosts.postType, postType)
+        ));
+      }
+
+      const posts = await query.orderBy(desc(wytWallPosts.createdAt));
+
+      res.json({ success: true, posts });
+    } catch (error: any) {
+      console.error('Error fetching WytWall posts:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch posts' });
+    }
+  });
+
+  // Get all WytWall posts (public feed)
+  app.get('/api/wytwall/posts', async (req: any, res) => {
+    try {
+      const postType = req.query.postType as string;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      let query = db.select({
+        id: wytWallPosts.id,
+        userId: wytWallPosts.userId,
+        postType: wytWallPosts.postType,
+        category: wytWallPosts.category,
+        description: wytWallPosts.description,
+        createdAt: wytWallPosts.createdAt,
+        userName: whatsappUsers.name,
+        userEmail: whatsappUsers.email,
+        userProfileImage: whatsappUsers.profileImageUrl,
+      })
+      .from(wytWallPosts)
+      .leftJoin(whatsappUsers, eq(wytWallPosts.userId, whatsappUsers.id));
+      
+      if (postType && (postType === 'need' || postType === 'offer')) {
+        query = query.where(eq(wytWallPosts.postType, postType));
+      }
+
+      const posts = await query.orderBy(desc(wytWallPosts.createdAt)).limit(limit).offset(offset);
+
+      res.json({ success: true, posts });
+    } catch (error: any) {
+      console.error('Error fetching WytWall posts:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch posts' });
+    }
+  });
+
+  // Delete a WytWall post
+  app.delete('/api/wytwall/posts/:id', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { id } = req.params;
+
+      // Check if post belongs to user
+      const [post] = await db.select().from(wytWallPosts).where(eq(wytWallPosts.id, id));
+
+      if (!post) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+
+      if (post.userId !== principal.id) {
+        return res.status(403).json({ error: 'Not authorized to delete this post' });
+      }
+
+      await db.delete(wytWallPosts).where(eq(wytWallPosts.id, id));
+
+      res.json({ success: true, message: 'Post deleted successfully' });
+    } catch (error: any) {
+      console.error('Error deleting WytWall post:', error);
+      res.status(400).json({ error: error.message || 'Failed to delete post' });
     }
   });
 

@@ -1889,6 +1889,19 @@ export const offers = pgTable("offers", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// WytWall Posts - Simplified unified needs/offers stream
+export const wytWallPostTypeEnum = pgEnum("wytwall_post_type", ["need", "offer"]);
+
+export const wytWallPosts = pgTable("wytwall_posts", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => whatsappUsers.id, { onDelete: 'cascade' }),
+  postType: wytWallPostTypeEnum("post_type").notNull(), // "need" or "offer"
+  category: varchar("category", { length: 100 }).notNull(), // Dynamic based on postType
+  description: varchar("description", { length: 200 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // ========================================
 // WYTSTAR GAMIFICATION SYSTEM
 // ========================================
@@ -2135,6 +2148,8 @@ export const insertNeedSchema = createInsertSchema(needs);
 export const selectNeedSchema = createSelectSchema(needs);
 export const insertOfferSchema = createInsertSchema(offers);
 export const selectOfferSchema = createSelectSchema(offers);
+export const insertWytWallPostSchema = createInsertSchema(wytWallPosts).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectWytWallPostSchema = createSelectSchema(wytWallPosts);
 
 // WytStar schema exports
 export const insertWytstarContributionSchema = createInsertSchema(wytstarContributions);
@@ -2161,6 +2176,8 @@ export type Need = typeof needs.$inferSelect;
 export type InsertNeed = typeof needs.$inferInsert;
 export type Offer = typeof offers.$inferSelect;
 export type InsertOffer = typeof offers.$inferInsert;
+export type WytWallPost = typeof wytWallPosts.$inferSelect;
+export type InsertWytWallPost = z.infer<typeof insertWytWallPostSchema>;
 
 // WytStar type exports
 export type WytstarContribution = typeof wytstarContributions.$inferSelect;
