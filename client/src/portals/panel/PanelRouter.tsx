@@ -243,22 +243,30 @@ function MyPanelDashboard() {
 function MyPanelWytWall() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
-  const [postType, setPostType] = useState<"all" | "need" | "offer">("all");
+  const [postType, setPostType] = useState<"all" | "need" | "offer" | "wytmatch">("all");
   const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
   const [defaultPostType, setDefaultPostType] = useState<"need" | "offer">("need");
   
   const { data: postsData, isLoading } = useQuery({
-    queryKey: ['/api/wytwall/my-posts', postType !== "all" ? postType : undefined],
+    queryKey: ['/api/wytwall/my-posts', postType !== "all" && postType !== "wytmatch" ? postType : undefined],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (postType !== "all") {
+      if (postType !== "all" && postType !== "wytmatch") {
         params.set('postType', postType);
       }
       return await fetch(`/api/wytwall/my-posts?${params.toString()}`).then(r => r.json());
     },
+    enabled: postType !== "wytmatch",
+  });
+
+  // Fetch PUBLIC bucket list items from OTHER users for WytMatch tab
+  const { data: matchesData, isLoading: matchesLoading } = useQuery({
+    queryKey: ['/api/bucket-list/public'],
+    enabled: postType === "wytmatch",
   });
 
   const posts = (postsData as any)?.posts || [];
+  const bucketMatches = (matchesData as any)?.items || [];
   
   const needsCount = posts.filter((p: any) => p.postType === 'need').length;
   const offersCount = posts.filter((p: any) => p.postType === 'offer').length;
@@ -334,10 +342,78 @@ function MyPanelWytWall() {
         >
           Offers ({offersCount})
         </Button>
+        <Button
+          variant={postType === "wytmatch" ? "default" : "outline"}
+          onClick={() => setPostType("wytmatch")}
+          className="rounded-full"
+          data-testid="filter-wytmatch"
+        >
+          WytMatch ({bucketMatches.length})
+        </Button>
       </div>
 
-      {/* Posts Stream */}
-      {isLoading ? (
+      {/* Posts Stream or WytMatch */}
+      {postType === "wytmatch" ? (
+        matchesLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="p-6">
+                <div className="h-24 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
+              </Card>
+            ))}
+          </div>
+        ) : bucketMatches.length === 0 ? (
+          <Card className="p-12 text-center">
+            <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Package className="h-12 w-12 text-purple-500" />
+            </div>
+            <h3 className="text-lg font-medium mb-2">No Matches Found</h3>
+            <p className="text-muted-foreground mb-4">
+              No other users have shared public bucket list items yet. Check back later to discover opportunities!
+            </p>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 rounded-lg mb-4">
+              <p className="text-sm text-purple-900 dark:text-purple-100">
+                <strong>WytMatch:</strong> Discover other users' needs and goals - your skills could be their solution!
+              </p>
+            </div>
+            {bucketMatches.map((match: any) => (
+              <Card key={match.id} className="p-6 hover:shadow-lg transition-shadow border-l-4 border-l-purple-500" data-testid={`match-card-${match.id}`}>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                        Bucket List Match
+                      </Badge>
+                      {match.category && <Badge variant="outline">{match.category}</Badge>}
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        match.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                        match.priority === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                        'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                      }`}>
+                        {match.priority}
+                      </span>
+                    </div>
+                    <h3 className="font-semibold text-lg mb-2">{match.title}</h3>
+                    {match.description && (
+                      <p className="text-muted-foreground text-sm mb-2">{match.description}</p>
+                    )}
+                    <div className="text-xs text-muted-foreground">
+                      {match.targetDate && `Target: ${new Date(match.targetDate).toLocaleDateString()}`}
+                    </div>
+                  </div>
+                  <Button size="sm" variant="outline" data-testid={`button-connect-${match.id}`}>
+                    <Package className="h-4 w-4 mr-2" />
+                    Connect
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )
+      ) : isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <Card key={i} className="p-6">

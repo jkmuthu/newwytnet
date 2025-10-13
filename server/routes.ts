@@ -77,6 +77,8 @@ import {
   orders,
   wytLifeApplications,
   userProfiles,
+  bucketList,
+  insertBucketListSchema,
   userNeeds,
   userOffers,
   insertUserProfileSchema,
@@ -7229,6 +7231,40 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error: any) {
       console.error('Error fetching bucket list:', error);
       res.status(500).json({ error: error.message || 'Failed to fetch bucket list' });
+    }
+  });
+
+  // Get public bucket list items from OTHER users for WytMatch
+  app.get('/api/bucket-list/public', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // Get public bucket list items from OTHER users (not current user)
+      const items = await db.select({
+        id: bucketList.id,
+        title: bucketList.title,
+        description: bucketList.description,
+        category: bucketList.category,
+        priority: bucketList.priority,
+        status: bucketList.status,
+        targetDate: bucketList.targetDate,
+        createdAt: bucketList.createdAt,
+        userId: bucketList.userId,
+      })
+        .from(bucketList)
+        .where(and(
+          eq(bucketList.isPublic, true),
+          not(eq(bucketList.userId, principal.id))
+        ))
+        .orderBy(desc(bucketList.createdAt));
+
+      res.json({ success: true, items });
+    } catch (error: any) {
+      console.error('Error fetching public bucket list:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch public bucket list' });
     }
   });
 

@@ -14,8 +14,23 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { User, Save, Camera, Globe, Lock, Unlock, Check } from "lucide-react";
+import { User, Save, Camera, Globe, Lock, Unlock, Check, Plus, Trash2, Edit2, Target, CheckCircle2, Circle } from "lucide-react";
 import ProfilePhotoUpload from "@/components/ProfilePhotoUpload";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const personalFormSchema = z.object({
   profilePhoto: z.string().optional(),
@@ -52,11 +67,38 @@ interface DatasetItem {
   locale: string;
 }
 
+const bucketListSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  category: z.string().optional(),
+  priority: z.enum(['low', 'medium', 'high']).optional(),
+  status: z.enum(['pending', 'in_progress', 'completed']).optional(),
+  targetDate: z.string().optional(),
+  isPublic: z.boolean().optional(),
+});
+
+type BucketListFormValues = z.infer<typeof bucketListSchema>;
+
+interface BucketListItem {
+  id: string;
+  title: string;
+  description?: string;
+  category?: string;
+  priority: string;
+  status: string;
+  targetDate?: string;
+  completedAt?: string;
+  isPublic: boolean;
+  createdAt: string;
+}
+
 export default function MyProfile() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("personal");
+  const [activeTab, setActiveTab] = useState("bucket-list");
   const [privacySettings, setPrivacySettings] = useState<Record<string, 'public' | 'private'>>({});
   const [selectedLanguages, setSelectedLanguages] = useState<Array<{code: string; name: string; speak: boolean; write: boolean}>>([]);
+  const [bucketDialogOpen, setBucketDialogOpen] = useState(false);
+  const [editingBucket, setEditingBucket] = useState<BucketListItem | null>(null);
 
   // Fetch user profile
   const { data: profile, isLoading } = useQuery<UserProfile>({
@@ -84,6 +126,82 @@ export default function MyProfile() {
   const { data: maritalStatusData } = useQuery<{ items: DatasetItem[] }>({
     queryKey: ["/api/datasets/marital-status"],
   });
+
+  // Bucket List queries and mutations
+  const { data: bucketListData, isLoading: bucketLoading } = useQuery<{ items: BucketListItem[] }>({
+    queryKey: ["/api/bucket-list"],
+  });
+
+  const bucketForm = useForm<BucketListFormValues>({
+    resolver: zodResolver(bucketListSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      category: "",
+      priority: "medium",
+      status: "pending",
+      targetDate: "",
+      isPublic: true,
+    },
+  });
+
+  const createBucketMutation = useMutation({
+    mutationFn: async (data: BucketListFormValues) => {
+      return await apiRequest("/api/bucket-list", "POST", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bucket-list"] });
+      setBucketDialogOpen(false);
+      bucketForm.reset();
+      setEditingBucket(null);
+      toast({ title: "Success", description: "Bucket list item added" });
+    },
+  });
+
+  const updateBucketMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<BucketListFormValues> }) => {
+      return await apiRequest(`/api/bucket-list/${id}`, "PATCH", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bucket-list"] });
+      setBucketDialogOpen(false);
+      bucketForm.reset();
+      setEditingBucket(null);
+      toast({ title: "Success", description: "Bucket list item updated" });
+    },
+  });
+
+  const deleteBucketMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest(`/api/bucket-list/${id}`, "DELETE");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/bucket-list"] });
+      toast({ title: "Success", description: "Bucket list item deleted" });
+    },
+  });
+
+  const handleEditBucket = (item: BucketListItem) => {
+    setEditingBucket(item);
+    bucketForm.reset({
+      title: item.title,
+      description: item.description || "",
+      category: item.category || "",
+      priority: item.priority as any,
+      status: item.status as any,
+      targetDate: item.targetDate || "",
+      isPublic: item.isPublic,
+    });
+    setBucketDialogOpen(true);
+  };
+
+  const onBucketSubmit = (data: BucketListFormValues) => {
+    if (editingBucket) {
+      updateBucketMutation.mutate({ id: editingBucket.id, data });
+    } else {
+      createBucketMutation.mutate(data);
+    }
+  };
 
   const form = useForm<PersonalFormValues>({
     resolver: zodResolver(personalFormSchema),
@@ -226,13 +344,246 @@ export default function MyProfile() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5" data-testid="tabs-profile">
+        <TabsList className="grid w-full grid-cols-6" data-testid="tabs-profile">
+          <TabsTrigger value="bucket-list" data-testid="tab-bucket-list">Bucket List</TabsTrigger>
           <TabsTrigger value="personal" data-testid="tab-personal">Personal</TabsTrigger>
           <TabsTrigger value="education" data-testid="tab-education">Education</TabsTrigger>
           <TabsTrigger value="works" data-testid="tab-works">Works</TabsTrigger>
           <TabsTrigger value="socials" data-testid="tab-socials">Socials</TabsTrigger>
           <TabsTrigger value="interests" data-testid="tab-interests">Interests</TabsTrigger>
         </TabsList>
+
+        {/* Bucket List Tab */}
+        <TabsContent value="bucket-list" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">My Bucket List</h2>
+              <p className="text-muted-foreground">Add your goals and aspirations - your requirement is someone's opportunity!</p>
+            </div>
+            <Button onClick={() => { setBucketDialogOpen(true); setEditingBucket(null); bucketForm.reset(); }} data-testid="button-add-bucket">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Goal
+            </Button>
+          </div>
+
+          {bucketLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[1, 2].map((i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardHeader>
+                    <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 rounded" />
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          ) : bucketListData?.items && bucketListData.items.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {bucketListData.items.map((item) => (
+                <Card key={item.id} className="relative" data-testid={`card-bucket-${item.id}`}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          {item.status === 'completed' ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                          ) : item.status === 'in_progress' ? (
+                            <Circle className="h-5 w-5 text-blue-600" />
+                          ) : (
+                            <Target className="h-5 w-5 text-gray-400" />
+                          )}
+                          <CardTitle className="text-lg">{item.title}</CardTitle>
+                        </div>
+                        {item.description && (
+                          <p className="text-sm text-muted-foreground mt-2">{item.description}</p>
+                        )}
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {item.category && (
+                            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+                              {item.category}
+                            </span>
+                          )}
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            item.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                            item.priority === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                            'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                          }`}>
+                            {item.priority}
+                          </span>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            item.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                            item.status === 'in_progress' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                            'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                          }`}>
+                            {item.status.replace('_', ' ')}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => handleEditBucket(item)} data-testid={`button-edit-bucket-${item.id}`}>
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => deleteBucketMutation.mutate(item.id)} data-testid={`button-delete-bucket-${item.id}`}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Target className="h-16 w-16 text-gray-400 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Bucket List Items</h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  Start adding your goals and aspirations. Your requirements might be someone else's opportunities!
+                </p>
+                <Button onClick={() => { setBucketDialogOpen(true); setEditingBucket(null); bucketForm.reset(); }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Your First Goal
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Bucket List Dialog */}
+          <Dialog open={bucketDialogOpen} onOpenChange={setBucketDialogOpen}>
+            <DialogContent data-testid="dialog-bucket-form">
+              <DialogHeader>
+                <DialogTitle>{editingBucket ? 'Edit Goal' : 'Add New Goal'}</DialogTitle>
+                <DialogDescription>
+                  Add goals and aspirations to your bucket list. Make them public to enable WytMatch matching!
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...bucketForm}>
+                <form onSubmit={bucketForm.handleSubmit(onBucketSubmit)} className="space-y-4">
+                  <FormField
+                    control={bucketForm.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Title *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., Learn Spanish" data-testid="input-bucket-title" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={bucketForm.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea {...field} placeholder="Details about this goal..." data-testid="input-bucket-description" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={bucketForm.control}
+                      name="category"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Category</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., Travel, Learning" data-testid="input-bucket-category" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={bucketForm.control}
+                      name="priority"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Priority</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-bucket-priority">
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="low">Low</SelectItem>
+                              <SelectItem value="medium">Medium</SelectItem>
+                              <SelectItem value="high">High</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={bucketForm.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Status</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-bucket-status">
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="in_progress">In Progress</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={bucketForm.control}
+                      name="targetDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Target Date</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} data-testid="input-bucket-target-date" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={bucketForm.control}
+                    name="isPublic"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                        <div>
+                          <FormLabel>Public for WytMatch</FormLabel>
+                          <FormDescription>
+                            Allow others to see and match with this goal
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} data-testid="switch-bucket-public" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setBucketDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button type="submit" data-testid="button-save-bucket">
+                      {editingBucket ? 'Update' : 'Add'} Goal
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </TabsContent>
 
         {/* Personal Tab */}
         <TabsContent value="personal" className="space-y-6">
