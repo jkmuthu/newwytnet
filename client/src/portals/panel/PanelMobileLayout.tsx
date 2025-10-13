@@ -20,7 +20,7 @@ import {
   Bell
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useWhatsAppAuth } from "@/hooks/useWhatsAppAuth";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { WorkspaceContext } from "./PanelLayout";
@@ -42,13 +42,13 @@ export default function PanelMobileLayout({
 }: PanelMobileLayoutProps) {
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user } = useWhatsAppAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/auth/whatsapp/logout', {
+      const response = await fetch('/api/auth/logout', {
         method: 'POST',
         credentials: 'include',
       });
@@ -62,7 +62,7 @@ export default function PanelMobileLayout({
         title: "Success",
         description: "Logged out successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/auth/whatsapp/user'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       window.location.href = '/';
     },
     onError: () => {
