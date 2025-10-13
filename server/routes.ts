@@ -34,7 +34,7 @@ import {
 import { razorpayService } from "./services/razorpayService";
 import path from "path";
 import multer from "multer";
-import { Storage } from "@google-cloud/storage";
+import { promises as fs } from "fs";
 // NOTE: whatsappAuthService is only used by legacy social auth routes (/api/auth/social/*)
 // Main WytPass OAuth authentication (Google, Email OTP, Email/Password) is in wytpass-auth.ts
 import * as whatsappAuthService from "./services/whatsappAuth";
@@ -6453,12 +6453,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     },
   });
 
-  // Initialize Google Cloud Storage
-  const gcsStorage = new Storage();
-  const bucketName = process.env.REPLIT_BUCKET_ID || 'replit-objstore-f99ecc31-a513-406e-afc5-c84fcbc3d8c7';
-  const bucket = gcsStorage.bucket(bucketName);
-
-  // Upload profile photo
+  // Upload profile photo using Replit Object Storage (file system)
   app.post('/api/upload/profile-photo', upload.single('photo'), async (req: any, res) => {
     try {
       const principal = await getPrincipal(req);
@@ -6470,30 +6465,50 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(400).json({ error: 'No file provided' });
       }
 
+      // Get the private object directory from environment
+      const privateDir = process.env.PRIVATE_OBJECT_DIR || '/replit-objstore-f99ecc31-a513-406e-afc5-c84fcbc3d8c7/.private';
+      const profilePhotosDir = path.join(privateDir, 'profile-photos');
+      
+      // Ensure directory exists
+      await fs.mkdir(profilePhotosDir, { recursive: true });
+
       // Generate unique filename
       const timestamp = Date.now();
       const extension = path.extname(req.file.originalname);
-      const filename = `profile-photos/${principal.id}_${timestamp}${extension}`;
+      const filename = `${principal.id}_${timestamp}${extension}`;
+      const filePath = path.join(profilePhotosDir, filename);
       
-      // Upload to GCS
-      const file = bucket.file(filename);
-      await file.save(req.file.buffer, {
-        contentType: req.file.mimetype,
-        metadata: {
-          contentType: req.file.mimetype,
-        },
-      });
+      // Write file to object storage
+      await fs.writeFile(filePath, req.file.buffer);
 
-      // Make file publicly readable
-      await file.makePublic();
-
-      // Get public URL
-      const publicUrl = `https://storage.googleapis.com/${bucketName}/${filename}`;
+      // Return relative URL path
+      const publicUrl = `/uploads/profile-photos/${filename}`;
 
       res.json({ success: true, url: publicUrl });
     } catch (error: any) {
       console.error('Error uploading file:', error);
       res.status(500).json({ error: error.message || 'Failed to upload file' });
+    }
+  });
+
+  // Serve uploaded profile photos
+  app.get('/uploads/profile-photos/:filename', async (req, res) => {
+    try {
+      const privateDir = process.env.PRIVATE_OBJECT_DIR || '/replit-objstore-f99ecc31-a513-406e-afc5-c84fcbc3d8c7/.private';
+      const filePath = path.join(privateDir, 'profile-photos', req.params.filename);
+      
+      // Check if file exists
+      try {
+        await fs.access(filePath);
+      } catch {
+        return res.status(404).json({ error: 'File not found' });
+      }
+
+      // Serve the file
+      res.sendFile(filePath);
+    } catch (error: any) {
+      console.error('Error serving file:', error);
+      res.status(500).json({ error: 'Failed to serve file' });
     }
   });
 
