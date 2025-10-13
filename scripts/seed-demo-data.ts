@@ -159,7 +159,29 @@ async function seedDemoData() {
       {
         userId: sarahUser[0].id,
         username: 'sarahjohnson',
+        // Personal Tab fields
+        nickName: 'Sarah',
         bio: 'Digital marketing enthusiast and content creator. Love exploring new tools and sharing knowledge!',
+        mobileNumber: '+919876543210',
+        gender: 'female',
+        dateOfBirth: new Date('1992-05-15'),
+        maritalStatus: 'single',
+        motherTongue: 'English',
+        homeLocation: 'Pune, Maharashtra',
+        livingIn: 'Mumbai, Maharashtra',
+        languagesKnown: [
+          { code: 'en', name: 'English', speak: true, write: true },
+          { code: 'hi', name: 'Hindi', speak: true, write: true },
+          { code: 'mr', name: 'Marathi', speak: true, write: false }
+        ],
+        privacySettings: {
+          email: 'public',
+          mobileNumber: 'private',
+          gender: 'public',
+          dateOfBirth: 'private',
+          maritalStatus: 'public'
+        },
+        // Professional fields
         location: 'Mumbai, Maharashtra',
         website: 'https://sarahjohnson.com',
         company: 'Digital Dynamics Ltd',
@@ -179,7 +201,29 @@ async function seedDemoData() {
       {
         userId: rajeshUser[0]?.id,
         username: 'rajeshkumar',
+        // Personal Tab fields
+        nickName: 'Raj',
         bio: 'Full-stack developer passionate about building scalable web applications. Tech speaker and open-source contributor.',
+        mobileNumber: '+919876543211',
+        gender: 'male',
+        dateOfBirth: new Date('1988-11-20'),
+        maritalStatus: 'married',
+        motherTongue: 'Tamil',
+        homeLocation: 'Chennai, Tamil Nadu',
+        livingIn: 'Bangalore, Karnataka',
+        languagesKnown: [
+          { code: 'en', name: 'English', speak: true, write: true },
+          { code: 'ta', name: 'Tamil', speak: true, write: true },
+          { code: 'kn', name: 'Kannada', speak: true, write: false }
+        ],
+        privacySettings: {
+          email: 'public',
+          mobileNumber: 'private',
+          gender: 'public',
+          dateOfBirth: 'private',
+          maritalStatus: 'public'
+        },
+        // Professional fields
         location: 'Bangalore, Karnataka',
         website: 'https://rajeshkumar.dev',
         company: 'Tech Innovators Pvt Ltd',
@@ -199,7 +243,28 @@ async function seedDemoData() {
       {
         userId: priyaUser[0]?.id,
         username: 'priyasharma',
-        bio: 'Product designer creating delightful user experiences.',
+        // Personal Tab fields
+        nickName: 'Pri',
+        bio: 'Product designer creating delightful user experiences. Love colors, typography, and solving user problems!',
+        mobileNumber: '+919876543212',
+        gender: 'female',
+        dateOfBirth: new Date('1995-03-08'),
+        maritalStatus: 'single',
+        motherTongue: 'Hindi',
+        homeLocation: 'Jaipur, Rajasthan',
+        livingIn: 'New Delhi, Delhi',
+        languagesKnown: [
+          { code: 'en', name: 'English', speak: true, write: true },
+          { code: 'hi', name: 'Hindi', speak: true, write: true }
+        ],
+        privacySettings: {
+          email: 'public',
+          mobileNumber: 'private',
+          gender: 'public',
+          dateOfBirth: 'private',
+          maritalStatus: 'private'
+        },
+        // Professional fields
         location: 'Delhi NCR',
         company: 'Creative Solutions Inc',
         jobTitle: 'UI/UX Designer',
@@ -217,7 +282,29 @@ async function seedDemoData() {
       {
         userId: michaelUser[0]?.id,
         username: 'michaelchen',
-        bio: 'Startup founder and tech entrepreneur. Building the future of SaaS.',
+        // Personal Tab fields
+        nickName: 'Mike',
+        bio: 'Startup founder and tech entrepreneur. Building the future of SaaS. Angel investor and mentor.',
+        mobileNumber: '+919876543213',
+        gender: 'male',
+        dateOfBirth: new Date('1985-09-12'),
+        maritalStatus: 'married',
+        motherTongue: 'English',
+        homeLocation: 'San Francisco, USA',
+        livingIn: 'Pune, Maharashtra',
+        languagesKnown: [
+          { code: 'en', name: 'English', speak: true, write: true },
+          { code: 'zh', name: 'Chinese', speak: true, write: true },
+          { code: 'hi', name: 'Hindi', speak: true, write: false }
+        ],
+        privacySettings: {
+          email: 'public',
+          mobileNumber: 'private',
+          gender: 'public',
+          dateOfBirth: 'private',
+          maritalStatus: 'public'
+        },
+        // Professional fields
         location: 'Pune, Maharashtra',
         website: 'https://michaelchen.io',
         company: 'NextGen Ventures',

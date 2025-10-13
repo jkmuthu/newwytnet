@@ -35,6 +35,7 @@ import { razorpayService } from "./services/razorpayService";
 import path from "path";
 import multer from "multer";
 import { promises as fs } from "fs";
+import { fileTypeFromBuffer } from "file-type";
 // NOTE: whatsappAuthService is only used by legacy social auth routes (/api/auth/social/*)
 // Main WytPass OAuth authentication (Google, Email OTP, Email/Password) is in wytpass-auth.ts
 import * as whatsappAuthService from "./services/whatsappAuth";
@@ -6465,6 +6466,32 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(400).json({ error: 'No file provided' });
       }
 
+      // Validate actual file content using magic bytes (not just claimed mimetype)
+      const fileType = await fileTypeFromBuffer(req.file.buffer);
+      
+      // List of allowed image types based on magic bytes
+      const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      
+      if (!fileType || !allowedImageTypes.includes(fileType.mime)) {
+        console.warn('Rejected upload attempt:', {
+          claimedMimetype: req.file.mimetype,
+          actualMimetype: fileType?.mime || 'unknown',
+          userId: principal.id
+        });
+        return res.status(400).json({ 
+          error: 'Invalid file type. Only genuine image files are allowed.' 
+        });
+      }
+
+      // Get safe extension from verified mimetype
+      const mimeToExt: Record<string, string> = {
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+        'image/gif': '.gif',
+        'image/webp': '.webp'
+      };
+      const safeExtension = mimeToExt[fileType.mime];
+
       // Get the private object directory from environment
       const privateDir = process.env.PRIVATE_OBJECT_DIR || '/replit-objstore-f99ecc31-a513-406e-afc5-c84fcbc3d8c7/.private';
       const profilePhotosDir = path.join(privateDir, 'profile-photos');
@@ -6472,10 +6499,13 @@ export async function registerRoutes(app: Express): Promise<void> {
       // Ensure directory exists
       await fs.mkdir(profilePhotosDir, { recursive: true });
 
-      // Generate unique filename
+      // Sanitize principal ID to prevent directory traversal (whitelist alphanumeric, hyphens, underscores only)
+      const safePrincipalId = principal.id.replace(/[^a-zA-Z0-9_-]/g, '');
+      
+      // Generate secure UUID-based filename (ignore user-provided filename)
       const timestamp = Date.now();
-      const extension = path.extname(req.file.originalname);
-      const filename = `${principal.id}_${timestamp}${extension}`;
+      const randomId = Math.random().toString(36).substring(2, 15);
+      const filename = `${safePrincipalId}_${timestamp}_${randomId}${safeExtension}`;
       const filePath = path.join(profilePhotosDir, filename);
       
       // Write file to object storage
@@ -6494,9 +6524,24 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Serve uploaded profile photos
   app.get('/uploads/profile-photos/:filename', async (req, res) => {
     try {
-      const privateDir = process.env.PRIVATE_OBJECT_DIR || '/replit-objstore-f99ecc31-a513-406e-afc5-c84fcbc3d8c7/.private';
-      const filePath = path.join(privateDir, 'profile-photos', req.params.filename);
+      // Sanitize filename to prevent directory traversal
+      const filename = path.basename(req.params.filename);
       
+      // Validate filename format (userId_timestamp_randomId.ext)
+      if (!/^[a-zA-Z0-9_-]+\.(jpg|jpeg|png|gif|webp)$/.test(filename)) {
+        return res.status(400).json({ error: 'Invalid filename format' });
+      }
+
+      const privateDir = process.env.PRIVATE_OBJECT_DIR || '/replit-objstore-f99ecc31-a513-406e-afc5-c84fcbc3d8c7/.private';
+      const filePath = path.join(privateDir, 'profile-photos', filename);
+      
+      // Verify the resolved path is still within the expected directory (prevent traversal)
+      const resolvedPath = path.resolve(filePath);
+      const expectedDir = path.resolve(privateDir, 'profile-photos');
+      if (!resolvedPath.startsWith(expectedDir)) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
       // Check if file exists
       try {
         await fs.access(filePath);
