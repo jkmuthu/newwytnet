@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Lock, BookOpen, CheckCircle, Clock, AlertCircle, Code, Database, Shield, Filter, Search, ExternalLink, MessageSquare, ArrowUpDown, Edit, Save } from "lucide-react";
+import { Lock, BookOpen, CheckCircle, Clock, AlertCircle, Code, Database, Shield, Filter, Search, ExternalLink, MessageSquare, ArrowUpDown, Edit, Save, Download } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 type StatusType = "tested-live" | "tested-preview" | "completed" | "in-error" | "priority-1" | "priority-2" | "priority-3" | "in-progress" | "planned";
 type AreaType = "public" | "user-panel" | "admin-panel" | "api" | "core";
@@ -37,6 +38,10 @@ export default function DevDocumentation() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
   const [editDialog, setEditDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState("features");
+  const [isDownloading, setIsDownloading] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   // Load features from localStorage or use defaults
   const [features, setFeatures] = useState<Feature[]>(() => {
@@ -306,6 +311,117 @@ export default function DevDocumentation() {
     }
   };
 
+  const handleDownloadPDF = async () => {
+    setIsDownloading(true);
+    try {
+      // Simple fallback: use browser print to PDF
+      const printContent = contentRef.current;
+      if (!printContent) return;
+
+      // Create a temporary container for print
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        toast({
+          title: "Download Failed",
+          description: "Please allow popups to download PDF",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const tabName = activeTab === 'features' ? 'Feature Tracker' : 
+                     activeTab === 'changelog' ? 'Change Logs' : 'Standards';
+      
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>WytNet Documentation - ${tabName}</title>
+            <style>
+              body { 
+                font-family: system-ui, -apple-system, sans-serif; 
+                padding: 20px;
+                max-width: 1200px;
+                margin: 0 auto;
+              }
+              table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin: 20px 0;
+                page-break-inside: auto;
+              }
+              th, td { 
+                border: 1px solid #ddd; 
+                padding: 12px; 
+                text-align: left; 
+              }
+              th { 
+                background-color: #f8f9fa; 
+                font-weight: 600;
+              }
+              tr { page-break-inside: avoid; page-break-after: auto; }
+              h1, h2, h3 { color: #1e293b; margin-top: 24px; }
+              .badge { 
+                display: inline-block;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                font-weight: 500;
+                margin: 2px;
+              }
+              .status-tested-live { background: #dcfce7; color: #166534; }
+              .status-tested-preview { background: #dbeafe; color: #1e40af; }
+              .status-completed { background: #f0fdf4; color: #15803d; }
+              .status-error { background: #fee2e2; color: #991b1b; }
+              .status-priority-1 { background: #fecaca; color: #7f1d1d; }
+              .status-priority-2 { background: #fed7aa; color: #9a3412; }
+              .status-priority-3 { background: #fef3c7; color: #92400e; }
+              .status-in-progress { background: #e9d5ff; color: #6b21a8; }
+              .status-planned { background: #e5e7eb; color: #374151; }
+              .area-public { background: #dbeafe; color: #1e3a8a; }
+              .area-user { background: #e9d5ff; color: #581c87; }
+              .area-admin { background: #fed7aa; color: #7c2d12; }
+              .area-api { background: #d1fae5; color: #065f46; }
+              .area-core { background: #e5e7eb; color: #1f2937; }
+              @media print {
+                body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+              }
+            </style>
+          </head>
+          <body>
+            <h1>WytNet Platform - Development Documentation</h1>
+            <h2>${tabName}</h2>
+            <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+            ${printContent.innerHTML}
+          </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+      
+      // Wait for content to load then trigger print
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+
+      toast({
+        title: "Download Started",
+        description: "Print dialog opened. Save as PDF to download.",
+      });
+    } catch (error) {
+      console.error('Download error:', error);
+      toast({
+        title: "Download Failed",
+        description: "Unable to generate PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const changeLogs = [
     {
       date: "2025-01-13",
@@ -397,6 +513,14 @@ export default function DevDocumentation() {
             </div>
             <div className="flex gap-2">
               <Button 
+                variant="outline"
+                onClick={handleDownloadPDF}
+                disabled={isDownloading}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isDownloading ? "Generating..." : "Download PDF"}
+              </Button>
+              <Button 
                 variant={isEditMode ? "default" : "outline"} 
                 onClick={() => setIsEditMode(!isEditMode)}
               >
@@ -410,7 +534,7 @@ export default function DevDocumentation() {
             </div>
           </div>
 
-          <Tabs defaultValue="features" className="space-y-6">
+          <Tabs defaultValue="features" className="space-y-6" value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-3 w-full">
               <TabsTrigger value="features">Feature Tracker</TabsTrigger>
               <TabsTrigger value="changelog">Change Logs</TabsTrigger>
@@ -418,6 +542,7 @@ export default function DevDocumentation() {
             </TabsList>
 
             <TabsContent value="features" className="space-y-4">
+              <div ref={contentRef}>
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -597,9 +722,11 @@ export default function DevDocumentation() {
                   </CardContent>
                 </Card>
               </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="changelog" className="space-y-4">
+              <div ref={contentRef}>
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -629,9 +756,11 @@ export default function DevDocumentation() {
                   ))}
                 </CardContent>
               </Card>
+              </div>
             </TabsContent>
 
             <TabsContent value="standards" className="space-y-4">
+              <div ref={contentRef}>
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -695,6 +824,7 @@ export default function DevDocumentation() {
                   </div>
                 </CardContent>
               </Card>
+              </div>
             </TabsContent>
           </Tabs>
 
