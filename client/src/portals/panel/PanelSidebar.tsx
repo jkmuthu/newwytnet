@@ -86,7 +86,7 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               active: location === "/mypanel/wallet" 
             },
             { 
-              label: "My Points", 
+              label: "My WytPoints", 
               icon: Award, 
               href: "/mypanel/points", 
               active: location === "/mypanel/points" 
