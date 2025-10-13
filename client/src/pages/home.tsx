@@ -72,7 +72,7 @@ export default function Home() {
     if (!user) {
       navigate('/login');
     } else {
-      console.log('Post new need');
+      navigate('/mypanel/posts');
     }
   };
 
@@ -172,10 +172,10 @@ export default function Home() {
             <Button
               onClick={handlePostNeed}
               className="bg-white/90 hover:bg-white text-purple-600 font-bold shadow-xl hover:scale-105 transition-all rounded-xl backdrop-blur-xl"
-              data-testid="button-post-need"
+              data-testid="button-add-post"
             >
               <Plus className="h-5 w-5 mr-2" />
-              <span className="hidden sm:inline">Post Need</span>
+              <span className="hidden sm:inline">Add Post</span>
               <span className="sm:hidden">Post</span>
             </Button>
           </div>
@@ -227,10 +227,10 @@ export default function Home() {
               <Button
                 onClick={handlePostNeed}
                 className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 text-white font-bold px-10 py-6 rounded-2xl shadow-2xl hover:scale-105 transition-all"
-                data-testid="button-post-first-need"
+                data-testid="button-add-first-post"
               >
                 <Plus className="h-6 w-6 mr-3" />
-                Post Your First Need
+                Add Your First Post
               </Button>
             )}
           </CardContent>
