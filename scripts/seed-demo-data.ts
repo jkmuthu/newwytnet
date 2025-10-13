@@ -99,14 +99,20 @@ async function seedDemoData() {
     ];
 
     for (const userData of demoUsers) {
-      // Check if user already exists
-      const existing = await db
+      // Check if user already exists by email or whatsapp number
+      const existingByEmail = userData.email ? await db
         .select()
         .from(whatsappUsers)
-        .where(eq(whatsappUsers.id, userData.id))
+        .where(eq(whatsappUsers.email, userData.email))
+        .limit(1) : [];
+      
+      const existingByPhone = await db
+        .select()
+        .from(whatsappUsers)
+        .where(eq(whatsappUsers.whatsappNumber, userData.whatsappNumber))
         .limit(1);
 
-      if (existing.length === 0) {
+      if (existingByEmail.length === 0 && existingByPhone.length === 0) {
         const passwordHash = await hashPassword(userData.password);
         
         await db.insert(whatsappUsers).values({
@@ -128,7 +134,7 @@ async function seedDemoData() {
         });
         console.log(`  ✅ Created user: ${userData.name} (${userData.email})`);
       } else {
-        console.log(`  ⏭️  User already exists: ${userData.name}`);
+        console.log(`  ⏭️  User already exists: ${userData.name} (${userData.email || userData.whatsappNumber})`);
       }
     }
 
@@ -137,9 +143,21 @@ async function seedDemoData() {
     // ========================================
     console.log("\n📝 Creating user profiles...");
 
+    // Fetch actual user IDs from database
+    const sarahUser = await db.select().from(whatsappUsers).where(eq(whatsappUsers.email, 'sarah@wytnet.com')).limit(1);
+    const rajeshUser = await db.select().from(whatsappUsers).where(eq(whatsappUsers.email, 'rajesh@wytnet.com')).limit(1);
+    const priyaUser = await db.select().from(whatsappUsers).where(eq(whatsappUsers.email, 'priya@wytnet.com')).limit(1);
+    const michaelUser = await db.select().from(whatsappUsers).where(eq(whatsappUsers.email, 'michael@wytnet.com')).limit(1);
+
+    // Skip if users don't exist
+    if (!sarahUser[0] || !rajeshUser[0] || !priyaUser[0] || !michaelUser[0]) {
+      console.log("  ⚠️  Some demo users not found, skipping remaining data...");
+      return;
+    }
+
     const profilesData = [
       {
-        userId: 'demo-user-001',
+        userId: sarahUser[0].id,
         username: 'sarahjohnson',
         bio: 'Digital marketing enthusiast and content creator. Love exploring new tools and sharing knowledge!',
         location: 'Mumbai, Maharashtra',
@@ -159,7 +177,7 @@ async function seedDemoData() {
         }
       },
       {
-        userId: 'demo-user-002',
+        userId: rajeshUser[0]?.id,
         username: 'rajeshkumar',
         bio: 'Full-stack developer passionate about building scalable web applications. Tech speaker and open-source contributor.',
         location: 'Bangalore, Karnataka',
@@ -179,7 +197,7 @@ async function seedDemoData() {
         }
       },
       {
-        userId: 'demo-user-003',
+        userId: priyaUser[0]?.id,
         username: 'priyasharma',
         bio: 'Product designer creating delightful user experiences.',
         location: 'Delhi NCR',
@@ -197,7 +215,7 @@ async function seedDemoData() {
         }
       },
       {
-        userId: 'demo-user-004',
+        userId: michaelUser[0]?.id,
         username: 'michaelchen',
         bio: 'Startup founder and tech entrepreneur. Building the future of SaaS.',
         location: 'Pune, Maharashtra',
@@ -260,10 +278,10 @@ async function seedDemoData() {
 
     // Create wallets and transactions
     const walletData = [
-      { userId: 'demo-user-001', balance: 550, lifetimeEarned: 850, lifetimeSpent: 300 },
-      { userId: 'demo-user-002', balance: 225, lifetimeEarned: 375, lifetimeSpent: 150 },
-      { userId: 'demo-user-003', balance: 175, lifetimeEarned: 225, lifetimeSpent: 50 },
-      { userId: 'demo-user-004', balance: 800, lifetimeEarned: 1200, lifetimeSpent: 400 },
+      { userId: sarahUser[0]?.id, balance: 550, lifetimeEarned: 850, lifetimeSpent: 300 },
+      { userId: rajeshUser[0]?.id, balance: 225, lifetimeEarned: 375, lifetimeSpent: 150 },
+      { userId: priyaUser[0]?.id, balance: 175, lifetimeEarned: 225, lifetimeSpent: 50 },
+      { userId: michaelUser[0]?.id, balance: 800, lifetimeEarned: 1200, lifetimeSpent: 400 },
     ];
 
     for (const wallet of walletData) {
@@ -282,25 +300,25 @@ async function seedDemoData() {
     // Create sample transactions
     const transactions = [
       // Sarah's transactions
-      { userId: 'demo-user-001', amount: 100, balanceAfter: 100, type: 'registration', description: 'Welcome bonus' },
-      { userId: 'demo-user-001', amount: 50, balanceAfter: 150, type: 'profile_complete', description: 'Profile completed' },
-      { userId: 'demo-user-001', amount: 25, balanceAfter: 175, type: 'referral_bonus', description: 'Referral bonus for Rajesh' },
-      { userId: 'demo-user-001', amount: 25, balanceAfter: 200, type: 'referral_bonus', description: 'Referral bonus for Priya' },
-      { userId: 'demo-user-001', amount: -50, balanceAfter: 150, type: 'app_purchase', description: 'QR Generator Pro subscription' },
+      { userId: sarahUser[0]?.id, amount: 100, balanceAfter: 100, type: 'registration', description: 'Welcome bonus' },
+      { userId: sarahUser[0]?.id, amount: 50, balanceAfter: 150, type: 'profile_complete', description: 'Profile completed' },
+      { userId: sarahUser[0]?.id, amount: 25, balanceAfter: 175, type: 'referral_bonus', description: 'Referral bonus for Rajesh' },
+      { userId: sarahUser[0]?.id, amount: 25, balanceAfter: 200, type: 'referral_bonus', description: 'Referral bonus for Priya' },
+      { userId: sarahUser[0]?.id, amount: -50, balanceAfter: 150, type: 'app_purchase', description: 'QR Generator Pro subscription' },
       
       // Rajesh's transactions
-      { userId: 'demo-user-002', amount: 100, balanceAfter: 100, type: 'registration', description: 'Welcome bonus' },
-      { userId: 'demo-user-002', amount: 50, balanceAfter: 150, type: 'profile_complete', description: 'Profile completed' },
-      { userId: 'demo-user-002', amount: 25, balanceAfter: 175, type: 'referred_by', description: 'Joined via Sarah\'s referral' },
+      { userId: rajeshUser[0]?.id, amount: 100, balanceAfter: 100, type: 'registration', description: 'Welcome bonus' },
+      { userId: rajeshUser[0]?.id, amount: 50, balanceAfter: 150, type: 'profile_complete', description: 'Profile completed' },
+      { userId: rajeshUser[0]?.id, amount: 25, balanceAfter: 175, type: 'referred_by', description: 'Joined via Sarah\'s referral' },
       
       // Priya's transactions  
-      { userId: 'demo-user-003', amount: 100, balanceAfter: 100, type: 'registration', description: 'Welcome bonus' },
-      { userId: 'demo-user-003', amount: 25, balanceAfter: 125, type: 'referred_by', description: 'Joined via Sarah\'s referral' },
+      { userId: priyaUser[0]?.id, amount: 100, balanceAfter: 100, type: 'registration', description: 'Welcome bonus' },
+      { userId: priyaUser[0]?.id, amount: 25, balanceAfter: 125, type: 'referred_by', description: 'Joined via Sarah\'s referral' },
       
       // Michael's transactions
-      { userId: 'demo-user-004', amount: 100, balanceAfter: 100, type: 'registration', description: 'Welcome bonus' },
-      { userId: 'demo-user-004', amount: 50, balanceAfter: 150, type: 'profile_complete', description: 'Profile completed' },
-      { userId: 'demo-user-004', amount: -100, balanceAfter: 50, type: 'app_purchase', description: 'Premium apps bundle' },
+      { userId: michaelUser[0]?.id, amount: 100, balanceAfter: 100, type: 'registration', description: 'Welcome bonus' },
+      { userId: michaelUser[0]?.id, amount: 50, balanceAfter: 150, type: 'profile_complete', description: 'Profile completed' },
+      { userId: michaelUser[0]?.id, amount: -100, balanceAfter: 50, type: 'app_purchase', description: 'Premium apps bundle' },
     ];
 
     for (const txn of transactions) {
@@ -318,57 +336,59 @@ async function seedDemoData() {
 
     const orgs = [
       {
-        id: 'org-001',
         name: 'Digital Dynamics Ltd',
         slug: 'digital-dynamics',
-        ownerId: 'demo-user-001',
+        ownerId: sarahUser[0]?.id,
         description: 'Leading digital marketing agency helping brands grow online',
         logo: 'https://ui-avatars.com/api/?name=Digital+Dynamics&background=0D8ABC&color=fff',
       },
       {
-        id: 'org-002',
         name: 'Tech Innovators Pvt Ltd',
         slug: 'tech-innovators',
-        ownerId: 'demo-user-002',
+        ownerId: rajeshUser[0]?.id,
         description: 'Building cutting-edge web and mobile applications',
         logo: 'https://ui-avatars.com/api/?name=Tech+Innovators&background=7C3AED&color=fff',
       },
       {
-        id: 'org-003',
         name: 'NextGen Ventures',
         slug: 'nextgen-ventures',
-        ownerId: 'demo-user-004',
+        ownerId: michaelUser[0]?.id,
         description: 'Venture capital firm investing in early-stage startups',
         logo: 'https://ui-avatars.com/api/?name=NextGen+Ventures&background=059669&color=fff',
       }
     ];
 
+    const createdOrgs: any[] = [];
     for (const org of orgs) {
       const existing = await db
         .select()
         .from(organizations)
-        .where(eq(organizations.id, org.id))
+        .where(eq(organizations.slug, org.slug))
         .limit(1);
 
       if (existing.length === 0) {
-        await db.insert(organizations).values(org);
+        const [created] = await db.insert(organizations).values(org).returning();
+        createdOrgs.push(created);
         console.log(`  ✅ Created organization: ${org.name}`);
+      } else {
+        createdOrgs.push(existing[0]);
+        console.log(`  ⏭️  Organization already exists: ${org.name}`);
       }
     }
 
-    // Create organization memberships
+    // Create organization memberships using actual IDs
     const memberships = [
       // Digital Dynamics team
-      { organizationId: 'org-001', userId: 'demo-user-001', role: 'owner' },
-      { organizationId: 'org-001', userId: 'demo-user-003', role: 'member' },
+      { organizationId: createdOrgs[0]?.id, userId: sarahUser[0]?.id, role: 'owner' },
+      { organizationId: createdOrgs[0]?.id, userId: priyaUser[0]?.id, role: 'member' },
       
       // Tech Innovators team
-      { organizationId: 'org-002', userId: 'demo-user-002', role: 'owner' },
-      { organizationId: 'org-002', userId: 'demo-user-004', role: 'admin' },
+      { organizationId: createdOrgs[1]?.id, userId: rajeshUser[0]?.id, role: 'owner' },
+      { organizationId: createdOrgs[1]?.id, userId: michaelUser[0]?.id, role: 'admin' },
       
       // NextGen Ventures team
-      { organizationId: 'org-003', userId: 'demo-user-004', role: 'owner' },
-      { organizationId: 'org-003', userId: 'demo-user-001', role: 'member' },
+      { organizationId: createdOrgs[2]?.id, userId: michaelUser[0]?.id, role: 'owner' },
+      { organizationId: createdOrgs[2]?.id, userId: sarahUser[0]?.id, role: 'member' },
     ];
 
     for (const membership of memberships) {
@@ -391,10 +411,9 @@ async function seedDemoData() {
 
     const sampleOrders = [
       {
-        id: 'order-001',
-        userId: 'demo-user-001',
+        userId: sarahUser[0]?.id,
         orderNumber: 'WYT-2024-001',
-        status: 'completed' as const,
+        status: 'delivered' as const,
         subtotal: '499.00',
         tax: '89.82',
         total: '588.82',
@@ -402,10 +421,9 @@ async function seedDemoData() {
         items: [{ name: 'QR Generator Pro', quantity: 1, price: 499 }]
       },
       {
-        id: 'order-002',
-        userId: 'demo-user-004',
+        userId: michaelUser[0]?.id,
         orderNumber: 'WYT-2024-002',
-        status: 'completed' as const,
+        status: 'delivered' as const,
         subtotal: '1999.00',
         tax: '359.82',
         total: '2358.82',
@@ -413,8 +431,7 @@ async function seedDemoData() {
         items: [{ name: 'Premium Apps Bundle', quantity: 1, price: 1999 }]
       },
       {
-        id: 'order-003',
-        userId: 'demo-user-002',
+        userId: rajeshUser[0]?.id,
         orderNumber: 'WYT-2024-003',
         status: 'pending' as const,
         subtotal: '299.00',
@@ -425,22 +442,26 @@ async function seedDemoData() {
       }
     ];
 
+    const createdOrders: any[] = [];
     for (const order of sampleOrders) {
       const existing = await db
         .select()
         .from(orders)
-        .where(eq(orders.id, order.id))
+        .where(eq(orders.orderNumber, order.orderNumber))
         .limit(1);
 
       if (existing.length === 0) {
-        await db.insert(orders).values(order);
+        const [created] = await db.insert(orders).values(order).returning();
+        createdOrders.push(created);
+      } else {
+        createdOrders.push(existing[0]);
       }
     }
 
     const samplePayments = [
       {
-        orderId: 'order-001',
-        userId: 'demo-user-001',
+        orderId: createdOrders[0]?.id,
+        userId: sarahUser[0]?.id,
         provider: 'razorpay',
         providerPaymentId: 'pay_demo001',
         providerOrderId: 'order_demo001',
@@ -451,8 +472,8 @@ async function seedDemoData() {
         paidAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
       },
       {
-        orderId: 'order-002',
-        userId: 'demo-user-004',
+        orderId: createdOrders[1]?.id,
+        userId: michaelUser[0]?.id,
         provider: 'razorpay',
         providerPaymentId: 'pay_demo002',
         providerOrderId: 'order_demo002',
@@ -463,8 +484,8 @@ async function seedDemoData() {
         paidAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
       },
       {
-        orderId: 'order-003',
-        userId: 'demo-user-002',
+        orderId: createdOrders[2]?.id,
+        userId: rajeshUser[0]?.id,
         provider: 'razorpay',
         providerOrderId: 'order_demo003',
         amount: '352.82',
@@ -475,7 +496,15 @@ async function seedDemoData() {
     ];
 
     for (const payment of samplePayments) {
-      await db.insert(payments).values(payment);
+      const existing = await db
+        .select()
+        .from(payments)
+        .where(eq(payments.providerOrderId, payment.providerOrderId || ''))
+        .limit(1);
+      
+      if (existing.length === 0) {
+        await db.insert(payments).values(payment);
+      }
     }
     console.log(`  ✅ Created ${samplePayments.length} payment records`);
 
