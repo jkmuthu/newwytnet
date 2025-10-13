@@ -884,7 +884,14 @@ export const insertWhatsAppOtpSessionSchema = createInsertSchema(whatsappOtpSess
 export const selectWhatsAppOtpSessionSchema = createSelectSchema(whatsappOtpSessions);
 
 // User Profile schemas
-export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  dateOfBirth: z.union([z.date(), z.string()]).optional().transform(val => {
+    if (typeof val === 'string') {
+      return new Date(val);
+    }
+    return val;
+  })
+});
 export const selectUserProfileSchema = createSelectSchema(userProfiles);
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
