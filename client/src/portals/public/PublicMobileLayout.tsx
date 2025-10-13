@@ -2,7 +2,7 @@ import { useState, ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Home, Bot, Activity, QrCode, Briefcase, Wrench, Smartphone, Info, HelpCircle, Phone } from "lucide-react";
+import { Menu, Home, Bot, Activity, QrCode, Grid3x3, Network, Smartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Footer from "@/components/layout/footer";
 
@@ -29,13 +29,13 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
     },
     {
       href: "/wytapps",
-      icon: Briefcase,
+      icon: Grid3x3,
       label: "WytApps",
       active: location === "/wytapps"
     },
     {
       href: "/hubs",
-      icon: Wrench,
+      icon: Network,
       label: "WytHubs",
       active: location.startsWith("/hubs") || location.startsWith("/hub/")
     },
@@ -52,7 +52,7 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
     { icon: Bot, label: 'AI Directory', href: '/ai-directory' },
     { icon: QrCode, label: 'QR Generator', href: '/qr-generator' },
     { icon: Activity, label: 'DISC Assessment', href: '/assessment' },
-    { icon: Briefcase, label: 'Other WytApps', href: '/wytapps' },
+    { icon: Grid3x3, label: 'Other WytApps', href: '/wytapps' },
     { icon: Activity, label: 'WytLife', href: '/wytlife' },
     { icon: Smartphone, label: 'Install App', href: '/mobile-app' },
   ];
