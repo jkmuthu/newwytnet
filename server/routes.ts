@@ -87,7 +87,8 @@ import {
   datasetItems,
   profileFieldWeights,
   wytWallPosts,
-  insertWytWallPostSchema
+  insertWytWallPostSchema,
+  userAppInstallations
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -3497,6 +3498,221 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.status(500).json({
         success: false,
         error: 'Failed to delete platform module'
+      });
+    }
+  });
+
+  // =============================================================================
+  // USER APP INSTALLATIONS - WytApps Marketplace
+  // =============================================================================
+
+  // Get apps catalog for marketplace (public)
+  app.get('/api/apps/catalog', async (req, res) => {
+    try {
+      const { category, pricing } = req.query;
+      
+      let query = db
+        .select()
+        .from(platformModules)
+        .where(eq(platformModules.status, 'enabled'))
+        .orderBy(platformModules.order, platformModules.name);
+
+      const apps = await query;
+
+      // Filter by category if provided
+      let filteredApps = apps;
+      if (category) {
+        filteredApps = apps.filter((app: any) => app.category === category);
+      }
+
+      // Filter by pricing if provided
+      if (pricing) {
+        filteredApps = filteredApps.filter((app: any) => app.pricing === pricing);
+      }
+
+      res.json({
+        success: true,
+        apps: filteredApps,
+        total: filteredApps.length
+      });
+    } catch (error) {
+      console.error('Error fetching apps catalog:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch apps catalog'
+      });
+    }
+  });
+
+  // Get user's installed apps
+  app.get('/api/apps/my-apps', isAuthenticated, async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const userApps = await db
+        .select({
+          installation: userAppInstallations,
+          app: platformModules
+        })
+        .from(userAppInstallations)
+        .innerJoin(platformModules, eq(userAppInstallations.appSlug, platformModules.id))
+        .where(eq(userAppInstallations.userId, principal.id));
+
+      res.json({
+        success: true,
+        apps: userApps,
+        total: userApps.length
+      });
+    } catch (error) {
+      console.error('Error fetching user apps:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch user apps'
+      });
+    }
+  });
+
+  // Install an app for user
+  app.post('/api/apps/install', isAuthenticated, async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { appSlug, subscriptionTier = 'free' } = req.body;
+
+      if (!appSlug) {
+        return res.status(400).json({
+          success: false,
+          error: 'App slug is required'
+        });
+      }
+
+      // Check if app exists and is enabled
+      const app = await db
+        .select()
+        .from(platformModules)
+        .where(eq(platformModules.id, appSlug))
+        .limit(1);
+
+      if (app.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: 'App not found'
+        });
+      }
+
+      if (app[0].status !== 'enabled') {
+        return res.status(400).json({
+          success: false,
+          error: 'App is not available for installation'
+        });
+      }
+
+      // Check if already installed
+      const existing = await db
+        .select()
+        .from(userAppInstallations)
+        .where(eq(userAppInstallations.userId, principal.id))
+        .where(eq(userAppInstallations.appSlug, appSlug))
+        .limit(1);
+
+      if (existing.length > 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'App already installed'
+        });
+      }
+
+      // Install the app
+      const installation = await db
+        .insert(userAppInstallations)
+        .values({
+          userId: principal.id,
+          appSlug,
+          subscriptionTier,
+          status: 'active',
+          installedAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
+
+      // Increment install count
+      await db
+        .update(platformModules)
+        .set({ 
+          installs: sql`${platformModules.installs} + 1`,
+          updatedAt: new Date()
+        })
+        .where(eq(platformModules.id, appSlug));
+
+      res.json({
+        success: true,
+        installation: installation[0],
+        message: `${app[0].name} installed successfully`
+      });
+    } catch (error) {
+      console.error('Error installing app:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to install app'
+      });
+    }
+  });
+
+  // Uninstall an app
+  app.delete('/api/apps/uninstall/:appSlug', isAuthenticated, async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { appSlug } = req.params;
+
+      // Check if app is installed
+      const installation = await db
+        .select()
+        .from(userAppInstallations)
+        .where(eq(userAppInstallations.userId, principal.id))
+        .where(eq(userAppInstallations.appSlug, appSlug))
+        .limit(1);
+
+      if (installation.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: 'App not installed'
+        });
+      }
+
+      // Delete the installation
+      await db
+        .delete(userAppInstallations)
+        .where(eq(userAppInstallations.userId, principal.id))
+        .where(eq(userAppInstallations.appSlug, appSlug));
+
+      // Decrement install count
+      await db
+        .update(platformModules)
+        .set({ 
+          installs: sql`GREATEST(${platformModules.installs} - 1, 0)`,
+          updatedAt: new Date()
+        })
+        .where(eq(platformModules.id, appSlug));
+
+      res.json({
+        success: true,
+        message: 'App uninstalled successfully'
+      });
+    } catch (error) {
+      console.error('Error uninstalling app:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to uninstall app'
       });
     }
   });
