@@ -6524,6 +6524,27 @@ export async function registerRoutes(app: Express): Promise<void> {
       // Return relative URL path
       const publicUrl = `/uploads/profile-photos/${filename}`;
 
+      // Update user profile with new photo URL
+      const [existingProfile] = await db.select()
+        .from(userProfiles)
+        .where(eq(userProfiles.userId, principal.id));
+
+      if (existingProfile) {
+        // Update existing profile
+        await db.update(userProfiles)
+          .set({ 
+            profilePhoto: publicUrl,
+            updatedAt: new Date()
+          })
+          .where(eq(userProfiles.userId, principal.id));
+      } else {
+        // Create new profile with photo
+        await db.insert(userProfiles).values({
+          userId: principal.id,
+          profilePhoto: publicUrl,
+        });
+      }
+
       res.json({ success: true, url: publicUrl });
     } catch (error: any) {
       console.error('Error uploading file:', error);
@@ -6594,6 +6615,33 @@ export async function registerRoutes(app: Express): Promise<void> {
   // ========================================
   // ACCOUNT MANAGEMENT & PROFILE ROUTES
   // ========================================
+
+  // Get user basic info (name, email)
+  app.get('/api/user', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // Fetch user from whatsappUsers table
+      const [user] = await db.select()
+        .from(whatsappUsers)
+        .where(eq(whatsappUsers.id, principal.id));
+
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      res.json({
+        name: user.name || '',
+        email: user.email || ''
+      });
+    } catch (error: any) {
+      console.error('Error fetching user:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch user' });
+    }
+  });
 
   // Get user detailed profile
   app.get('/api/account/profile', async (req: any, res) => {
