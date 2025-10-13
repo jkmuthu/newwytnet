@@ -18,6 +18,7 @@ import MyPosts from "./pages/my-posts";
 import MyWallet from "./pages/my-wallet";
 import MyPoints from "./pages/my-points";
 import MyWytAppsPage from "./pages/my-wytapps";
+import MyWytHubs from "./pages/my-wythubs";
 import WytAppWorkspace from "./pages/wytapp-workspace";
 import MyAccount from "./pages/my-account";
 import MyProfile from "./pages/my-profile";
@@ -1559,20 +1560,7 @@ function MyPanelCircle() {
   );
 }
 
-function MyPanelWytHubs() {
-  return (
-    <div className="p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>My WytHubs</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">Hubs management coming soon...</p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+const MyPanelWytHubs = MyWytHubs;
 
 function MyPanelWytGames() {
   return (
