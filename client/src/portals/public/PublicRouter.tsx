@@ -62,20 +62,19 @@ export default function PublicRouter() {
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
       <Route path="/help" component={Help} />
-      
+
       {/* WytHubs */}
       <Route path="/wytlife" component={WytLife} />
       <Route path="/status" component={Status} />
-      
+
       {/* Legal pages */}
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
       <Route path="/refund" component={RefundPolicy} />
       <Route path="/shipping" component={ShippingPolicy} />
-      
+
       {/* Documentation and API */}
-      <Route path="/docs" component={Documentation} />
-      <Route path="/documentation" component={Documentation} />
+      <Route path="/devdoc" component={Documentation} />
       <Route path="/api" component={APIReference} />
       <Route path="/api-reference" component={APIReference} />
 
