@@ -17,6 +17,7 @@ import PaymentHistory from "@/components/payments/PaymentHistory";
 import MyPosts from "./pages/my-posts";
 import MyWallet from "./pages/my-wallet";
 import MyPoints from "./pages/my-points";
+import MyWytAppsPage from "./pages/my-wytapps";
 import MyAccount from "./pages/my-account";
 import MyProfile from "./pages/my-profile";
 import { 
@@ -711,102 +712,8 @@ function MyPanelMarketplace() {
   );
 }
 
-// My WytApps - Applications Management
-function MyPanelWytApps() {
-  const myApps = [
-    { name: 'Personal Portfolio', status: 'Published', lastModified: '2 days ago', views: 127 },
-    { name: 'Business Landing', status: 'Draft', lastModified: '1 week ago', views: 0 },
-    { name: 'Event Manager', status: 'In Review', lastModified: '3 days ago', views: 45 },
-  ];
-  
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold mb-2">My WytApps</h1>
-          <p className="text-gray-600 dark:text-gray-400">Create and manage your applications</p>
-        </div>
-        <Button>
-          <AppWindow className="h-4 w-4 mr-2" />
-          Create New App
-        </Button>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <div className="bg-blue-100 dark:bg-blue-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
-                <AppWindow className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-              </div>
-              <p className="text-2xl font-bold">{myApps.length}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Apps</p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <div className="bg-green-100 dark:bg-green-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
-                <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
-              </div>
-              <p className="text-2xl font-bold">{myApps.filter(app => app.status === 'Published').length}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Published</p>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-center">
-              <div className="bg-purple-100 dark:bg-purple-900 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
-                <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-              </div>
-              <p className="text-2xl font-bold">{myApps.reduce((sum, app) => sum + app.views, 0)}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Total Views</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Applications</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {myApps.map((app, index) => (
-              <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                    <AppWindow className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <div>
-                    <p className="font-medium">{app.name}</p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Modified: {app.lastModified}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-sm font-medium">{app.views} views</p>
-                    <Badge variant={app.status === 'Published' ? 'default' : 
-                                 app.status === 'Draft' ? 'secondary' : 'outline'}>
-                      {app.status}
-                    </Badge>
-                  </div>
-                  <Button variant="ghost" size="sm">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+// My WytApps now uses the imported component
+const MyPanelWytApps = MyWytAppsPage;
 
 // My Wallet - Payment and Billing
 function MyPanelWallet() {
