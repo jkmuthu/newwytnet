@@ -44,10 +44,16 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
           section: "MyPanel",
           items: [
             { 
+              label: "My Dashboard", 
+              icon: Home, 
+              href: "/mypanel", 
+              active: location === "/mypanel" || location === "/mypanel/dashboard"
+            },
+            { 
               label: "My WytWall", 
               icon: Home, 
               href: "/mypanel/wytwall", 
-              active: location === "/mypanel" || location === "/mypanel/dashboard" || location === "/mypanel/wytwall" 
+              active: location === "/mypanel/wytwall" 
             },
             { 
               label: "My Needs", 
@@ -131,10 +137,16 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
           section: "OrgPanel",
           items: [
             { 
+              label: "Our Dashboard", 
+              icon: Building, 
+              href: "/orgpanel", 
+              active: location === "/orgpanel" || location === "/orgpanel/dashboard"
+            },
+            { 
               label: "Our WytWall", 
               icon: Building, 
               href: "/orgpanel/wytwall", 
-              active: location === "/orgpanel" || location === "/orgpanel/dashboard" || location === "/orgpanel/wytwall" 
+              active: location === "/orgpanel/wytwall" 
             },
             { 
               label: "Our Needs", 
