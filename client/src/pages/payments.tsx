@@ -18,7 +18,7 @@ const samplePlans = [
     interval: 'month',
     badge: 'Most Popular',
     features: [
-      '5 WytTools modules',
+      '5 WytApps modules',
       '1 Custom WytApp',
       'Basic Analytics',
       'Email Support',
@@ -35,7 +35,7 @@ const samplePlans = [
     interval: 'month',
     badge: 'Best Value',
     features: [
-      'Unlimited WytTools',
+      'Unlimited WytApps',
       '10 Custom WytApps',
       'Advanced Analytics',
       'Priority Support',

@@ -79,7 +79,7 @@ export default function CMSBuilder() {
             link: '/ai-directory'
           },
           {
-            title: 'WytTools',
+            title: 'WytApps',
             description: 'QR Generator, Disc Assessment & more',
             icon: 'tools',
             color: 'purple',
