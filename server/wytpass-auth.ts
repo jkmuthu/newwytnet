@@ -579,7 +579,7 @@ export function setupWytPassAuth(app: Express) {
       req.session.destroy((err) => {
         if (err) return next(err);
         res.clearCookie('connect.sid');
-        res.sendStatus(200);
+        res.json({ success: true, message: "Logged out successfully" });
       });
     });
   });
