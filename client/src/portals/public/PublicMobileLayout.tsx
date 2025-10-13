@@ -49,25 +49,12 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
 
   // Sidebar items for mobile menu
   const sidebarItems = [
-    { 
-      section: "WytHubs",
-      items: [
-        { icon: Bot, label: 'AI Directory', href: '/ai-directory' },
-        { icon: Activity, label: 'WytLife', href: '/wytlife' },
-      ]
-    },
-    { 
-      section: "WytApps & More",
-      items: [
-        { icon: QrCode, label: 'QR Generator', href: '/qr-generator' },
-        { icon: Activity, label: 'DISC Assessment', href: '/assessment' },
-        { icon: Briefcase, label: 'WytApps', href: '/wytapps' },
-        { icon: Smartphone, label: 'Install App', href: '/mobile-app' },
-        { icon: Info, label: 'About Us', href: '/about' },
-        { icon: Phone, label: 'Contact', href: '/contact' },
-        { icon: HelpCircle, label: 'Help', href: '/help' },
-      ]
-    }
+    { icon: Bot, label: 'AI Directory', href: '/ai-directory' },
+    { icon: QrCode, label: 'QR Generator', href: '/qr-generator' },
+    { icon: Activity, label: 'DISC Assessment', href: '/assessment' },
+    { icon: Briefcase, label: 'Other WytApps', href: '/wytapps' },
+    { icon: Activity, label: 'WytLife', href: '/wytlife' },
+    { icon: Smartphone, label: 'Install App', href: '/mobile-app' },
   ];
 
   // Determine if bottom navigation should be shown
@@ -127,30 +114,20 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
                         alt="WytNet" 
                         className="h-6 w-auto"
                       />
-                      WytNet
                     </SheetTitle>
                   </SheetHeader>
-                  <nav className="mt-6 space-y-4">
-                    {sidebarItems.map((section) => (
-                      <div key={section.section}>
-                        <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          {section.section}
-                        </h3>
-                        <div className="mt-2 space-y-1">
-                          {section.items.map((item) => (
-                            <Link 
-                              key={item.href}
-                              href={item.href} 
-                              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200" 
-                              onClick={() => setSidebarOpen(false)}
-                              data-testid={`sidebar-${item.label.toLowerCase().replace(' ', '-')}`}
-                            >
-                              <item.icon className="h-5 w-5" />
-                              <span>{item.label}</span>
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
+                  <nav className="mt-6 space-y-1">
+                    {sidebarItems.map((item) => (
+                      <Link 
+                        key={item.href}
+                        href={item.href} 
+                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200" 
+                        onClick={() => setSidebarOpen(false)}
+                        data-testid={`sidebar-${item.label.toLowerCase().replace(/ /g, '-')}`}
+                      >
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.label}</span>
+                      </Link>
                     ))}
                   </nav>
                 </SheetContent>
