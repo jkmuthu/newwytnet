@@ -90,7 +90,17 @@ import {
   profileFieldWeights,
   wytWallPosts,
   insertWytWallPostSchema,
-  userAppInstallations
+  userAppInstallations,
+  aiAppProjects,
+  aiChatConversations,
+  aiGeneratedCode,
+  insertAiAppProjectSchema,
+  insertAiChatConversationSchema,
+  insertAiGeneratedCodeSchema,
+  type AiAppProject,
+  type InsertAiAppProject,
+  type AiChatConversation,
+  type InsertAiChatConversation
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -115,6 +125,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, gte, lte, like, or, ilike, not, asc } from "drizzle-orm";
+import { aiService } from "./services/aiService";
 
 // Trademark analysis functions now imported from services/trademarkAnalysis.ts
 
@@ -7646,5 +7657,189 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // ========================================
   // END WYTLIFE SEO/SMO ROUTE HANDLER
+  // ========================================
+
+  // ========================================
+  // AI APP BUILDER ROUTES
+  // ========================================
+
+  // Get user's app builder projects
+  app.get('/api/ai-builder/projects', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const projects = await db.select()
+        .from(aiAppProjects)
+        .where(eq(aiAppProjects.ownerId, principal.id))
+        .orderBy(desc(aiAppProjects.createdAt));
+
+      res.json({ projects });
+    } catch (error) {
+      console.error('Error fetching AI Builder projects:', error);
+      res.status(500).json({ error: 'Failed to fetch projects' });
+    }
+  });
+
+  // Chat with AI to generate app code
+  app.post('/api/ai-builder/chat', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      if (!aiService.isReady()) {
+        return res.status(503).json({ 
+          error: 'AI service is not available. Please check OpenAI API configuration.' 
+        });
+      }
+
+      const { message, projectId, conversationHistory } = req.body;
+
+      if (!message?.trim()) {
+        return res.status(400).json({ error: 'Message is required' });
+      }
+
+      // Build WytNet context for AI
+      const wytnetContext = `
+WytNet Framework Context:
+- Database: PostgreSQL with Drizzle ORM (shared/schema.ts)
+- Backend: Express.js TypeScript (server/routes.ts)
+- Frontend: React 18 + Vite (client/src/)
+- UI: shadcn/ui components + Tailwind CSS
+- Auth: WytPass (Google OAuth, Email OTP, Email/Password) - already configured
+- File Structure: Follow existing patterns
+- All apps must run within wytnet.com domain
+
+CONSTRAINTS:
+- You CANNOT change: database type, auth system, UI framework, language
+- You CAN ONLY: create new tables, add API routes, create UI pages using existing components
+- Always use existing utilities and follow established patterns
+`;
+
+      // Build conversation messages
+      const messages = [
+        { role: 'system' as const, content: wytnetContext },
+        ...(conversationHistory || []).slice(-5).map((msg: any) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content
+        })),
+        { role: 'user' as const, content: message }
+      ];
+
+      // Get AI response
+      const aiResponse = await aiService.chat(messages, {
+        model: 'gpt-4',
+        temperature: 0.7,
+        maxTokens: 2000
+      });
+
+      const responseText = aiResponse.choices[0]?.message?.content || 'I apologize, I could not generate a response.';
+
+      // Check if user is asking to create a new project
+      const createProjectKeywords = ['create', 'build', 'make', 'new app', 'inventory', 'crm', 'management'];
+      const isCreatingProject = !projectId && createProjectKeywords.some(kw => message.toLowerCase().includes(kw));
+
+      let newProjectId: string | null = null;
+      let newProjectName: string | null = null;
+
+      if (isCreatingProject && message.length > 20) {
+        // Extract app name from user message (simple heuristic)
+        const appNameMatch = message.match(/(?:create|build|make)\s+(?:a|an)?\s*([a-zA-Z\s]+?)(?:\s+app|\s+system|$)/i);
+        const extractedName = appNameMatch?.[1]?.trim() || 'New App';
+        const slug = extractedName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now();
+
+        // Create new project
+        const [newProject] = await db.insert(aiAppProjects).values({
+          ownerId: principal.id,
+          name: extractedName,
+          slug,
+          description: message.substring(0, 200),
+          status: 'draft',
+          accessLevel: 'super_admin',
+        }).returning();
+
+        newProjectId = newProject.id;
+        newProjectName = newProject.name;
+
+        // Create initial conversation
+        await db.insert(aiChatConversations).values({
+          projectId: newProjectId,
+          userId: principal.id,
+          title: `${extractedName} - Initial Planning`,
+          messages: JSON.stringify([
+            { role: 'user', content: message, timestamp: new Date().toISOString() },
+            { role: 'assistant', content: responseText, timestamp: new Date().toISOString() }
+          ]),
+          totalMessages: 2
+        });
+      }
+
+      res.json({
+        response: responseText,
+        projectCreated: !!newProjectId,
+        projectId: newProjectId,
+        projectName: newProjectName
+      });
+    } catch (error) {
+      console.error('Error in AI chat:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to process chat message' 
+      });
+    }
+  });
+
+  // Get specific project details
+  app.get('/api/ai-builder/projects/:id', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { id } = req.params;
+
+      const [project] = await db.select()
+        .from(aiAppProjects)
+        .where(
+          and(
+            eq(aiAppProjects.id, id),
+            eq(aiAppProjects.ownerId, principal.id)
+          )
+        )
+        .limit(1);
+
+      if (!project) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+
+      // Get conversations for this project
+      const conversations = await db.select()
+        .from(aiChatConversations)
+        .where(eq(aiChatConversations.projectId, id))
+        .orderBy(desc(aiChatConversations.createdAt));
+
+      // Get generated code for this project
+      const generatedCode = await db.select()
+        .from(aiGeneratedCode)
+        .where(eq(aiGeneratedCode.projectId, id))
+        .orderBy(desc(aiGeneratedCode.createdAt));
+
+      res.json({
+        project,
+        conversations,
+        generatedCode
+      });
+    } catch (error) {
+      console.error('Error fetching project details:', error);
+      res.status(500).json({ error: 'Failed to fetch project details' });
+    }
+  });
+
+  // ========================================
+  // END AI APP BUILDER ROUTES
   // ========================================
 }

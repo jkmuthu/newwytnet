@@ -116,6 +116,12 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
         section: "Platform Management",
         items: [
           { 
+            label: "App Builder", 
+            icon: Bot, 
+            href: "/admin/app-builder", 
+            active: location === "/admin/app-builder"
+          },
+          { 
             label: "Modules", 
             icon: Package, 
             href: "/admin/modules", 

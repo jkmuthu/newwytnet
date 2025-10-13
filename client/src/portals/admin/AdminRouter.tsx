@@ -24,6 +24,7 @@ import AdminDatasetManagement from "@/pages/admin/dataset-management";
 import AdminAnalytics from "@/pages/admin-analytics";
 
 // Import new admin pages
+import AdminAppBuilder from "@/pages/admin/app-builder";
 import AdminMedia from "@/pages/admin/media";
 import AdminThemes from "@/pages/admin/themes";
 import AdminPlansPrices from "@/pages/admin/plans-prices";
@@ -184,6 +185,7 @@ export default function AdminRouter() {
           <Route path="/admin/media" component={AdminMedia} />
 
           {/* Platform Management Routes */}
+          <Route path="/admin/app-builder" component={AdminAppBuilder} />
           <Route path="/admin/modules" component={AdminModules} />
           <Route path="/admin/apps" component={AdminApps} />
           <Route path="/admin/hubs" component={AdminHubs} />
