@@ -388,21 +388,23 @@ function MyPanelWytWall() {
                         Bucket List Match
                       </Badge>
                       {match.category && <Badge variant="outline">{match.category}</Badge>}
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        match.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                        match.priority === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                        'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
-                      }`}>
-                        {match.priority}
-                      </span>
+                      {match.isDone && (
+                        <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                          Completed
+                        </span>
+                      )}
                     </div>
-                    <h3 className="font-semibold text-lg mb-2">{match.title}</h3>
+                    <h3 className={`font-semibold text-lg mb-2 ${match.isDone ? 'line-through text-muted-foreground' : ''}`}>
+                      {match.title}
+                    </h3>
                     {match.description && (
                       <p className="text-muted-foreground text-sm mb-2">{match.description}</p>
                     )}
-                    <div className="text-xs text-muted-foreground">
-                      {match.targetDate && `Target: ${new Date(match.targetDate).toLocaleDateString()}`}
-                    </div>
+                    {match.targetDate && (
+                      <div className="text-xs text-muted-foreground">
+                        Target: {new Date(match.targetDate).toLocaleDateString()}
+                      </div>
+                    )}
                   </div>
                   <Button size="sm" variant="outline" data-testid={`button-connect-${match.id}`}>
                     <Package className="h-4 w-4 mr-2" />

@@ -68,12 +68,17 @@ interface DatasetItem {
 }
 
 const bucketListSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
+  title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or less"),
+  description: z.string().max(200, "Description must be 200 characters or less").optional(),
   category: z.string().optional(),
-  priority: z.enum(['low', 'medium', 'high']).optional(),
-  status: z.enum(['pending', 'in_progress', 'completed']).optional(),
-  targetDate: z.string().optional(),
+  targetDate: z.string().refine((val) => {
+    if (!val) return true;
+    const date = new Date(val);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date >= today;
+  }, { message: "Target date must be today or in the future" }).optional(),
+  isDone: z.boolean().optional(),
   isPublic: z.boolean().optional(),
 });
 
@@ -84,10 +89,8 @@ interface BucketListItem {
   title: string;
   description?: string;
   category?: string;
-  priority: string;
-  status: string;
   targetDate?: string;
-  completedAt?: string;
+  isDone: boolean;
   isPublic: boolean;
   createdAt: string;
 }
@@ -138,9 +141,8 @@ export default function MyProfile() {
       title: "",
       description: "",
       category: "",
-      priority: "medium",
-      status: "pending",
       targetDate: "",
+      isDone: false,
       isPublic: true,
     },
   });
@@ -187,9 +189,8 @@ export default function MyProfile() {
       title: item.title,
       description: item.description || "",
       category: item.category || "",
-      priority: item.priority as any,
-      status: item.status as any,
       targetDate: item.targetDate || "",
+      isDone: item.isDone,
       isPublic: item.isPublic,
     });
     setBucketDialogOpen(true);
@@ -384,14 +385,14 @@ export default function MyProfile() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          {item.status === 'completed' ? (
+                          {item.isDone ? (
                             <CheckCircle2 className="h-5 w-5 text-green-600" />
-                          ) : item.status === 'in_progress' ? (
-                            <Circle className="h-5 w-5 text-blue-600" />
                           ) : (
                             <Target className="h-5 w-5 text-gray-400" />
                           )}
-                          <CardTitle className="text-lg">{item.title}</CardTitle>
+                          <CardTitle className={`text-lg ${item.isDone ? 'line-through text-muted-foreground' : ''}`}>
+                            {item.title}
+                          </CardTitle>
                         </div>
                         {item.description && (
                           <p className="text-sm text-muted-foreground mt-2">{item.description}</p>
@@ -402,19 +403,16 @@ export default function MyProfile() {
                               {item.category}
                             </span>
                           )}
+                          {item.targetDate && (
+                            <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                              Target: {new Date(item.targetDate).toLocaleDateString()}
+                            </span>
+                          )}
                           <span className={`text-xs px-2 py-1 rounded-full ${
-                            item.priority === 'high' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-                            item.priority === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                            item.isDone ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
                             'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
                           }`}>
-                            {item.priority}
-                          </span>
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            item.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                            item.status === 'in_progress' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                            'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
-                          }`}>
-                            {item.status.replace('_', ' ')}
+                            {item.isDone ? 'Done' : 'Pending'}
                           </span>
                         </div>
                       </div>
@@ -484,76 +482,48 @@ export default function MyProfile() {
                       </FormItem>
                     )}
                   />
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={bucketForm.control}
-                      name="category"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Category</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="e.g., Travel, Learning" data-testid="input-bucket-category" />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={bucketForm.control}
-                      name="priority"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Priority</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger data-testid="select-bucket-priority">
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="low">Low</SelectItem>
-                              <SelectItem value="medium">Medium</SelectItem>
-                              <SelectItem value="high">High</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={bucketForm.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Status</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger data-testid="select-bucket-status">
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="in_progress">In Progress</SelectItem>
-                              <SelectItem value="completed">Completed</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={bucketForm.control}
-                      name="targetDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Target Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} data-testid="input-bucket-target-date" />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={bucketForm.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="e.g., Travel, Learning" data-testid="input-bucket-category" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={bucketForm.control}
+                    name="targetDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Target Date (optional)</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} data-testid="input-bucket-target-date" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={bucketForm.control}
+                    name="isDone"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                        <div>
+                          <FormLabel>Mark as Done</FormLabel>
+                          <FormDescription>
+                            Toggle when you've achieved this goal
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} data-testid="switch-bucket-done" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={bucketForm.control}
                     name="isPublic"
