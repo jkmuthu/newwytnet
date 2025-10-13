@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Switch, Route, Redirect } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import PanelLayout from "./PanelLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -40,7 +40,9 @@ import {
   QrCode,
   Bot,
   Briefcase,
-  Calendar
+  Calendar,
+  Package,
+  Plus
 } from "lucide-react";
 
 // My Dash - Comprehensive Dashboard
