@@ -347,6 +347,21 @@ export const platformModules = pgTable("platform_modules", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// User App Installations - Tracks which platform modules/apps users have installed
+export const userAppInstallations = pgTable("user_app_installations", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  appSlug: varchar("app_slug", { length: 255 }).notNull(), // References platformModules.id
+  installedAt: timestamp("installed_at").defaultNow().notNull(),
+  status: varchar("status", { length: 20 }).notNull().default('active'), // active, suspended
+  subscriptionTier: varchar("subscription_tier", { length: 50 }).default('free'), // free, basic, pro, enterprise
+  metadata: jsonb("metadata").default({}), // App-specific settings and data
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userAppIdx: index("user_app_idx").on(table.userId, table.appSlug),
+  uniqueUserApp: unique("unique_user_app").on(table.userId, table.appSlug),
+}));
+
 // Plans
 export const plans = pgTable("plans", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1590,6 +1605,16 @@ export const insertPlatformModuleSchema = createInsertSchema(platformModules);
 export const selectPlatformModuleSchema = createSelectSchema(platformModules);
 export type InsertPlatformModuleType = z.infer<typeof insertPlatformModuleSchema>;
 export type SelectPlatformModuleType = z.infer<typeof selectPlatformModuleSchema>;
+
+// User App Installations Types
+export type UserAppInstallation = typeof userAppInstallations.$inferSelect;
+export type InsertUserAppInstallation = typeof userAppInstallations.$inferInsert;
+
+// Zod schemas for user app installations
+export const insertUserAppInstallationSchema = createInsertSchema(userAppInstallations).omit({ id: true });
+export const selectUserAppInstallationSchema = createSelectSchema(userAppInstallations);
+export type InsertUserAppInstallationType = z.infer<typeof insertUserAppInstallationSchema>;
+export type SelectUserAppInstallationType = z.infer<typeof selectUserAppInstallationSchema>;
 
 // WytDuty Types
 export type DutyUser = typeof dutyUsers.$inferSelect;
