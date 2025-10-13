@@ -180,6 +180,23 @@ export const profileFieldWeights = pgTable("profile_field_weights", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Bucket List - User goals and aspirations that can be matched with opportunities
+export const bucketList = pgTable("bucket_list", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 100 }), // travel, career, learning, experience, etc.
+  priority: varchar("priority", { length: 20 }).default('medium'), // low, medium, high
+  status: varchar("status", { length: 20 }).default('pending'), // pending, in_progress, completed
+  targetDate: timestamp("target_date"),
+  completedAt: timestamp("completed_at"),
+  tags: jsonb("tags").default([]),
+  isPublic: boolean("is_public").default(true), // For WytMatch matching
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // User Needs - Marketplace needs
 export const userNeeds = pgTable("user_needs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -910,6 +927,12 @@ export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({ i
 export const selectUserProfileSchema = createSelectSchema(userProfiles);
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
+
+// Bucket List schemas
+export const insertBucketListSchema = createInsertSchema(bucketList).omit({ id: true, createdAt: true, updatedAt: true, completedAt: true });
+export const selectBucketListSchema = createSelectSchema(bucketList);
+export type BucketListItem = typeof bucketList.$inferSelect;
+export type InsertBucketListItem = z.infer<typeof insertBucketListSchema>;
 
 // User Needs schemas
 export const insertUserNeedSchema = createInsertSchema(userNeeds).omit({ id: true, createdAt: true, updatedAt: true, responseCount: true });
