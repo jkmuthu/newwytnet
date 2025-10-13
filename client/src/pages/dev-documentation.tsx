@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Lock, BookOpen, CheckCircle, Clock, AlertCircle, Code, Database, Shield, Filter, Search, ExternalLink, MessageSquare, ArrowUpDown } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Lock, BookOpen, CheckCircle, Clock, AlertCircle, Code, Database, Shield, Filter, Search, ExternalLink, MessageSquare, ArrowUpDown, Edit, Save } from "lucide-react";
 
 type StatusType = "tested-live" | "tested-preview" | "completed" | "in-error" | "priority-1" | "priority-2" | "priority-3" | "in-progress" | "planned";
 type AreaType = "public" | "user-panel" | "admin-panel" | "api" | "core";
@@ -32,6 +34,27 @@ export default function DevDocumentation() {
   const [filterArea, setFilterArea] = useState<AreaType | "all">("all");
   const [filterStatus, setFilterStatus] = useState<StatusType | "all">("all");
   const [sortField, setSortField] = useState<"title" | "status" | "lastUpdated">("lastUpdated");
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
+  const [editDialog, setEditDialog] = useState(false);
+
+  // Load features from localStorage or use defaults
+  const [features, setFeatures] = useState<Feature[]>(() => {
+    const stored = localStorage.getItem('wytnet-features');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        return getDefaultFeatures();
+      }
+    }
+    return getDefaultFeatures();
+  });
+
+  // Save features to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('wytnet-features', JSON.stringify(features));
+  }, [features]);
 
   useEffect(() => {
     document.title = "Development Documentation - WytNet Platform";
@@ -77,8 +100,9 @@ export default function DevDocumentation() {
     return <Badge variant="outline" className={config.color}>{config.label}</Badge>;
   };
 
-  const features: Feature[] = [
-    // Public Pages
+  function getDefaultFeatures(): Feature[] {
+    return [
+      // Public Pages
     {
       id: "pub-001",
       title: "WytWall Public Landing",
@@ -244,7 +268,43 @@ export default function DevDocumentation() {
       status: "tested-live",
       lastUpdated: "2025-01-11"
     }
-  ];
+    ];
+  }
+
+  const updateFeatureStatus = (featureId: string, newStatus: StatusType) => {
+    setFeatures(prev => prev.map(f => 
+      f.id === featureId 
+        ? { ...f, status: newStatus, lastUpdated: new Date().toISOString().split('T')[0] }
+        : f
+    ));
+  };
+
+  const updateFeature = (featureId: string, updates: Partial<Feature>) => {
+    setFeatures(prev => prev.map(f => 
+      f.id === featureId 
+        ? { ...f, ...updates, lastUpdated: new Date().toISOString().split('T')[0] }
+        : f
+    ));
+  };
+
+  const handleEditFeature = (feature: Feature) => {
+    setEditingFeature({ ...feature });
+    setEditDialog(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (editingFeature) {
+      updateFeature(editingFeature.id, editingFeature);
+      setEditDialog(false);
+      setEditingFeature(null);
+    }
+  };
+
+  const resetToDefaults = () => {
+    if (confirm('Reset all features to default values? This cannot be undone.')) {
+      setFeatures(getDefaultFeatures());
+    }
+  };
 
   const changeLogs = [
     {
@@ -335,10 +395,19 @@ export default function DevDocumentation() {
                 WytNet Platform - Advanced Feature Tracking & Status Management
               </p>
             </div>
-            <Button variant="outline" onClick={() => setIsAuthenticated(false)}>
-              <Lock className="h-4 w-4 mr-2" />
-              Lock
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant={isEditMode ? "default" : "outline"} 
+                onClick={() => setIsEditMode(!isEditMode)}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                {isEditMode ? "Editing" : "Edit Mode"}
+              </Button>
+              <Button variant="outline" onClick={() => setIsAuthenticated(false)}>
+                <Lock className="h-4 w-4 mr-2" />
+                Lock
+              </Button>
+            </div>
           </div>
 
           <Tabs defaultValue="features" className="space-y-6">
@@ -441,24 +510,62 @@ export default function DevDocumentation() {
                               </div>
                             </TableCell>
                             <TableCell>{getAreaBadge(feature.area)}</TableCell>
-                            <TableCell>{getStatusBadge(feature.status)}</TableCell>
+                            <TableCell>
+                              {isEditMode ? (
+                                <Select 
+                                  value={feature.status} 
+                                  onValueChange={(value) => updateFeatureStatus(feature.id, value as StatusType)}
+                                >
+                                  <SelectTrigger className="w-40">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="tested-live">✓ Tested Live</SelectItem>
+                                    <SelectItem value="tested-preview">⚡ Tested Preview</SelectItem>
+                                    <SelectItem value="completed">✓ Completed</SelectItem>
+                                    <SelectItem value="in-error">✗ Error</SelectItem>
+                                    <SelectItem value="priority-1">P1 - Critical</SelectItem>
+                                    <SelectItem value="priority-2">P2 - High</SelectItem>
+                                    <SelectItem value="priority-3">P3 - Medium</SelectItem>
+                                    <SelectItem value="in-progress">⚙ In Progress</SelectItem>
+                                    <SelectItem value="planned">📋 Planned</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                getStatusBadge(feature.status)
+                              )}
+                            </TableCell>
                             <TableCell className="text-sm text-muted-foreground">{feature.lastUpdated}</TableCell>
                             <TableCell>
-                              {feature.testReportUrl && (
-                                <Button variant="ghost" size="sm" asChild>
-                                  <a href={feature.testReportUrl} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="h-4 w-4" />
-                                  </a>
-                                </Button>
-                              )}
+                              <div className="flex gap-1">
+                                {feature.testReportUrl && (
+                                  <Button variant="ghost" size="sm" asChild>
+                                    <a href={feature.testReportUrl} target="_blank" rel="noopener noreferrer">
+                                      <ExternalLink className="h-4 w-4" />
+                                    </a>
+                                  </Button>
+                                )}
+                                {isEditMode && (
+                                  <Button variant="ghost" size="sm" onClick={() => handleEditFeature(feature)}>
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
                   </div>
-                  <div className="mt-4 text-sm text-muted-foreground">
-                    Showing {filteredFeatures.length} of {features.length} features
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {filteredFeatures.length} of {features.length} features
+                    </div>
+                    {isEditMode && (
+                      <Button variant="outline" size="sm" onClick={resetToDefaults}>
+                        Reset to Defaults
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -590,6 +697,100 @@ export default function DevDocumentation() {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Edit Feature Dialog */}
+          <Dialog open={editDialog} onOpenChange={setEditDialog}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Edit Feature</DialogTitle>
+                <DialogDescription>
+                  Update feature details, status, test URLs, and comments
+                </DialogDescription>
+              </DialogHeader>
+              {editingFeature && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Feature ID</label>
+                    <Input value={editingFeature.id} disabled className="mt-1" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Title</label>
+                    <Input 
+                      value={editingFeature.title} 
+                      onChange={(e) => setEditingFeature({...editingFeature, title: e.target.value})}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Description</label>
+                    <Textarea 
+                      value={editingFeature.description} 
+                      onChange={(e) => setEditingFeature({...editingFeature, description: e.target.value})}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Status</label>
+                    <Select 
+                      value={editingFeature.status} 
+                      onValueChange={(value) => setEditingFeature({...editingFeature, status: value as StatusType})}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="tested-live">✓ Tested Live</SelectItem>
+                        <SelectItem value="tested-preview">⚡ Tested Preview</SelectItem>
+                        <SelectItem value="completed">✓ Completed</SelectItem>
+                        <SelectItem value="in-error">✗ Error</SelectItem>
+                        <SelectItem value="priority-1">P1 - Critical</SelectItem>
+                        <SelectItem value="priority-2">P2 - High</SelectItem>
+                        <SelectItem value="priority-3">P3 - Medium</SelectItem>
+                        <SelectItem value="in-progress">⚙ In Progress</SelectItem>
+                        <SelectItem value="planned">📋 Planned</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Test Report URL</label>
+                    <Input 
+                      value={editingFeature.testReportUrl || ''} 
+                      onChange={(e) => setEditingFeature({...editingFeature, testReportUrl: e.target.value})}
+                      placeholder="/path/to/feature or external URL"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Comments</label>
+                    <Textarea 
+                      value={editingFeature.comments || ''} 
+                      onChange={(e) => setEditingFeature({...editingFeature, comments: e.target.value})}
+                      placeholder="Add notes, issues, or updates..."
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Assignee (Optional)</label>
+                    <Input 
+                      value={editingFeature.assignee || ''} 
+                      onChange={(e) => setEditingFeature({...editingFeature, assignee: e.target.value})}
+                      placeholder="Developer name or team"
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              )}
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setEditDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveEdit}>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </section>
     </div>
