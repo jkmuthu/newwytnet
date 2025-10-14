@@ -181,6 +181,45 @@ export default function DevDocumentation() {
   function getDefaultFeatures(): Feature[] {
     return [
       {
+        id: "admin-001",
+        title: "Platform Registry",
+        description: "Admin module for managing system-wide platform features and apps",
+        area: "admin-panel",
+        status: "completed",
+        testReportUrl: "/admin/platform-registry",
+        lastUpdated: "2025-01-14",
+        priority: 1,
+        actualHours: 12,
+        tags: ["admin", "registry", "platform"],
+        dependencies: []
+      },
+      {
+        id: "admin-002",
+        title: "Pricing Plans Management",
+        description: "Multi-tier pricing plan configuration and management system",
+        area: "admin-panel",
+        status: "completed",
+        testReportUrl: "/admin/plans-prices",
+        lastUpdated: "2025-01-14",
+        priority: 1,
+        actualHours: 16,
+        tags: ["admin", "pricing", "billing"],
+        dependencies: ["admin-001"]
+      },
+      {
+        id: "core-001",
+        title: "DevDoc Route Simplification",
+        description: "Simplified documentation route from /dev-documentation to /devdoc",
+        area: "core",
+        status: "completed",
+        testReportUrl: "/devdoc",
+        lastUpdated: "2025-01-14",
+        priority: 2,
+        actualHours: 2,
+        tags: ["routing", "documentation"],
+        dependencies: []
+      },
+      {
         id: "pub-001",
         title: "WytWall Public Landing",
         description: "Public offer/need listing and marketplace",
@@ -213,7 +252,12 @@ export default function DevDocumentation() {
       { method: "POST", path: "/api/auth/login", description: "User authentication", status: "stable", authentication: false },
       { method: "GET", path: "/api/wytid/validate", description: "Validate WytID", status: "stable", authentication: true },
       { method: "POST", path: "/api/offers/create", description: "Create new offer", status: "stable", authentication: true },
-      { method: "GET", path: "/api/needs/public", description: "List public needs", status: "stable", authentication: false }
+      { method: "GET", path: "/api/needs/public", description: "List public needs", status: "stable", authentication: false },
+      { method: "POST", path: "/api/admin/session", description: "Admin authentication", status: "stable", authentication: false },
+      { method: "GET", path: "/api/admin/dashboard", description: "Admin dashboard stats", status: "stable", authentication: true },
+      { method: "GET", path: "/api/admin/pricing/apps", description: "Get all apps for pricing", status: "stable", authentication: true },
+      { method: "GET", path: "/api/admin/pricing/plans/:id", description: "Get pricing plan details", status: "stable", authentication: true },
+      { method: "POST", path: "/api/admin/pricing/plans", description: "Create/update pricing plan", status: "stable", authentication: true }
     ];
   }
 
@@ -389,6 +433,18 @@ export default function DevDocumentation() {
   };
 
   const changeLogs: ChangeLog[] = [
+    {
+      date: "2025-01-14",
+      version: "v1.9.0",
+      changes: [
+        "Added Platform Registry admin module for system-wide app/feature configuration",
+        "Enhanced Pricing Plans Management with multi-tier support",
+        "Simplified documentation route from /dev-documentation to /devdoc",
+        "Improved admin authentication flow with session persistence"
+      ],
+      author: "Development Team",
+      type: "feature"
+    },
     {
       date: "2025-01-13",
       version: "v1.8.0",
