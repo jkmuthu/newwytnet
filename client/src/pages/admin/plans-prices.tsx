@@ -517,6 +517,7 @@ export default function PlansAndPrices() {
           }
         }}
         appId={selectedApp?.id}
+        appName={selectedApp?.name}
         plan={editingPlan}
       />
     </div>
@@ -528,11 +529,13 @@ function PlanFormDialog({
   open,
   onOpenChange,
   appId,
+  appName,
   plan
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   appId?: string;
+  appName?: string;
   plan?: PricingPlan | null;
 }) {
   const [formData, setFormData] = useState({
@@ -797,14 +800,14 @@ function PlanFormDialog({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" data-testid="dialog-plan-form">
         <DialogHeader>
           <DialogTitle data-testid="text-dialog-title">
-            {plan ? 'Edit Pricing Plan' : 'Create Pricing Plan'}
+            {plan ? 'Edit Pricing Plan' : 'Create Pricing Plan'} {appName && `- ${appName}`}
           </DialogTitle>
           <DialogDescription>
             {plan ? 'Update the pricing plan details' : 'Add a new pricing plan for the selected app'}
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-6">
+        <ScrollArea className="flex-1 px-6" style={{ maxHeight: 'calc(90vh - 180px)' }}>
           <form onSubmit={handleSubmit} className="space-y-6 pr-4">
             {/* Validation Errors */}
             {validationErrors.length > 0 && (
