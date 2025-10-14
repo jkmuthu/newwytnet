@@ -8430,6 +8430,164 @@ CONSTRAINTS:
   });
 
   // ========================================
+  // PRICING MATRIX API (Unified Features & Plans)
+  // ========================================
+
+  // Get full pricing matrix for an app (plans + features + access mappings)
+  app.get('/api/admin/pricing/matrix/:appId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { appId } = req.params;
+
+      // Get all plans for the app with their pricing types
+      const plans = await db.select()
+        .from(pricingPlans)
+        .where(eq(pricingPlans.appId, appId))
+        .orderBy(pricingPlans.sortOrder);
+
+      // Get pricing types for all plans
+      const plansWithTypes = await Promise.all(
+        plans.map(async (plan) => {
+          const types = await db.select()
+            .from(pricingPlanTypes)
+            .where(eq(pricingPlanTypes.pricingPlanId, plan.id));
+          
+          return {
+            ...plan,
+            pricingTypes: types,
+          };
+        })
+      );
+
+      // Get all features for the app
+      const features = await db.select()
+        .from(appFeatures)
+        .where(eq(appFeatures.appId, appId))
+        .orderBy(appFeatures.sortOrder, appFeatures.name);
+
+      // Get all plan-feature access mappings for this app
+      const planIds = plans.map(p => p.id);
+      const featureAccess = planIds.length > 0 
+        ? await db.select()
+            .from(planFeatureAccess)
+            .where(sql`${planFeatureAccess.pricingPlanId} IN ${sql.raw(`(${planIds.map(() => '?').join(',')})`, planIds)}`)
+        : [];
+
+      // Build access matrix map: { planId: { featureId: access } }
+      const accessMatrix: Record<string, Record<string, any>> = {};
+      featureAccess.forEach((access) => {
+        if (!accessMatrix[access.pricingPlanId]) {
+          accessMatrix[access.pricingPlanId] = {};
+        }
+        accessMatrix[access.pricingPlanId][access.featureId] = {
+          isEnabled: access.isEnabled,
+          hasCustomQuota: access.hasCustomQuota,
+          customQuota: access.customQuota,
+        };
+      });
+
+      res.json({
+        success: true,
+        plans: plansWithTypes,
+        features,
+        accessMatrix,
+      });
+    } catch (error) {
+      console.error('Error fetching pricing matrix:', error);
+      res.status(500).json({ error: 'Failed to fetch pricing matrix' });
+    }
+  });
+
+  // Save full pricing matrix (plans with pricing types + feature access)
+  app.post('/api/admin/pricing/matrix/:appId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const principal = await getAdminPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { appId } = req.params;
+      const { plans } = req.body; // Array of plan updates with pricing types and feature access
+
+      if (!Array.isArray(plans)) {
+        return res.status(400).json({ error: 'Plans array is required' });
+      }
+
+      // Process each plan update
+      for (const planUpdate of plans) {
+        const { planId, isActive, pricingTypes, featureAccess } = planUpdate;
+
+        if (!planId) continue;
+
+        // Update plan active status if provided
+        if (isActive !== undefined) {
+          await db.update(pricingPlans)
+            .set({ isActive, updatedAt: new Date() })
+            .where(eq(pricingPlans.id, planId));
+        }
+
+        // Update pricing types if provided
+        if (pricingTypes && Array.isArray(pricingTypes)) {
+          // Delete existing pricing types
+          await db.delete(pricingPlanTypes)
+            .where(eq(pricingPlanTypes.pricingPlanId, planId));
+
+          // Insert new pricing types (only non-empty ones)
+          const validTypes = pricingTypes.filter(pt => pt.type && pt.price !== undefined);
+          if (validTypes.length > 0) {
+            await db.insert(pricingPlanTypes)
+              .values(
+                validTypes.map((pt: any) => ({
+                  pricingPlanId: planId,
+                  type: pt.type,
+                  price: pt.price || '0',
+                  billingInterval: pt.billingInterval || '',
+                  trialDays: pt.trialDays || 0,
+                  usageLimit: pt.usageLimit || null,
+                  isActive: true,
+                }))
+              );
+          }
+        }
+
+        // Update feature access if provided
+        if (featureAccess && typeof featureAccess === 'object') {
+          // Delete existing feature access for this plan
+          await db.delete(planFeatureAccess)
+            .where(eq(planFeatureAccess.pricingPlanId, planId));
+
+          // Insert new feature access (only enabled features)
+          const enabledFeatures = Object.entries(featureAccess)
+            .filter(([_, access]: [string, any]) => access.isEnabled)
+            .map(([featureId, access]: [string, any]) => ({
+              pricingPlanId: planId,
+              featureId,
+              isEnabled: true,
+              hasCustomQuota: access.hasCustomQuota || false,
+              customQuota: access.customQuota || null,
+            }));
+
+          if (enabledFeatures.length > 0) {
+            await db.insert(planFeatureAccess)
+              .values(enabledFeatures);
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        message: 'Pricing matrix updated successfully',
+      });
+    } catch (error) {
+      console.error('Error updating pricing matrix:', error);
+      res.status(500).json({ error: 'Failed to update pricing matrix' });
+    }
+  });
+
+  // ========================================
+  // END PRICING MATRIX API
+  // ========================================
+
+  // ========================================
   // END APP FEATURES & PLAN FEATURE ACCESS ROUTES
   // ========================================
 }
