@@ -103,6 +103,26 @@ interface AppFeature {
   };
 }
 
+interface PricingMatrix {
+  plans: PricingPlan[];
+  features: AppFeature[];
+  accessMatrix: Record<string, Record<string, {
+    isEnabled: boolean;
+    hasCustomQuota: boolean;
+    customQuota?: number | null;
+  }>>;
+}
+
+interface PlanColumnData {
+  plan: PricingPlan;
+  isActive: boolean;
+  pricingTypes: {
+    monthly?: { enabled: boolean; price: string };
+    yearly?: { enabled: boolean; price: string };
+    trial?: { enabled: boolean; days: number };
+  };
+}
+
 export default function PlansAndPrices() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -423,6 +443,392 @@ function AppTableRow({
   );
 }
 
+// Matrix Table Component - Unified Features & Plans Interface
+function MatrixTable({ appId }: { appId: string }) {
+  const { toast } = useToast();
+  const [matrixData, setMatrixData] = useState<PricingMatrix | null>(null);
+  const [saveTimeout, setSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Fetch matrix data
+  const { data, isLoading } = useQuery<PricingMatrix>({
+    queryKey: ['/api/admin/pricing/matrix', appId],
+    select: (response: any) => ({
+      plans: response.plans || [],
+      features: response.features || [],
+      accessMatrix: response.accessMatrix || {},
+    }),
+  });
+
+  // Initialize matrix data when fetched
+  useEffect(() => {
+    if (data) {
+      setMatrixData(data);
+    }
+  }, [data]);
+
+  // Save mutation
+  const saveMutation = useMutation({
+    mutationFn: (matrixUpdate: any) => 
+      apiRequest(`/api/admin/pricing/matrix/${appId}`, 'POST', matrixUpdate),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/pricing/matrix', appId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/pricing/apps'] });
+      toast({ title: "Saved", description: "Matrix updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to save matrix", variant: "destructive" });
+    }
+  });
+
+  // Auto-save with debounce
+  const handleSave = (planId: string, updates: any) => {
+    if (saveTimeout) clearTimeout(saveTimeout);
+    
+    const timeout = setTimeout(() => {
+      saveMutation.mutate({
+        plans: [{
+          planId,
+          ...updates
+        }]
+      });
+    }, 1000);
+    
+    setSaveTimeout(timeout);
+  };
+
+  // Toggle plan active status
+  const togglePlanActive = (planId: string, isActive: boolean) => {
+    if (!matrixData) return;
+
+    const updatedPlans = matrixData.plans.map(p => 
+      p.id === planId ? { ...p, isActive } : p
+    );
+    setMatrixData({ ...matrixData, plans: updatedPlans });
+    handleSave(planId, { isActive });
+  };
+
+  // Toggle pricing type
+  const togglePricingType = (planId: string, type: string, enabled: boolean, price?: string) => {
+    if (!matrixData) return;
+
+    const plan = matrixData.plans.find(p => p.id === planId);
+    if (!plan) return;
+
+    let pricingTypes = plan.pricingTypes || [];
+    
+    if (enabled) {
+      // Add or update pricing type
+      const existing = pricingTypes.find(pt => pt.type === type);
+      if (existing) {
+        pricingTypes = pricingTypes.map(pt => 
+          pt.type === type ? { ...pt, price: price || pt.price } : pt
+        );
+      } else {
+        pricingTypes = [...pricingTypes, {
+          id: '',
+          pricingPlanId: planId,
+          type: type as any,
+          price: price || '0',
+          billingInterval: type === 'monthly' ? 'month' : type === 'yearly' ? 'year' : '',
+          trialDays: type === 'trial' ? 7 : 0,
+          usageLimit: null,
+          isActive: true,
+          createdAt: new Date().toISOString()
+        }];
+      }
+    } else {
+      // Remove pricing type
+      pricingTypes = pricingTypes.filter(pt => pt.type !== type);
+    }
+
+    const updatedPlans = matrixData.plans.map(p =>
+      p.id === planId ? { ...p, pricingTypes } : p
+    );
+    setMatrixData({ ...matrixData, plans: updatedPlans });
+    handleSave(planId, { pricingTypes });
+  };
+
+  // Update pricing type price
+  const updatePrice = (planId: string, type: string, price: string) => {
+    if (!matrixData) return;
+
+    const plan = matrixData.plans.find(p => p.id === planId);
+    if (!plan) return;
+
+    const pricingTypes = (plan.pricingTypes || []).map(pt =>
+      pt.type === type ? { ...pt, price } : pt
+    );
+
+    const updatedPlans = matrixData.plans.map(p =>
+      p.id === planId ? { ...p, pricingTypes } : p
+    );
+    setMatrixData({ ...matrixData, plans: updatedPlans });
+    handleSave(planId, { pricingTypes });
+  };
+
+  // Toggle feature for plan
+  const toggleFeature = (planId: string, featureId: string, isEnabled: boolean) => {
+    if (!matrixData) return;
+
+    const newAccessMatrix = { ...matrixData.accessMatrix };
+    if (!newAccessMatrix[planId]) {
+      newAccessMatrix[planId] = {};
+    }
+
+    newAccessMatrix[planId][featureId] = {
+      isEnabled,
+      hasCustomQuota: newAccessMatrix[planId][featureId]?.hasCustomQuota || false,
+      customQuota: newAccessMatrix[planId][featureId]?.customQuota || null,
+    };
+
+    setMatrixData({ ...matrixData, accessMatrix: newAccessMatrix });
+    handleSave(planId, { featureAccess: newAccessMatrix[planId] });
+  };
+
+  // Update feature quota
+  const updateQuota = (planId: string, featureId: string, quota: number) => {
+    if (!matrixData) return;
+
+    const newAccessMatrix = { ...matrixData.accessMatrix };
+    if (!newAccessMatrix[planId]) {
+      newAccessMatrix[planId] = {};
+    }
+
+    newAccessMatrix[planId][featureId] = {
+      ...(newAccessMatrix[planId][featureId] || { isEnabled: true, hasCustomQuota: false }),
+      hasCustomQuota: true,
+      customQuota: quota,
+    };
+
+    setMatrixData({ ...matrixData, accessMatrix: newAccessMatrix });
+    handleSave(planId, { featureAccess: newAccessMatrix[planId] });
+  };
+
+  // Get plan icon based on name/batch
+  const getPlanIcon = (plan: PricingPlan) => {
+    const name = (plan.planBatch || plan.planName).toLowerCase();
+    if (name.includes('free')) return '⭐';
+    if (name.includes('trial')) return '🎁';
+    if (name.includes('basic')) return '📦';
+    if (name.includes('plus')) return '➕';
+    if (name.includes('pro')) return '⚡';
+    if (name.includes('premium') || name.includes('prime')) return '👑';
+    if (name.includes('enterprise')) return '🏢';
+    return '💎';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        Loading matrix...
+      </div>
+    );
+  }
+
+  if (!matrixData || matrixData.plans.length === 0) {
+    return (
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          No pricing plans found for this app. Please create plans first.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <ScrollArea className="h-[500px] w-full">
+        <Table>
+          <TableHeader className="sticky top-0 bg-background z-10">
+            <TableRow>
+              <TableHead className="w-[200px] sticky left-0 bg-background z-20">
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Features
+                </div>
+              </TableHead>
+              {matrixData.plans.map((plan) => (
+                <TableHead key={plan.id} className="min-w-[180px] text-center">
+                  <div className="space-y-2">
+                    {/* Plan Header */}
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="text-xl">{getPlanIcon(plan)}</span>
+                      <span className="font-bold">{plan.planBatch || plan.planName}</span>
+                    </div>
+
+                    {/* Activate Plan Toggle */}
+                    <div className="flex items-center justify-center gap-1">
+                      <Checkbox
+                        checked={plan.isActive}
+                        onCheckedChange={(checked) => togglePlanActive(plan.id, !!checked)}
+                        data-testid={`checkbox-activate-plan-${plan.id}`}
+                      />
+                      <span className="text-xs text-muted-foreground">Activate Plan</span>
+                    </div>
+                  </div>
+                </TableHead>
+              ))}
+            </TableRow>
+
+            {/* Pricing Types Row */}
+            <TableRow className="bg-muted/50">
+              <TableHead className="sticky left-0 bg-muted/50 z-20">
+                <span className="text-sm font-medium">Price (in ₹)</span>
+              </TableHead>
+              {matrixData.plans.map((plan) => {
+                const monthlyType = plan.pricingTypes?.find(pt => pt.type === 'monthly');
+                const yearlyType = plan.pricingTypes?.find(pt => pt.type === 'yearly');
+                const trialType = plan.pricingTypes?.find(pt => pt.type === 'trial');
+                const freeType = plan.pricingTypes?.find(pt => pt.type === 'free');
+
+                return (
+                  <TableHead key={plan.id} className="p-2">
+                    <div className="space-y-2">
+                      {/* Free Plan */}
+                      {freeType ? (
+                        <div className="text-center font-semibold text-green-600">₹0/-</div>
+                      ) : (
+                        <>
+                          {/* Monthly */}
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={!!monthlyType}
+                              onCheckedChange={(checked) => togglePricingType(plan.id, 'monthly', !!checked, '0')}
+                              data-testid={`checkbox-monthly-${plan.id}`}
+                            />
+                            <span className="text-xs">Monthly</span>
+                            {monthlyType && (
+                              <Input
+                                type="number"
+                                value={monthlyType.price}
+                                onChange={(e) => updatePrice(plan.id, 'monthly', e.target.value)}
+                                className="h-6 w-20 text-xs"
+                                data-testid={`input-monthly-price-${plan.id}`}
+                              />
+                            )}
+                          </div>
+
+                          {/* Yearly */}
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={!!yearlyType}
+                              onCheckedChange={(checked) => togglePricingType(plan.id, 'yearly', !!checked, '0')}
+                              data-testid={`checkbox-yearly-${plan.id}`}
+                            />
+                            <span className="text-xs">Yearly</span>
+                            {yearlyType && (
+                              <Input
+                                type="number"
+                                value={yearlyType.price}
+                                onChange={(e) => updatePrice(plan.id, 'yearly', e.target.value)}
+                                className="h-6 w-20 text-xs"
+                                data-testid={`input-yearly-price-${plan.id}`}
+                              />
+                            )}
+                          </div>
+
+                          {/* Trial */}
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={!!trialType}
+                              onCheckedChange={(checked) => togglePricingType(plan.id, 'trial', !!checked, '0')}
+                              data-testid={`checkbox-trial-${plan.id}`}
+                            />
+                            <span className="text-xs">Trial</span>
+                            {trialType && (
+                              <span className="text-xs">Days [{trialType.trialDays}]</span>
+                            )}
+                          </div>
+                        </>
+                      )}
+                      
+                      <Button
+                        size="sm"
+                        className="w-full h-6 text-xs"
+                        onClick={() => handleSave(plan.id, {})}
+                        disabled={saveMutation.isPending}
+                        data-testid={`button-save-plan-${plan.id}`}
+                      >
+                        {saveMutation.isPending ? 'Saving...' : 'SAVE'}
+                      </Button>
+                    </div>
+                  </TableHead>
+                );
+              })}
+            </TableRow>
+
+            {/* Features Header Row */}
+            <TableRow className="bg-muted">
+              <TableHead className="sticky left-0 bg-muted z-20">
+                <span className="text-sm font-semibold">No</span>
+              </TableHead>
+              {matrixData.plans.map((plan) => (
+                <TableHead key={plan.id} className="text-center bg-muted">
+                  <span className="text-sm font-semibold">
+                    {getPlanIcon(plan)} {plan.planBatch || plan.planName.split(' ')[0]}
+                  </span>
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {matrixData.features.map((feature, index) => (
+              <TableRow key={feature.id}>
+                <TableCell className="sticky left-0 bg-background z-10">
+                  <div className="space-y-1">
+                    <div className="font-medium text-sm">{index + 1}. {feature.name}</div>
+                    {feature.description && (
+                      <div className="text-xs text-muted-foreground">{feature.description}</div>
+                    )}
+                  </div>
+                </TableCell>
+                {matrixData.plans.map((plan) => {
+                  const access = matrixData.accessMatrix[plan.id]?.[feature.id];
+                  const isEnabled = access?.isEnabled || false;
+
+                  return (
+                    <TableCell key={plan.id} className="text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <Checkbox
+                          checked={isEnabled}
+                          onCheckedChange={(checked) => toggleFeature(plan.id, feature.id, !!checked)}
+                          data-testid={`checkbox-feature-${plan.id}-${feature.id}`}
+                        />
+                        {isEnabled && feature.hasQuota && (
+                          <Input
+                            type="number"
+                            value={access?.customQuota || feature.defaultQuota || 0}
+                            onChange={(e) => updateQuota(plan.id, feature.id, parseInt(e.target.value) || 0)}
+                            className="h-6 w-16 text-xs text-center"
+                            placeholder={feature.quotaUnit || 'qty'}
+                            data-testid={`input-quota-${plan.id}-${feature.id}`}
+                          />
+                        )}
+                      </div>
+                    </TableCell>
+                  );
+                })}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </ScrollArea>
+
+      {/* Conditions Note */}
+      <Alert className="mt-4">
+        <Info className="h-4 w-4" />
+        <AlertDescription className="text-xs">
+          <strong>Conditions:</strong> If Activate Plan is enabled, the entire column is active. 
+          Check/uncheck features to enable/disable them. 
+          For Free plans, all pricing options are disabled (₹0/-).
+        </AlertDescription>
+      </Alert>
+    </div>
+  );
+}
+
 // Full View Dialog with Tabs
 function FullViewDialog({
   app,
@@ -498,21 +904,23 @@ function FullViewDialog({
           </div>
         </DialogHeader>
 
-        <Tabs defaultValue="plans" className="mt-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="plans" data-testid="tab-pricing-plans">
-              Pricing Plans
-            </TabsTrigger>
-            <TabsTrigger value="features" data-testid="tab-features-for-plans">
-              Features for Plans
+        <Tabs defaultValue="matrix" className="mt-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="matrix" data-testid="tab-features-plans-matrix">
+              Features & Plans
             </TabsTrigger>
             <TabsTrigger value="analytics" data-testid="tab-analytics">
               Analytics
             </TabsTrigger>
           </TabsList>
 
-          {/* Tab 1: Pricing Plans */}
-          <TabsContent value="plans" className="mt-4">
+          {/* Tab 1: Features & Plans Matrix */}
+          <TabsContent value="matrix" className="mt-4">
+            <MatrixTable appId={app.id} />
+          </TabsContent>
+
+          {/* Tab 2: Old Pricing Plans (kept for reference, can be removed later) */}
+          <TabsContent value="old-plans" className="mt-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">All Pricing Plans</h3>
               <Button onClick={onCreatePlan} data-testid="button-create-plan-tab">
