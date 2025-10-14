@@ -2515,6 +2515,153 @@ export const planFeatureAccess = pgTable("plan_feature_access", {
 }));
 
 // ========================================
+// JUNCTION TABLES - Enterprise Architecture
+// ========================================
+
+// Module Features - Many-to-Many relationship between Modules and Features
+export const moduleFeatures = pgTable("module_features", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  moduleId: varchar("module_id", { length: 255 }).notNull().references(() => platformModules.id, { onDelete: 'cascade' }),
+  featureId: uuid("feature_id").notNull().references(() => appFeatures.id, { onDelete: 'cascade' }),
+  
+  // Configuration
+  isRequired: boolean("is_required").default(false), // Is this feature required for the module?
+  sortOrder: integer("sort_order").default(0), // Display order
+  
+  // Metadata
+  metadata: jsonb("metadata").default({}),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  // Unique feature per module
+  uniqueModuleFeature: unique().on(table.moduleId, table.featureId),
+  // Indexes for faster queries
+  moduleIdIdx: index("module_features_module_id_idx").on(table.moduleId),
+  featureIdIdx: index("module_features_feature_id_idx").on(table.featureId),
+}));
+
+// App Modules - Many-to-Many relationship between Apps and Modules
+export const appModules = pgTable("app_modules", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  appId: uuid("app_id").notNull().references(() => appsRegistry.id, { onDelete: 'cascade' }),
+  moduleId: varchar("module_id", { length: 255 }).notNull().references(() => platformModules.id, { onDelete: 'cascade' }),
+  
+  // Configuration
+  isRequired: boolean("is_required").default(true), // Is this module required for the app?
+  version: varchar("version", { length: 20 }), // Module version used in this app
+  config: jsonb("config").default({}), // Module-specific configuration
+  sortOrder: integer("sort_order").default(0),
+  
+  // Metadata
+  metadata: jsonb("metadata").default({}),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  // Unique module per app
+  uniqueAppModule: unique().on(table.appId, table.moduleId),
+  // Indexes for faster queries
+  appIdIdx: index("app_modules_app_id_idx").on(table.appId),
+  moduleIdIdx: index("app_modules_module_id_idx").on(table.moduleId),
+}));
+
+// Hub Modules - Many-to-Many relationship between Hubs and Modules
+export const hubModules = pgTable("hub_modules", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  hubId: uuid("hub_id").notNull().references(() => hubs.id, { onDelete: 'cascade' }),
+  moduleId: varchar("module_id", { length: 255 }).notNull().references(() => platformModules.id, { onDelete: 'cascade' }),
+  
+  // Configuration
+  isActive: boolean("is_active").default(true),
+  sortOrder: integer("sort_order").default(0),
+  
+  // Metadata
+  metadata: jsonb("metadata").default({}),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  // Unique module per hub
+  uniqueHubModule: unique().on(table.hubId, table.moduleId),
+  // Indexes for faster queries
+  hubIdIdx: index("hub_modules_hub_id_idx").on(table.hubId),
+  moduleIdIdx: index("hub_modules_module_id_idx").on(table.moduleId),
+}));
+
+// Hub Apps - Many-to-Many relationship between Hubs and Apps
+export const hubApps = pgTable("hub_apps", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  hubId: uuid("hub_id").notNull().references(() => hubs.id, { onDelete: 'cascade' }),
+  appId: uuid("app_id").notNull().references(() => appsRegistry.id, { onDelete: 'cascade' }),
+  
+  // Configuration
+  isActive: boolean("is_active").default(true),
+  sortOrder: integer("sort_order").default(0),
+  
+  // Metadata
+  metadata: jsonb("metadata").default({}),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  // Unique app per hub
+  uniqueHubApp: unique().on(table.hubId, table.appId),
+  // Indexes for faster queries
+  hubIdIdx: index("hub_apps_hub_id_idx").on(table.hubId),
+  appIdIdx: index("hub_apps_app_id_idx").on(table.appId),
+}));
+
+// Junction Table Relations
+export const moduleFeaturesRelations = relations(moduleFeatures, ({ one }) => ({
+  module: one(platformModules, {
+    fields: [moduleFeatures.moduleId],
+    references: [platformModules.id],
+  }),
+  feature: one(appFeatures, {
+    fields: [moduleFeatures.featureId],
+    references: [appFeatures.id],
+  }),
+}));
+
+export const appModulesRelations = relations(appModules, ({ one }) => ({
+  app: one(appsRegistry, {
+    fields: [appModules.appId],
+    references: [appsRegistry.id],
+  }),
+  module: one(platformModules, {
+    fields: [appModules.moduleId],
+    references: [platformModules.id],
+  }),
+}));
+
+export const hubModulesRelations = relations(hubModules, ({ one }) => ({
+  hub: one(hubs, {
+    fields: [hubModules.hubId],
+    references: [hubs.id],
+  }),
+  module: one(platformModules, {
+    fields: [hubModules.moduleId],
+    references: [platformModules.id],
+  }),
+}));
+
+export const hubAppsRelations = relations(hubApps, ({ one }) => ({
+  hub: one(hubs, {
+    fields: [hubApps.hubId],
+    references: [hubs.id],
+  }),
+  app: one(appsRegistry, {
+    fields: [hubApps.appId],
+    references: [appsRegistry.id],
+  }),
+}));
+
+// ========================================
+// END JUNCTION TABLES
+// ========================================
+
+// ========================================
 // END PRICING PLANS SYSTEM
 // ========================================
 
