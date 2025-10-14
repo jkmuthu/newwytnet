@@ -1,173 +1,68 @@
 # Overview
 
-WytNet is a fully white-label, production-ready multi-tenant SaaS platform foundation that provides a comprehensive suite of low-code tools for building applications, managing content, and creating cross-tenant hubs. The platform features CRUD builders, CMS functionality, app composition tools, hub aggregation capabilities, and a complete WytID Universal Identity & Validation system - all designed to work seamlessly in a multi-tenant architecture.
-
-The system is built as a monorepo with Express.js backend, React frontend using Vite, and PostgreSQL with Drizzle ORM for data persistence. It now includes custom authentication (fully white-label), role-based access control, comprehensive multi-tenancy support with Row Level Security, and the complete WytID blockchain-anchored identity system.
-
-**Latest Status (OAuth-Based Authentication):**
-✅ **Modern OAuth Authentication** - Google OAuth and Email OTP (global best practices)
-✅ **Email-Based System** - Removed mobile number concept, using email as primary identifier
-✅ **Super Admin Access** - Dedicated admin portal at /admin with jkm@jkmuthu.com
-✅ **WytPass Universal Identity** - OAuth-powered identity validation system
-✅ **Production-ready architecture** - All core systems functional and integrated
-✅ **Enterprise Structure Analysis** - Evaluated separated admin/client architecture vs unified approach
-✅ **Architecture Decision** - Maintained unified structure for stability and zero-risk operation
-✅ **Login Page Redesign** - Modern UI with micro animations, glassmorphism effects, and optimized layout
+WytNet is a fully white-label, production-ready multi-tenant SaaS platform foundation providing low-code tools for application building, content management, and cross-tenant hub creation. It includes CRUD builders, CMS, app composition, hub aggregation, and the WytID Universal Identity & Validation system. Built as a monorepo, it uses Express.js, React with Vite, and PostgreSQL with Drizzle ORM. Key features include white-label authentication (Google OAuth, Email OTP), role-based access control, comprehensive multi-tenancy with Row Level Security, and the WytID blockchain-anchored identity system. The platform aims to offer a robust and scalable solution for building and deploying SaaS applications.
 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
 Focus: Fully white-label multi-tenant SaaS platform with identity validation.
 
-## Recent Updates (October 14, 2025)
-
-**AI App Builder - Phase 1 (Admin Only):**
-- ✅ AI-powered App Builder with OpenAI integration for natural language app creation
-- ✅ Database schema: ai_app_projects, ai_chat_conversations, ai_generated_code tables
-- ✅ Complete CRUD API: List, Create, Read, Update, Delete operations with admin authentication
-- ✅ Chat interface: Real-time AI assistant for building CRUD apps, APIs, and UI components
-- ✅ WytNet context: AI understands WytNet framework (PostgreSQL+Drizzle, TypeScript/React, shadcn/ui, WytPass auth)
-- ✅ Admin-only access: Super Admin Panel integration at /admin/app-builder
-- ✅ Project management: New Project dialog, projects sidebar, conversation history
-- ✅ Error handling: Friendly 503 responses when OpenAI service unavailable
-- ✅ Future-ready design: owner_id and access_level fields prepared for Phase 2 (Developers) and Phase 3 (Public users)
-- ✅ Production-ready: Full test coverage with data-testid attributes, architect-approved
-
-## Recent Updates (October 13, 2025)
-
-**Bucket List & WytMatch Feature:**
-- ✅ Bucket List as first tab in My Profile: Users can add personal goals and aspirations
-- ✅ Simplified form fields: Title (100 chars max), Description (200 chars max), Category, Target Date, Done/Undone toggle
-- ✅ Future date validation: Target date must be today or in the future (timezone-safe validation)
-- ✅ Public/Private visibility: Users can make bucket list items public for WytMatch matching
-- ✅ WytMatch tab in My WytWall: Shows other users' public bucket list items for cross-user opportunity matching
-- ✅ Core concept: "One person's requirement is another person's opportunity"
-- ✅ Database schema: bucket_list table with isDone boolean, removed priority/status fields
-- ✅ API endpoints: Full CRUD operations for bucket list items, public endpoint for WytMatch
-
-## Recent Updates (October 12, 2025)
-
-**Login Page Improvements:**
-- ✅ Restructured layout: Login/Register box moved to top, OAuth methods below
-- ✅ Simplified route: All authentication now uses `/login` (removed `/wytpass-login`)
-- ✅ Modern visual design: Animated gradient backgrounds, glassmorphism cards
-- ✅ Micro animations: Blob animations, fade-in effects, hover transitions, gradient text
-- ✅ Enhanced UX: Color-coded OAuth buttons (blue for Google, purple for Email OTP)
-- ✅ Responsive design: Touch-friendly buttons with scale transforms on hover
-
-**Panel System Implementation:**
-- ✅ My Account Page: Username management with availability check, password change with verification, read-only email display
-- ✅ My Profile Page: Personal information (bio, location, website, phone) and professional information (company, job title, address fields)
-- ✅ Organization Connection: Company field in My Profile links users conceptually to organizations; actual membership managed via `organization_members` table
-- ✅ API Routes: Username availability check (`/api/account/username/check`), profile management, password change endpoints
-- ✅ Panel Navigation: Integrated new pages into PanelRouter with proper routing
-
-## UTM Tracking Standard
-
-All external links from WytNet must include UTM parameters for proper traffic attribution:
-- **Source**: `wytnet` (mandatory for all external links)
-- **Medium**: Context-specific (e.g., `ai_directory`, `hub`, `wytlife`, `qr_generator`, `referral`)
-- **Campaign**: Purpose-specific (e.g., `ai_tools_referral`, `hub_referral`, `whatsapp_community`, `platform_traffic`)
-- **Content**: Tool/feature name when applicable
-- **Term**: Category or specific context when relevant
-
-Use the `openExternalLink()` function from `/client/src/lib/utm.ts` for all external links instead of direct `window.open()` calls.
-
-**Implementation**: All external links in AI Directory, WytHubs, WytLife, and other pages use UTM tracking with source=wytnet.
-
-# Production Domain Setup
-
-**✅ DOMAIN ACTIVE:** wytnet.com is now live and configured
-- Custom domain: https://wytnet.com  
-- Session cookies configured for `.wytnet.com`
-- CORS policy set for production domain
-- All future modules will deploy to this domain
-
 # System Architecture
 
 ## Frontend Architecture
-The frontend is built with React 18 and TypeScript, using Vite as the build tool and development server. The UI layer leverages Tailwind CSS for styling with shadcn/ui components providing a consistent design system. The application uses Wouter for client-side routing and TanStack Query for server state management and caching.
-
-The frontend follows a component-based architecture with separate builders for different functionalities:
-- Module Builder for CRUD operations using JSON DSL
-- CMS Builder for drag-and-drop page creation
-- App Builder for composing modules into applications
-- Hub Builder for cross-tenant aggregation and marketplace creation
+The frontend uses React 18, TypeScript, and Vite. Styling is handled by Tailwind CSS with shadcn/ui components. Wouter is used for routing and TanStack Query for server state management. The architecture supports component-based builders for modules, CMS, apps, and hubs.
 
 ## Backend Architecture
-The backend uses Express.js with TypeScript, serving both API endpoints and static files. The server implements a RESTful API architecture with dedicated routes for authentication, dashboard statistics, and CRUD operations for models, pages, apps, and hubs.
-
-Authentication is handled through WytPass OAuth system with multiple methods: Google OAuth for social login, Email OTP for passwordless authentication, and traditional email/password. The system uses session-based authentication with PostgreSQL session storage and implements role-based access control with tenant isolation enforced at the database level.
+The backend is an Express.js application with TypeScript, providing RESTful APIs for authentication, dashboard, and CRUD operations. Authentication uses WytPass OAuth (Google, Email OTP, Email/Password) with session-based authentication and PostgreSQL session storage. Role-based access control and tenant isolation are enforced at the database level.
 
 ## Data Storage Architecture
-PostgreSQL is used as the primary database with Drizzle ORM for type-safe database operations. The database schema implements multi-tenancy using tenant_id columns with Row Level Security policies for data isolation.
-
-Core database tables include:
-- `tenants` for multi-tenant organization
-- `users` for user management with tenant associations
-- `models` for CRUD module definitions using JSON DSL
-- `pages` and `blocks` for CMS content management
-- `apps` and `app_installs` for application composition
-- `hubs` for cross-tenant aggregation configurations
+PostgreSQL is the primary database, utilizing Drizzle ORM for type-safe operations. Multi-tenancy is implemented via `tenant_id` columns and Row Level Security policies. Core tables include `tenants`, `users`, `models`, `pages`, `blocks`, `apps`, `app_installs`, and `hubs`. Junction tables (`module_features`, `app_modules`, `hub_modules`, `hub_apps`) manage complex entity relationships (Features → Modules → Apps → Hubs).
 
 ## Package-Based Modular Architecture
-The system is organized into focused packages under the `/packages` directory:
-- `kernel` - Core authentication, tenancy, and security utilities
-- `builder` - CRUD module DSL validation and code generation
-- `cms` - Content management system with block-based rendering
-- `appkit` - Application composition and manifest management
-- `hubkit` - Cross-tenant aggregation and hub management
-
-Each package is self-contained with clear interfaces and version compatibility requirements, enabling independent development and testing.
+The system is organized into self-contained packages (`kernel`, `builder`, `cms`, `appkit`, `hubkit`) under a monorepo structure, facilitating independent development and clear interfaces.
 
 ## Security Architecture
-Security is implemented through multiple layers:
-- PostgreSQL Row Level Security for tenant data isolation
-- Session-based authentication with httpOnly cookies
-- Role-based access control with hierarchical permissions
-- CSRF protection where needed
-- Input validation using Zod schemas throughout the application
+Security layers include PostgreSQL Row Level Security, session-based authentication with httpOnly cookies, role-based access control, CSRF protection, and Zod schema validation.
 
-## Architecture Decision: Unified vs Separated Structure
-**Analysis Completed (Sep 2025):** Evaluated enterprise-grade separated admin/client architecture:
-- **Benefits:** Better security isolation, smaller client bundles, admin-optimized UI
-- **Trade-offs:** Additional complexity, deployment coordination, monorepo tooling requirements
-- **Decision:** Maintained unified structure for production stability and zero-risk operation
-- **Current Approach:** Role-based access control with secure admin routes in unified application
-- **Future Consideration:** Separated architecture viable for scaling beyond current requirements
+## UI/UX Decisions
+The platform features modern UI elements such as animated gradient backgrounds, glassmorphism cards, micro animations, and responsive designs for an enhanced user experience, particularly visible in the login page and user profile sections. UTM tracking is standardized for all external links using `openExternalLink()` to ensure proper traffic attribution.
+
+## Key Features & Implementations
+- **AI App Builder**: Admin-only AI-powered tool using OpenAI for natural language app creation, integrated into the WytNet framework (PostgreSQL+Drizzle, React/TypeScript, shadcn/ui, WytPass auth).
+- **WytMatch & Bucket List**: User feature allowing users to create public/private bucket lists, with WytMatch enabling discovery of shared interests for potential opportunities.
+- **Enterprise Junction Table Architecture**: Robust many-to-many relationship management through dedicated junction tables and corresponding admin API endpoints.
 
 # External Dependencies
 
 ## Database Integration
-- **Neon Database**: Serverless PostgreSQL database via `@neondatabase/serverless`
-- **Drizzle ORM**: Type-safe database operations and migrations with PostgreSQL dialect
+- **Neon Database**: Serverless PostgreSQL.
+- **Drizzle ORM**: Type-safe ORM for PostgreSQL.
 
-## Authentication Services  
-- **WytPass OAuth**: Multi-method authentication system (Google OAuth, Email OTP, Email/Password)
-- **Google OAuth**: Official Google OAuth 2.0 integration for social login
-- **MSG91 Email OTP**: Passwordless email OTP authentication via MSG91 service
-- **Session Storage**: PostgreSQL-backed session management using `connect-pg-simple`
+## Authentication Services
+- **WytPass OAuth**: Custom multi-method authentication system.
+- **Google OAuth**: Social login integration.
+- **MSG91 Email OTP**: Passwordless email authentication.
+- **connect-pg-simple**: PostgreSQL-backed session management.
 
 ## UI and Styling Framework
-- **shadcn/ui**: Comprehensive React component library built on Radix UI primitives
-- **Tailwind CSS**: Utility-first CSS framework for responsive design
-- **Radix UI**: Accessible component primitives for complex UI interactions
+- **shadcn/ui**: React component library.
+- **Tailwind CSS**: Utility-first CSS framework.
+- **Radix UI**: Accessible component primitives.
 
 ## State Management and API Integration
-- **TanStack Query**: Server state management, caching, and synchronization
-- **React Hook Form**: Form handling with Zod schema validation
-- **Wouter**: Lightweight client-side routing for React
+- **TanStack Query**: Server state management and caching.
+- **React Hook Form**: Form handling with Zod validation.
+- **Wouter**: Lightweight client-side routing.
 
 ## Development and Build Tools
-- **Vite**: Fast build tool and development server with React plugin
-- **TypeScript**: Type-safe development across frontend and backend
-- **ESBuild**: Fast JavaScript bundler for production builds
+- **Vite**: Fast build tool and development server.
+- **TypeScript**: Type-safe language.
+- **ESBuild**: Fast JavaScript bundler.
 
 ## AI and Machine Learning
-- **OpenAI API**: GPT-4 integration for AI-powered App Builder chat interface
-- **AI Service Wrapper**: Custom service layer for OpenAI chat completions with WytNet context
+- **OpenAI API**: GPT-4 integration for AI App Builder.
 
 ## Runtime and Deployment
-- **Node.js**: Runtime environment with ES modules support
-- **Express.js**: Web application framework for API and static file serving
-- **WebSocket Support**: Real-time capabilities via ws library for database connections
+- **Node.js**: JavaScript runtime.
+- **Express.js**: Web application framework.
+- **ws library**: WebSocket support for real-time capabilities.
