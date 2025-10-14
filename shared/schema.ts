@@ -335,31 +335,104 @@ export const hubs = pgTable("hubs", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Platform Modules (QR Generator, RealBro, WytDuty, etc.)
+// Platform Modules - Context-Aware Plugins (like WordPress plugins)
+// Modules are small, focused plugins that can be activated in different contexts
 export const platformModules = pgTable("platform_modules", {
-  id: varchar("id").primaryKey(), // 'qr-generator', 'realbro', etc.
+  id: varchar("id").primaryKey(), // 'razorpay-payment', 'calendar', 'wytpass-auth', etc.
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   category: varchar("category", { length: 50 }).notNull().default('platform'),
   type: varchar("type", { length: 50 }).notNull(),
   status: varchar("status", { length: 20 }).notNull().default('enabled'),
+  
+  // Context Support - Where can this module be activated?
+  contexts: jsonb("contexts").notNull().default(['platform', 'hub', 'app', 'game']), // ['platform', 'hub', 'app', 'game']
+  
+  // Dependencies - Required modules that must be enabled first
+  dependencies: jsonb("dependencies").default([]), // ['payment-core', 'user-auth']
+  
+  // API Endpoints - Exposed APIs when module is activated
+  apiEndpoints: jsonb("api_endpoints").default([]), // [{ method: 'POST', path: '/api/razorpay/create-order', auth: true }]
+  
+  // Module Settings Schema
+  settings: jsonb("settings").default({}), // { apiKeyRequired: true, webhookUrl: string }
+  
+  // Compatibility Matrix
+  compatibilityMatrix: jsonb("compatibility_matrix").default({}), // { minVersion: '1.0.0', conflicts: ['stripe-payment'] }
+  
+  // Pricing & Monetization
   pricing: varchar("pricing", { length: 20 }).notNull().default('free'),
   price: decimal("price", { precision: 10, scale: 2 }),
   currency: varchar("currency", { length: 3 }).default('INR'),
+  
+  // UI & Display
   icon: varchar("icon", { length: 100 }),
   color: varchar("color", { length: 50 }).default('blue'),
-  route: varchar("route", { length: 255 }).notNull(),
+  route: varchar("route", { length: 255 }),
+  
+  // Legacy fields (kept for backward compatibility)
   features: jsonb("features").default([]),
   metadata: jsonb("metadata").default({}),
   usage: integer("usage").default(0),
   installs: integer("installs").default(0),
   creator: varchar("creator", { length: 255 }),
   order: integer("order").default(0),
+  
   tenantId: uuid("tenant_id").references(() => tenants.id),
   createdBy: varchar("created_by").references(() => whatsappUsers.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// Module Activation Tables - Track where modules are activated
+
+// Platform-level module activations (Global super admin control)
+export const platformModuleActivations = pgTable("platform_module_activations", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  moduleId: varchar("module_id", { length: 255 }).notNull().references(() => platformModules.id),
+  context: varchar("context", { length: 20 }).notNull().default('platform'), // 'platform', 'hub', 'app', 'game'
+  isActive: boolean("is_active").notNull().default(true),
+  settings: jsonb("settings").default({}), // Module-specific configuration
+  activatedBy: varchar("activated_by").references(() => whatsappUsers.id),
+  activatedAt: timestamp("activated_at").defaultNow().notNull(),
+  deactivatedAt: timestamp("deactivated_at"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  moduleContextIdx: index("platform_module_context_idx").on(table.moduleId, table.context),
+  uniqueModuleContext: unique("unique_platform_module_context").on(table.moduleId, table.context),
+}));
+
+// Hub-level module activations (Hub-specific plugins)
+export const hubModuleActivations = pgTable("hub_module_activations", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  hubId: uuid("hub_id").notNull().references(() => hubs.id, { onDelete: 'cascade' }),
+  moduleId: varchar("module_id", { length: 255 }).notNull().references(() => platformModules.id),
+  isActive: boolean("is_active").notNull().default(true),
+  settings: jsonb("settings").default({}),
+  activatedBy: varchar("activated_by").references(() => whatsappUsers.id),
+  activatedAt: timestamp("activated_at").defaultNow().notNull(),
+  deactivatedAt: timestamp("deactivated_at"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  hubModuleIdx: index("hub_module_idx").on(table.hubId, table.moduleId),
+  uniqueHubModule: unique("unique_hub_module").on(table.hubId, table.moduleId),
+}));
+
+// App-level module activations (App-specific plugins)
+export const appModuleActivations = pgTable("app_module_activations", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  appId: uuid("app_id").notNull().references(() => apps.id, { onDelete: 'cascade' }),
+  moduleId: varchar("module_id", { length: 255 }).notNull().references(() => platformModules.id),
+  isActive: boolean("is_active").notNull().default(true),
+  settings: jsonb("settings").default({}),
+  activatedBy: varchar("activated_by").references(() => whatsappUsers.id),
+  activatedAt: timestamp("activated_at").defaultNow().notNull(),
+  deactivatedAt: timestamp("deactivated_at"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  appModuleIdx: index("app_module_idx").on(table.appId, table.moduleId),
+  uniqueAppModule: unique("unique_app_module").on(table.appId, table.moduleId),
+}));
 
 // User App Installations - Tracks which platform modules/apps users have installed
 export const userAppInstallations = pgTable("user_app_installations", {
