@@ -2862,6 +2862,22 @@ export const selectDatasetCollectionSchema = createSelectSchema(datasetCollectio
 export const insertDatasetItemSchema = createInsertSchema(datasetItems).omit({ id: true, createdAt: true });
 export const selectDatasetItemSchema = createSelectSchema(datasetItems);
 
+// Module Activation schema exports
+export const insertPlatformModuleActivationSchema = createInsertSchema(platformModuleActivations).omit({ id: true, activatedAt: true, updatedAt: true });
+export const selectPlatformModuleActivationSchema = createSelectSchema(platformModuleActivations);
+export const insertHubModuleActivationSchema = createInsertSchema(hubModuleActivations).omit({ id: true, activatedAt: true, updatedAt: true });
+export const selectHubModuleActivationSchema = createSelectSchema(hubModuleActivations);
+export const insertAppModuleActivationSchema = createInsertSchema(appModuleActivations).omit({ id: true, activatedAt: true, updatedAt: true });
+export const selectAppModuleActivationSchema = createSelectSchema(appModuleActivations);
+
+// Module Activation type exports
+export type PlatformModuleActivation = typeof platformModuleActivations.$inferSelect;
+export type InsertPlatformModuleActivation = z.infer<typeof insertPlatformModuleActivationSchema>;
+export type HubModuleActivation = typeof hubModuleActivations.$inferSelect;
+export type InsertHubModuleActivation = z.infer<typeof insertHubModuleActivationSchema>;
+export type AppModuleActivation = typeof appModuleActivations.$inferSelect;
+export type InsertAppModuleActivation = z.infer<typeof insertAppModuleActivationSchema>;
+
 // Dataset Management type exports
 export type DatasetCollection = typeof datasetCollections.$inferSelect;
 export type InsertDatasetCollection = z.infer<typeof insertDatasetCollectionSchema>;
