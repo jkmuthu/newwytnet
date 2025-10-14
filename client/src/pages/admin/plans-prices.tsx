@@ -170,220 +170,138 @@ export default function PlansAndPrices() {
   };
 
   return (
-    <div className="flex h-full bg-background" data-testid="plans-prices-page">
-      {/* Left Panel - Apps Grid */}
-      <div className="w-2/5 border-r border-border bg-muted/30">
-        <div className="p-6 space-y-4">
-          {/* Header */}
+    <div className="h-full bg-background p-6" data-testid="plans-prices-page">
+      {/* Header Section */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground" data-testid="text-page-title">Plans & Prices</h1>
             <p className="text-muted-foreground" data-testid="text-page-description">
               Manage pricing plans for all apps
             </p>
           </div>
+          {selectedApp && (
+            <Button onClick={() => setIsCreatePlanOpen(true)} data-testid="button-add-pricing-plan">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Pricing Plan
+            </Button>
+          )}
+        </div>
 
+        {/* Stats & App Selector Row */}
+        <div className="grid grid-cols-12 gap-4">
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-3">
-            <Card className="bg-background">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <Package className="h-4 w-4 text-blue-500" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Total Apps</p>
-                    <p className="text-xl font-bold" data-testid="text-total-apps">{apps.length}</p>
-                  </div>
+          <Card className="col-span-3">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                  <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
                 </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-background">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-green-500" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Total Plans</p>
-                    <p className="text-xl font-bold" data-testid="text-total-plans">{plans.length}</p>
-                  </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Apps</p>
+                  <p className="text-2xl font-bold" data-testid="text-total-apps">{apps.length}</p>
                 </div>
-              </CardContent>
-            </Card>
-            <Card className="bg-background">
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Active</p>
-                    <p className="text-xl font-bold" data-testid="text-active-apps">{apps.filter(a => a.isActive).length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Filters */}
-          <div className="space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search apps..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-                data-testid="input-search-apps"
-              />
-            </div>
-            
-            <div className="flex gap-2">
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="flex-1" data-testid="select-category-filter">
-                  <SelectValue placeholder="Filter by category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map(cat => (
-                    <SelectItem key={cat} value={cat} data-testid={`option-category-${cat}`}>
-                      {cat === 'all' ? 'All Categories' : cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <div className="flex border rounded-md">
-                <Button
-                  variant={viewMode === "grid" ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("grid")}
-                  data-testid="button-view-grid"
-                >
-                  <Grid3x3 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "list" ? "secondary" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("list")}
-                  data-testid="button-view-list"
-                >
-                  <List className="h-4 w-4" />
-                </Button>
               </div>
-            </div>
-          </div>
-
-          {/* Apps Grid/List */}
-          <ScrollArea className="h-[calc(100vh-400px)]">
-            {isLoadingApps ? (
-              <div className="text-center py-8 text-muted-foreground" data-testid="text-loading-apps">
-                Loading apps...
+            </CardContent>
+          </Card>
+          
+          <Card className="col-span-3">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
+                  <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Plans</p>
+                  <p className="text-2xl font-bold" data-testid="text-total-plans">{selectedApp ? plans.length : apps.reduce((sum, app) => sum + (app.planCount || 0), 0)}</p>
+                </div>
               </div>
-            ) : (
-              <div className={viewMode === "grid" ? "grid grid-cols-3 gap-3" : "space-y-2"}>
-                {filteredApps.map((app) => (
-                  <Card
-                    key={app.id}
-                    className={`cursor-pointer transition-all hover:shadow-md ${
-                      selectedApp?.id === app.id ? 'ring-2 ring-primary' : ''
-                    }`}
-                    onClick={() => setSelectedApp(app)}
-                    data-testid={`card-app-${app.slug}`}
-                  >
-                    <CardContent className={viewMode === "grid" ? "p-3 text-center" : "p-3 flex items-center gap-3"}>
-                      <div className={`${viewMode === "grid" ? 'mx-auto mb-2' : ''} w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center`}>
-                        <Settings className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm truncate" data-testid={`text-app-name-${app.slug}`}>
-                          {app.name}
-                        </p>
-                        <div className="flex items-center justify-center gap-1 mt-1">
-                          <Badge variant="outline" className="text-xs" data-testid={`badge-category-${app.slug}`}>
-                            {app.category || 'Uncategorized'}
-                          </Badge>
-                          {(app.planCount || 0) > 0 && (
-                            <Badge variant="secondary" className="text-xs" data-testid={`badge-plan-count-${app.slug}`}>
-                              {app.planCount} plans
-                            </Badge>
-                          )}
-                        </div>
-                        {!app.isActive && (
-                          <Badge variant="destructive" className="text-xs mt-1" data-testid={`badge-inactive-${app.slug}`}>
-                            Inactive
-                          </Badge>
+            </CardContent>
+          </Card>
+
+          {/* App Selector */}
+          <div className="col-span-6 flex items-center gap-3">
+            <Label className="text-sm font-medium whitespace-nowrap">Select App:</Label>
+            <Select value={selectedApp?.id || ''} onValueChange={(value) => setSelectedApp(apps.find(app => app.id === value) || null)}>
+              <SelectTrigger className="flex-1" data-testid="select-app">
+                <SelectValue placeholder="Choose an app to manage pricing" />
+              </SelectTrigger>
+              <SelectContent>
+                {apps.map((app) => (
+                  <SelectItem key={app.id} value={app.id} data-testid={`option-app-${app.slug}`}>
+                    <div className="flex items-center justify-between gap-3 w-full">
+                      <span>{app.name}</span>
+                      <div className="flex gap-1">
+                        <Badge variant="outline" className="text-xs">{app.category}</Badge>
+                        {(app.planCount || 0) > 0 && (
+                          <Badge variant="secondary" className="text-xs">{app.planCount} plans</Badge>
                         )}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </SelectItem>
                 ))}
-              </div>
-            )}
-          </ScrollArea>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
-      {/* Right Panel - Pricing Plans */}
-      <div className="flex-1 p-6">
-        {!selectedApp ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <Package className="h-16 w-16 text-muted-foreground/50 mb-4" />
-            <h3 className="text-xl font-semibold text-muted-foreground" data-testid="text-no-app-selected">
-              Select an app to manage pricing
-            </h3>
-            <p className="text-muted-foreground mt-2">
-              Choose an app from the left panel to view and manage its pricing plans
-            </p>
+      {/* Plans Section */}
+      {!selectedApp ? (
+        <Card className="p-12">
+          <div className="text-center text-muted-foreground">
+            <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-lg font-medium">No App Selected</p>
+            <p className="text-sm mt-2">Please select an app from the dropdown above to manage its pricing plans</p>
           </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Selected App Header */}
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
+        </Card>
+      ) : (
+        <div>
+          {/* Selected App Info */}
+          <Card className="mb-4 bg-primary/5 border-primary/20">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
                     <Settings className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold" data-testid="text-selected-app-name">{selectedApp.name}</h2>
-                    <p className="text-muted-foreground" data-testid="text-selected-app-description">
-                      {selectedApp.description || 'No description'}
-                    </p>
+                    <h2 className="text-xl font-semibold" data-testid="text-selected-app-name">{selectedApp.name}</h2>
+                    <p className="text-sm text-muted-foreground">{selectedApp.description}</p>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Badge variant="outline" data-testid="badge-selected-app-category">
-                    {selectedApp.category || 'Uncategorized'}
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">{selectedApp.category}</Badge>
+                  <Badge variant={selectedApp.isActive ? "default" : "destructive"}>
+                    {selectedApp.isActive ? "Active" : "Inactive"}
                   </Badge>
-                  <Badge variant={selectedApp.isActive ? "default" : "secondary"} data-testid="badge-selected-app-status">
-                    {selectedApp.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
+                  <Badge variant="secondary">{plans.length} {plans.length === 1 ? 'Plan' : 'Plans'}</Badge>
                 </div>
               </div>
-              
-              <Button onClick={() => setIsCreatePlanOpen(true)} data-testid="button-create-plan">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Pricing Plan
-              </Button>
-            </div>
+            </CardContent>
+          </Card>
 
-            <Separator />
-
-            {/* Pricing Plans */}
-            {isLoadingPlans ? (
-              <div className="text-center py-8 text-muted-foreground" data-testid="text-loading-plans">
+          {/* Plans List */}
+          {isLoadingPlans ? (
+            <Card className="p-12">
+              <div className="text-center text-muted-foreground" data-testid="text-loading-plans">
                 Loading pricing plans...
               </div>
-            ) : plans.length === 0 ? (
-              <Card className="bg-muted/30" data-testid="card-no-plans">
-                <CardContent className="py-12 text-center">
-                  <DollarSign className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-muted-foreground mb-2">No pricing plans</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Create your first pricing plan for this app
-                  </p>
-                  <Button onClick={() => setIsCreatePlanOpen(true)} data-testid="button-create-first-plan">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Pricing Plan
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            </Card>
+          ) : plans.length === 0 ? (
+            <Card className="p-12">
+              <div className="text-center text-muted-foreground">
+                <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">No Pricing Plans</p>
+                <p className="text-sm mt-2 mb-4">This app doesn't have any pricing plans yet</p>
+                <Button onClick={() => setIsCreatePlanOpen(true)} data-testid="button-create-first-plan">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create First Plan
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {plans.map((plan) => (
                   <Card
                     key={plan.id}
@@ -502,10 +420,9 @@ export default function PlansAndPrices() {
                   </Card>
                 ))}
               </div>
-            )}
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Create/Edit Plan Dialog */}
       <PlanFormDialog
