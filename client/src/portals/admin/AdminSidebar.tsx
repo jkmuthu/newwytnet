@@ -116,12 +116,6 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
         section: "Build & Compose",
         items: [
           { 
-            label: "AI App Builder", 
-            icon: Bot, 
-            href: "/admin/ai-app-builder", 
-            active: location === "/admin/ai-app-builder"
-          },
-          { 
             label: "Module Library", 
             icon: Package, 
             href: "/admin/modules", 
