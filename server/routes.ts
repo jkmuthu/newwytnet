@@ -106,7 +106,11 @@ import {
   pricingPlanTypes,
   userSubscriptions,
   usageTracking,
-  paymentTransactions
+  paymentTransactions,
+  appFeatures,
+  planFeatureAccess,
+  insertAppFeatureSchema,
+  insertPlanFeatureAccessSchema
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -7976,7 +7980,7 @@ CONSTRAINTS:
   // PRICING PLANS ADMIN ROUTES
   // ========================================
 
-  // Get all apps for pricing configuration
+  // Get all apps with plan counts for pricing configuration
   app.get('/api/admin/pricing/apps', adminAuthMiddleware, async (req: any, res) => {
     try {
       const apps = await db.select()
@@ -7984,7 +7988,21 @@ CONSTRAINTS:
         .where(eq(appsRegistry.isActive, true))
         .orderBy(appsRegistry.name);
 
-      res.json({ success: true, apps });
+      // Get plan counts for each app
+      const appsWithCounts = await Promise.all(
+        apps.map(async (app) => {
+          const planCount = await db.select({ count: sql<number>`count(*)::int` })
+            .from(pricingPlans)
+            .where(eq(pricingPlans.appId, app.id));
+
+          return {
+            ...app,
+            planCount: planCount[0]?.count || 0,
+          };
+        })
+      );
+
+      res.json({ success: true, apps: appsWithCounts });
     } catch (error) {
       console.error('Error fetching apps:', error);
       res.status(500).json({ error: 'Failed to fetch apps' });
@@ -8157,5 +8175,228 @@ CONSTRAINTS:
 
   // ========================================
   // END PRICING PLANS ADMIN ROUTES
+  // ========================================
+
+  // ========================================
+  // APP FEATURES & PLAN FEATURE ACCESS ROUTES
+  // ========================================
+
+  // Get all features for a specific app
+  app.get('/api/admin/features/:appId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { appId } = req.params;
+
+      const features = await db.select()
+        .from(appFeatures)
+        .where(eq(appFeatures.appId, appId))
+        .orderBy(appFeatures.sortOrder, appFeatures.name);
+
+      res.json({ success: true, features });
+    } catch (error) {
+      console.error('Error fetching app features:', error);
+      res.status(500).json({ error: 'Failed to fetch app features' });
+    }
+  });
+
+  // Create new app feature
+  app.post('/api/admin/features', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const principal = await getAdminPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { appId, name, description, featureKey, category, hasQuota, defaultQuota, quotaUnit } = req.body;
+
+      if (!appId || !name || !featureKey) {
+        return res.status(400).json({ error: 'App ID, name, and feature key are required' });
+      }
+
+      const [newFeature] = await db.insert(appFeatures)
+        .values({
+          appId,
+          name,
+          description,
+          featureKey,
+          category,
+          hasQuota: hasQuota || false,
+          defaultQuota: defaultQuota || null,
+          quotaUnit: quotaUnit || null,
+          isActive: true,
+        })
+        .returning();
+
+      res.json({
+        success: true,
+        message: 'Feature created successfully',
+        feature: newFeature,
+      });
+    } catch (error: any) {
+      console.error('Error creating feature:', error);
+      if (error.code === '23505') { // Unique constraint violation
+        res.status(400).json({ error: 'Feature key already exists for this app' });
+      } else {
+        res.status(500).json({ error: 'Failed to create feature' });
+      }
+    }
+  });
+
+  // Update app feature
+  app.patch('/api/admin/features/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const principal = await getAdminPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { id } = req.params;
+      const { name, description, category, hasQuota, defaultQuota, quotaUnit, isActive } = req.body;
+
+      const [updatedFeature] = await db.update(appFeatures)
+        .set({
+          name,
+          description,
+          category,
+          hasQuota,
+          defaultQuota,
+          quotaUnit,
+          isActive,
+          updatedAt: new Date(),
+        })
+        .where(eq(appFeatures.id, id))
+        .returning();
+
+      if (!updatedFeature) {
+        return res.status(404).json({ error: 'Feature not found' });
+      }
+
+      res.json({
+        success: true,
+        message: 'Feature updated successfully',
+        feature: updatedFeature,
+      });
+    } catch (error) {
+      console.error('Error updating feature:', error);
+      res.status(500).json({ error: 'Failed to update feature' });
+    }
+  });
+
+  // Delete app feature
+  app.delete('/api/admin/features/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const principal = await getAdminPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { id } = req.params;
+
+      await db.delete(appFeatures)
+        .where(eq(appFeatures.id, id));
+
+      res.json({
+        success: true,
+        message: 'Feature deleted successfully',
+      });
+    } catch (error) {
+      console.error('Error deleting feature:', error);
+      res.status(500).json({ error: 'Failed to delete feature' });
+    }
+  });
+
+  // Get features assigned to a specific plan
+  app.get('/api/admin/plans/:planId/features', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { planId } = req.params;
+
+      // Get plan with app info
+      const plan = await db.select()
+        .from(pricingPlans)
+        .where(eq(pricingPlans.id, planId))
+        .limit(1);
+
+      if (!plan || plan.length === 0) {
+        return res.status(404).json({ error: 'Plan not found' });
+      }
+
+      // Get all features for the app
+      const allFeatures = await db.select()
+        .from(appFeatures)
+        .where(eq(appFeatures.appId, plan[0].appId))
+        .orderBy(appFeatures.sortOrder, appFeatures.name);
+
+      // Get assigned features for this plan
+      const assignedFeatures = await db.select({
+        id: planFeatureAccess.id,
+        featureId: planFeatureAccess.featureId,
+        isEnabled: planFeatureAccess.isEnabled,
+        hasCustomQuota: planFeatureAccess.hasCustomQuota,
+        customQuota: planFeatureAccess.customQuota,
+      })
+        .from(planFeatureAccess)
+        .where(eq(planFeatureAccess.pricingPlanId, planId));
+
+      // Map assigned features
+      const assignedMap = new Map(assignedFeatures.map(af => [af.featureId, af]));
+
+      const featuresWithAccess = allFeatures.map(feature => ({
+        ...feature,
+        access: assignedMap.get(feature.id) || null,
+      }));
+
+      res.json({ success: true, features: featuresWithAccess });
+    } catch (error) {
+      console.error('Error fetching plan features:', error);
+      res.status(500).json({ error: 'Failed to fetch plan features' });
+    }
+  });
+
+  // Update plan feature access (bulk update)
+  app.patch('/api/admin/plans/:planId/features', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const principal = await getAdminPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { planId } = req.params;
+      const { features } = req.body; // Array of { featureId, isEnabled, hasCustomQuota, customQuota }
+
+      if (!Array.isArray(features)) {
+        return res.status(400).json({ error: 'Features array is required' });
+      }
+
+      // Delete existing plan feature access
+      await db.delete(planFeatureAccess)
+        .where(eq(planFeatureAccess.pricingPlanId, planId));
+
+      // Insert new feature access (only for enabled features)
+      const enabledFeatures = features.filter(f => f.isEnabled);
+      
+      if (enabledFeatures.length > 0) {
+        await db.insert(planFeatureAccess)
+          .values(
+            enabledFeatures.map((f: any) => ({
+              pricingPlanId: planId,
+              featureId: f.featureId,
+              isEnabled: true,
+              hasCustomQuota: f.hasCustomQuota || false,
+              customQuota: f.customQuota || null,
+            }))
+          );
+      }
+
+      res.json({
+        success: true,
+        message: 'Plan features updated successfully',
+      });
+    } catch (error) {
+      console.error('Error updating plan features:', error);
+      res.status(500).json({ error: 'Failed to update plan features' });
+    }
+  });
+
+  // ========================================
+  // END APP FEATURES & PLAN FEATURE ACCESS ROUTES
   // ========================================
 }

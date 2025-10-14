@@ -2462,6 +2462,58 @@ export const paymentTransactions = pgTable("payment_transactions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// App Features - Define features available per app
+export const appFeatures = pgTable("app_features", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  appId: uuid("app_id").notNull().references(() => appsRegistry.id, { onDelete: 'cascade' }),
+  
+  // Feature details
+  name: varchar("name", { length: 255 }).notNull(), // 'API Access', 'Bulk QR Generation', etc.
+  description: text("description"),
+  featureKey: varchar("feature_key", { length: 100 }).notNull(), // 'api_access', 'bulk_qr', etc.
+  category: varchar("category", { length: 100 }), // 'core', 'advanced', 'premium'
+  
+  // Default quota (if applicable)
+  hasQuota: boolean("has_quota").default(false),
+  defaultQuota: integer("default_quota"), // Default quota for this feature
+  quotaUnit: varchar("quota_unit", { length: 50 }), // 'requests', 'QRs', 'GB', etc.
+  
+  // Configuration
+  isActive: boolean("is_active").default(true),
+  sortOrder: integer("sort_order").default(0),
+  
+  // Metadata
+  metadata: jsonb("metadata").default({}),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  // Unique feature key per app
+  uniqueAppFeatureKey: unique().on(table.appId, table.featureKey),
+}));
+
+// Plan Feature Access - Map which features are included in each plan
+export const planFeatureAccess = pgTable("plan_feature_access", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  pricingPlanId: uuid("pricing_plan_id").notNull().references(() => pricingPlans.id, { onDelete: 'cascade' }),
+  featureId: uuid("feature_id").notNull().references(() => appFeatures.id, { onDelete: 'cascade' }),
+  
+  // Access configuration
+  isEnabled: boolean("is_enabled").default(true),
+  
+  // Quota override (overrides feature's default quota)
+  hasCustomQuota: boolean("has_custom_quota").default(false),
+  customQuota: integer("custom_quota"), // Plan-specific quota
+  
+  // Metadata
+  metadata: jsonb("metadata").default({}),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  // Unique feature per plan
+  uniquePlanFeature: unique().on(table.pricingPlanId, table.featureId),
+}));
+
 // ========================================
 // END PRICING PLANS SYSTEM
 // ========================================
@@ -2607,6 +2659,10 @@ export const insertUsageTrackingSchema = createInsertSchema(usageTracking).omit(
 export const selectUsageTrackingSchema = createSelectSchema(usageTracking);
 export const insertPaymentTransactionSchema = createInsertSchema(paymentTransactions).omit({ id: true, createdAt: true, updatedAt: true });
 export const selectPaymentTransactionSchema = createSelectSchema(paymentTransactions);
+export const insertAppFeatureSchema = createInsertSchema(appFeatures).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectAppFeatureSchema = createSelectSchema(appFeatures);
+export const insertPlanFeatureAccessSchema = createInsertSchema(planFeatureAccess).omit({ id: true, createdAt: true });
+export const selectPlanFeatureAccessSchema = createSelectSchema(planFeatureAccess);
 
 // Pricing Plans type exports
 export type AppRegistry = typeof appsRegistry.$inferSelect;
@@ -2621,3 +2677,7 @@ export type UsageTracking = typeof usageTracking.$inferSelect;
 export type InsertUsageTracking = z.infer<typeof insertUsageTrackingSchema>;
 export type PaymentTransaction = typeof paymentTransactions.$inferSelect;
 export type InsertPaymentTransaction = z.infer<typeof insertPaymentTransactionSchema>;
+export type AppFeature = typeof appFeatures.$inferSelect;
+export type InsertAppFeature = z.infer<typeof insertAppFeatureSchema>;
+export type PlanFeatureAccess = typeof planFeatureAccess.$inferSelect;
+export type InsertPlanFeatureAccess = z.infer<typeof insertPlanFeatureAccessSchema>;
