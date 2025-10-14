@@ -8588,6 +8588,342 @@ CONSTRAINTS:
   // ========================================
 
   // ========================================
+  // JUNCTION TABLE MANAGEMENT API
+  // Manage many-to-many relationships: Apps↔Modules, Modules↔Features, Hubs↔Modules, Hubs↔Apps
+  // ========================================
+
+  // Import junction tables
+  const { 
+    appModules, 
+    moduleFeatures, 
+    hubModules, 
+    hubApps 
+  } = await import("@shared/schema");
+
+  // ============ APP MODULES ============
+
+  // Get all modules linked to an app
+  app.get('/api/admin/app-modules/:appId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { appId } = req.params;
+
+      const modules = await db.select()
+        .from(appModules)
+        .where(eq(appModules.appId, appId));
+
+      res.json({ success: true, data: modules });
+    } catch (error) {
+      console.error('Error fetching app modules:', error);
+      res.status(500).json({ error: 'Failed to fetch app modules' });
+    }
+  });
+
+  // Link a module to an app
+  app.post('/api/admin/app-modules', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { appId, moduleId, isRequired = true, version = null, config = {}, sortOrder = 0, metadata = {} } = req.body;
+
+      if (!appId || !moduleId) {
+        return res.status(400).json({ error: 'appId and moduleId are required' });
+      }
+
+      // Check if relationship already exists
+      const existing = await db.select()
+        .from(appModules)
+        .where(sql`${appModules.appId} = ${appId} AND ${appModules.moduleId} = ${moduleId}`)
+        .limit(1);
+
+      if (existing.length > 0) {
+        return res.status(400).json({ error: 'Module already linked to this app' });
+      }
+
+      const [newLink] = await db.insert(appModules).values({
+        appId,
+        moduleId,
+        isRequired,
+        version,
+        config,
+        sortOrder,
+        metadata,
+      }).returning();
+
+      res.json({ success: true, data: newLink });
+    } catch (error) {
+      console.error('Error linking module to app:', error);
+      res.status(500).json({ error: 'Failed to link module to app' });
+    }
+  });
+
+  // Update module configuration for an app
+  app.patch('/api/admin/app-modules/:appId/:moduleId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { appId, moduleId } = req.params;
+      const { isRequired, version, config, sortOrder, metadata } = req.body;
+
+      const updateData: any = {};
+      if (isRequired !== undefined) updateData.isRequired = isRequired;
+      if (version !== undefined) updateData.version = version;
+      if (config !== undefined) updateData.config = config;
+      if (sortOrder !== undefined) updateData.sortOrder = sortOrder;
+      if (metadata !== undefined) updateData.metadata = metadata;
+
+      const [updated] = await db.update(appModules)
+        .set(updateData)
+        .where(sql`${appModules.appId} = ${appId} AND ${appModules.moduleId} = ${moduleId}`)
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ error: 'App-Module link not found' });
+      }
+
+      res.json({ success: true, data: updated });
+    } catch (error) {
+      console.error('Error updating app module:', error);
+      res.status(500).json({ error: 'Failed to update app module' });
+    }
+  });
+
+  // Unlink a module from an app
+  app.delete('/api/admin/app-modules/:appId/:moduleId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { appId, moduleId } = req.params;
+
+      const deleted = await db.delete(appModules)
+        .where(sql`${appModules.appId} = ${appId} AND ${appModules.moduleId} = ${moduleId}`)
+        .returning();
+
+      if (deleted.length === 0) {
+        return res.status(404).json({ error: 'App-Module link not found' });
+      }
+
+      res.json({ success: true, message: 'Module unlinked from app successfully' });
+    } catch (error) {
+      console.error('Error unlinking module from app:', error);
+      res.status(500).json({ error: 'Failed to unlink module from app' });
+    }
+  });
+
+  // ============ MODULE FEATURES ============
+
+  // Get all features linked to a module
+  app.get('/api/admin/module-features/:moduleId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { moduleId } = req.params;
+
+      const features = await db.select()
+        .from(moduleFeatures)
+        .where(eq(moduleFeatures.moduleId, moduleId));
+
+      res.json({ success: true, data: features });
+    } catch (error) {
+      console.error('Error fetching module features:', error);
+      res.status(500).json({ error: 'Failed to fetch module features' });
+    }
+  });
+
+  // Link a feature to a module
+  app.post('/api/admin/module-features', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { moduleId, featureId, isRequired = false, sortOrder = 0, metadata = {} } = req.body;
+
+      if (!moduleId || !featureId) {
+        return res.status(400).json({ error: 'moduleId and featureId are required' });
+      }
+
+      // Check if relationship already exists
+      const existing = await db.select()
+        .from(moduleFeatures)
+        .where(sql`${moduleFeatures.moduleId} = ${moduleId} AND ${moduleFeatures.featureId} = ${featureId}`)
+        .limit(1);
+
+      if (existing.length > 0) {
+        return res.status(400).json({ error: 'Feature already linked to this module' });
+      }
+
+      const [newLink] = await db.insert(moduleFeatures).values({
+        moduleId,
+        featureId,
+        isRequired,
+        sortOrder,
+        metadata,
+      }).returning();
+
+      res.json({ success: true, data: newLink });
+    } catch (error) {
+      console.error('Error linking feature to module:', error);
+      res.status(500).json({ error: 'Failed to link feature to module' });
+    }
+  });
+
+  // Unlink a feature from a module
+  app.delete('/api/admin/module-features/:moduleId/:featureId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { moduleId, featureId } = req.params;
+
+      const deleted = await db.delete(moduleFeatures)
+        .where(sql`${moduleFeatures.moduleId} = ${moduleId} AND ${moduleFeatures.featureId} = ${featureId}`)
+        .returning();
+
+      if (deleted.length === 0) {
+        return res.status(404).json({ error: 'Module-Feature link not found' });
+      }
+
+      res.json({ success: true, message: 'Feature unlinked from module successfully' });
+    } catch (error) {
+      console.error('Error unlinking feature from module:', error);
+      res.status(500).json({ error: 'Failed to unlink feature from module' });
+    }
+  });
+
+  // ============ HUB MODULES ============
+
+  // Get all modules linked to a hub
+  app.get('/api/admin/hub-modules/:hubId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { hubId } = req.params;
+
+      const modules = await db.select()
+        .from(hubModules)
+        .where(eq(hubModules.hubId, hubId));
+
+      res.json({ success: true, data: modules });
+    } catch (error) {
+      console.error('Error fetching hub modules:', error);
+      res.status(500).json({ error: 'Failed to fetch hub modules' });
+    }
+  });
+
+  // Link a module to a hub
+  app.post('/api/admin/hub-modules', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { hubId, moduleId, isActive = true, sortOrder = 0, metadata = {} } = req.body;
+
+      if (!hubId || !moduleId) {
+        return res.status(400).json({ error: 'hubId and moduleId are required' });
+      }
+
+      // Check if relationship already exists
+      const existing = await db.select()
+        .from(hubModules)
+        .where(sql`${hubModules.hubId} = ${hubId} AND ${hubModules.moduleId} = ${moduleId}`)
+        .limit(1);
+
+      if (existing.length > 0) {
+        return res.status(400).json({ error: 'Module already linked to this hub' });
+      }
+
+      const [newLink] = await db.insert(hubModules).values({
+        hubId,
+        moduleId,
+        isActive,
+        sortOrder,
+        metadata,
+      }).returning();
+
+      res.json({ success: true, data: newLink });
+    } catch (error) {
+      console.error('Error linking module to hub:', error);
+      res.status(500).json({ error: 'Failed to link module to hub' });
+    }
+  });
+
+  // Unlink a module from a hub
+  app.delete('/api/admin/hub-modules/:hubId/:moduleId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { hubId, moduleId } = req.params;
+
+      const deleted = await db.delete(hubModules)
+        .where(sql`${hubModules.hubId} = ${hubId} AND ${hubModules.moduleId} = ${moduleId}`)
+        .returning();
+
+      if (deleted.length === 0) {
+        return res.status(404).json({ error: 'Hub-Module link not found' });
+      }
+
+      res.json({ success: true, message: 'Module unlinked from hub successfully' });
+    } catch (error) {
+      console.error('Error unlinking module from hub:', error);
+      res.status(500).json({ error: 'Failed to unlink module from hub' });
+    }
+  });
+
+  // ============ HUB APPS ============
+
+  // Get all apps linked to a hub
+  app.get('/api/admin/hub-apps/:hubId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { hubId } = req.params;
+
+      const apps = await db.select()
+        .from(hubApps)
+        .where(eq(hubApps.hubId, hubId));
+
+      res.json({ success: true, data: apps });
+    } catch (error) {
+      console.error('Error fetching hub apps:', error);
+      res.status(500).json({ error: 'Failed to fetch hub apps' });
+    }
+  });
+
+  // Link an app to a hub
+  app.post('/api/admin/hub-apps', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { hubId, appId, isActive = true, sortOrder = 0, metadata = {} } = req.body;
+
+      if (!hubId || !appId) {
+        return res.status(400).json({ error: 'hubId and appId are required' });
+      }
+
+      // Check if relationship already exists
+      const existing = await db.select()
+        .from(hubApps)
+        .where(sql`${hubApps.hubId} = ${hubId} AND ${hubApps.appId} = ${appId}`)
+        .limit(1);
+
+      if (existing.length > 0) {
+        return res.status(400).json({ error: 'App already linked to this hub' });
+      }
+
+      const [newLink] = await db.insert(hubApps).values({
+        hubId,
+        appId,
+        isActive,
+        sortOrder,
+        metadata,
+      }).returning();
+
+      res.json({ success: true, data: newLink });
+    } catch (error) {
+      console.error('Error linking app to hub:', error);
+      res.status(500).json({ error: 'Failed to link app to hub' });
+    }
+  });
+
+  // Unlink an app from a hub
+  app.delete('/api/admin/hub-apps/:hubId/:appId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { hubId, appId } = req.params;
+
+      const deleted = await db.delete(hubApps)
+        .where(sql`${hubApps.hubId} = ${hubId} AND ${hubApps.appId} = ${appId}`)
+        .returning();
+
+      if (deleted.length === 0) {
+        return res.status(404).json({ error: 'Hub-App link not found' });
+      }
+
+      res.json({ success: true, message: 'App unlinked from hub successfully' });
+    } catch (error) {
+      console.error('Error unlinking app from hub:', error);
+      res.status(500).json({ error: 'Failed to unlink app from hub' });
+    }
+  });
+
+  // ========================================
+  // END JUNCTION TABLE MANAGEMENT API
+  // ========================================
+
+  // ========================================
   // END APP FEATURES & PLAN FEATURE ACCESS ROUTES
   // ========================================
 }
