@@ -7,6 +7,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Bot, Send, Sparkles, Code, Database, Layout, Plus, Folder } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -41,6 +50,9 @@ export default function AdminAppBuilder() {
   ]);
   const [input, setInput] = useState('');
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectDescription, setNewProjectDescription] = useState('');
 
   // Fetch user's app projects
   const { data: projects, isLoading: projectsLoading } = useQuery<{ projects: Project[] }>({
@@ -117,6 +129,55 @@ export default function AdminAppBuilder() {
     }
   };
 
+  // Create new project mutation
+  const createProjectMutation = useMutation({
+    mutationFn: async () => {
+      const slug = newProjectName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now();
+      
+      const response = await apiRequest(
+        '/api/ai-builder/projects/create',
+        'POST',
+        {
+          name: newProjectName,
+          slug,
+          description: newProjectDescription
+        }
+      );
+      
+      return response.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/ai-builder/projects'] });
+      setCurrentProjectId(data.project.id);
+      setShowNewProjectDialog(false);
+      setNewProjectName('');
+      setNewProjectDescription('');
+      toast({
+        title: "Project Created!",
+        description: `Project "${data.project.name}" has been created.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create project",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleCreateProject = () => {
+    if (!newProjectName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Project name is required",
+        variant: "destructive"
+      });
+      return;
+    }
+    createProjectMutation.mutate();
+  };
+
   return (
     <div className="space-y-6 h-[calc(100vh-8rem)]">
       {/* Header */}
@@ -131,7 +192,12 @@ export default function AdminAppBuilder() {
             Build apps with AI - Chat to create database schemas, APIs, and UI components
           </p>
         </div>
-        <Button variant="outline" className="gap-2">
+        <Button 
+          variant="outline" 
+          className="gap-2"
+          onClick={() => setShowNewProjectDialog(true)}
+          data-testid="new-project-button"
+        >
           <Plus className="h-4 w-4" />
           New Project
         </Button>
@@ -280,6 +346,58 @@ export default function AdminAppBuilder() {
           </CardContent>
         </Card>
       </div>
+
+      {/* New Project Dialog */}
+      <Dialog open={showNewProjectDialog} onOpenChange={setShowNewProjectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New App Project</DialogTitle>
+            <DialogDescription>
+              Start a new app project. You can use AI chat to build it step by step.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="project-name">Project Name *</Label>
+              <Input
+                id="project-name"
+                placeholder="e.g., Inventory Manager"
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                data-testid="input-project-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="project-description">Description</Label>
+              <Textarea
+                id="project-description"
+                placeholder="Brief description of what this app does..."
+                value={newProjectDescription}
+                onChange={(e) => setNewProjectDescription(e.target.value)}
+                className="min-h-[80px]"
+                data-testid="input-project-description"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowNewProjectDialog(false)}
+              disabled={createProjectMutation.isPending}
+              data-testid="cancel-project"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateProject}
+              disabled={createProjectMutation.isPending || !newProjectName.trim()}
+              data-testid="create-project"
+            >
+              {createProjectMutation.isPending ? 'Creating...' : 'Create Project'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

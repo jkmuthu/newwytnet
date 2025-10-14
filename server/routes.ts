@@ -7664,9 +7664,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   // ========================================
 
   // Get user's app builder projects
-  app.get('/api/ai-builder/projects', async (req: any, res) => {
+  app.get('/api/ai-builder/projects', adminAuthMiddleware, async (req: any, res) => {
     try {
-      const principal = await getPrincipal(req);
+      const principal = await getAdminPrincipal(req);
       if (!principal) {
         return res.status(401).json({ error: 'Not authenticated' });
       }
@@ -7683,10 +7683,44 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Chat with AI to generate app code
-  app.post('/api/ai-builder/chat', async (req: any, res) => {
+  // Create new app builder project
+  app.post('/api/ai-builder/projects/create', adminAuthMiddleware, async (req: any, res) => {
     try {
-      const principal = await getPrincipal(req);
+      const principal = await getAdminPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { name, slug, description } = req.body;
+
+      if (!name?.trim()) {
+        return res.status(400).json({ error: 'Project name is required' });
+      }
+
+      // Create new project
+      const [newProject] = await db.insert(aiAppProjects).values({
+        ownerId: principal.id,
+        name: name.trim(),
+        slug: slug || name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') + '-' + Date.now(),
+        description: description?.trim() || '',
+        status: 'draft',
+        accessLevel: 'super_admin',
+      }).returning();
+
+      res.json({ 
+        success: true,
+        project: newProject 
+      });
+    } catch (error) {
+      console.error('Error creating project:', error);
+      res.status(500).json({ error: 'Failed to create project' });
+    }
+  });
+
+  // Chat with AI to generate app code
+  app.post('/api/ai-builder/chat', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const principal = await getAdminPrincipal(req);
       if (!principal) {
         return res.status(401).json({ error: 'Not authenticated' });
       }
@@ -7792,10 +7826,99 @@ CONSTRAINTS:
     }
   });
 
-  // Get specific project details
-  app.get('/api/ai-builder/projects/:id', async (req: any, res) => {
+  // Update app builder project
+  app.patch('/api/ai-builder/projects/:id', adminAuthMiddleware, async (req: any, res) => {
     try {
-      const principal = await getPrincipal(req);
+      const principal = await getAdminPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { id } = req.params;
+      const { name, description, status } = req.body;
+
+      // Verify project ownership
+      const [existingProject] = await db.select()
+        .from(aiAppProjects)
+        .where(
+          and(
+            eq(aiAppProjects.id, id),
+            eq(aiAppProjects.ownerId, principal.id)
+          )
+        )
+        .limit(1);
+
+      if (!existingProject) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+
+      // Update project
+      const updateData: any = {
+        updatedAt: new Date()
+      };
+      
+      if (name?.trim()) updateData.name = name.trim();
+      if (description !== undefined) updateData.description = description?.trim() || '';
+      if (status) updateData.status = status;
+
+      const [updatedProject] = await db.update(aiAppProjects)
+        .set(updateData)
+        .where(eq(aiAppProjects.id, id))
+        .returning();
+
+      res.json({ 
+        success: true,
+        project: updatedProject 
+      });
+    } catch (error) {
+      console.error('Error updating project:', error);
+      res.status(500).json({ error: 'Failed to update project' });
+    }
+  });
+
+  // Delete app builder project
+  app.delete('/api/ai-builder/projects/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const principal = await getAdminPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { id } = req.params;
+
+      // Verify project ownership
+      const [existingProject] = await db.select()
+        .from(aiAppProjects)
+        .where(
+          and(
+            eq(aiAppProjects.id, id),
+            eq(aiAppProjects.ownerId, principal.id)
+          )
+        )
+        .limit(1);
+
+      if (!existingProject) {
+        return res.status(404).json({ error: 'Project not found' });
+      }
+
+      // Delete project (cascades to conversations and generated code)
+      await db.delete(aiAppProjects)
+        .where(eq(aiAppProjects.id, id));
+
+      res.json({ 
+        success: true,
+        message: 'Project deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      res.status(500).json({ error: 'Failed to delete project' });
+    }
+  });
+
+  // Get specific project details
+  app.get('/api/ai-builder/projects/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const principal = await getAdminPrincipal(req);
       if (!principal) {
         return res.status(401).json({ error: 'Not authenticated' });
       }
