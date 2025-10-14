@@ -100,7 +100,13 @@ import {
   type AiAppProject,
   type InsertAiAppProject,
   type AiChatConversation,
-  type InsertAiChatConversation
+  type InsertAiChatConversation,
+  appsRegistry,
+  pricingPlans,
+  pricingPlanTypes,
+  userSubscriptions,
+  usageTracking,
+  paymentTransactions
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -7964,5 +7970,192 @@ CONSTRAINTS:
 
   // ========================================
   // END AI APP BUILDER ROUTES
+  // ========================================
+
+  // ========================================
+  // PRICING PLANS ADMIN ROUTES
+  // ========================================
+
+  // Get all apps for pricing configuration
+  app.get('/api/admin/pricing/apps', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const apps = await db.select()
+        .from(appsRegistry)
+        .where(eq(appsRegistry.isActive, true))
+        .orderBy(appsRegistry.name);
+
+      res.json({ success: true, apps });
+    } catch (error) {
+      console.error('Error fetching apps:', error);
+      res.status(500).json({ error: 'Failed to fetch apps' });
+    }
+  });
+
+  // Get pricing plans for a specific app
+  app.get('/api/admin/pricing/plans/:appId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { appId } = req.params;
+
+      const plans = await db.select()
+        .from(pricingPlans)
+        .where(eq(pricingPlans.appId, appId))
+        .orderBy(pricingPlans.sortOrder);
+
+      // Fetch pricing types for each plan
+      const plansWithTypes = await Promise.all(
+        plans.map(async (plan) => {
+          const types = await db.select()
+            .from(pricingPlanTypes)
+            .where(eq(pricingPlanTypes.pricingPlanId, plan.id));
+
+          return {
+            ...plan,
+            pricingTypes: types,
+          };
+        })
+      );
+
+      res.json({ success: true, plans: plansWithTypes });
+    } catch (error) {
+      console.error('Error fetching pricing plans:', error);
+      res.status(500).json({ error: 'Failed to fetch pricing plans' });
+    }
+  });
+
+  // Create new pricing plan
+  app.post('/api/admin/pricing/plans', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const principal = await getAdminPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { appId, planName, planBatch, basePrice, currency, pricingTypes } = req.body;
+
+      if (!appId || !planName) {
+        return res.status(400).json({ error: 'App ID and plan name are required' });
+      }
+
+      // Create the pricing plan
+      const [newPlan] = await db.insert(pricingPlans)
+        .values({
+          appId,
+          planName,
+          planBatch: planBatch || '',
+          basePrice: basePrice || '0',
+          currency: currency || 'INR',
+          isActive: true,
+        })
+        .returning();
+
+      // Create pricing types if provided
+      if (pricingTypes && Array.isArray(pricingTypes) && pricingTypes.length > 0) {
+        await db.insert(pricingPlanTypes)
+          .values(
+            pricingTypes.map((pt: any) => ({
+              pricingPlanId: newPlan.id,
+              type: pt.type,
+              price: pt.price || '0',
+              billingInterval: pt.billingInterval,
+              trialDays: pt.trialDays || 0,
+              isActive: true,
+            }))
+          );
+      }
+
+      res.json({
+        success: true,
+        message: 'Pricing plan created successfully',
+        plan: newPlan,
+      });
+    } catch (error) {
+      console.error('Error creating pricing plan:', error);
+      res.status(500).json({ error: 'Failed to create pricing plan' });
+    }
+  });
+
+  // Update pricing plan
+  app.patch('/api/admin/pricing/plans/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const principal = await getAdminPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { id } = req.params;
+      const { planName, planBatch, basePrice, pricingTypes } = req.body;
+
+      // Update the plan
+      const [updatedPlan] = await db.update(pricingPlans)
+        .set({
+          planName,
+          planBatch,
+          basePrice,
+          updatedAt: new Date(),
+        })
+        .where(eq(pricingPlans.id, id))
+        .returning();
+
+      if (!updatedPlan) {
+        return res.status(404).json({ error: 'Pricing plan not found' });
+      }
+
+      // Delete existing pricing types and recreate
+      if (pricingTypes && Array.isArray(pricingTypes)) {
+        await db.delete(pricingPlanTypes)
+          .where(eq(pricingPlanTypes.pricingPlanId, id));
+
+        if (pricingTypes.length > 0) {
+          await db.insert(pricingPlanTypes)
+            .values(
+              pricingTypes.map((pt: any) => ({
+                pricingPlanId: id,
+                type: pt.type,
+                price: pt.price || '0',
+                billingInterval: pt.billingInterval,
+                trialDays: pt.trialDays || 0,
+                isActive: true,
+              }))
+            );
+        }
+      }
+
+      res.json({
+        success: true,
+        message: 'Pricing plan updated successfully',
+        plan: updatedPlan,
+      });
+    } catch (error) {
+      console.error('Error updating pricing plan:', error);
+      res.status(500).json({ error: 'Failed to update pricing plan' });
+    }
+  });
+
+  // Delete pricing plan
+  app.delete('/api/admin/pricing/plans/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const principal = await getAdminPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { id } = req.params;
+
+      // Delete pricing plan (cascade will delete pricing types)
+      await db.delete(pricingPlans)
+        .where(eq(pricingPlans.id, id));
+
+      res.json({
+        success: true,
+        message: 'Pricing plan deleted successfully',
+      });
+    } catch (error) {
+      console.error('Error deleting pricing plan:', error);
+      res.status(500).json({ error: 'Failed to delete pricing plan' });
+    }
+  });
+
+  // ========================================
+  // END PRICING PLANS ADMIN ROUTES
   // ========================================
 }
