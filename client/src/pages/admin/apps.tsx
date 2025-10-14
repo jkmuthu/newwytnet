@@ -260,7 +260,9 @@ export default function AdminApps() {
                   <div className="flex-1">
                     <CardTitle className="flex items-center gap-2">
                       {app.icon && (
-                        <img src={app.icon} alt="" className="w-6 h-6 rounded" />
+                        <span className="text-2xl" role="img" aria-label="app icon">
+                          {app.icon}
+                        </span>
                       )}
                       {app.name}
                     </CardTitle>
