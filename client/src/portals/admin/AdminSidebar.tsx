@@ -122,7 +122,7 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
             active: location === "/admin/app-builder"
           },
           { 
-            label: "Modules", 
+            label: "Module Library", 
             icon: Package, 
             href: "/admin/modules", 
             active: location === "/admin/modules"
