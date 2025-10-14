@@ -155,23 +155,11 @@ export default function PlansAndPrices() {
     <div className="h-full bg-background p-6" data-testid="plans-prices-page">
       {/* Header Section */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight" data-testid="page-title">Plans & Prices</h1>
-            <p className="text-muted-foreground mt-1" data-testid="page-description">
-              Manage pricing plans for all apps
-            </p>
-          </div>
-          <Button 
-            onClick={() => {
-              setFullViewApp(null); // Reset app context for global create
-              setIsCreatePlanOpen(true);
-            }} 
-            data-testid="button-add-pricing-plan"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Pricing Plan
-          </Button>
+        <div className="mb-4">
+          <h1 className="text-3xl font-bold tracking-tight" data-testid="page-title">Plans & Prices</h1>
+          <p className="text-muted-foreground mt-1" data-testid="page-description">
+            Manage pricing plans for all apps - Enable/disable default plans and set prices in the matrix
+          </p>
         </div>
 
         {/* Stats Cards */}
