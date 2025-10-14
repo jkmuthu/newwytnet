@@ -582,6 +582,7 @@ function PlanFormDialog({
   const { data: appFeatures = [], isLoading: isLoadingFeatures } = useQuery<AppFeature[]>({
     queryKey: ['/api/admin/features', appId],
     enabled: !!appId && open,
+    select: (data: any) => data.features || []
   });
 
   // Reset form when dialog opens/closes
