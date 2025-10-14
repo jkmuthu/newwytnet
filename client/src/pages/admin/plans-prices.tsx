@@ -111,12 +111,14 @@ export default function PlansAndPrices() {
   // Fetch apps
   const { data: apps = [], isLoading: isLoadingApps } = useQuery<AppRegistry[]>({
     queryKey: ['/api/admin/pricing/apps'],
+    select: (data: any) => data.apps || []
   });
 
   // Fetch pricing plans for selected app
   const { data: plans = [], isLoading: isLoadingPlans } = useQuery<PricingPlan[]>({
     queryKey: ['/api/admin/pricing/plans', selectedApp?.id],
     enabled: !!selectedApp,
+    select: (data: any) => data.plans || []
   });
 
   // Filter apps
