@@ -250,8 +250,8 @@ export default function PlansAndPrices() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-16">No</TableHead>
-                  <TableHead className="w-[200px]">App</TableHead>
-                  <TableHead className="w-[600px]">Added Pricing Plans</TableHead>
+                  <TableHead className="w-[350px]">App</TableHead>
+                  <TableHead className="w-[550px]">Active Plans</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -367,11 +367,11 @@ function AppTableRow({
         </div>
       </TableCell>
       <TableCell>
-        {plans.length === 0 ? (
-          <span className="text-sm text-muted-foreground">No pricing plans</span>
+        {plans.filter(p => p.isActive).length === 0 ? (
+          <span className="text-sm text-muted-foreground">No active plans</span>
         ) : (
           <div className="flex flex-col gap-1">
-            {plans.map((plan) => (
+            {plans.filter(p => p.isActive).map((plan) => (
               <div key={plan.id} className="text-sm" data-testid={`text-plan-summary-${plan.id}`}>
                 <span className="font-medium">{plan.planName}:</span>{' '}
                 {formatPrice(plan.basePrice, plan.currency)}
