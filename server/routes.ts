@@ -7977,6 +7977,99 @@ CONSTRAINTS:
   // ========================================
 
   // ========================================
+  // APPS ADMIN ROUTES
+  // ========================================
+
+  // Get all apps from apps_registry with module composition
+  app.get('/api/admin/apps', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const principal = await getAdminPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // Get all apps
+      const apps = await db.select()
+        .from(appsRegistry)
+        .orderBy(appsRegistry.name);
+
+      // Get modules for each app via junction table
+      const appsWithModules = await Promise.all(
+        apps.map(async (app) => {
+          const appModulesData = await db.select({
+            module: platformModules,
+            isRequired: appModules.isRequired,
+            version: appModules.version,
+            sortOrder: appModules.sortOrder,
+          })
+            .from(appModules)
+            .innerJoin(platformModules, eq(appModules.moduleId, platformModules.id))
+            .where(eq(appModules.appId, app.id))
+            .orderBy(appModules.sortOrder);
+
+          return {
+            ...app,
+            modules: appModulesData.map(m => ({
+              ...m.module,
+              isRequired: m.isRequired,
+              version: m.version,
+              sortOrder: m.sortOrder,
+            })),
+            moduleCount: appModulesData.length,
+          };
+        })
+      );
+
+      res.json({ success: true, apps: appsWithModules });
+    } catch (error) {
+      console.error('Error fetching apps:', error);
+      res.status(500).json({ error: 'Failed to fetch apps' });
+    }
+  });
+
+  // Create a new app in apps_registry
+  app.post('/api/admin/apps', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const principal = await getAdminPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { name, slug, description, icon, category, moduleIds } = req.body;
+
+      // Create the app
+      const [newApp] = await db.insert(appsRegistry)
+        .values({
+          name,
+          slug,
+          description,
+          icon,
+          category,
+          isActive: true,
+        })
+        .returning();
+
+      // Add modules if provided
+      if (moduleIds && Array.isArray(moduleIds) && moduleIds.length > 0) {
+        await db.insert(appModules)
+          .values(
+            moduleIds.map((moduleId: string, index: number) => ({
+              appId: newApp.id,
+              moduleId,
+              isRequired: true,
+              sortOrder: index,
+            }))
+          );
+      }
+
+      res.json({ success: true, app: newApp });
+    } catch (error) {
+      console.error('Error creating app:', error);
+      res.status(500).json({ error: 'Failed to create app' });
+    }
+  });
+
+  // ========================================
   // PRICING PLANS ADMIN ROUTES
   // ========================================
 
