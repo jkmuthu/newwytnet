@@ -2657,6 +2657,32 @@ export const hubAppsRelations = relations(hubApps, ({ one }) => ({
   }),
 }));
 
+// Junction Table Schema Exports
+export const insertModuleFeatureSchema = createInsertSchema(moduleFeatures).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectModuleFeatureSchema = createSelectSchema(moduleFeatures);
+
+export const insertAppModuleSchema = createInsertSchema(appModules).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectAppModuleSchema = createSelectSchema(appModules);
+
+export const insertHubModuleSchema = createInsertSchema(hubModules).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectHubModuleSchema = createSelectSchema(hubModules);
+
+export const insertHubAppSchema = createInsertSchema(hubApps).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectHubAppSchema = createSelectSchema(hubApps);
+
+// Junction Table Type Exports
+export type ModuleFeature = typeof moduleFeatures.$inferSelect;
+export type InsertModuleFeature = z.infer<typeof insertModuleFeatureSchema>;
+
+export type AppModule = typeof appModules.$inferSelect;
+export type InsertAppModule = z.infer<typeof insertAppModuleSchema>;
+
+export type HubModule = typeof hubModules.$inferSelect;
+export type InsertHubModule = z.infer<typeof insertHubModuleSchema>;
+
+export type HubApp = typeof hubApps.$inferSelect;
+export type InsertHubApp = z.infer<typeof insertHubAppSchema>;
+
 // ========================================
 // END JUNCTION TABLES
 // ========================================
