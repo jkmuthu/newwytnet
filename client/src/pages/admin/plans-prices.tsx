@@ -250,8 +250,8 @@ export default function PlansAndPrices() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-16">No</TableHead>
-                  <TableHead>App</TableHead>
-                  <TableHead>Added Pricing Plans</TableHead>
+                  <TableHead className="w-[200px]">App</TableHead>
+                  <TableHead className="w-[600px]">Added Pricing Plans</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -554,6 +554,24 @@ function MatrixTable({ appId }: { appId: string }) {
     handleSave(planId, { pricingTypes });
   };
 
+  // Update trial days
+  const updateTrialDays = (planId: string, trialDays: number) => {
+    if (!matrixData) return;
+
+    const plan = matrixData.plans.find(p => p.id === planId);
+    if (!plan) return;
+
+    const pricingTypes = (plan.pricingTypes || []).map(pt =>
+      pt.type === 'trial' ? { ...pt, trialDays } : pt
+    );
+
+    const updatedPlans = matrixData.plans.map(p =>
+      p.id === planId ? { ...p, pricingTypes } : p
+    );
+    setMatrixData({ ...matrixData, plans: updatedPlans });
+    handleSave(planId, { pricingTypes });
+  };
+
   // Toggle feature for plan
   const toggleFeature = (planId: string, featureId: string, isEnabled: boolean) => {
     if (!matrixData) return;
@@ -669,6 +687,8 @@ function MatrixTable({ appId }: { appId: string }) {
                 const yearlyType = plan.pricingTypes?.find(pt => pt.type === 'yearly');
                 const trialType = plan.pricingTypes?.find(pt => pt.type === 'trial');
                 const freeType = plan.pricingTypes?.find(pt => pt.type === 'free');
+                const isPerOut = plan.planBatch === 'Per Out' || plan.planName === 'Per Out';
+                const oneTimeType = plan.pricingTypes?.find(pt => pt.type === 'one_output');
 
                 return (
                   <TableHead key={plan.id} className="p-2">
@@ -676,6 +696,26 @@ function MatrixTable({ appId }: { appId: string }) {
                       {/* Free Plan */}
                       {freeType ? (
                         <div className="text-center font-semibold text-green-600">₹0/-</div>
+                      ) : isPerOut ? (
+                        /* Per Out Plan - Only Price Field */
+                        <div className="space-y-2">
+                          <span className="text-xs font-medium">Price (Per Output)</span>
+                          <Input
+                            type="number"
+                            value={oneTimeType?.price || '0'}
+                            onChange={(e) => {
+                              if (!oneTimeType) {
+                                togglePricingType(plan.id, 'one_output', true, e.target.value);
+                              } else {
+                                updatePrice(plan.id, 'one_output', e.target.value);
+                              }
+                            }}
+                            className="h-6 w-full text-xs"
+                            disabled={!plan.isActive}
+                            placeholder="₹0"
+                            data-testid={`input-perout-price-${plan.id}`}
+                          />
+                        </div>
                       ) : (
                         <>
                           {/* Monthly */}
@@ -683,6 +723,7 @@ function MatrixTable({ appId }: { appId: string }) {
                             <Checkbox
                               checked={!!monthlyType}
                               onCheckedChange={(checked) => togglePricingType(plan.id, 'monthly', !!checked, '0')}
+                              disabled={!plan.isActive}
                               data-testid={`checkbox-monthly-${plan.id}`}
                             />
                             <span className="text-xs">Monthly</span>
@@ -692,6 +733,7 @@ function MatrixTable({ appId }: { appId: string }) {
                                 value={monthlyType.price}
                                 onChange={(e) => updatePrice(plan.id, 'monthly', e.target.value)}
                                 className="h-6 w-20 text-xs"
+                                disabled={!plan.isActive}
                                 data-testid={`input-monthly-price-${plan.id}`}
                               />
                             )}
@@ -702,6 +744,7 @@ function MatrixTable({ appId }: { appId: string }) {
                             <Checkbox
                               checked={!!yearlyType}
                               onCheckedChange={(checked) => togglePricingType(plan.id, 'yearly', !!checked, '0')}
+                              disabled={!plan.isActive}
                               data-testid={`checkbox-yearly-${plan.id}`}
                             />
                             <span className="text-xs">Yearly</span>
@@ -711,6 +754,7 @@ function MatrixTable({ appId }: { appId: string }) {
                                 value={yearlyType.price}
                                 onChange={(e) => updatePrice(plan.id, 'yearly', e.target.value)}
                                 className="h-6 w-20 text-xs"
+                                disabled={!plan.isActive}
                                 data-testid={`input-yearly-price-${plan.id}`}
                               />
                             )}
@@ -721,11 +765,23 @@ function MatrixTable({ appId }: { appId: string }) {
                             <Checkbox
                               checked={!!trialType}
                               onCheckedChange={(checked) => togglePricingType(plan.id, 'trial', !!checked, '0')}
+                              disabled={!plan.isActive}
                               data-testid={`checkbox-trial-${plan.id}`}
                             />
                             <span className="text-xs">Trial</span>
                             {trialType && (
-                              <span className="text-xs">Days [{trialType.trialDays}]</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs">Days</span>
+                                <Input
+                                  type="number"
+                                  value={trialType.trialDays || 7}
+                                  onChange={(e) => updateTrialDays(plan.id, parseInt(e.target.value) || 7)}
+                                  className="h-6 w-16 text-xs"
+                                  disabled={!plan.isActive}
+                                  min="1"
+                                  data-testid={`input-trial-days-${plan.id}`}
+                                />
+                              </div>
                             )}
                           </div>
                         </>
@@ -735,7 +791,7 @@ function MatrixTable({ appId }: { appId: string }) {
                         size="sm"
                         className="w-full h-6 text-xs"
                         onClick={() => handleSave(plan.id, {})}
-                        disabled={saveMutation.isPending}
+                        disabled={saveMutation.isPending || !plan.isActive}
                         data-testid={`button-save-plan-${plan.id}`}
                       >
                         {saveMutation.isPending ? 'Saving...' : 'SAVE'}
