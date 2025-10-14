@@ -3526,6 +3526,192 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // =============================================================================
+  // MODULE ACTIVATION & DEPENDENCY MANAGEMENT
+  // =============================================================================
+
+  // Activate module with dependency resolution
+  app.post('/api/modules/activate', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { moduleId, context, contextId } = req.body;
+      const user = req.user;
+
+      if (!moduleId || !context) {
+        return res.status(400).json({
+          success: false,
+          error: 'moduleId and context are required'
+        });
+      }
+
+      if ((context === 'hub' || context === 'app' || context === 'game') && !contextId) {
+        return res.status(400).json({
+          success: false,
+          error: `contextId is required for ${context} context`
+        });
+      }
+
+      const { moduleDependencyService } = await import('./services/moduleDependencyService');
+      const result = await moduleDependencyService.activateModuleWithDependencies(
+        moduleId,
+        context,
+        contextId,
+        user?.id
+      );
+
+      res.status(result.success ? 200 : 400).json(result);
+    } catch (error) {
+      console.error('Module activation error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to activate module',
+        errors: [error instanceof Error ? error.message : 'Unknown error']
+      });
+    }
+  });
+
+  // Deactivate module
+  app.post('/api/modules/deactivate', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { moduleId, context, contextId, force } = req.body;
+
+      if (!moduleId || !context) {
+        return res.status(400).json({
+          success: false,
+          error: 'moduleId and context are required'
+        });
+      }
+
+      const { moduleDependencyService } = await import('./services/moduleDependencyService');
+      const result = await moduleDependencyService.deactivateModule(
+        moduleId,
+        context,
+        contextId,
+        force
+      );
+
+      res.status(result.success ? 200 : 400).json(result);
+    } catch (error) {
+      console.error('Module deactivation error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to deactivate module',
+        errors: [error instanceof Error ? error.message : 'Unknown error']
+      });
+    }
+  });
+
+  // Get module activation status
+  app.get('/api/modules/:moduleId/status', async (req, res) => {
+    try {
+      const { moduleId } = req.params;
+
+      const { moduleDependencyService } = await import('./services/moduleDependencyService');
+      const status = await moduleDependencyService.getModuleActivationStatus(moduleId);
+
+      if (!status) {
+        return res.status(404).json({
+          success: false,
+          error: 'Module not found'
+        });
+      }
+
+      res.json({
+        success: true,
+        ...status
+      });
+    } catch (error) {
+      console.error('Error fetching module status:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch module status'
+      });
+    }
+  });
+
+  // Get modules from catalog
+  app.get('/api/modules/catalog', async (req, res) => {
+    try {
+      const { MODULE_CATALOG } = await import('./modules-catalog');
+      const { category, context } = req.query;
+
+      let modules = [...MODULE_CATALOG];
+
+      // Filter by category
+      if (category && typeof category === 'string') {
+        modules = modules.filter(m => m.category === category);
+      }
+
+      // Filter by context
+      if (context && typeof context === 'string') {
+        modules = modules.filter(m => m.contexts.includes(context as any));
+      }
+
+      res.json({
+        success: true,
+        modules,
+        total: modules.length
+      });
+    } catch (error) {
+      console.error('Error fetching module catalog:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch module catalog'
+      });
+    }
+  });
+
+  // Get enabled modules for a specific context
+  app.get('/api/modules/enabled/:context', async (req, res) => {
+    try {
+      const { context } = req.params;
+      const { contextId } = req.query;
+
+      if ((context === 'hub' || context === 'app' || context === 'game') && !contextId) {
+        return res.status(400).json({
+          success: false,
+          error: `contextId is required for ${context} context`
+        });
+      }
+
+      let activations: any[] = [];
+
+      if (context === 'platform') {
+        activations = await db.select()
+          .from(platformModuleActivations)
+          .where(and(
+            eq(platformModuleActivations.context, context),
+            eq(platformModuleActivations.isActive, true)
+          ));
+      } else if (context === 'hub' && contextId) {
+        activations = await db.select()
+          .from(hubModuleActivations)
+          .where(and(
+            eq(hubModuleActivations.hubId, contextId as string),
+            eq(hubModuleActivations.isActive, true)
+          ));
+      } else if (context === 'app' && contextId) {
+        activations = await db.select()
+          .from(appModuleActivations)
+          .where(and(
+            eq(appModuleActivations.appId, contextId as string),
+            eq(appModuleActivations.isActive, true)
+          ));
+      }
+
+      res.json({
+        success: true,
+        activations,
+        moduleIds: activations.map(a => a.moduleId)
+      });
+    } catch (error) {
+      console.error('Error fetching enabled modules:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch enabled modules'
+      });
+    }
+  });
+
+  // =============================================================================
   // USER APP INSTALLATIONS - WytApps Marketplace
   // =============================================================================
 
