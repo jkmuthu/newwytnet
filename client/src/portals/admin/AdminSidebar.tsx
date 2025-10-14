@@ -57,7 +57,7 @@ interface AdminSidebarProps {
 export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSidebarProps) {
   const [location] = useLocation();
   const { adminUser } = useAdminAuth();
-  const [openSections, setOpenSections] = useState<string[]>(['Dashboard', 'Data Management']);
+  const [openSections, setOpenSections] = useState<string[]>(['Dashboard', 'Build & Compose']);
 
   const toggleSection = (section: string) => {
     setOpenSections(prev => 
@@ -113,13 +113,13 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
         ]
       },
       {
-        section: "Platform Management",
+        section: "Build & Compose",
         items: [
           { 
-            label: "App Builder", 
+            label: "AI App Builder", 
             icon: Bot, 
-            href: "/admin/app-builder", 
-            active: location === "/admin/app-builder"
+            href: "/admin/ai-app-builder", 
+            active: location === "/admin/ai-app-builder"
           },
           { 
             label: "Module Library", 
@@ -139,6 +139,11 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
             href: "/admin/hubs", 
             active: location === "/admin/hubs"
           },
+        ]
+      },
+      {
+        section: "Content & Design",
+        items: [
           { 
             label: "CMS", 
             icon: FileText, 

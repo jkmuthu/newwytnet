@@ -42,8 +42,8 @@ export default function AdminApps() {
     queryKey: ['/api/admin/platform-modules'],
   });
 
-  const apps = appsData?.apps || [];
-  const modules = modulesData?.modules || [];
+  const apps = (appsData as any)?.apps || [];
+  const modules = (modulesData as any)?.modules || [];
 
   // Filter apps by search
   const filteredApps = apps.filter((app: any) =>
@@ -54,10 +54,13 @@ export default function AdminApps() {
   // Create app mutation
   const createAppMutation = useMutation({
     mutationFn: async (data: CreateAppForm) => {
-      return await apiRequest('/api/admin/apps', {
+      const response = await fetch('/api/admin/apps', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+      if (!response.ok) throw new Error('Failed to create app');
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/apps'] });
