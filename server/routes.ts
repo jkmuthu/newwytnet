@@ -134,7 +134,7 @@ import {
   insertTrademarkSearchSchema
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql, gte, lte, like, or, ilike, not, asc } from "drizzle-orm";
+import { eq, desc, and, sql, gte, lte, like, or, ilike, not, asc, inArray } from "drizzle-orm";
 import { aiService } from "./services/aiService";
 
 // Trademark analysis functions now imported from services/trademarkAnalysis.ts
@@ -8469,7 +8469,7 @@ CONSTRAINTS:
       const featureAccess = planIds.length > 0 
         ? await db.select()
             .from(planFeatureAccess)
-            .where(sql`${planFeatureAccess.pricingPlanId} IN ${sql.raw(`(${planIds.map(() => '?').join(',')})`, planIds)}`)
+            .where(inArray(planFeatureAccess.pricingPlanId, planIds))
         : [];
 
       // Build access matrix map: { planId: { featureId: access } }
