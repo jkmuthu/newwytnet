@@ -7985,7 +7985,6 @@ CONSTRAINTS:
     try {
       const apps = await db.select()
         .from(appsRegistry)
-        .where(eq(appsRegistry.isActive, true))
         .orderBy(appsRegistry.name);
 
       // Get plan counts for each app
@@ -8006,6 +8005,40 @@ CONSTRAINTS:
     } catch (error) {
       console.error('Error fetching apps:', error);
       res.status(500).json({ error: 'Failed to fetch apps' });
+    }
+  });
+
+  // Update app properties (Active status, Promo card, etc.)
+  app.patch('/api/admin/apps/:appId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const principal = await getAdminPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { appId } = req.params;
+      const updateData: any = {};
+
+      // Allow updating specific fields
+      if (req.body.isActive !== undefined) {
+        updateData.isActive = req.body.isActive;
+      }
+      if (req.body.metadata !== undefined) {
+        updateData.metadata = req.body.metadata;
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ error: 'No valid fields to update' });
+      }
+
+      await db.update(appsRegistry)
+        .set(updateData)
+        .where(eq(appsRegistry.id, appId));
+
+      res.json({ success: true, message: 'App updated successfully' });
+    } catch (error) {
+      console.error('Error updating app:', error);
+      res.status(500).json({ error: 'Failed to update app' });
     }
   });
 

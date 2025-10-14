@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Plus,
   Edit,
@@ -32,7 +33,10 @@ import {
   Zap,
   TrendingUp,
   AlertCircle,
-  Info
+  Info,
+  Eye,
+  Ban,
+  BarChart3
 } from "lucide-react";
 
 // Types based on schema
@@ -47,7 +51,7 @@ interface AppRegistry {
   metadata?: any;
   createdAt: string;
   updatedAt: string;
-  planCount?: number; // Added from backend
+  planCount?: number;
 }
 
 interface PricingPlan {
@@ -100,10 +104,9 @@ interface AppFeature {
 }
 
 export default function PlansAndPrices() {
-  const [selectedApp, setSelectedApp] = useState<AppRegistry | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [fullViewApp, setFullViewApp] = useState<AppRegistry | null>(null);
   const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<PricingPlan | null>(null);
   const { toast } = useToast();
@@ -112,13 +115,6 @@ export default function PlansAndPrices() {
   const { data: apps = [], isLoading: isLoadingApps } = useQuery<AppRegistry[]>({
     queryKey: ['/api/admin/pricing/apps'],
     select: (data: any) => data.apps || []
-  });
-
-  // Fetch pricing plans for selected app
-  const { data: plans = [], isLoading: isLoadingPlans } = useQuery<PricingPlan[]>({
-    queryKey: ['/api/admin/pricing/plans', selectedApp?.id],
-    enabled: !!selectedApp,
-    select: (data: any) => data.plans || []
   });
 
   // Filter apps
@@ -132,23 +128,339 @@ export default function PlansAndPrices() {
   // Get unique categories
   const categories = ["all", ...Array.from(new Set(apps.map(app => app.category).filter(Boolean)))];
 
+  // Calculate total plans
+  const totalPlans = apps.reduce((sum, app) => sum + (app.planCount || 0), 0);
+
+  return (
+    <div className="h-full bg-background p-6" data-testid="plans-prices-page">
+      {/* Header Section */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight" data-testid="page-title">Plans & Prices</h1>
+            <p className="text-muted-foreground mt-1" data-testid="page-description">
+              Manage pricing plans for all apps
+            </p>
+          </div>
+          <Button 
+            onClick={() => {
+              setFullViewApp(null); // Reset app context for global create
+              setIsCreatePlanOpen(true);
+            }} 
+            data-testid="button-add-pricing-plan"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Pricing Plan
+          </Button>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Apps</p>
+                  <p className="text-2xl font-bold" data-testid="stat-total-apps">{apps.length}</p>
+                </div>
+                <Package className="h-8 w-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Plans</p>
+                  <p className="text-2xl font-bold" data-testid="stat-total-plans">{totalPlans}</p>
+                </div>
+                <DollarSign className="h-8 w-8 text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Active Apps</p>
+                  <p className="text-2xl font-bold" data-testid="stat-active-apps">
+                    {apps.filter(app => app.isActive).length}
+                  </p>
+                </div>
+                <CheckCircle2 className="h-8 w-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Search and Filter */}
+        <div className="flex gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search apps..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+              data-testid="input-search-apps"
+            />
+          </div>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[200px]" data-testid="select-category-filter">
+              <SelectValue placeholder="Filter by category" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((cat) => (
+                <SelectItem key={cat} value={cat} data-testid={`option-category-${cat}`}>
+                  {cat === "all" ? "All Categories" : cat}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Apps List View Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Apps List View</CardTitle>
+          <CardDescription>All registered apps with pricing plans</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingApps ? (
+            <div className="text-center py-12 text-muted-foreground" data-testid="text-loading-apps">
+              Loading apps...
+            </div>
+          ) : filteredApps.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium">No apps found</p>
+              <p className="text-sm mt-2">Try adjusting your search or filters</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-16">No</TableHead>
+                  <TableHead>App</TableHead>
+                  <TableHead>Added Pricing Plans</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredApps.map((app, index) => (
+                  <AppTableRow
+                    key={app.id}
+                    app={app}
+                    index={index}
+                    onFullView={() => setFullViewApp(app)}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Full View Dialog */}
+      {fullViewApp && (
+        <FullViewDialog
+          app={fullViewApp}
+          open={!!fullViewApp}
+          onOpenChange={(open) => !open && setFullViewApp(null)}
+          onCreatePlan={() => setIsCreatePlanOpen(true)}
+          onEditPlan={(plan) => setEditingPlan(plan)}
+        />
+      )}
+
+      {/* Create/Edit Plan Dialog */}
+      <PlanFormDialog
+        open={isCreatePlanOpen || !!editingPlan}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsCreatePlanOpen(false);
+            setEditingPlan(null);
+          }
+        }}
+        appId={fullViewApp?.id}
+        appName={fullViewApp?.name}
+        plan={editingPlan}
+      />
+    </div>
+  );
+}
+
+// App Table Row Component
+function AppTableRow({ 
+  app, 
+  index, 
+  onFullView 
+}: { 
+  app: AppRegistry; 
+  index: number; 
+  onFullView: () => void;
+}) {
+  const { toast } = useToast();
+
+  // Fetch plans for this app to show summary
+  const { data: plans = [] } = useQuery<PricingPlan[]>({
+    queryKey: ['/api/admin/pricing/plans', app.id],
+    select: (data: any) => data.plans || []
+  });
+
+  // Toggle app active status
+  const toggleActiveMutation = useMutation({
+    mutationFn: (isActive: boolean) => 
+      apiRequest(`/api/admin/apps/${app.id}`, 'PATCH', { isActive }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/pricing/apps'] });
+      toast({ title: "Success", description: "App status updated" });
+    }
+  });
+
+  // Toggle promo card status
+  const togglePromoMutation = useMutation({
+    mutationFn: (isPromo: boolean) => 
+      apiRequest(`/api/admin/apps/${app.id}`, 'PATCH', { 
+        metadata: { ...app.metadata, isPromoCard: isPromo } 
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/pricing/apps'] });
+      toast({ title: "Success", description: "Promo card status updated" });
+    }
+  });
+
+  const formatPrice = (price: string, currency: string) => {
+    const symbol = currency === 'INR' ? '₹' : '$';
+    return `${symbol}${parseFloat(price).toFixed(0)}`;
+  };
+
+  return (
+    <TableRow data-testid={`row-app-${app.id}`}>
+      <TableCell className="font-medium" data-testid={`text-app-number-${index + 1}`}>
+        {index + 1}
+      </TableCell>
+      <TableCell>
+        <div className="flex items-start gap-3">
+          <div className="text-2xl">{app.icon}</div>
+          <div className="flex-1">
+            <div className="font-semibold" data-testid={`text-app-name-${app.id}`}>
+              {app.name}
+            </div>
+            <div className="text-sm text-muted-foreground" data-testid={`text-app-description-${app.id}`}>
+              {app.description}
+            </div>
+            <div className="flex gap-2 mt-1">
+              <Badge variant="outline" data-testid={`badge-app-category-${app.id}`}>
+                {app.category}
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </TableCell>
+      <TableCell>
+        {plans.length === 0 ? (
+          <span className="text-sm text-muted-foreground">No pricing plans</span>
+        ) : (
+          <div className="flex flex-col gap-1">
+            {plans.map((plan) => (
+              <div key={plan.id} className="text-sm" data-testid={`text-plan-summary-${plan.id}`}>
+                <span className="font-medium">{plan.planName}:</span>{' '}
+                {formatPrice(plan.basePrice, plan.currency)}
+                {plan.pricingTypes && plan.pricingTypes.length > 0 && (
+                  <span className="text-muted-foreground">
+                    {' '}({plan.pricingTypes.map(pt => pt.type).join(', ')})
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex items-center justify-end gap-2">
+          <div className="flex items-center gap-1 mr-2">
+            <Checkbox
+              checked={app.isActive}
+              onCheckedChange={(checked) => toggleActiveMutation.mutate(!!checked)}
+              data-testid={`checkbox-active-${app.id}`}
+            />
+            <label className="text-xs text-muted-foreground cursor-pointer">
+              Active
+            </label>
+          </div>
+          <div className="flex items-center gap-1 mr-2">
+            <Checkbox
+              checked={app.metadata?.isPromoCard || false}
+              onCheckedChange={(checked) => togglePromoMutation.mutate(!!checked)}
+              data-testid={`checkbox-promo-${app.id}`}
+            />
+            <label className="text-xs text-muted-foreground cursor-pointer">
+              Promo Card
+            </label>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onFullView}
+            data-testid={`button-full-view-${app.id}`}
+          >
+            <Eye className="h-4 w-4 mr-1" />
+            Full View
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={!app.isActive}
+            onClick={() => toggleActiveMutation.mutate(false)}
+            data-testid={`button-disable-${app.id}`}
+          >
+            <Ban className="h-4 w-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+// Full View Dialog with Tabs
+function FullViewDialog({
+  app,
+  open,
+  onOpenChange,
+  onCreatePlan,
+  onEditPlan
+}: {
+  app: AppRegistry;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreatePlan: () => void;
+  onEditPlan: (plan: PricingPlan) => void;
+}) {
+  const { toast } = useToast();
+
+  // Fetch plans for this app
+  const { data: plans = [], isLoading: isLoadingPlans } = useQuery<PricingPlan[]>({
+    queryKey: ['/api/admin/pricing/plans', app.id],
+    select: (data: any) => data.plans || []
+  });
+
+  // Fetch features for this app
+  const { data: features = [], isLoading: isLoadingFeatures } = useQuery<AppFeature[]>({
+    queryKey: ['/api/admin/features', app.id],
+    select: (data: any) => data.features || []
+  });
+
   // Delete plan mutation
   const deletePlanMutation = useMutation({
     mutationFn: (planId: string) => apiRequest(`/api/admin/pricing/plans/${planId}`, 'DELETE'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/pricing/plans', selectedApp?.id] });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/pricing/apps'] }); // Update app plan counts
-      toast({
-        title: "Success",
-        description: "Pricing plan deleted successfully",
-      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/pricing/plans', app.id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/pricing/apps'] });
+      toast({ title: "Success", description: "Pricing plan deleted successfully" });
     },
     onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to delete pricing plan",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to delete pricing plan", variant: "destructive" });
     }
   });
 
@@ -170,235 +482,137 @@ export default function PlansAndPrices() {
   };
 
   return (
-    <div className="h-full bg-background p-6" data-testid="plans-prices-page">
-      {/* Header Section */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground" data-testid="text-page-title">Plans & Prices</h1>
-            <p className="text-muted-foreground" data-testid="text-page-description">
-              Manage pricing plans for all apps
-            </p>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-6xl max-h-[90vh]">
+        <DialogHeader>
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">{app.icon}</span>
+            <div>
+              <DialogTitle className="text-2xl" data-testid="dialog-title-full-view">
+                {app.name}
+              </DialogTitle>
+              <DialogDescription data-testid="dialog-description-full-view">
+                {app.description}
+              </DialogDescription>
+            </div>
           </div>
-          {selectedApp && (
-            <Button onClick={() => setIsCreatePlanOpen(true)} data-testid="button-add-pricing-plan">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Pricing Plan
-            </Button>
-          )}
-        </div>
+        </DialogHeader>
 
-        {/* Stats & App Selector Row */}
-        <div className="grid grid-cols-12 gap-4">
-          {/* Stats */}
-          <Card className="col-span-3">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                  <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Apps</p>
-                  <p className="text-2xl font-bold" data-testid="text-total-apps">{apps.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="col-span-3">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                  <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Plans</p>
-                  <p className="text-2xl font-bold" data-testid="text-total-plans">{selectedApp ? plans.length : apps.reduce((sum, app) => sum + (app.planCount || 0), 0)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <Tabs defaultValue="plans" className="mt-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="plans" data-testid="tab-pricing-plans">
+              Pricing Plans
+            </TabsTrigger>
+            <TabsTrigger value="features" data-testid="tab-features-for-plans">
+              Features for Plans
+            </TabsTrigger>
+            <TabsTrigger value="analytics" data-testid="tab-analytics">
+              Analytics
+            </TabsTrigger>
+          </TabsList>
 
-          {/* App Selector */}
-          <div className="col-span-6 flex items-center gap-3">
-            <Label className="text-sm font-medium whitespace-nowrap">Select App:</Label>
-            <Select value={selectedApp?.id || ''} onValueChange={(value) => setSelectedApp(apps.find(app => app.id === value) || null)}>
-              <SelectTrigger className="flex-1" data-testid="select-app">
-                <SelectValue placeholder="Choose an app to manage pricing" />
-              </SelectTrigger>
-              <SelectContent>
-                {apps.map((app) => (
-                  <SelectItem key={app.id} value={app.id} data-testid={`option-app-${app.slug}`}>
-                    <div className="flex items-center justify-between gap-3 w-full">
-                      <span>{app.name}</span>
-                      <div className="flex gap-1">
-                        <Badge variant="outline" className="text-xs">{app.category}</Badge>
-                        {(app.planCount || 0) > 0 && (
-                          <Badge variant="secondary" className="text-xs">{app.planCount} plans</Badge>
-                        )}
-                      </div>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
+          {/* Tab 1: Pricing Plans */}
+          <TabsContent value="plans" className="mt-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">All Pricing Plans</h3>
+              <Button onClick={onCreatePlan} data-testid="button-create-plan-tab">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Plan
+              </Button>
+            </div>
 
-      {/* Plans Section */}
-      {!selectedApp ? (
-        <Card className="p-12">
-          <div className="text-center text-muted-foreground">
-            <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-medium">No App Selected</p>
-            <p className="text-sm mt-2">Please select an app from the dropdown above to manage its pricing plans</p>
-          </div>
-        </Card>
-      ) : (
-        <div>
-          {/* Selected App Info */}
-          <Card className="mb-4 bg-primary/5 border-primary/20">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <Settings className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold" data-testid="text-selected-app-name">{selectedApp.name}</h2>
-                    <p className="text-sm text-muted-foreground">{selectedApp.description}</p>
-                  </div>
+            <ScrollArea className="h-[400px]">
+              {isLoadingPlans ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  Loading pricing plans...
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">{selectedApp.category}</Badge>
-                  <Badge variant={selectedApp.isActive ? "default" : "destructive"}>
-                    {selectedApp.isActive ? "Active" : "Inactive"}
-                  </Badge>
-                  <Badge variant="secondary">{plans.length} {plans.length === 1 ? 'Plan' : 'Plans'}</Badge>
+              ) : plans.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium">No Pricing Plans</p>
+                  <p className="text-sm mt-2">Create your first pricing plan</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Plans List */}
-          {isLoadingPlans ? (
-            <Card className="p-12">
-              <div className="text-center text-muted-foreground" data-testid="text-loading-plans">
-                Loading pricing plans...
-              </div>
-            </Card>
-          ) : plans.length === 0 ? (
-            <Card className="p-12">
-              <div className="text-center text-muted-foreground">
-                <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium">No Pricing Plans</p>
-                <p className="text-sm mt-2 mb-4">This app doesn't have any pricing plans yet</p>
-                <Button onClick={() => setIsCreatePlanOpen(true)} data-testid="button-create-first-plan">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create First Plan
-                </Button>
-              </div>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {plans.map((plan) => (
-                  <Card
-                    key={plan.id}
-                    className={`relative overflow-hidden transition-all hover:shadow-lg ${
-                      plan.isFeatured ? 'ring-2 ring-yellow-400' : ''
-                    }`}
-                    data-testid={`card-plan-${plan.id}`}
-                  >
-                    {plan.isFeatured && (
-                      <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 px-3 py-1 text-xs font-semibold rounded-bl-lg" data-testid={`badge-featured-${plan.id}`}>
-                        <Star className="h-3 w-3 inline mr-1" />
-                        Featured
-                      </div>
-                    )}
-                    
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-xl flex items-center gap-2" data-testid={`text-plan-name-${plan.id}`}>
-                            {plan.planBatch && (
-                              <span className="text-2xl font-bold text-primary">{plan.planBatch}</span>
-                            )}
-                            {plan.planName}
-                          </CardTitle>
-                          <CardDescription className="mt-1" data-testid={`text-plan-description-${plan.id}`}>
-                            {plan.description || 'No description'}
-                          </CardDescription>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-4">
+                  {plans.map((plan) => (
+                    <Card
+                      key={plan.id}
+                      className={`relative overflow-hidden transition-all hover:shadow-lg ${
+                        plan.isFeatured ? 'ring-2 ring-yellow-400' : ''
+                      }`}
+                      data-testid={`card-plan-${plan.id}`}
+                    >
+                      {plan.isFeatured && (
+                        <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 px-3 py-1 text-xs font-semibold rounded-bl-lg">
+                          <Star className="h-3 w-3 inline mr-1" />
+                          Featured
                         </div>
-                      </div>
-                    </CardHeader>
-
-                    <CardContent className="space-y-4">
-                      {/* Base Price */}
-                      <div className="bg-muted/50 rounded-lg p-3">
-                        <p className="text-sm text-muted-foreground mb-1">Base Price</p>
-                        <p className="text-2xl font-bold" data-testid={`text-plan-price-${plan.id}`}>
-                          {formatPrice(plan.basePrice, plan.currency)}
-                        </p>
-                      </div>
-
-                      {/* Pricing Types */}
-                      {plan.pricingTypes && plan.pricingTypes.length > 0 && (
-                        <div className="space-y-2">
-                          <p className="text-sm font-semibold text-muted-foreground">Pricing Options</p>
-                          <div className="flex flex-wrap gap-2">
-                            {plan.pricingTypes.map((type) => (
-                              <Badge
-                                key={type.id}
-                                className={getPricingTypeColor(type.type)}
-                                data-testid={`badge-pricing-type-${type.id}`}
-                              >
-                                {type.type.replace('_', ' ')} - {formatPrice(type.price, plan.currency)}
-                              </Badge>
-                            ))}
+                      )}
+                      
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="text-xl flex items-center gap-2">
+                              {plan.planBatch && (
+                                <span className="text-2xl font-bold text-primary">{plan.planBatch}</span>
+                              )}
+                              {plan.planName}
+                            </CardTitle>
+                            <CardDescription className="mt-1">
+                              {plan.description || 'No description'}
+                            </CardDescription>
                           </div>
                         </div>
-                      )}
+                      </CardHeader>
 
-                      {/* Features */}
-                      {plan.features && plan.features.length > 0 && (
-                        <div className="space-y-2">
-                          <p className="text-sm font-semibold text-muted-foreground">Features</p>
-                          <ul className="space-y-1">
-                            {plan.features.slice(0, 3).map((feature, idx) => (
-                              <li key={idx} className="text-sm flex items-start gap-2" data-testid={`text-plan-feature-${plan.id}-${idx}`}>
-                                <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                                <span>{feature}</span>
-                              </li>
-                            ))}
-                            {plan.features.length > 3 && (
-                              <li className="text-sm text-muted-foreground">
-                                +{plan.features.length - 3} more features
-                              </li>
-                            )}
-                          </ul>
+                      <CardContent className="space-y-4">
+                        {/* Base Price */}
+                        <div>
+                          <div className="text-sm text-muted-foreground">Base Price</div>
+                          <div className="text-2xl font-bold">
+                            {formatPrice(plan.basePrice, plan.currency)}
+                          </div>
                         </div>
-                      )}
 
-                      {/* Status & Actions */}
-                      <div className="flex items-center justify-between pt-2 border-t">
-                        <Badge
-                          variant={plan.isActive ? "default" : "secondary"}
-                          data-testid={`badge-plan-status-${plan.id}`}
-                        >
+                        {/* Pricing Types */}
+                        {plan.pricingTypes && plan.pricingTypes.length > 0 && (
+                          <div>
+                            <div className="text-sm text-muted-foreground mb-2">Pricing Types</div>
+                            <div className="flex flex-wrap gap-2">
+                              {plan.pricingTypes.map((pt) => (
+                                <Badge
+                                  key={pt.id}
+                                  className={getPricingTypeColor(pt.type)}
+                                >
+                                  {pt.type.replace('_', ' ').toUpperCase()}
+                                  {pt.price !== '0' && ` - ${formatPrice(pt.price, plan.currency)}`}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Status */}
+                        <div className="flex gap-2">
                           {plan.isActive ? (
-                            <><CheckCircle2 className="h-3 w-3 mr-1" /> Active</>
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Active
+                            </Badge>
                           ) : (
-                            <><XCircle className="h-3 w-3 mr-1" /> Inactive</>
+                            <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Inactive
+                            </Badge>
                           )}
-                        </Badge>
-                        
-                        <div className="flex gap-1">
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-1 pt-2">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setEditingPlan(plan)}
-                            data-testid={`button-edit-plan-${plan.id}`}
+                            onClick={() => onEditPlan(plan)}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -410,38 +624,86 @@ export default function PlansAndPrices() {
                                 deletePlanMutation.mutate(plan.id);
                               }
                             }}
-                            data-testid={`button-delete-plan-${plan.id}`}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-          )}
-        </div>
-      )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </TabsContent>
 
-      {/* Create/Edit Plan Dialog */}
-      <PlanFormDialog
-        open={isCreatePlanOpen || !!editingPlan}
-        onOpenChange={(open) => {
-          if (!open) {
-            setIsCreatePlanOpen(false);
-            setEditingPlan(null);
-          }
-        }}
-        appId={selectedApp?.id}
-        appName={selectedApp?.name}
-        plan={editingPlan}
-      />
-    </div>
+          {/* Tab 2: Features for Plans */}
+          <TabsContent value="features" className="mt-4">
+            <ScrollArea className="h-[400px]">
+              {isLoadingFeatures ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  Loading features...
+                </div>
+              ) : features.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium">No Features</p>
+                  <p className="text-sm mt-2">This app doesn't have any features configured</p>
+                </div>
+              ) : (
+                <div className="space-y-4 pr-4">
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      Feature mapping for plans coming soon. This will allow you to assign specific features to different pricing plans.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <div className="grid gap-3">
+                    {features.map((feature) => (
+                      <Card key={feature.id}>
+                        <CardContent className="pt-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <h4 className="font-semibold">{feature.name}</h4>
+                              {feature.description && (
+                                <p className="text-sm text-muted-foreground mt-1">{feature.description}</p>
+                              )}
+                              <div className="flex gap-2 mt-2">
+                                <Badge variant="outline">{feature.featureKey}</Badge>
+                                {feature.hasQuota && (
+                                  <Badge variant="secondary">
+                                    Quota: {feature.defaultQuota} {feature.quotaUnit}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </ScrollArea>
+          </TabsContent>
+
+          {/* Tab 3: Analytics */}
+          <TabsContent value="analytics" className="mt-4">
+            <ScrollArea className="h-[400px]">
+              <div className="text-center py-12 text-muted-foreground">
+                <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">Analytics Coming Soon</p>
+                <p className="text-sm mt-2">Installation counts and usage statistics will be available here</p>
+              </div>
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-// Plan Form Dialog Component
+// Plan Form Dialog Component (reusing existing implementation)
 function PlanFormDialog({
   open,
   onOpenChange,
@@ -467,201 +729,134 @@ function PlanFormDialog({
     features: plan?.features?.join('\n') || '',
   });
 
-  // Pricing Types state
   const [pricingTypes, setPricingTypes] = useState<{
-    free: { enabled: boolean; price: string };
-    one_output: { enabled: boolean; price: string };
-    onetime: { enabled: boolean; price: string };
-    monthly: { enabled: boolean; price: string };
-    yearly: { enabled: boolean; price: string };
-    trial: { enabled: boolean; price: string; trialDays: number; convertsTo: string };
-  }>({
-    free: { enabled: false, price: '0' },
-    one_output: { enabled: false, price: '0' },
-    onetime: { enabled: false, price: '0' },
-    monthly: { enabled: false, price: '0' },
-    yearly: { enabled: false, price: '0' },
-    trial: { enabled: false, price: '0', trialDays: 7, convertsTo: '' },
-  });
-
-  // App Features state
-  const [selectedFeatures, setSelectedFeatures] = useState<{
-    [key: string]: {
-      enabled: boolean;
-      hasCustomQuota: boolean;
-      customQuota: number;
-    };
-  }>({});
-
-  // Validation errors
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+    type: 'free' | 'one_output' | 'onetime' | 'monthly' | 'yearly' | 'trial';
+    price: string;
+    billingInterval: string;
+    trialDays: number;
+    usageLimit: number | null;
+    isActive: boolean;
+  }[]>(plan?.pricingTypes?.map(pt => ({
+    type: pt.type,
+    price: pt.price,
+    billingInterval: pt.billingInterval,
+    trialDays: pt.trialDays,
+    usageLimit: pt.usageLimit,
+    isActive: pt.isActive
+  })) || []);
 
   const { toast } = useToast();
 
-  // Fetch app features
-  const { data: appFeatures = [], isLoading: isLoadingFeatures } = useQuery<AppFeature[]>({
-    queryKey: ['/api/admin/features', appId],
-    enabled: !!appId && open,
-    select: (data: any) => data.features || []
-  });
-
   // Reset form when dialog opens/closes
   useEffect(() => {
-    if (open) {
+    if (open && plan) {
       setFormData({
-        planName: plan?.planName || '',
-        planBatch: plan?.planBatch || '',
-        description: plan?.description || '',
-        basePrice: plan?.basePrice || '0',
-        currency: plan?.currency || 'INR',
-        isActive: plan?.isActive ?? true,
-        isFeatured: plan?.isFeatured ?? false,
-        sortOrder: plan?.sortOrder || 0,
-        features: plan?.features?.join('\n') || '',
+        planName: plan.planName,
+        planBatch: plan.planBatch,
+        description: plan.description,
+        basePrice: plan.basePrice,
+        currency: plan.currency,
+        isActive: plan.isActive,
+        isFeatured: plan.isFeatured,
+        sortOrder: plan.sortOrder,
+        features: plan.features?.join('\n') || '',
       });
-      setValidationErrors([]);
+      setPricingTypes(plan.pricingTypes?.map(pt => ({
+        type: pt.type,
+        price: pt.price,
+        billingInterval: pt.billingInterval,
+        trialDays: pt.trialDays,
+        usageLimit: pt.usageLimit,
+        isActive: pt.isActive
+      })) || []);
+    } else if (!open) {
+      setFormData({
+        planName: '',
+        planBatch: '',
+        description: '',
+        basePrice: '0',
+        currency: 'INR',
+        isActive: true,
+        isFeatured: false,
+        sortOrder: 0,
+        features: '',
+      });
+      setPricingTypes([]);
     }
   }, [open, plan]);
 
-  // Validate pricing types
-  const validatePricingTypes = () => {
-    const errors: string[] = [];
-    const enabledTypes = Object.entries(pricingTypes).filter(([_, v]) => v.enabled);
-    
-    if (enabledTypes.length === 0) {
-      errors.push("At least one pricing type must be selected");
+  // Fetch apps for dropdown
+  const { data: apps = [] } = useQuery<AppRegistry[]>({
+    queryKey: ['/api/admin/pricing/apps'],
+    select: (data: any) => data.apps || []
+  });
+
+  const [selectedAppId, setSelectedAppId] = useState(appId || plan?.appId || '');
+
+  // Sync selectedAppId with appId/plan changes
+  useEffect(() => {
+    if (open) {
+      setSelectedAppId(appId || plan?.appId || '');
     }
+  }, [open, appId, plan]);
 
-    // Free and paid mutual exclusivity
-    if (pricingTypes.free.enabled && enabledTypes.length > 1) {
-      errors.push("Free plan cannot be combined with paid pricing types");
-    }
-
-    // Trial validation
-    if (pricingTypes.trial.enabled) {
-      if (!pricingTypes.trial.convertsTo) {
-        errors.push("Trial plan must specify which paid plan it converts to");
-      }
-      if (parseFloat(pricingTypes.trial.price) !== 0) {
-        errors.push("Trial plan price must be 0");
-      }
-    }
-
-    // Yearly discount validation
-    if (pricingTypes.monthly.enabled && pricingTypes.yearly.enabled) {
-      const monthlyPrice = parseFloat(pricingTypes.monthly.price);
-      const yearlyPrice = parseFloat(pricingTypes.yearly.price);
-      const monthlyAnnual = monthlyPrice * 12;
-      
-      if (yearlyPrice >= monthlyAnnual) {
-        errors.push(`Yearly price (${yearlyPrice}) should be less than monthly annual (${monthlyAnnual.toFixed(2)}) to offer a discount`);
-      }
-    }
-
-    // Minimum price validation
-    Object.entries(pricingTypes).forEach(([type, data]) => {
-      if (data.enabled && parseFloat(data.price) < 0) {
-        errors.push(`${type.replace('_', ' ')} price cannot be negative`);
-      }
-    });
-
-    setValidationErrors(errors);
-    return errors.length === 0;
-  };
-
-  // Handle pricing type toggle
-  const handlePricingTypeToggle = (type: keyof typeof pricingTypes) => {
-    setPricingTypes(prev => {
-      const newTypes = { ...prev };
-      
-      // Toggle the selected type
-      newTypes[type].enabled = !newTypes[type].enabled;
-      
-      // Apply mutual exclusivity rules
-      if (type === 'free' && newTypes.free.enabled) {
-        // If free is enabled, disable all paid types
-        Object.keys(newTypes).forEach(key => {
-          if (key !== 'free') {
-            newTypes[key as keyof typeof pricingTypes].enabled = false;
-          }
-        });
-      } else if (type !== 'free' && newTypes[type].enabled) {
-        // If any paid type is enabled, disable free
-        newTypes.free.enabled = false;
-      }
-      
-      return newTypes;
-    });
-  };
-
-  const createPlanMutation = useMutation({
+  const createMutation = useMutation({
     mutationFn: (data: any) => apiRequest('/api/admin/pricing/plans', 'POST', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/pricing/plans', appId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/pricing/apps'] }); // Update app plan counts
-      toast({
-        title: "Success",
-        description: "Pricing plan created successfully",
-      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/pricing/plans'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/pricing/apps'] });
+      toast({ title: "Success", description: "Pricing plan created successfully" });
       onOpenChange(false);
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to create pricing plan",
+        description: error.message || "Failed to create pricing plan",
         variant: "destructive",
       });
     }
   });
 
-  const updatePlanMutation = useMutation({
+  const updateMutation = useMutation({
     mutationFn: (data: any) => apiRequest(`/api/admin/pricing/plans/${plan?.id}`, 'PATCH', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/pricing/plans', appId] });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/pricing/apps'] }); // Update app plan counts
-      toast({
-        title: "Success",
-        description: "Pricing plan updated successfully",
-      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/pricing/plans'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/pricing/apps'] });
+      toast({ title: "Success", description: "Pricing plan updated successfully" });
       onOpenChange(false);
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: "Error",
-        description: "Failed to update pricing plan",
+        description: error.message || "Failed to update pricing plan",
         variant: "destructive",
       });
     }
   });
 
-  const updatePlanFeaturesMutation = useMutation({
-    mutationFn: ({ planId, features }: { planId: string; features: any[] }) =>
-      apiRequest(`/api/admin/plans/${planId}/features`, 'PATCH', { features }),
-    onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Plan features updated successfully",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update plan features",
-        variant: "destructive",
-      });
-    }
-  });
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate pricing types
-    if (!validatePricingTypes()) {
+
+    if (!selectedAppId) {
+      toast({
+        title: "Validation Error",
+        description: "Please select an app",
+        variant: "destructive",
+      });
       return;
     }
 
-    const submitData = {
-      appId,
+    if (!formData.planName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Plan name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const planData = {
+      appId: selectedAppId,
       planName: formData.planName,
       planBatch: formData.planBatch,
       description: formData.description,
@@ -671,546 +866,288 @@ function PlanFormDialog({
       isFeatured: formData.isFeatured,
       sortOrder: formData.sortOrder,
       features: formData.features.split('\n').filter(f => f.trim()),
+      pricingTypes: pricingTypes.filter(pt => pt.type) // Only include pricing types with a type selected
     };
 
-    try {
-      let planId = plan?.id;
-      
-      if (plan) {
-        await updatePlanMutation.mutateAsync(submitData);
-      } else {
-        const result: any = await createPlanMutation.mutateAsync(submitData);
-        planId = result.plan?.id;
-      }
-
-      // Update features if plan was created/updated successfully
-      if (planId) {
-        const featuresToUpdate = Object.entries(selectedFeatures)
-          .filter(([_, data]) => data.enabled)
-          .map(([featureId, data]) => ({
-            featureId,
-            isEnabled: true,
-            hasCustomQuota: data.hasCustomQuota,
-            customQuota: data.hasCustomQuota ? data.customQuota : null,
-          }));
-
-        if (featuresToUpdate.length > 0) {
-          await updatePlanFeaturesMutation.mutateAsync({
-            planId,
-            features: featuresToUpdate,
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error submitting plan:', error);
+    if (plan) {
+      updateMutation.mutate(planData);
+    } else {
+      createMutation.mutate(planData);
     }
   };
 
-  // Check if any paid type is enabled
-  const anyPaidTypeEnabled = pricingTypes.one_output.enabled || 
-                            pricingTypes.onetime.enabled || 
-                            pricingTypes.monthly.enabled || 
-                            pricingTypes.yearly.enabled;
+  const addPricingType = () => {
+    setPricingTypes([...pricingTypes, {
+      type: 'free',
+      price: '0',
+      billingInterval: '',
+      trialDays: 0,
+      usageLimit: null,
+      isActive: true
+    }]);
+  };
+
+  const removePricingType = (index: number) => {
+    setPricingTypes(pricingTypes.filter((_, i) => i !== index));
+  };
+
+  const updatePricingType = (index: number, field: string, value: any) => {
+    const updated = [...pricingTypes];
+    updated[index] = { ...updated[index], [field]: value };
+    setPricingTypes(updated);
+  };
+
+  const selectedAppName = apps.find(a => a.id === selectedAppId)?.name || appName || 'App';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" data-testid="dialog-plan-form">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle data-testid="text-dialog-title">
-            {plan ? 'Edit Pricing Plan' : 'Create Pricing Plan'} {appName && `- ${appName}`}
+          <DialogTitle data-testid="dialog-title-plan-form">
+            {plan ? 'Edit' : 'Create'} Pricing Plan{selectedAppName && ` - ${selectedAppName}`}
           </DialogTitle>
           <DialogDescription>
-            {plan ? 'Update the pricing plan details' : 'Add a new pricing plan for the selected app'}
+            Configure pricing details and options for your app
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-6" style={{ maxHeight: 'calc(90vh - 180px)' }}>
+        <ScrollArea className="flex-1" style={{ maxHeight: 'calc(90vh - 180px)' }}>
           <form onSubmit={handleSubmit} className="space-y-6 pr-4">
-            {/* Validation Errors */}
-            {validationErrors.length > 0 && (
-              <Alert variant="destructive" data-testid="alert-validation-errors">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  <ul className="list-disc list-inside space-y-1">
-                    {validationErrors.map((error, idx) => (
-                      <li key={idx}>{error}</li>
+            {/* App Selection (only show if not editing and no appId provided) */}
+            {!plan && !appId && (
+              <div className="space-y-2">
+                <Label htmlFor="app">Select App *</Label>
+                <Select value={selectedAppId} onValueChange={setSelectedAppId}>
+                  <SelectTrigger id="app" data-testid="select-app">
+                    <SelectValue placeholder="Choose an app" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {apps.map((app) => (
+                      <SelectItem key={app.id} value={app.id} data-testid={`option-app-${app.id}`}>
+                        {app.icon} {app.name}
+                      </SelectItem>
                     ))}
-                  </ul>
-                </AlertDescription>
-              </Alert>
+                  </SelectContent>
+                </Select>
+              </div>
             )}
 
-            {/* Basic Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Basic Information</h3>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="planName">Plan Name *</Label>
-                  <Input
-                    id="planName"
-                    value={formData.planName}
-                    onChange={(e) => setFormData({ ...formData, planName: e.target.value })}
-                    placeholder="e.g., Basic, Pro, Enterprise"
-                    required
-                    data-testid="input-plan-name"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="planBatch">Plan Badge</Label>
-                  <Input
-                    id="planBatch"
-                    value={formData.planBatch}
-                    onChange={(e) => setFormData({ ...formData, planBatch: e.target.value })}
-                    placeholder="e.g., ₹, +, -"
-                    maxLength={2}
-                    data-testid="input-plan-batch"
-                  />
-                </div>
-              </div>
-
+            {/* Basic Plan Info */}
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe this pricing plan..."
-                  rows={3}
-                  data-testid="input-plan-description"
+                <Label htmlFor="planName">Plan Name *</Label>
+                <Input
+                  id="planName"
+                  value={formData.planName}
+                  onChange={(e) => setFormData({ ...formData, planName: e.target.value })}
+                  placeholder="e.g., Basic, Pro, Enterprise"
+                  data-testid="input-plan-name"
                 />
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="basePrice">Base Price *</Label>
-                  <Input
-                    id="basePrice"
-                    type="number"
-                    step="0.01"
-                    value={formData.basePrice}
-                    onChange={(e) => setFormData({ ...formData, basePrice: e.target.value })}
-                    placeholder="0.00"
-                    required
-                    data-testid="input-plan-price"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="currency">Currency *</Label>
-                  <Select value={formData.currency} onValueChange={(value) => setFormData({ ...formData, currency: value })}>
-                    <SelectTrigger id="currency" data-testid="select-plan-currency">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="INR" data-testid="option-currency-inr">INR (₹)</SelectItem>
-                      <SelectItem value="USD" data-testid="option-currency-usd">USD ($)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="planBatch">Plan Batch (Optional)</Label>
+                <Input
+                  id="planBatch"
+                  value={formData.planBatch}
+                  onChange={(e) => setFormData({ ...formData, planBatch: e.target.value })}
+                  placeholder="e.g., P1, P2"
+                  data-testid="input-plan-batch"
+                />
               </div>
             </div>
 
-            <Separator />
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Describe this pricing plan..."
+                data-testid="textarea-description"
+              />
+            </div>
+
+            {/* Pricing */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="basePrice">Base Price</Label>
+                <Input
+                  id="basePrice"
+                  type="number"
+                  step="0.01"
+                  value={formData.basePrice}
+                  onChange={(e) => setFormData({ ...formData, basePrice: e.target.value })}
+                  data-testid="input-base-price"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="currency">Currency</Label>
+                <Select
+                  value={formData.currency}
+                  onValueChange={(value) => setFormData({ ...formData, currency: value })}
+                >
+                  <SelectTrigger id="currency" data-testid="select-currency">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="INR">INR (₹)</SelectItem>
+                    <SelectItem value="USD">USD ($)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
             {/* Pricing Types */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold">Pricing Types *</h3>
-                <Info className="h-4 w-4 text-muted-foreground" />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Pricing Types</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addPricingType}
+                  data-testid="button-add-pricing-type"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Type
+                </Button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                {/* Free */}
-                <div className={`border rounded-lg p-4 ${pricingTypes.free.enabled ? 'border-primary bg-primary/5' : ''}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Checkbox
-                      id="type-free"
-                      checked={pricingTypes.free.enabled}
-                      onCheckedChange={() => handlePricingTypeToggle('free')}
-                      disabled={anyPaidTypeEnabled}
-                      data-testid="checkbox-pricing-type-free"
-                    />
-                    <Label htmlFor="type-free" className="font-semibold">Free</Label>
-                    {anyPaidTypeEnabled && (
-                      <Badge variant="outline" className="text-xs">Disabled (paid types selected)</Badge>
-                    )}
-                  </div>
-                  {pricingTypes.free.enabled && (
-                    <p className="text-sm text-muted-foreground">No payment required</p>
-                  )}
-                </div>
-
-                {/* Pay-per-use */}
-                <div className={`border rounded-lg p-4 ${pricingTypes.one_output.enabled ? 'border-primary bg-primary/5' : ''}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Checkbox
-                      id="type-one-output"
-                      checked={pricingTypes.one_output.enabled}
-                      onCheckedChange={() => handlePricingTypeToggle('one_output')}
-                      disabled={pricingTypes.free.enabled}
-                      data-testid="checkbox-pricing-type-one-output"
-                    />
-                    <Label htmlFor="type-one-output" className="font-semibold">Pay-per-use</Label>
-                  </div>
-                  {pricingTypes.one_output.enabled && (
-                    <div className="space-y-2">
-                      <Label htmlFor="price-one-output">Unit Price</Label>
-                      <Input
-                        id="price-one-output"
-                        type="number"
-                        step="0.01"
-                        value={pricingTypes.one_output.price}
-                        onChange={(e) => setPricingTypes(prev => ({
-                          ...prev,
-                          one_output: { ...prev.one_output, price: e.target.value }
-                        }))}
-                        placeholder="0.00"
-                        data-testid="input-price-one-output"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* One-time */}
-                <div className={`border rounded-lg p-4 ${pricingTypes.onetime.enabled ? 'border-primary bg-primary/5' : ''}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Checkbox
-                      id="type-onetime"
-                      checked={pricingTypes.onetime.enabled}
-                      onCheckedChange={() => handlePricingTypeToggle('onetime')}
-                      disabled={pricingTypes.free.enabled}
-                      data-testid="checkbox-pricing-type-onetime"
-                    />
-                    <Label htmlFor="type-onetime" className="font-semibold">One-time</Label>
-                  </div>
-                  {pricingTypes.onetime.enabled && (
-                    <div className="space-y-2">
-                      <Label htmlFor="price-onetime">Price</Label>
-                      <Input
-                        id="price-onetime"
-                        type="number"
-                        step="0.01"
-                        value={pricingTypes.onetime.price}
-                        onChange={(e) => setPricingTypes(prev => ({
-                          ...prev,
-                          onetime: { ...prev.onetime, price: e.target.value }
-                        }))}
-                        placeholder="0.00"
-                        data-testid="input-price-onetime"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Monthly */}
-                <div className={`border rounded-lg p-4 ${pricingTypes.monthly.enabled ? 'border-primary bg-primary/5' : ''}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Checkbox
-                      id="type-monthly"
-                      checked={pricingTypes.monthly.enabled}
-                      onCheckedChange={() => handlePricingTypeToggle('monthly')}
-                      disabled={pricingTypes.free.enabled}
-                      data-testid="checkbox-pricing-type-monthly"
-                    />
-                    <Label htmlFor="type-monthly" className="font-semibold">Monthly</Label>
-                  </div>
-                  {pricingTypes.monthly.enabled && (
-                    <div className="space-y-2">
-                      <Label htmlFor="price-monthly">Monthly Price</Label>
-                      <Input
-                        id="price-monthly"
-                        type="number"
-                        step="0.01"
-                        value={pricingTypes.monthly.price}
-                        onChange={(e) => setPricingTypes(prev => ({
-                          ...prev,
-                          monthly: { ...prev.monthly, price: e.target.value }
-                        }))}
-                        placeholder="0.00"
-                        data-testid="input-price-monthly"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Yearly */}
-                <div className={`border rounded-lg p-4 ${pricingTypes.yearly.enabled ? 'border-primary bg-primary/5' : ''}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Checkbox
-                      id="type-yearly"
-                      checked={pricingTypes.yearly.enabled}
-                      onCheckedChange={() => handlePricingTypeToggle('yearly')}
-                      disabled={pricingTypes.free.enabled}
-                      data-testid="checkbox-pricing-type-yearly"
-                    />
-                    <Label htmlFor="type-yearly" className="font-semibold">Yearly</Label>
-                  </div>
-                  {pricingTypes.yearly.enabled && (
-                    <div className="space-y-2">
-                      <Label htmlFor="price-yearly">Yearly Price</Label>
-                      <Input
-                        id="price-yearly"
-                        type="number"
-                        step="0.01"
-                        value={pricingTypes.yearly.price}
-                        onChange={(e) => setPricingTypes(prev => ({
-                          ...prev,
-                          yearly: { ...prev.yearly, price: e.target.value }
-                        }))}
-                        placeholder="0.00"
-                        data-testid="input-price-yearly"
-                      />
-                      {pricingTypes.monthly.enabled && (
-                        <p className="text-xs text-muted-foreground">
-                          Suggested: Less than {(parseFloat(pricingTypes.monthly.price || '0') * 12).toFixed(2)} for discount
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Trial */}
-                <div className={`border rounded-lg p-4 ${pricingTypes.trial.enabled ? 'border-primary bg-primary/5' : ''}`}>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Checkbox
-                      id="type-trial"
-                      checked={pricingTypes.trial.enabled}
-                      onCheckedChange={() => handlePricingTypeToggle('trial')}
-                      disabled={pricingTypes.free.enabled}
-                      data-testid="checkbox-pricing-type-trial"
-                    />
-                    <Label htmlFor="type-trial" className="font-semibold">Trial</Label>
-                  </div>
-                  {pricingTypes.trial.enabled && (
-                    <div className="space-y-2">
-                      <div>
-                        <Label htmlFor="trial-days">Trial Days</Label>
-                        <Input
-                          id="trial-days"
-                          type="number"
-                          value={pricingTypes.trial.trialDays}
-                          onChange={(e) => setPricingTypes(prev => ({
-                            ...prev,
-                            trial: { ...prev.trial, trialDays: parseInt(e.target.value) || 0 }
-                          }))}
-                          placeholder="7"
-                          data-testid="input-trial-days"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="trial-converts-to">Converts to</Label>
-                        <Select
-                          value={pricingTypes.trial.convertsTo}
-                          onValueChange={(value) => setPricingTypes(prev => ({
-                            ...prev,
-                            trial: { ...prev.trial, convertsTo: value }
-                          }))}
-                        >
-                          <SelectTrigger id="trial-converts-to" data-testid="select-trial-converts-to">
-                            <SelectValue placeholder="Select plan" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {pricingTypes.monthly.enabled && (
-                              <SelectItem value="monthly" data-testid="option-converts-monthly">Monthly</SelectItem>
-                            )}
-                            {pricingTypes.yearly.enabled && (
-                              <SelectItem value="yearly" data-testid="option-converts-yearly">Yearly</SelectItem>
-                            )}
-                            {pricingTypes.onetime.enabled && (
-                              <SelectItem value="onetime" data-testid="option-converts-onetime">One-time</SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Features Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Features</h3>
-              
-              {isLoadingFeatures ? (
-                <div className="text-center py-4 text-muted-foreground">Loading features...</div>
-              ) : appFeatures.length === 0 ? (
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    No features defined for this app. Features can be managed in the app settings.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <div className="space-y-3">
-                  {appFeatures.map((feature) => (
-                    <div
-                      key={feature.id}
-                      className={`border rounded-lg p-4 ${selectedFeatures[feature.id]?.enabled ? 'border-primary bg-primary/5' : ''}`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id={`feature-${feature.id}`}
-                          checked={selectedFeatures[feature.id]?.enabled || false}
-                          onCheckedChange={(checked) => {
-                            setSelectedFeatures(prev => ({
-                              ...prev,
-                              [feature.id]: {
-                                enabled: !!checked,
-                                hasCustomQuota: prev[feature.id]?.hasCustomQuota || false,
-                                customQuota: prev[feature.id]?.customQuota || feature.defaultQuota || 0,
-                              }
-                            }));
-                          }}
-                          data-testid={`checkbox-feature-${feature.id}`}
-                        />
-                        <div className="flex-1 space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Label htmlFor={`feature-${feature.id}`} className="font-semibold">
-                              {feature.name}
-                            </Label>
-                            {feature.category && (
-                              <Badge variant="outline" className="text-xs" data-testid={`badge-feature-category-${feature.id}`}>
-                                {feature.category}
-                              </Badge>
-                            )}
-                          </div>
-                          {feature.description && (
-                            <p className="text-sm text-muted-foreground">{feature.description}</p>
-                          )}
-                          
-                          {/* Quota Settings */}
-                          {feature.hasQuota && selectedFeatures[feature.id]?.enabled && (
-                            <div className="mt-3 space-y-2">
-                              <div className="flex items-center gap-2">
-                                <Checkbox
-                                  id={`quota-${feature.id}`}
-                                  checked={selectedFeatures[feature.id]?.hasCustomQuota || false}
-                                  onCheckedChange={(checked) => {
-                                    setSelectedFeatures(prev => ({
-                                      ...prev,
-                                      [feature.id]: {
-                                        ...prev[feature.id],
-                                        hasCustomQuota: !!checked,
-                                        customQuota: prev[feature.id]?.customQuota || feature.defaultQuota || 0,
-                                      }
-                                    }));
-                                  }}
-                                  data-testid={`checkbox-custom-quota-${feature.id}`}
-                                />
-                                <Label htmlFor={`quota-${feature.id}`} className="text-sm">
-                                  Custom quota for this plan
-                                </Label>
-                              </div>
-                              {selectedFeatures[feature.id]?.hasCustomQuota && (
-                                <div className="flex items-center gap-2">
-                                  <Input
-                                    type="number"
-                                    value={selectedFeatures[feature.id]?.customQuota || 0}
-                                    onChange={(e) => {
-                                      setSelectedFeatures(prev => ({
-                                        ...prev,
-                                        [feature.id]: {
-                                          ...prev[feature.id],
-                                          customQuota: parseInt(e.target.value) || 0,
-                                        }
-                                      }));
-                                    }}
-                                    placeholder={`Default: ${feature.defaultQuota || 0}`}
-                                    className="w-32"
-                                    data-testid={`input-custom-quota-${feature.id}`}
-                                  />
-                                  <span className="text-sm text-muted-foreground">
-                                    {feature.quotaUnit || 'units'}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          )}
+              {pricingTypes.map((pt, index) => (
+                <Card key={index}>
+                  <CardContent className="pt-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-1 grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label>Type</Label>
+                          <Select
+                            value={pt.type}
+                            onValueChange={(value) => updatePricingType(index, 'type', value)}
+                          >
+                            <SelectTrigger data-testid={`select-pricing-type-${index}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="free">Free</SelectItem>
+                              <SelectItem value="one_output">One Output</SelectItem>
+                              <SelectItem value="onetime">One-time</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                              <SelectItem value="yearly">Yearly</SelectItem>
+                              <SelectItem value="trial">Trial</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
+
+                        <div className="space-y-2">
+                          <Label>Price</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={pt.price}
+                            onChange={(e) => updatePricingType(index, 'price', e.target.value)}
+                            data-testid={`input-pricing-price-${index}`}
+                          />
+                        </div>
+
+                        {pt.type === 'trial' && (
+                          <div className="space-y-2">
+                            <Label>Trial Days</Label>
+                            <Input
+                              type="number"
+                              value={pt.trialDays}
+                              onChange={(e) => updatePricingType(index, 'trialDays', parseInt(e.target.value) || 0)}
+                              data-testid={`input-trial-days-${index}`}
+                            />
+                          </div>
+                        )}
+
+                        {pt.type === 'one_output' && (
+                          <div className="space-y-2">
+                            <Label>Usage Limit</Label>
+                            <Input
+                              type="number"
+                              value={pt.usageLimit || ''}
+                              onChange={(e) => updatePricingType(index, 'usageLimit', parseInt(e.target.value) || null)}
+                              placeholder="Number of outputs"
+                              data-testid={`input-usage-limit-${index}`}
+                            />
+                          </div>
+                        )}
                       </div>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removePricingType(index)}
+                        data-testid={`button-remove-pricing-type-${index}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                  ))}
-                </div>
-              )}
+                  </CardContent>
+                </Card>
+              ))}
             </div>
 
-            <Separator />
+            {/* Features */}
+            <div className="space-y-2">
+              <Label htmlFor="features">Features (one per line)</Label>
+              <Textarea
+                id="features"
+                value={formData.features}
+                onChange={(e) => setFormData({ ...formData, features: e.target.value })}
+                placeholder="Feature 1&#10;Feature 2&#10;Feature 3"
+                rows={4}
+                data-testid="textarea-features"
+              />
+            </div>
 
-            {/* Legacy Features (text-based) */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Legacy Features (Text)</h3>
-              <div className="space-y-2">
-                <Label htmlFor="features">Features (one per line)</Label>
-                <Textarea
-                  id="features"
-                  value={formData.features}
-                  onChange={(e) => setFormData({ ...formData, features: e.target.value })}
-                  placeholder="Feature 1&#10;Feature 2&#10;Feature 3"
-                  rows={4}
-                  data-testid="input-plan-features"
+            {/* Options */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="isActive"
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isActive: !!checked })}
+                  data-testid="checkbox-is-active"
                 />
+                <Label htmlFor="isActive" className="cursor-pointer">Active Plan</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="isFeatured"
+                  checked={formData.isFeatured}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isFeatured: !!checked })}
+                  data-testid="checkbox-is-featured"
+                />
+                <Label htmlFor="isFeatured" className="cursor-pointer">Featured Plan</Label>
               </div>
             </div>
 
-            <Separator />
-
-            {/* Settings */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Settings</h3>
-              
-              <div className="space-y-2">
-                <Label htmlFor="sortOrder">Display Order</Label>
-                <Input
-                  id="sortOrder"
-                  type="number"
-                  value={formData.sortOrder}
-                  onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
-                  placeholder="0"
-                  data-testid="input-plan-sort-order"
-                />
-              </div>
-
-              <div className="flex gap-4">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="isActive"
-                    checked={formData.isActive}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isActive: !!checked })}
-                    data-testid="checkbox-plan-active"
-                  />
-                  <Label htmlFor="isActive">Active</Label>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="isFeatured"
-                    checked={formData.isFeatured}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isFeatured: !!checked })}
-                    data-testid="checkbox-plan-featured"
-                  />
-                  <Label htmlFor="isFeatured">Featured</Label>
-                </div>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="sortOrder">Sort Order</Label>
+              <Input
+                id="sortOrder"
+                type="number"
+                value={formData.sortOrder}
+                onChange={(e) => setFormData({ ...formData, sortOrder: parseInt(e.target.value) || 0 })}
+                data-testid="input-sort-order"
+              />
             </div>
           </form>
         </ScrollArea>
 
-        <DialogFooter className="px-6 py-4 border-t">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} data-testid="button-cancel-plan">
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} data-testid="button-cancel">
             Cancel
           </Button>
-          <Button
-            type="submit"
+          <Button 
             onClick={handleSubmit}
-            disabled={createPlanMutation.isPending || updatePlanMutation.isPending}
+            disabled={createMutation.isPending || updateMutation.isPending}
             data-testid="button-submit-plan"
           >
-            {createPlanMutation.isPending || updatePlanMutation.isPending ? 'Saving...' : plan ? 'Update Plan' : 'Create Plan'}
+            {(createMutation.isPending || updateMutation.isPending) ? 'Saving...' : (plan ? 'Update' : 'Create')} Plan
           </Button>
         </DialogFooter>
       </DialogContent>
