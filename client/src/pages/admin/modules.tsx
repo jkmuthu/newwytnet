@@ -13,7 +13,6 @@ import { Search, Package, Grid, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function AdminModuleLibrary() {
-  const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
@@ -36,11 +35,8 @@ export default function AdminModuleLibrary() {
     );
   };
 
-  const wytApps = filterModules(getWytApps(modules));
-  const wytHubs = filterModules(getWytHubs(modules));
+  // Module Library shows ONLY platform modules (building blocks)
   const platformModules = filterModules(getPlatformModules(modules));
-  
-  const allModules = filterModules([...wytApps, ...wytHubs, ...platformModules]);
 
   // Update module status (enable/disable)
   const toggleModuleStatus = useMutation({
@@ -298,54 +294,25 @@ export default function AdminModuleLibrary() {
         </CardContent>
       </Card>
 
-      {/* Category Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="all" data-testid="tab-all">
-            All Modules ({allModules.length})
-          </TabsTrigger>
-          <TabsTrigger value="apps" data-testid="tab-apps">
-            WytApps ({wytApps.length})
-          </TabsTrigger>
-          <TabsTrigger value="hubs" data-testid="tab-hubs">
-            WytHubs ({wytHubs.length})
-          </TabsTrigger>
-          <TabsTrigger value="platform" data-testid="tab-platform">
-            Platform ({platformModules.length})
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="all" className="mt-6">
-          {renderModuleList(allModules, "No modules found")}
-        </TabsContent>
-
-        <TabsContent value="apps" className="mt-6">
-          <div className="mb-4">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Direct user-facing applications
-            </h3>
+      {/* Module Library Content */}
+      <Card className="border-purple-200 dark:border-purple-800">
+        <CardHeader className="bg-purple-50 dark:bg-purple-950">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+              <Package className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div>
+              <CardTitle className="text-purple-900 dark:text-purple-100">Platform Modules</CardTitle>
+              <CardDescription>
+                Reusable building blocks and features for composing applications
+              </CardDescription>
+            </div>
           </div>
-          {renderModuleList(wytApps, "No WytApps found")}
-        </TabsContent>
-
-        <TabsContent value="hubs" className="mt-6">
-          <div className="mb-4">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Hub services with /h/ routes and whitelabel domains
-            </h3>
-          </div>
-          {renderModuleList(wytHubs, "No WytHubs found")}
-        </TabsContent>
-
-        <TabsContent value="platform" className="mt-6">
-          <div className="mb-4">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              System components and building blocks
-            </h3>
-          </div>
+        </CardHeader>
+        <CardContent className="pt-6">
           {renderModuleList(platformModules, "No platform modules found")}
-        </TabsContent>
-      </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }
