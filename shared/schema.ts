@@ -2277,6 +2277,196 @@ export const aiGeneratedCode = pgTable("ai_generated_code", {
 // ========================================
 
 // ========================================
+// PRICING PLANS SYSTEM
+// ========================================
+
+// Pricing plan types enum
+export const pricingPlanTypeEnum = pgEnum("pricing_plan_type", [
+  "free",
+  "one_output",     // Pay per single use
+  "onetime",        // One-time purchase
+  "monthly",        // Monthly subscription
+  "yearly",         // Yearly subscription
+  "trial"           // Trial period
+]);
+
+// Subscription status enum
+export const subscriptionStatusEnum = pgEnum("subscription_status", [
+  "active",
+  "cancelled",
+  "expired",
+  "trial",
+  "paused"
+]);
+
+// Apps Registry - All WytNet apps catalog
+export const appsRegistry = pgTable("apps_registry", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  icon: varchar("icon", { length: 500 }),
+  category: varchar("category", { length: 100 }), // 'productivity', 'utility', 'ai', etc.
+  isActive: boolean("is_active").default(true),
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Pricing Plans - Main pricing configuration per app
+export const pricingPlans = pgTable("pricing_plans", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  appId: uuid("app_id").notNull().references(() => appsRegistry.id, { onDelete: 'cascade' }),
+  
+  // Plan details
+  planName: varchar("plan_name", { length: 255 }).notNull(), // 'Free', 'Plus', 'Pro'
+  planBatch: varchar("plan_batch", { length: 50 }), // '₹', '+', '-' for grouping/tiering
+  description: text("description"),
+  
+  // Pricing
+  basePrice: decimal("base_price", { precision: 10, scale: 2 }).default('0'),
+  currency: varchar("currency", { length: 10 }).notNull().default('INR'),
+  
+  // Configuration
+  isActive: boolean("is_active").default(true),
+  isFeatured: boolean("is_featured").default(false),
+  sortOrder: integer("sort_order").default(0), // Display order
+  
+  // Razorpay integration
+  razorpayPlanId: varchar("razorpay_plan_id", { length: 255 }), // Sync with Razorpay
+  
+  // Features and limits
+  features: jsonb("features").default([]), // Array of feature strings
+  limits: jsonb("limits").default({}), // {maxRequests: 100, maxStorage: '1GB'}
+  
+  // Metadata
+  metadata: jsonb("metadata").default({}),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Pricing Plan Types - Multiple pricing models per plan
+export const pricingPlanTypes = pgTable("pricing_plan_types", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  pricingPlanId: uuid("pricing_plan_id").notNull().references(() => pricingPlans.id, { onDelete: 'cascade' }),
+  
+  // Type and pricing
+  type: pricingPlanTypeEnum("type").notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull().default('0'),
+  
+  // Billing configuration
+  billingInterval: varchar("billing_interval", { length: 20 }), // 'monthly', 'yearly', 'onetime'
+  trialDays: integer("trial_days").default(0), // Trial period in days
+  
+  // Quotas (for usage-based plans)
+  usageLimit: integer("usage_limit"), // Max uses per billing cycle
+  
+  // Razorpay integration
+  razorpayItemId: varchar("razorpay_item_id", { length: 255 }),
+  
+  // Configuration
+  isActive: boolean("is_active").default(true),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// User Subscriptions - Track user's active subscriptions
+export const userSubscriptions = pgTable("user_subscriptions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => whatsappUsers.id, { onDelete: 'cascade' }),
+  appId: uuid("app_id").notNull().references(() => appsRegistry.id),
+  pricingPlanId: uuid("pricing_plan_id").notNull().references(() => pricingPlans.id),
+  pricingPlanTypeId: uuid("pricing_plan_type_id").references(() => pricingPlanTypes.id),
+  
+  // Subscription status
+  status: subscriptionStatusEnum("status").notNull().default('active'),
+  
+  // Dates
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"),
+  nextBillingDate: timestamp("next_billing_date"),
+  cancelledAt: timestamp("cancelled_at"),
+  
+  // Razorpay integration
+  razorpaySubscriptionId: varchar("razorpay_subscription_id", { length: 255 }),
+  razorpayOrderId: varchar("razorpay_order_id", { length: 255 }),
+  razorpayPaymentId: varchar("razorpay_payment_id", { length: 255 }),
+  
+  // Trial tracking
+  isTrialUsed: boolean("is_trial_used").default(false),
+  trialEndsAt: timestamp("trial_ends_at"),
+  
+  // Auto-renewal
+  autoRenew: boolean("auto_renew").default(true),
+  
+  // Metadata
+  metadata: jsonb("metadata").default({}),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  // Unique constraint: One active subscription per user per app
+  uniqueUserAppSubscription: unique().on(table.userId, table.appId, table.status),
+}));
+
+// Usage Tracking - Track usage for pay-per-use plans
+export const usageTracking = pgTable("usage_tracking", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => whatsappUsers.id, { onDelete: 'cascade' }),
+  appId: uuid("app_id").notNull().references(() => appsRegistry.id),
+  subscriptionId: uuid("subscription_id").references(() => userSubscriptions.id),
+  
+  // Usage data
+  usageCount: integer("usage_count").default(0),
+  usageDetails: jsonb("usage_details").default({}), // Detailed usage logs
+  
+  // Billing cycle
+  billingPeriodStart: timestamp("billing_period_start").defaultNow().notNull(),
+  billingPeriodEnd: timestamp("billing_period_end"),
+  lastResetDate: timestamp("last_reset_date").defaultNow().notNull(),
+  
+  // Quota enforcement
+  quotaLimit: integer("quota_limit"), // Max allowed uses
+  quotaRemaining: integer("quota_remaining"),
+  
+  // Metadata
+  metadata: jsonb("metadata").default({}),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Payment Transactions - Track all payment transactions
+export const paymentTransactions = pgTable("payment_transactions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  subscriptionId: uuid("subscription_id").references(() => userSubscriptions.id),
+  
+  // Transaction details
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).notNull().default('INR'),
+  status: varchar("status", { length: 50 }).notNull(), // 'pending', 'success', 'failed'
+  
+  // Razorpay data
+  razorpayOrderId: varchar("razorpay_order_id", { length: 255 }),
+  razorpayPaymentId: varchar("razorpay_payment_id", { length: 255 }),
+  razorpaySignature: varchar("razorpay_signature", { length: 500 }),
+  
+  // Transaction metadata
+  transactionType: varchar("transaction_type", { length: 50 }), // 'subscription', 'renewal', 'upgrade'
+  description: text("description"),
+  metadata: jsonb("metadata").default({}),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// ========================================
+// END PRICING PLANS SYSTEM
+// ========================================
+
+// ========================================
 // END WYTWALL MARKETPLACE SYSTEM
 // ========================================
 
@@ -2403,3 +2593,31 @@ export type AiChatConversation = typeof aiChatConversations.$inferSelect;
 export type InsertAiChatConversation = z.infer<typeof insertAiChatConversationSchema>;
 export type AiGeneratedCode = typeof aiGeneratedCode.$inferSelect;
 export type InsertAiGeneratedCode = z.infer<typeof insertAiGeneratedCodeSchema>;
+
+// Pricing Plans schema exports
+export const insertAppRegistrySchema = createInsertSchema(appsRegistry).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectAppRegistrySchema = createSelectSchema(appsRegistry);
+export const insertPricingPlanSchema = createInsertSchema(pricingPlans).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectPricingPlanSchema = createSelectSchema(pricingPlans);
+export const insertPricingPlanTypeSchema = createInsertSchema(pricingPlanTypes).omit({ id: true, createdAt: true });
+export const selectPricingPlanTypeSchema = createSelectSchema(pricingPlanTypes);
+export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectUserSubscriptionSchema = createSelectSchema(userSubscriptions);
+export const insertUsageTrackingSchema = createInsertSchema(usageTracking).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectUsageTrackingSchema = createSelectSchema(usageTracking);
+export const insertPaymentTransactionSchema = createInsertSchema(paymentTransactions).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectPaymentTransactionSchema = createSelectSchema(paymentTransactions);
+
+// Pricing Plans type exports
+export type AppRegistry = typeof appsRegistry.$inferSelect;
+export type InsertAppRegistry = z.infer<typeof insertAppRegistrySchema>;
+export type PricingPlan = typeof pricingPlans.$inferSelect;
+export type InsertPricingPlan = z.infer<typeof insertPricingPlanSchema>;
+export type PricingPlanType = typeof pricingPlanTypes.$inferSelect;
+export type InsertPricingPlanType = z.infer<typeof insertPricingPlanTypeSchema>;
+export type UserSubscription = typeof userSubscriptions.$inferSelect;
+export type InsertUserSubscription = z.infer<typeof insertUserSubscriptionSchema>;
+export type UsageTracking = typeof usageTracking.$inferSelect;
+export type InsertUsageTracking = z.infer<typeof insertUsageTrackingSchema>;
+export type PaymentTransaction = typeof paymentTransactions.$inferSelect;
+export type InsertPaymentTransaction = z.infer<typeof insertPaymentTransactionSchema>;
