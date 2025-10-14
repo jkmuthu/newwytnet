@@ -32,6 +32,67 @@ The platform features modern UI elements such as animated gradient backgrounds, 
 - **WytMatch & Bucket List**: User feature allowing users to create public/private bucket lists, with WytMatch enabling discovery of shared interests for potential opportunities.
 - **Enterprise Junction Table Architecture**: Robust many-to-many relationship management through dedicated junction tables and corresponding admin API endpoints.
 
+## Context-Based Module System (October 2025)
+
+WytNet now implements a **WordPress-style plugin architecture** where modules are small, focused, single-purpose components that can be activated/deactivated across different contexts.
+
+### Module Architecture
+- **Modules as Plugins**: Each module is a self-contained plugin (e.g., "WytPass Auth", "Razorpay Payment", "Calendar", "Logo Uploader with Autocrop")
+- **Context-Aware Activation**: Modules can be enabled/disabled independently for Platform ✓ Hub ✓ App ✓ Game ✓ contexts
+- **50+ Module Catalog**: Organized into 8 categories:
+  1. Authentication & Identity
+  2. Payment Gateways
+  3. Content & Media
+  4. Communication
+  5. Data Management
+  6. User & Organization
+  7. Productivity
+  8. Platform Core
+
+### Dependency Management
+- **Auto-Resolution**: Automatically enables required dependencies when activating a module
+- **Conflict Detection**: Prevents activation of conflicting modules (e.g., Razorpay vs Stripe)
+- **Dependency Chains**: Supports complex dependency graphs with recursive resolution
+- **Service Layer**: `moduleDependencyService.ts` handles all dependency logic and validation
+
+### Module Activation System
+- **Platform-Level**: Admin panel manages platform-wide module activation
+- **Context-Specific**: Hub/App/Game managers activate modules within their scope (with contextId)
+- **Activation Tables**: `platform_module_activations`, `hub_module_activations`, `app_module_activations`, `game_module_activations`
+- **Settings & Configuration**: Each activation can store custom settings in JSONB fields
+
+### API Exposure & Monetization
+- **Module API Endpoints**: Each module exposes its own REST API endpoints
+- **API-as-a-Service Model**: Planned monetization similar to Google Cloud Console
+- **API Key Management**: Per-module API key generation (planned)
+- **Usage Tracking**: Analytics and rate limiting per module (planned)
+
+### Database Schema
+```typescript
+platformModules {
+  id, name, description, category,
+  contexts: ['platform', 'hub', 'app', 'game'],
+  dependencies: ['module-id-1', 'module-id-2'],
+  conflicts: ['conflicting-module'],
+  apiEndpoints: [{ path, method, description }],
+  settings: { /* module config */ },
+  compatibilityMatrix: { /* version compat */ },
+  version, status
+}
+
+platform_module_activations {
+  id, moduleId, context, isActive,
+  settings, activatedBy, activatedAt, deactivatedAt
+}
+```
+
+### Module Library UI
+- **Admin Dashboard**: Module browsing, search, and filtering by 8 categories
+- **Toggle Activation**: One-click enable/disable with dependency auto-resolution
+- **Dependency Visualization**: Shows required modules and conflicts inline
+- **API Documentation**: Details dialog with full endpoint documentation
+- **Stats Dashboard**: Total, active, and inactive module counts
+
 # External Dependencies
 
 ## Database Integration
