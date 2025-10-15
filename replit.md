@@ -122,6 +122,28 @@ WytNet implements a **unified API gateway** that proxies third-party services un
    - Credential: `DIGIO_API_KEY` (pending)
    - Government integrations: UIDAI, NSDL, DigiLocker
 
+3. **WytData (Native)**
+   - Essential reference datasets for app development
+   - **Collections (307 items total)**:
+     - Countries (50): ISO codes, phone prefixes, flags, currencies
+     - Languages (20): ISO 639 codes, native names, text direction (RTL/LTR)
+     - Currencies (20): ISO 4217 codes, symbols, decimal places
+     - Timezones (10): IANA IDs, UTC offsets, DST info
+     - India States (37): State codes, capitals
+     - India Cities (100): Top 100 major cities by population
+     - GST State Codes (34): Tax jurisdiction codes
+     - Industries (15): Business sector classifications
+     - Company Sizes (6): Employee count ranges
+     - Job Roles (15): Common professional positions
+   - **Endpoints**:
+     - `GET /api/modules/wytdata/collections` - List all available datasets
+     - `GET /api/modules/wytdata/:key` - Fetch complete dataset
+     - `GET /api/modules/wytdata/:key/search?q={query}` - Search within dataset
+     - `GET /api/modules/wytdata/:key/locale/:locale` - Filter by locale (e.g., hi, en)
+     - `POST /api/modules/wytdata/batch` - Fetch multiple datasets in one request
+   - **Auto-Seeding**: Datasets initialized on server startup via `datasetSeedingService.ts`
+   - **Self-Consuming**: Platform uses WytData APIs for dropdowns, forms, and data validation
+
 #### Service Layer
 - **ModuleProxyService**: Central proxy orchestrator in `server/services/moduleProxyService.ts`
 - **Method-aware transformations**: GET vs POST/PUT body handling
