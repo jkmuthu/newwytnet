@@ -3712,6 +3712,251 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // =============================================================================
+  // MODULE PROXY ROUTES - White-label API Gateway
+  // =============================================================================
+
+  // WytMap (Mappls) Proxy Routes
+  app.get('/api/modules/wytmap/geocode', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const { moduleProxyService } = await import('./services/moduleProxyService');
+      
+      const result = await moduleProxyService.proxyRequest({
+        moduleId: 'wytmap-mappls',
+        endpoint: '/geocode',
+        method: 'GET',
+        query: req.query as Record<string, string>
+      });
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Geocoding failed'
+      });
+    }
+  });
+
+  app.get('/api/modules/wytmap/reverse-geocode', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const { moduleProxyService } = await import('./services/moduleProxyService');
+      
+      const result = await moduleProxyService.proxyRequest({
+        moduleId: 'wytmap-mappls',
+        endpoint: '/rev_geocode',
+        method: 'GET',
+        query: req.query as Record<string, string>
+      });
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Reverse geocoding failed'
+      });
+    }
+  });
+
+  app.get('/api/modules/wytmap/directions', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const { moduleProxyService } = await import('./services/moduleProxyService');
+      
+      const result = await moduleProxyService.proxyRequest({
+        moduleId: 'wytmap-mappls',
+        endpoint: '/route_adv/driving',
+        method: 'GET',
+        query: req.query as Record<string, string>
+      });
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Directions request failed'
+      });
+    }
+  });
+
+  app.get('/api/modules/wytmap/nearby', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const { moduleProxyService } = await import('./services/moduleProxyService');
+      
+      const result = await moduleProxyService.proxyRequest({
+        moduleId: 'wytmap-mappls',
+        endpoint: '/nearby',
+        method: 'GET',
+        query: req.query as Record<string, string>
+      });
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Nearby search failed'
+      });
+    }
+  });
+
+  app.get('/api/modules/wytmap/distance', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const { moduleProxyService } = await import('./services/moduleProxyService');
+      
+      const result = await moduleProxyService.proxyRequest({
+        moduleId: 'wytmap-mappls',
+        endpoint: '/distance_matrix/driving',
+        method: 'GET',
+        query: req.query as Record<string, string>
+      });
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Distance calculation failed'
+      });
+    }
+  });
+
+  // WytKYC (Digio) Proxy Routes
+  app.post('/api/modules/wytkyc/esign/initiate', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const { moduleProxyService } = await import('./services/moduleProxyService');
+      
+      const result = await moduleProxyService.proxyRequest({
+        moduleId: 'wytkyc-digio',
+        endpoint: '/client/document/upload',
+        method: 'POST',
+        body: req.body
+      });
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'eSign initiation failed'
+      });
+    }
+  });
+
+  app.get('/api/modules/wytkyc/esign/status/:requestId', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const { moduleProxyService } = await import('./services/moduleProxyService');
+      
+      const result = await moduleProxyService.proxyRequest({
+        moduleId: 'wytkyc-digio',
+        endpoint: `/client/document/${req.params.requestId}`,
+        method: 'GET'
+      });
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Status check failed'
+      });
+    }
+  });
+
+  app.post('/api/modules/wytkyc/verify/pan', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const { moduleProxyService } = await import('./services/moduleProxyService');
+      
+      const result = await moduleProxyService.proxyRequest({
+        moduleId: 'wytkyc-digio',
+        endpoint: '/kyc/v2/fetch/pan',
+        method: 'POST',
+        body: req.body
+      });
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'PAN verification failed'
+      });
+    }
+  });
+
+  app.post('/api/modules/wytkyc/verify/aadhaar', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const { moduleProxyService } = await import('./services/moduleProxyService');
+      
+      const result = await moduleProxyService.proxyRequest({
+        moduleId: 'wytkyc-digio',
+        endpoint: '/kyc/v2/request/with_digilocker',
+        method: 'POST',
+        body: req.body
+      });
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Aadhaar verification failed'
+      });
+    }
+  });
+
+  app.post('/api/modules/wytkyc/face-match', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const { moduleProxyService } = await import('./services/moduleProxyService');
+      
+      const result = await moduleProxyService.proxyRequest({
+        moduleId: 'wytkyc-digio',
+        endpoint: '/kyc/v2/face_match',
+        method: 'POST',
+        body: req.body
+      });
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Face matching failed'
+      });
+    }
+  });
+
+  // =============================================================================
   // USER APP INSTALLATIONS - WytApps Marketplace
   // =============================================================================
 
