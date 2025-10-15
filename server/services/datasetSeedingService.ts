@@ -3,9 +3,9 @@
  * Seeds essential reference datasets for the platform
  */
 
-import { db } from "@db";
+import { db } from "../db";
 import { datasetCollections, datasetItems } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, asc } from "drizzle-orm";
 
 interface DatasetCollection {
   key: string;

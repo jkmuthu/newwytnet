@@ -110,7 +110,10 @@ import {
   appFeatures,
   planFeatureAccess,
   insertAppFeatureSchema,
-  insertPlanFeatureAccessSchema
+  insertPlanFeatureAccessSchema,
+  platformModuleActivations,
+  hubModuleActivations,
+  appModuleActivations
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -172,6 +175,10 @@ export async function registerRoutes(app: Express): Promise<void> {
   const tmNumberingService = await import('./services/tmNumbering');
   await tmNumberingService.initializeNiceClassifications();
   await tmNumberingService.seedSampleTMNumbers();
+
+  // Initialize WytData datasets
+  const { datasetSeedingService } = await import('./services/datasetSeedingService');
+  await datasetSeedingService.initializeDatasets();
 
   // Auth routes - unified endpoint for both authentication systems
   app.get('/api/auth/user', async (req: any, res) => {
