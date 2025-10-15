@@ -31,6 +31,7 @@ The platform features modern UI elements such as animated gradient backgrounds, 
 - **AI App Builder**: Admin-only AI-powered tool using OpenAI for natural language app creation, integrated into the WytNet framework (PostgreSQL+Drizzle, React/TypeScript, shadcn/ui, WytPass auth).
 - **WytMatch & Bucket List**: User feature allowing users to create public/private bucket lists, with WytMatch enabling discovery of shared interests for potential opportunities.
 - **Enterprise Junction Table Architecture**: Robust many-to-many relationship management through dedicated junction tables and corresponding admin API endpoints.
+- **Public WytApps & WytHubs Pages**: Marketing pages showcasing available apps and hubs with authentication-aware CTAs ([+Add App], [+Subscribe]) that redirect to login for unauthenticated users or dashboard for logged-in users. Features loading states, error handling, and responsive designs with proper accessibility (data-testid attributes).
 
 ## Context-Based Module System (October 2025)
 
