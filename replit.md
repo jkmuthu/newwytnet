@@ -94,6 +94,44 @@ platform_module_activations {
 - **API Documentation**: Details dialog with full endpoint documentation
 - **Stats Dashboard**: Total, active, and inactive module counts
 
+### Module Activation Enforcement (October 2025)
+
+WytNet enforces module activation at both backend and frontend layers to ensure features are only accessible when their modules are activated.
+
+#### Backend Enforcement
+- **Middleware Guards**: `requireModule(moduleId)` middleware checks activation before route access
+  - File: `server/helpers/moduleMiddleware.ts`
+  - Usage: `app.post('/api/payments/create-order', isAuthenticated, requireModule('razorpay-payment'), handler)`
+  - Admin bypass: Automatically allows super admins (configurable via `skipIfAdmin: false`)
+  - Returns 403 with detailed error if module not activated
+- **Service Layer**: `moduleActivationService.ts` provides:
+  - `isModuleActive(moduleId, context)`: Check if module is activated
+  - `getActiveModules(context)`: Get list of all active module IDs
+  - Context-aware: Platform, Hub, App, Game scoping with optional contextId
+- **API Endpoint**: `GET /api/modules/enabled/:context?contextId={id}` returns activated modules for frontend consumption
+
+#### Frontend Enforcement
+- **React Hook**: `useEnabledModules({ context, contextId })` fetches and caches enabled modules
+  - File: `client/src/hooks/useEnabledModules.ts`
+  - Returns: `isModuleEnabled(moduleId)`, `enabledModules[]`, `activations[]`, `getModuleSettings()`
+  - Caching: 5-minute stale time, React Query powered
+- **Helper Hook**: `useIsModuleEnabled(moduleId, context)` for simple enabled/disabled checks
+- **Conditional Components**:
+  - `<ModuleFeatureDemo moduleId="..." moduleName="...">`: Shows loading/disabled/active states with visual feedback
+  - `<ConditionalFeature moduleId="..." fallback={<>}>`: Simple show/hide wrapper
+  - File: `client/src/components/ModuleFeatureDemo.tsx`
+
+#### Implementation Pattern
+```typescript
+// Backend: Protect routes
+app.post('/api/feature', requireModule('feature-module'), handler);
+
+// Frontend: Conditional rendering
+const { isEnabled } = useIsModuleEnabled('feature-module');
+if (!isEnabled) return null;
+return <FeatureUI />;
+```
+
 ### White-label API Proxy Gateway (October 2025)
 
 WytNet implements a **unified API gateway** that proxies third-party services under WytNet branding, similar to Google Cloud Console's approach.
