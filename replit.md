@@ -93,6 +93,41 @@ platform_module_activations {
 - **API Documentation**: Details dialog with full endpoint documentation
 - **Stats Dashboard**: Total, active, and inactive module counts
 
+### White-label API Proxy Gateway (October 2025)
+
+WytNet implements a **unified API gateway** that proxies third-party services under WytNet branding, similar to Google Cloud Console's approach.
+
+#### Module Types
+- **Native**: Built in-house by WytNet (e.g., WytPass Auth, WytID)
+- **Proxy**: Third-party services white-labeled (e.g., WytMap→Mappls, WytKYC→Digio)
+- **Hybrid**: Combination of native features + proxy integrations
+
+#### Proxy Architecture
+- **Request Transformation**: WytNet API format → Provider-specific format
+- **Response Transformation**: Provider response → WytNet branded response
+- **Credential Management**: Secure API key injection via environment variables
+- **Error Handling**: White-labeled error messages maintaining WytNet branding
+- **Usage Tracking**: Per-module API usage analytics (planned)
+
+#### Implemented Proxy Modules
+1. **WytMap (Mappls Proxy)**
+   - India-specific location services
+   - Endpoints: `/api/modules/wytmap/{geocode, reverse-geocode, directions, nearby, distance}`
+   - Credential: `MAPPLS_API_KEY`
+   - Transformation: GET params via query, POST bodies preserved
+   
+2. **WytKYC (Digio Proxy)**
+   - Identity verification and eSign services
+   - Endpoints: `/api/modules/wytkyc/{esign/initiate, verify/pan, verify/aadhaar, face-match}`
+   - Credential: `DIGIO_API_KEY` (pending)
+   - Government integrations: UIDAI, NSDL, DigiLocker
+
+#### Service Layer
+- **ModuleProxyService**: Central proxy orchestrator in `server/services/moduleProxyService.ts`
+- **Method-aware transformations**: GET vs POST/PUT body handling
+- **Security**: No credential exposure, environment-based key management
+- **Self-consuming architecture**: WytNet uses own Module Library APIs to build platform features
+
 # External Dependencies
 
 ## Database Integration
