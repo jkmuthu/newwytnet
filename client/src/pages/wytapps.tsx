@@ -2,11 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CheckCircle, Zap, Brain, QrCode, Calculator, CreditCard, Target, RotateCcw, Quote, Star } from "lucide-react";
-import { Link } from "wouter";
+import { ArrowRight, CheckCircle, Zap, Brain, QrCode, Calculator, CreditCard, Target, RotateCcw, Quote, Star, Plus } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { fetchEnabledPlatformModules } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function WytApps() {
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+
   // Fetch enabled modules from API
   const { data: enabledModules = [], isLoading, error } = useQuery({
     queryKey: ['platform-modules', 'enabled'],
@@ -17,6 +21,16 @@ export default function WytApps() {
 
   // Filter only WytApps
   const wytApps = enabledModules.filter(module => module.category === 'wytapps');
+
+  const handleAddApp = () => {
+    if (!user) {
+      // Redirect to login if not authenticated
+      setLocation('/login?redirect=/dashboard');
+    } else {
+      // Redirect to dashboard apps section
+      setLocation('/dashboard?tab=apps');
+    }
+  };
 
   const getAppIcon = (appId: string) => {
     switch (appId) {
@@ -89,6 +103,19 @@ export default function WytApps() {
               <Target className="h-5 w-5 mr-2" />
               Instant Results
             </div>
+          </div>
+
+          {/* Add App Button */}
+          <div className="flex justify-center mb-8">
+            <Button 
+              onClick={handleAddApp} 
+              size="lg"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all"
+              data-testid="button-add-app"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              {user ? 'Install New App' : 'Login to Install Apps'}
+            </Button>
           </div>
         </div>
       </section>

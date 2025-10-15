@@ -1,10 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Network, ExternalLink, Star, Users, TrendingUp } from "lucide-react";
-import { Link } from "wouter";
+import { Network, ExternalLink, Star, Users, TrendingUp, UserPlus } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface MarketplaceHub {
   id: string;
@@ -22,9 +25,42 @@ interface MarketplaceHub {
 }
 
 export default function HubDiscovery() {
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+
   const { data: hubs, isLoading, error } = useQuery<MarketplaceHub[]>({
     queryKey: ["/api/marketplace/hubs"],
   });
+
+  const subscribeMutation = useMutation({
+    mutationFn: (hubId: string) => apiRequest(`/api/hub-subscriptions`, {
+      method: 'POST',
+      body: JSON.stringify({ hubId })
+    }),
+    onSuccess: (data) => {
+      toast({
+        title: "Subscribed Successfully!",
+        description: "You can now access this hub from your dashboard.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/hub-subscriptions"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Subscription Failed",
+        description: error.message || "Could not subscribe to hub. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleSubscribe = (hubId: string) => {
+    if (!user) {
+      setLocation('/login?redirect=/hub-discovery');
+      return;
+    }
+    subscribeMutation.mutate(hubId);
+  };
 
   if (isLoading) {
     return (
@@ -126,12 +162,23 @@ export default function HubDiscovery() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <Link href={`/hub/${hub.slug}`}>
-                      <Button className="w-full" data-testid={`button-explore-${hub.slug}`}>
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Explore Hub
+                    <div className="flex gap-2">
+                      <Link href={`/hub/${hub.slug}`} className="flex-1">
+                        <Button variant="outline" className="w-full" data-testid={`button-explore-${hub.slug}`}>
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Explore
+                        </Button>
+                      </Link>
+                      <Button 
+                        onClick={() => handleSubscribe(hub.id)}
+                        disabled={subscribeMutation.isPending}
+                        className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                        data-testid={`button-subscribe-${hub.slug}`}
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        {user ? 'Subscribe' : 'Login to Subscribe'}
                       </Button>
-                    </Link>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -181,11 +228,23 @@ export default function HubDiscovery() {
                         {hub.category}
                       </Badge>
                     </div>
-                    <Link href={`/hub/${hub.slug}`}>
-                      <Button variant="outline" className="w-full" data-testid={`button-view-${hub.slug}`}>
-                        View Hub
+                    <div className="flex gap-2">
+                      <Link href={`/hub/${hub.slug}`} className="flex-1">
+                        <Button variant="outline" className="w-full" data-testid={`button-view-${hub.slug}`}>
+                          View
+                        </Button>
+                      </Link>
+                      <Button 
+                        onClick={() => handleSubscribe(hub.id)}
+                        disabled={subscribeMutation.isPending}
+                        size="sm"
+                        className="flex-1"
+                        data-testid={`button-subscribe-regular-${hub.slug}`}
+                      >
+                        <UserPlus className="h-4 w-4 mr-1" />
+                        Subscribe
                       </Button>
-                    </Link>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
