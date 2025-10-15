@@ -175,8 +175,14 @@ export default function HubDiscovery() {
                         className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                         data-testid={`button-subscribe-${hub.slug}`}
                       >
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        {user ? 'Subscribe' : 'Login to Subscribe'}
+                        {subscribeMutation.isPending ? (
+                          <>Subscribing...</>
+                        ) : (
+                          <>
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            {user ? 'Subscribe' : 'Login to Subscribe'}
+                          </>
+                        )}
                       </Button>
                     </div>
                   </CardContent>
@@ -238,11 +244,17 @@ export default function HubDiscovery() {
                         onClick={() => handleSubscribe(hub.id)}
                         disabled={subscribeMutation.isPending}
                         size="sm"
-                        className="flex-1"
+                        className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                         data-testid={`button-subscribe-regular-${hub.slug}`}
                       >
-                        <UserPlus className="h-4 w-4 mr-1" />
-                        Subscribe
+                        {subscribeMutation.isPending ? (
+                          <>Subscribing...</>
+                        ) : (
+                          <>
+                            <UserPlus className="h-4 w-4 mr-1" />
+                            {user ? 'Subscribe' : 'Login to Subscribe'}
+                          </>
+                        )}
                       </Button>
                     </div>
                   </CardContent>
