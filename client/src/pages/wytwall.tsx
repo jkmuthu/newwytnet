@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { Plus, Filter, Search, Sparkles, TrendingUp, Zap, Package } from "lucide-react";
+import { Plus, Filter, Search, Sparkles, TrendingUp, Zap, Package, ChevronLeft, ChevronRight } from "lucide-react";
 import WytWallLayout from "@/components/wytwall/WytWallLayout";
 import FiltersPanel from "@/components/wytwall/FiltersPanel";
 import NeedCard from "@/components/wytwall/NeedCard";
@@ -19,6 +19,8 @@ export default function WytWall() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [postType, setPostType] = useState<"all" | "needs" | "offers">("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const POSTS_PER_PAGE = 10;
 
   // Build query URLs with proper query string parameters
   const needsUrl = user ? '/api/needs' : '/api/needs/public';
@@ -71,7 +73,20 @@ export default function WytWall() {
   const posts = postType === "all" ? filteredPosts :
     filteredPosts.filter((p: any) => p.type === (postType === "needs" ? "need" : "offer"));
 
+  // Pagination
+  const totalPosts = posts.length;
+  const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
+  const endIndex = startIndex + POSTS_PER_PAGE;
+  const paginatedPosts = posts.slice(startIndex, endIndex);
+
   const isLoading = needsLoading || offersLoading;
+
+  // Reset to page 1 when filters change
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    setCurrentPage(1);
+  };
 
   const handleMakeOffer = (needId: string) => {
     console.log('Make offer on need:', needId);
@@ -93,7 +108,7 @@ export default function WytWall() {
   const leftPanel = (
     <FiltersPanel
       selectedCategory={selectedCategory}
-      onCategoryChange={setSelectedCategory}
+      onCategoryChange={handleCategoryChange}
       categoryCounts={counts}
     />
   );
@@ -111,37 +126,36 @@ export default function WytWall() {
         <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
         
-        <CardContent className="relative p-4 sm:p-5">
+        <CardContent className="relative p-2 sm:p-2.5">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="h-10 w-10 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-white animate-pulse" />
+              <div className="h-8 w-8 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center">
+                <Sparkles className="h-4 w-4 text-white animate-pulse" />
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2">
+                <h1 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
                   WytWall
-                  <TrendingUp className="h-5 w-5 animate-bounce" />
+                  <TrendingUp className="h-4 w-4 animate-bounce" />
                 </h1>
-                <p className="text-white/90 text-xs font-medium">Offers Stream</p>
               </div>
             </div>
             
             {/* Search Bar in Header */}
             <div className="hidden md:flex relative flex-1 max-w-md">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/70" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/70" />
               <Input
                 type="text"
-                placeholder="Search needs by keyword..."
+                placeholder="Search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-10 text-sm border-0 bg-white/20 backdrop-blur-xl text-white placeholder:text-white/70 focus:ring-2 focus:ring-white/50 rounded-xl"
+                className="pl-10 h-8 text-sm border-0 bg-white/20 backdrop-blur-xl text-white placeholder:text-white/70 focus:ring-2 focus:ring-white/50 rounded-xl"
                 data-testid="input-search-needs"
               />
             </div>
 
             <Button
               onClick={handlePostNeed}
-              className="bg-white/90 hover:bg-white text-purple-600 font-bold shadow-xl hover:scale-105 transition-all rounded-xl backdrop-blur-xl h-9 text-sm flex-shrink-0"
+              className="bg-white/90 hover:bg-white text-purple-600 font-bold shadow-xl hover:scale-105 transition-all rounded-xl backdrop-blur-xl h-8 text-sm flex-shrink-0"
               data-testid="button-post-need"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -151,15 +165,15 @@ export default function WytWall() {
           </div>
           
           {/* Mobile Search Bar (below header on mobile) */}
-          <div className="md:hidden mt-4">
+          <div className="md:hidden mt-2">
             <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-white/70" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/70" />
               <Input
                 type="text"
-                placeholder="Search needs by keyword..."
+                placeholder="Search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-10 text-sm border-0 bg-white/20 backdrop-blur-xl text-white placeholder:text-white/70 focus:ring-2 focus:ring-white/50 rounded-xl w-full"
+                className="pl-10 h-8 text-sm border-0 bg-white/20 backdrop-blur-xl text-white placeholder:text-white/70 focus:ring-2 focus:ring-white/50 rounded-xl w-full"
                 data-testid="input-search-needs-mobile"
               />
             </div>
@@ -227,7 +241,7 @@ export default function WytWall() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {posts.map((post: any) => (
+          {paginatedPosts.map((post: any) => (
             post.type === 'need' ? (
               <NeedCard
                 key={post.id}
@@ -235,6 +249,7 @@ export default function WytWall() {
                 isAuthenticated={!!user}
                 onMakeOffer={handleMakeOffer}
                 onLogin={handleLogin}
+                isCollapsed={true}
               />
             ) : (
               <OfferCard
@@ -243,23 +258,61 @@ export default function WytWall() {
                 isAuthenticated={!!user}
                 onViewOffer={(offerId) => console.log('View offer:', offerId)}
                 onLogin={handleLogin}
+                isCollapsed={true}
               />
             )
           ))}
         </div>
       )}
 
-      {/* Load More with Modern Design */}
-      {posts.length > 0 && (
-        <div className="flex justify-center pt-4">
-          <Button
-            variant="outline"
-            className="w-full lg:w-auto px-10 py-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-0 shadow-xl hover:scale-105 transition-all rounded-xl font-bold text-lg"
-            data-testid="button-load-more"
-          >
-            <TrendingUp className="h-5 w-5 mr-2" />
-            Load More
-          </Button>
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-4">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            Showing {startIndex + 1}-{Math.min(endIndex, totalPosts)} of {totalPosts} posts
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-0 shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              data-testid="button-prev-page"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(page)}
+                  className={`min-w-[2.5rem] ${
+                    currentPage === page
+                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0"
+                      : "bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-0"
+                  } shadow-lg hover:scale-105 transition-all`}
+                  data-testid={`button-page-${page}`}
+                >
+                  {page}
+                </Button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border-0 shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              data-testid="button-next-page"
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
         </div>
       )}
     </div>
