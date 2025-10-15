@@ -1,16 +1,31 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Briefcase, Home, Package, Wrench, Grid, MapPin, ChevronDown } from "lucide-react";
+import { Briefcase, Home, Package, Wrench, Grid, MapPin, ChevronDown, X } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface FiltersPanelProps {
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
   categoryCounts?: Record<string, number>;
+  selectedLocation?: string;
+  onLocationChange?: (location: string) => void;
 }
 
 const CATEGORIES = [
@@ -22,10 +37,39 @@ const CATEGORIES = [
   { id: "other", label: "Other", icon: Grid },
 ];
 
-export default function FiltersPanel({ selectedCategory, onCategoryChange, categoryCounts = {} }: FiltersPanelProps) {
+export default function FiltersPanel({ 
+  selectedCategory, 
+  onCategoryChange, 
+  categoryCounts = {},
+  selectedLocation = "",
+  onLocationChange
+}: FiltersPanelProps) {
   const [categoriesOpen, setCategoriesOpen] = useState(true);
   const [locationOpen, setLocationOpen] = useState(false);
-  const [location, setLocation] = useState("");
+  const [locationSearch, setLocationSearch] = useState("");
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+
+  // Fetch India cities from WytData module
+  const { data: cities = [], isLoading: citiesLoading } = useQuery<any[]>({
+    queryKey: ['/api/modules/wytdata/india-cities'],
+    staleTime: 1000 * 60 * 60, // 1 hour
+  });
+
+  // Filter cities based on search
+  const filteredCities = cities.filter((city: any) => 
+    city.name.toLowerCase().includes(locationSearch.toLowerCase()) ||
+    city.state?.toLowerCase().includes(locationSearch.toLowerCase())
+  ).slice(0, 10);
+
+  const handleCitySelect = (cityName: string) => {
+    onLocationChange?.(cityName);
+    setLocationSearch("");
+    setShowCityDropdown(false);
+  };
+
+  const handleClearLocation = () => {
+    onLocationChange?.("");
+  };
 
   return (
     <>
@@ -95,15 +139,74 @@ export default function FiltersPanel({ selectedCategory, onCategoryChange, categ
             <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${locationOpen ? 'rotate-180' : ''}`} />
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-3 space-y-2">
-            <Input
-              placeholder="Enter city or region..."
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              className="w-full"
-              data-testid="input-location-filter"
-            />
+            {selectedLocation ? (
+              <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    {selectedLocation}
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearLocation}
+                  className="h-6 w-6 p-0 hover:bg-blue-100 dark:hover:bg-blue-800"
+                  data-testid="button-clear-location"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <Popover open={showCityDropdown} onOpenChange={setShowCityDropdown}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full justify-start text-left font-normal"
+                    data-testid="button-select-location"
+                  >
+                    <MapPin className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                    Select city...
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[280px] p-0" align="start">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Search cities..." 
+                      value={locationSearch}
+                      onValueChange={setLocationSearch}
+                      data-testid="input-location-search"
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        {citiesLoading ? "Loading cities..." : "No city found."}
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {filteredCities.map((city: any) => (
+                          <CommandItem
+                            key={city.name}
+                            value={city.name}
+                            onSelect={() => handleCitySelect(city.name)}
+                            data-testid={`location-option-${city.name.toLowerCase().replace(/\s+/g, '-')}`}
+                          >
+                            <MapPin className="mr-2 h-4 w-4" />
+                            <span>{city.name}</span>
+                            {city.state && (
+                              <span className="ml-auto text-xs text-gray-500">
+                                {city.state}
+                              </span>
+                            )}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            )}
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Filter by location (Coming soon)
+              Filter posts by city (powered by WytData)
             </p>
           </CollapsibleContent>
         </Collapsible>

@@ -19,6 +19,7 @@ export default function WytWall() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [postType, setPostType] = useState<"all" | "needs" | "offers">("all");
+  const [selectedLocation, setSelectedLocation] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const POSTS_PER_PAGE = 10;
 
@@ -63,12 +64,22 @@ export default function WytWall() {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-  const filteredPosts = searchQuery.trim()
-    ? allPosts.filter((post: any) =>
-        post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        post.description.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : allPosts;
+  let filteredPosts = allPosts;
+
+  // Apply search filter
+  if (searchQuery.trim()) {
+    filteredPosts = filteredPosts.filter((post: any) =>
+      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }
+
+  // Apply location filter
+  if (selectedLocation) {
+    filteredPosts = filteredPosts.filter((post: any) =>
+      post.location?.toLowerCase().includes(selectedLocation.toLowerCase())
+    );
+  }
 
   const posts = postType === "all" ? filteredPosts :
     filteredPosts.filter((p: any) => p.type === (postType === "needs" ? "need" : "offer"));
@@ -98,6 +109,11 @@ export default function WytWall() {
     setCurrentPage(1);
   };
 
+  const handleLocationChange = (location: string) => {
+    setSelectedLocation(location);
+    setCurrentPage(1);
+  };
+
   const handleMakeOffer = (needId: string) => {
     console.log('Make offer on need:', needId);
   };
@@ -120,6 +136,8 @@ export default function WytWall() {
       selectedCategory={selectedCategory}
       onCategoryChange={handleCategoryChange}
       categoryCounts={counts}
+      selectedLocation={selectedLocation}
+      onLocationChange={handleLocationChange}
     />
   );
 

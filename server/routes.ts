@@ -3997,10 +3997,18 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Get dataset items by key
-  app.get('/api/modules/wytdata/:key', isAuthenticatedUnified, async (req: any, res) => {
+  // Get dataset items by key (public access for specific datasets)
+  app.get('/api/modules/wytdata/:key', async (req: any, res) => {
     try {
       const { key } = req.params;
+      
+      // List of public datasets that don't require authentication
+      const publicDatasets = ['india-cities', 'countries', 'currencies', 'timezones', 'india-states'];
+      
+      // If dataset is not public and user is not authenticated, return 401
+      if (!publicDatasets.includes(key) && !req.isAuthenticated()) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
       
       const [collection] = await db.select()
         .from(datasetCollections)
