@@ -3957,6 +3957,292 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // =============================================================================
+  // WYTDATA API ROUTES - Universal Dataset API
+  // =============================================================================
+
+  // Get all available dataset collections
+  app.get('/api/modules/wytdata/collections', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const collections = await db.select()
+        .from(datasetCollections)
+        .orderBy(datasetCollections.name);
+
+      res.json({
+        success: true,
+        collections: collections.map(c => ({
+          key: c.key,
+          name: c.name,
+          description: c.description,
+          scope: c.scope,
+          metadata: c.metadata
+        })),
+        total: collections.length,
+        _wytnet: {
+          module: 'wytdata-api',
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to fetch collections'
+      });
+    }
+  });
+
+  // Get dataset items by key
+  app.get('/api/modules/wytdata/:key', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const { key } = req.params;
+      
+      const [collection] = await db.select()
+        .from(datasetCollections)
+        .where(eq(datasetCollections.key, key));
+      
+      if (!collection) {
+        return res.status(404).json({
+          success: false,
+          error: `Dataset '${key}' not found`
+        });
+      }
+      
+      const items = await db.select()
+        .from(datasetItems)
+        .where(eq(datasetItems.collectionId, collection.id))
+        .orderBy(asc(datasetItems.sortOrder), asc(datasetItems.label));
+      
+      res.json({
+        success: true,
+        collection: {
+          key: collection.key,
+          name: collection.name,
+          description: collection.description
+        },
+        items: items.map(i => ({
+          code: i.code,
+          label: i.label,
+          locale: i.locale,
+          metadata: i.metadata
+        })),
+        total: items.length,
+        _wytnet: {
+          module: 'wytdata-api',
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to fetch dataset'
+      });
+    }
+  });
+
+  // Search within a dataset
+  app.get('/api/modules/wytdata/:key/search', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const { key } = req.params;
+      const { q, locale } = req.query;
+      
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: 'Search query (q) is required'
+        });
+      }
+
+      const [collection] = await db.select()
+        .from(datasetCollections)
+        .where(eq(datasetCollections.key, key));
+      
+      if (!collection) {
+        return res.status(404).json({
+          success: false,
+          error: `Dataset '${key}' not found`
+        });
+      }
+      
+      let query = db.select()
+        .from(datasetItems)
+        .where(eq(datasetItems.collectionId, collection.id));
+      
+      // Filter by locale if provided
+      if (locale && typeof locale === 'string') {
+        query = query.where(eq(datasetItems.locale, locale as string));
+      }
+      
+      const allItems = await query;
+      
+      // Client-side search filtering (case-insensitive)
+      const searchTerm = q.toLowerCase();
+      const filteredItems = allItems.filter(item => 
+        item.label.toLowerCase().includes(searchTerm) ||
+        item.code.toLowerCase().includes(searchTerm)
+      );
+      
+      res.json({
+        success: true,
+        query: q,
+        collection: {
+          key: collection.key,
+          name: collection.name
+        },
+        items: filteredItems.map(i => ({
+          code: i.code,
+          label: i.label,
+          locale: i.locale,
+          metadata: i.metadata
+        })),
+        total: filteredItems.length,
+        _wytnet: {
+          module: 'wytdata-api',
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Search failed'
+      });
+    }
+  });
+
+  // Get localized dataset
+  app.get('/api/modules/wytdata/:key/locale/:locale', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const { key, locale } = req.params;
+      
+      const [collection] = await db.select()
+        .from(datasetCollections)
+        .where(eq(datasetCollections.key, key));
+      
+      if (!collection) {
+        return res.status(404).json({
+          success: false,
+          error: `Dataset '${key}' not found`
+        });
+      }
+      
+      const items = await db.select()
+        .from(datasetItems)
+        .where(and(
+          eq(datasetItems.collectionId, collection.id),
+          eq(datasetItems.locale, locale)
+        ))
+        .orderBy(asc(datasetItems.sortOrder), asc(datasetItems.label));
+      
+      // Fallback to 'en' if no items found for requested locale
+      let finalItems = items;
+      if (items.length === 0 && locale !== 'en') {
+        finalItems = await db.select()
+          .from(datasetItems)
+          .where(and(
+            eq(datasetItems.collectionId, collection.id),
+            eq(datasetItems.locale, 'en')
+          ))
+          .orderBy(asc(datasetItems.sortOrder), asc(datasetItems.label));
+      }
+      
+      res.json({
+        success: true,
+        collection: {
+          key: collection.key,
+          name: collection.name,
+          description: collection.description
+        },
+        locale,
+        items: finalItems.map(i => ({
+          code: i.code,
+          label: i.label,
+          locale: i.locale,
+          metadata: i.metadata
+        })),
+        total: finalItems.length,
+        fallback: items.length === 0 && locale !== 'en',
+        _wytnet: {
+          module: 'wytdata-api',
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to fetch localized dataset'
+      });
+    }
+  });
+
+  // Batch fetch multiple datasets
+  app.post('/api/modules/wytdata/batch', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const { keys } = req.body;
+      
+      if (!Array.isArray(keys) || keys.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'keys array is required'
+        });
+      }
+
+      if (keys.length > 10) {
+        return res.status(400).json({
+          success: false,
+          error: 'Maximum 10 datasets can be fetched in batch'
+        });
+      }
+
+      const results: any = {};
+      
+      for (const key of keys) {
+        const [collection] = await db.select()
+          .from(datasetCollections)
+          .where(eq(datasetCollections.key, key));
+        
+        if (collection) {
+          const items = await db.select()
+            .from(datasetItems)
+            .where(eq(datasetItems.collectionId, collection.id))
+            .orderBy(asc(datasetItems.sortOrder), asc(datasetItems.label));
+          
+          results[key] = {
+            collection: {
+              key: collection.key,
+              name: collection.name,
+              description: collection.description
+            },
+            items: items.map(i => ({
+              code: i.code,
+              label: i.label,
+              locale: i.locale,
+              metadata: i.metadata
+            })),
+            total: items.length
+          };
+        } else {
+          results[key] = {
+            error: `Dataset '${key}' not found`
+          };
+        }
+      }
+      
+      res.json({
+        success: true,
+        datasets: results,
+        totalRequested: keys.length,
+        _wytnet: {
+          module: 'wytdata-api',
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Batch fetch failed'
+      });
+    }
+  });
+
+  // =============================================================================
   // USER APP INSTALLATIONS - WytApps Marketplace
   // =============================================================================
 
