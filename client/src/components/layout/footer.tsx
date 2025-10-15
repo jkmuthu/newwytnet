@@ -207,21 +207,11 @@ export default function Footer() {
             <ul className="space-y-3">
               <li>
                 <a 
-                  href="/panel" 
-                  className="text-white/90 hover:text-white transition-all text-sm font-medium inline-flex items-center group"
-                  data-testid="footer-link-wytpanel"
-                >
-                  <span className="group-hover:translate-x-2 transition-transform duration-300">Access WytPanel</span>
-                  <span className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                </a>
-              </li>
-              <li>
-                <a 
                   href="/login" 
                   className="text-white/90 hover:text-white transition-all text-sm font-medium inline-flex items-center group"
-                  data-testid="footer-link-wytpass"
+                  data-testid="footer-link-join-wytnet"
                 >
-                  <span className="group-hover:translate-x-2 transition-transform duration-300">Get WytPass</span>
+                  <span className="group-hover:translate-x-2 transition-transform duration-300">Join WytNet</span>
                   <span className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
                 </a>
               </li>
