@@ -16,7 +16,7 @@ const generateMockResults = (query: string, indexType: string, limit: number = 2
       { id: '2', firstName: 'Jane', lastName: 'Smith', email: 'jane@example.com', tenantId: '1' },
       { id: '3', firstName: 'Mike', lastName: 'Johnson', email: 'mike@example.com', tenantId: '2' },
     ],
-    whatsapp_users: [
+    users: [
       { id: '1', name: 'Rahul Sharma', country: 'IN', whatsappNumber: '+919876543210', isVerified: true },
       { id: '2', name: 'Priya Patel', country: 'IN', whatsappNumber: '+919876543211', isVerified: true },
       { id: '3', name: 'Amit Kumar', country: 'IN', whatsappNumber: '+919876543212', isVerified: false },
@@ -143,8 +143,7 @@ export class MockSearchService {
     
     const mockStats: Record<string, any> = {
       tenants: { numberOfDocuments: 3, isIndexing: false, fieldDistribution: { name: 3, slug: 3 } },
-      users: { numberOfDocuments: 15, isIndexing: false, fieldDistribution: { firstName: 15, email: 15 } },
-      whatsapp_users: { numberOfDocuments: 25, isIndexing: false, fieldDistribution: { name: 25, whatsappNumber: 25 } },
+      users: { numberOfDocuments: 25, isIndexing: false, fieldDistribution: { name: 25, whatsappNumber: 25 } },
       models: { numberOfDocuments: 8, isIndexing: false, fieldDistribution: { name: 8, description: 8 } },
       pages: { numberOfDocuments: 12, isIndexing: false, fieldDistribution: { title: 12, content: 12 } },
       apps: { numberOfDocuments: 6, isIndexing: false, fieldDistribution: { name: 6, description: 6 } },

@@ -7,8 +7,7 @@ import type {
   App, 
   Trademark, 
   TMNumber,
-  Media,
-  WhatsAppUser
+  Media
 } from '@shared/schema';
 
 // Search configuration
@@ -22,7 +21,6 @@ const SEARCH_CONFIG = {
 export const SEARCH_INDEXES = {
   TENANTS: 'tenants',
   USERS: 'users',
-  WHATSAPP_USERS: 'whatsapp_users',
   MODELS: 'models',
   PAGES: 'pages',
   APPS: 'apps',
@@ -198,7 +196,7 @@ class SearchService {
 
   // Configure WhatsApp users index
   private async configureWhatsAppUsersIndex(): Promise<void> {
-    const index = this.client.index(SEARCH_INDEXES.WHATSAPP_USERS);
+    const index = this.client.index(SEARCH_INDEXES.USERS);
     
     await index.updateSettings({
       searchableAttributes: ['name', 'whatsappNumber'],

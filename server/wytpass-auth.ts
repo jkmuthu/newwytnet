@@ -8,7 +8,7 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import MSG91Service from "./services/msg91Service";
-import { whatsappUsers } from "@shared/schema";
+import { users } from "@shared/schema";
 import { db } from "./db";
 import { eq, or } from "drizzle-orm";
 import connectPg from "connect-pg-simple";
@@ -80,8 +80,8 @@ export function setupWytPassAuth(app: Express) {
         try {
           const [user] = await db
             .select()
-            .from(whatsappUsers)
-            .where(eq(whatsappUsers.email, email));
+            .from(users)
+            .where(eq(users.email, email));
 
           if (!user || !user.passwordHash) {
             return done(null, false, { message: "Invalid email or password" });
@@ -140,8 +140,8 @@ export function setupWytPassAuth(app: Express) {
             // Check if user exists with Google ID
             const [existingUser] = await db
               .select()
-              .from(whatsappUsers)
-              .where(eq(whatsappUsers.email, profile.emails?.[0]?.value || ""));
+              .from(users)
+              .where(eq(users.email, profile.emails?.[0]?.value || ""));
 
             if (existingUser) {
               // Update existing user with Google info
@@ -158,7 +158,7 @@ export function setupWytPassAuth(app: Express) {
               }
 
               const [updatedUser] = await db
-                .update(whatsappUsers)
+                .update(users)
                 .set({
                   socialIds,
                   socialProviders,
@@ -167,7 +167,7 @@ export function setupWytPassAuth(app: Express) {
                   lastLoginAt: new Date(),
                   updatedAt: new Date(),
                 })
-                .where(eq(whatsappUsers.id, existingUser.id))
+                .where(eq(users.id, existingUser.id))
                 .returning();
 
               return done(null, {
@@ -183,7 +183,7 @@ export function setupWytPassAuth(app: Express) {
             } else {
               // Create new user
               const [newUser] = await db
-                .insert(whatsappUsers)
+                .insert(users)
                 .values({
                   name: profile.displayName || profile.name?.givenName + " " + profile.name?.familyName || "Google User",
                   email: profile.emails?.[0]?.value,
@@ -257,8 +257,8 @@ export function setupWytPassAuth(app: Express) {
             // Check if user exists with LinkedIn email
             const [existingUser] = await db
               .select()
-              .from(whatsappUsers)
-              .where(eq(whatsappUsers.email, email || ""));
+              .from(users)
+              .where(eq(users.email, email || ""));
 
             if (existingUser) {
               // Update existing user with LinkedIn info
@@ -275,7 +275,7 @@ export function setupWytPassAuth(app: Express) {
               }
 
               const [updatedUser] = await db
-                .update(whatsappUsers)
+                .update(users)
                 .set({
                   socialIds,
                   socialProviders,
@@ -284,7 +284,7 @@ export function setupWytPassAuth(app: Express) {
                   lastLoginAt: new Date(),
                   updatedAt: new Date(),
                 })
-                .where(eq(whatsappUsers.id, existingUser.id))
+                .where(eq(users.id, existingUser.id))
                 .returning();
 
               return done(null, {
@@ -300,7 +300,7 @@ export function setupWytPassAuth(app: Express) {
             } else {
               // Create new user
               const [newUser] = await db
-                .insert(whatsappUsers)
+                .insert(users)
                 .values({
                   name: profile.displayName || `${profile.name?.givenName} ${profile.name?.familyName}` || "LinkedIn User",
                   email: email,
@@ -359,8 +359,8 @@ export function setupWytPassAuth(app: Express) {
             // Check if user exists with Facebook ID
             const [existingUser] = await db
               .select()
-              .from(whatsappUsers)
-              .where(eq(whatsappUsers.email, profile.emails?.[0]?.value || ""));
+              .from(users)
+              .where(eq(users.email, profile.emails?.[0]?.value || ""));
 
             if (existingUser) {
               // Update existing user with Facebook info
@@ -377,7 +377,7 @@ export function setupWytPassAuth(app: Express) {
               }
 
               const [updatedUser] = await db
-                .update(whatsappUsers)
+                .update(users)
                 .set({
                   socialIds,
                   socialProviders,
@@ -386,7 +386,7 @@ export function setupWytPassAuth(app: Express) {
                   lastLoginAt: new Date(),
                   updatedAt: new Date(),
                 })
-                .where(eq(whatsappUsers.id, existingUser.id))
+                .where(eq(users.id, existingUser.id))
                 .returning();
 
               return done(null, {
@@ -402,7 +402,7 @@ export function setupWytPassAuth(app: Express) {
             } else {
               // Create new user
               const [newUser] = await db
-                .insert(whatsappUsers)
+                .insert(users)
                 .values({
                   name: profile.displayName || "Facebook User",
                   email: profile.emails?.[0]?.value,
@@ -442,8 +442,8 @@ export function setupWytPassAuth(app: Express) {
     try {
       const [user] = await db
         .select()
-        .from(whatsappUsers)
-        .where(eq(whatsappUsers.id, id));
+        .from(users)
+        .where(eq(users.id, id));
 
       if (user) {
         cb(null, {
@@ -475,8 +475,8 @@ export function setupWytPassAuth(app: Express) {
       // Check if user already exists
       const [existingUser] = await db
         .select()
-        .from(whatsappUsers)
-        .where(or(eq(whatsappUsers.email, email), eq(whatsappUsers.whatsappNumber, whatsappNumber)));
+        .from(users)
+        .where(or(eq(users.email, email), eq(users.whatsappNumber, whatsappNumber)));
 
       if (existingUser) {
         return res.status(400).json({ message: "User already exists with this email or WhatsApp number" });
@@ -485,7 +485,7 @@ export function setupWytPassAuth(app: Express) {
       // Create new user
       const passwordHash = await hashPassword(password);
       const [newUser] = await db
-        .insert(whatsappUsers)
+        .insert(users)
         .values({
           name,
           email,
