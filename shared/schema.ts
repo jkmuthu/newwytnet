@@ -464,7 +464,7 @@ export const orders = pgTable("orders", {
 export const payments = pgTable("payments", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: uuid("tenant_id").references(() => tenants.id),
-  userId: varchar("user_id").references(() => whatsappUsers.id),
+  userId: varchar("user_id").references(() => users.id),
   orderId: uuid("order_id").references(() => orders.id),
   
   // Payment gateway details
@@ -506,7 +506,7 @@ export const payments = pgTable("payments", {
 export const subscriptions = pgTable("subscriptions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: uuid("tenant_id").references(() => tenants.id),
-  userId: varchar("user_id").references(() => whatsappUsers.id),
+  userId: varchar("user_id").references(() => users.id),
   planId: uuid("plan_id").references(() => plans.id),
   
   // Subscription details
@@ -691,8 +691,6 @@ export const tenantsRelations = relations(tenants, ({ many }) => ({
   wytidProofs: many(wytidProofs),
   wytidTransfers: many(wytidTransfers),
   wytidApiKeys: many(wytidApiKeys),
-  whatsappUsers: many(whatsappUsers),
-  whatsappOtpSessions: many(whatsappOtpSessions),
 }));
 
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -876,24 +874,6 @@ export const wytidApiKeysRelations = relations(wytidApiKeys, ({ one }) => ({
   createdBy: one(users, {
     fields: [wytidApiKeys.createdBy],
     references: [users.id],
-  }),
-}));
-
-// WhatsApp OTP Relations
-export const whatsappUsersRelations = relations(whatsappUsers, ({ one, many }) => ({
-  tenant: one(tenants, {
-    fields: [whatsappUsers.tenantId],
-    references: [tenants.id],
-  }),
-  otpSessions: many(whatsappOtpSessions),
-  socialTokens: many(socialAuthTokens),
-}));
-
-
-export const whatsappOtpSessionsRelations = relations(whatsappOtpSessions, ({ one }) => ({
-  tenant: one(tenants, {
-    fields: [whatsappOtpSessions.tenantId],
-    references: [tenants.id],
   }),
 }));
 
@@ -1567,7 +1547,7 @@ export const apiIntegrations = pgTable("api_integrations", {
   isEnabled: boolean("is_enabled").default(false),
   credentials: jsonb("credentials").notNull().default({}), // Encrypted JSON object
   settings: jsonb("settings").default({}),
-  lastUpdatedBy: varchar("last_updated_by").references(() => whatsappUsers.id),
+  lastUpdatedBy: varchar("last_updated_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -1636,9 +1616,9 @@ export const backupsRelations = relations(backups, ({ one }) => ({
 }));
 
 export const apiIntegrationsRelations = relations(apiIntegrations, ({ one }) => ({
-  lastUpdatedBy: one(whatsappUsers, {
+  lastUpdatedBy: one(users, {
     fields: [apiIntegrations.lastUpdatedBy],
-    references: [whatsappUsers.id],
+    references: [users.id],
   }),
 }));
 
@@ -1721,7 +1701,7 @@ export const appPricing = pgTable("app_pricing", {
 // User App Subscriptions - What apps users have access to
 export const userAppSubscriptions = pgTable("user_app_subscriptions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   appId: uuid("app_id").notNull().references(() => marketplaceApps.id),
   pricingId: uuid("pricing_id").notNull().references(() => appPricing.id),
   status: varchar("status", { length: 20 }).notNull().default('active'), // active, expired, cancelled
@@ -1735,7 +1715,7 @@ export const userAppSubscriptions = pgTable("user_app_subscriptions", {
 // App Usage Tracking - Track usage for pay-per-use apps
 export const appUsage = pgTable("app_usage", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   appId: uuid("app_id").notNull().references(() => marketplaceApps.id),
   subscriptionId: uuid("subscription_id").notNull().references(() => userAppSubscriptions.id),
   usageType: varchar("usage_type", { length: 50 }).notNull(), // generation, scan, assessment, etc.
@@ -1746,7 +1726,7 @@ export const appUsage = pgTable("app_usage", {
 // User App Data - Multi-tenant storage for user-specific app data
 export const userAppData = pgTable("user_app_data", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   appId: uuid("app_id").notNull().references(() => marketplaceApps.id),
   dataType: varchar("data_type", { length: 50 }).notNull(), // qr_code, assessment_result, bookmark, etc.
   title: varchar("title", { length: 255 }), // User-friendly title
@@ -1772,7 +1752,7 @@ export const marketplaceHubs = pgTable("marketplace_hubs", {
   isActive: boolean("is_active").notNull().default(true),
   isFeatured: boolean("is_featured").default(false),
   itemCount: integer("item_count").default(0), // Total items in hub
-  createdBy: varchar("created_by").references(() => whatsappUsers.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -1808,7 +1788,7 @@ export const entitlementStatusEnum = pgEnum("entitlement_status", [
 // Points Wallets - User point balances
 export const pointsWallets = pgTable("points_wallets", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().unique().references(() => whatsappUsers.id),
+  userId: varchar("user_id").notNull().unique().references(() => users.id),
   balance: integer("balance").notNull().default(0),
   lifetimeEarned: integer("lifetime_earned").notNull().default(0),
   lifetimeSpent: integer("lifetime_spent").notNull().default(0),
@@ -1819,20 +1799,20 @@ export const pointsWallets = pgTable("points_wallets", {
 // Points Transactions - Complete audit trail
 export const pointsTransactions = pgTable("points_transactions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   amount: integer("amount").notNull(), // Positive for credits, negative for debits
   balanceAfter: integer("balance_after").notNull(),
   type: varchar("type", { length: 50 }).notNull(), // 'registration', 'login', 'purchase', 'recharge', 'referral', 'admin_adjustment', etc.
   description: text("description"),
   metadata: jsonb("metadata").default({}), // Additional context (order_id, app_id, etc.)
-  createdBy: varchar("created_by").references(() => whatsappUsers.id), // For admin adjustments
+  createdBy: varchar("created_by").references(() => users.id), // For admin adjustments
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Entitlements - App access control (uses existing orders table for purchases)
 export const entitlements = pgTable("entitlements", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   appId: varchar("app_id", { length: 255 }).notNull(), // App or module ID
   appName: varchar("app_name", { length: 255 }),
   orderId: uuid("order_id").references(() => orders.id),
@@ -1855,7 +1835,7 @@ export const pointsConfig = pgTable("points_config", {
   description: text("description"),
   isActive: boolean("is_active").default(true),
   category: varchar("category", { length: 50 }).default('general'), // 'onboarding', 'marketplace', 'engagement', etc.
-  updatedBy: varchar("updated_by").references(() => whatsappUsers.id),
+  updatedBy: varchar("updated_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -1911,7 +1891,7 @@ export const approvalStatusEnum = pgEnum("approval_status", [
 // Needs - Marketplace needs posted by users
 export const needs = pgTable("needs", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   tenantId: uuid("tenant_id").references(() => tenants.id),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description").notNull(),
@@ -1927,7 +1907,7 @@ export const needs = pgTable("needs", {
   metadata: jsonb("metadata").default({}),
   expiresAt: timestamp("expires_at"),
   approvalStatus: approvalStatusEnum("approval_status").notNull().default('pending'),
-  approvedBy: varchar("approved_by").references(() => whatsappUsers.id),
+  approvedBy: varchar("approved_by").references(() => users.id),
   approvedAt: timestamp("approved_at"),
   rejectionReason: text("rejection_reason"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -1937,7 +1917,7 @@ export const needs = pgTable("needs", {
 // Offers - Standalone marketplace offers posted by users
 export const offers = pgTable("offers", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   tenantId: uuid("tenant_id").references(() => tenants.id),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description").notNull(),
@@ -1953,7 +1933,7 @@ export const offers = pgTable("offers", {
   metadata: jsonb("metadata").default({}),
   expiresAt: timestamp("expires_at"),
   approvalStatus: approvalStatusEnum("approval_status").notNull().default('pending'),
-  approvedBy: varchar("approved_by").references(() => whatsappUsers.id),
+  approvedBy: varchar("approved_by").references(() => users.id),
   approvedAt: timestamp("approved_at"),
   rejectionReason: text("rejection_reason"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -1965,7 +1945,7 @@ export const wytWallPostTypeEnum = pgEnum("wytwall_post_type", ["need", "offer"]
 
 export const wytWallPosts = pgTable("wytwall_posts", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   postType: wytWallPostTypeEnum("post_type").notNull(), // "need" or "offer"
   category: varchar("category", { length: 100 }).notNull(), // Dynamic based on postType
   description: varchar("description", { length: 200 }).notNull(),
@@ -2000,14 +1980,14 @@ export const wytstarLevelEnum = pgEnum("wytstar_level", [
 // WytStar Contributions - Track all contributions for rewards
 export const wytstarContributions = pgTable("wytstar_contributions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   tenantId: uuid("tenant_id").references(() => tenants.id),
   type: contributionTypeEnum("type").notNull(),
   entityType: varchar("entity_type", { length: 50 }), // 'need', 'offer', 'listing'
   entityId: uuid("entity_id"),
   pointsEarned: integer("points_earned").notNull().default(0),
   isVerified: boolean("is_verified").default(false),
-  verifiedBy: varchar("verified_by").references(() => whatsappUsers.id),
+  verifiedBy: varchar("verified_by").references(() => users.id),
   verifiedAt: timestamp("verified_at"),
   metadata: jsonb("metadata").default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -2016,7 +1996,7 @@ export const wytstarContributions = pgTable("wytstar_contributions", {
 // WytStar Levels - User star levels and rankings
 export const wytstarLevels = pgTable("wytstar_levels", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().unique().references(() => whatsappUsers.id),
+  userId: varchar("user_id").notNull().unique().references(() => users.id),
   level: wytstarLevelEnum("level").notNull().default('bronze'),
   totalPoints: integer("total_points").notNull().default(0),
   rank: integer("rank"), // Global ranking
@@ -2044,7 +2024,7 @@ export const profileSectionEnum = pgEnum("profile_section", [
 // Profile Completion - Track user profile completion for rewards
 export const profileCompletion = pgTable("profile_completion", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().unique().references(() => whatsappUsers.id),
+  userId: varchar("user_id").notNull().unique().references(() => users.id),
   tenantId: uuid("tenant_id").references(() => tenants.id),
   completionPercentage: integer("completion_percentage").notNull().default(0),
   sectionsCompleted: jsonb("sections_completed").default([]), // Array of completed section IDs
@@ -2069,7 +2049,7 @@ export const matchStatusEnum = pgEnum("match_status", [
 // Matches - Need-Offer matchmaking
 export const matches = pgTable("matches", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id), // User who sees the match
+  userId: varchar("user_id").notNull().references(() => users.id), // User who sees the match
   tenantId: uuid("tenant_id").references(() => tenants.id),
   needId: uuid("need_id").notNull().references(() => needs.id),
   offerId: uuid("offer_id").references(() => offers.id),
@@ -2093,7 +2073,7 @@ export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
-  ownerId: varchar("owner_id").notNull().references(() => whatsappUsers.id),
+  ownerId: varchar("owner_id").notNull().references(() => users.id),
   tenantId: uuid("tenant_id").references(() => tenants.id),
   description: text("description"),
   logo: varchar("logo", { length: 500 }),
@@ -2107,7 +2087,7 @@ export const organizations = pgTable("organizations", {
 export const organizationMembers = pgTable("organization_members", {
   id: uuid("id").default(sql`gen_random_uuid()`),
   organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   role: varchar("role", { length: 50 }).notNull().default('member'), // owner, admin, member
   permissions: jsonb("permissions").default({}),
   isActive: boolean("is_active").default(true),
@@ -2134,7 +2114,7 @@ export const wytLifeApplications = pgTable("wyt_life_applications", {
   whyJoin: text("why_join").notNull(),
   areasOfInterest: jsonb("areas_of_interest").default([]), // ['Leadership', 'Productivity', 'Wellness', 'Networking']
   status: varchar("status", { length: 20 }).notNull().default('pending'), // pending, approved, rejected
-  userId: varchar("user_id").references(() => whatsappUsers.id), // If application is from logged-in user
+  userId: varchar("user_id").references(() => users.id), // If application is from logged-in user
   pointsAwarded: integer("points_awarded").default(0), // WytPoints bonus (e.g., 25 pts)
   tenantId: uuid("tenant_id").references(() => tenants.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -2201,7 +2181,7 @@ export const appProjectStatusEnum = pgEnum("app_project_status", [
 // AI App Projects - Store apps created via App Builder
 export const aiAppProjects = pgTable("ai_app_projects", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  ownerId: varchar("owner_id").notNull().references(() => whatsappUsers.id), // Who created this app
+  ownerId: varchar("owner_id").notNull().references(() => users.id), // Who created this app
   tenantId: uuid("tenant_id").references(() => tenants.id),
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 100 }).notNull().unique(), // URL-friendly identifier
@@ -2244,7 +2224,7 @@ export const aiAppProjects = pgTable("ai_app_projects", {
 export const aiChatConversations = pgTable("ai_chat_conversations", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   projectId: uuid("project_id").notNull().references(() => aiAppProjects.id, { onDelete: 'cascade' }),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   tenantId: uuid("tenant_id").references(() => tenants.id),
   
   // Conversation data
@@ -2264,7 +2244,7 @@ export const aiGeneratedCode = pgTable("ai_generated_code", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   projectId: uuid("project_id").notNull().references(() => aiAppProjects.id, { onDelete: 'cascade' }),
   conversationId: uuid("conversation_id").references(() => aiChatConversations.id, { onDelete: 'cascade' }),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   tenantId: uuid("tenant_id").references(() => tenants.id),
   
   // Code details
@@ -2390,7 +2370,7 @@ export const pricingPlanTypes = pgTable("pricing_plan_types", {
 // User Subscriptions - Track user's active subscriptions
 export const userSubscriptions = pgTable("user_subscriptions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   appId: uuid("app_id").notNull().references(() => appsRegistry.id),
   pricingPlanId: uuid("pricing_plan_id").notNull().references(() => pricingPlans.id),
   pricingPlanTypeId: uuid("pricing_plan_type_id").references(() => pricingPlanTypes.id),
@@ -2429,7 +2409,7 @@ export const userSubscriptions = pgTable("user_subscriptions", {
 // Usage Tracking - Track usage for pay-per-use plans
 export const usageTracking = pgTable("usage_tracking", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   appId: uuid("app_id").notNull().references(() => appsRegistry.id),
   subscriptionId: uuid("subscription_id").references(() => userSubscriptions.id),
   
@@ -2456,7 +2436,7 @@ export const usageTracking = pgTable("usage_tracking", {
 // Payment Transactions - Track all payment transactions
 export const paymentTransactions = pgTable("payment_transactions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   subscriptionId: uuid("subscription_id").references(() => userSubscriptions.id),
   
   // Transaction details
