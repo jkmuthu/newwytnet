@@ -50,16 +50,20 @@ export default function FiltersPanel({
   const [showCityDropdown, setShowCityDropdown] = useState(false);
 
   // Fetch India cities from WytData module
-  const { data: cities = [], isLoading: citiesLoading } = useQuery<any[]>({
+  const { data: citiesData, isLoading: citiesLoading } = useQuery<any>({
     queryKey: ['/api/modules/wytdata/india-cities'],
     staleTime: 1000 * 60 * 60, // 1 hour
   });
 
+  const cities = citiesData?.items || [];
+
   // Filter cities based on search
-  const filteredCities = cities.filter((city: any) => 
-    city.name.toLowerCase().includes(locationSearch.toLowerCase()) ||
-    city.state?.toLowerCase().includes(locationSearch.toLowerCase())
-  ).slice(0, 10);
+  const filteredCities = cities.filter((city: any) => {
+    const cityName = city.label || city.name || '';
+    const cityState = city.metadata?.state || city.state || '';
+    return cityName.toLowerCase().includes(locationSearch.toLowerCase()) ||
+      cityState.toLowerCase().includes(locationSearch.toLowerCase());
+  }).slice(0, 10);
 
   const handleCitySelect = (cityName: string) => {
     onLocationChange?.(cityName);
@@ -183,22 +187,26 @@ export default function FiltersPanel({
                         {citiesLoading ? "Loading cities..." : "No city found."}
                       </CommandEmpty>
                       <CommandGroup>
-                        {filteredCities.map((city: any) => (
-                          <CommandItem
-                            key={city.name}
-                            value={city.name}
-                            onSelect={() => handleCitySelect(city.name)}
-                            data-testid={`location-option-${city.name.toLowerCase().replace(/\s+/g, '-')}`}
-                          >
-                            <MapPin className="mr-2 h-4 w-4" />
-                            <span>{city.name}</span>
-                            {city.state && (
-                              <span className="ml-auto text-xs text-gray-500">
-                                {city.state}
-                              </span>
-                            )}
-                          </CommandItem>
-                        ))}
+                        {filteredCities.map((city: any) => {
+                          const cityName = city.label || city.name;
+                          const cityState = city.metadata?.state || city.state;
+                          return (
+                            <CommandItem
+                              key={city.code || cityName}
+                              value={cityName}
+                              onSelect={() => handleCitySelect(cityName)}
+                              data-testid={`location-option-${cityName.toLowerCase().replace(/\s+/g, '-')}`}
+                            >
+                              <MapPin className="mr-2 h-4 w-4" />
+                              <span>{cityName}</span>
+                              {cityState && (
+                                <span className="ml-auto text-xs text-gray-500">
+                                  {cityState}
+                                </span>
+                              )}
+                            </CommandItem>
+                          );
+                        })}
                       </CommandGroup>
                     </CommandList>
                   </Command>
