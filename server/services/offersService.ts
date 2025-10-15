@@ -230,7 +230,7 @@ export class OffersService {
       offer: offers,
       user: sql`json_build_object(
         'id', u.id,
-        'name', u.name,
+        'name', CONCAT(u.first_name, ' ', u.last_name),
         'email', u.email,
         'profileImageUrl', u.profile_image_url
       )`.as('user')
@@ -253,7 +253,7 @@ export class OffersService {
         offer: offers,
         user: sql`json_build_object(
           'id', u.id,
-          'name', u.name,
+          'name', CONCAT(u.first_name, ' ', u.last_name),
           'email', u.email,
           'profileImageUrl', u.profile_image_url
         )`.as('user')
@@ -305,7 +305,7 @@ export class OffersService {
       offer: offers,
       user: sql`json_build_object(
         'id', u.id,
-        'name', u.name,
+        'name', CONCAT(u.first_name, ' ', u.last_name),
         'email', u.email,
         'profileImageUrl', u.profile_image_url
       )`.as('user')
