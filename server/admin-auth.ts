@@ -2,7 +2,7 @@ import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
-import { whatsappUsers, tenants, models, apps } from "@shared/schema";
+import { users, tenants, models, apps } from "@shared/schema";
 import { eq, sql, count, and, isNotNull } from "drizzle-orm";
 
 // Extend Express Request to include admin session

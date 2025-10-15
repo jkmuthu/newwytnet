@@ -1,6 +1,6 @@
 import Razorpay from "razorpay";
 import { db } from "../db";
-import { orders, payments, plans, whatsappUsers, subscriptions } from "../../shared/schema";
+import { orders, payments, plans, users, subscriptions } from "../../shared/schema";
 import { eq, and } from "drizzle-orm";
 import crypto from "crypto";
 
@@ -64,7 +64,7 @@ export class RazorpayService {
   }> {
     try {
       // Get user details
-      const user = await db.select().from(whatsappUsers).where(eq(whatsappUsers.id, userId)).limit(1);
+      const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
       if (!user[0]) {
         return { success: false, error: "User not found" };
       }

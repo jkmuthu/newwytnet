@@ -1,6 +1,6 @@
 import { db } from "../db";
-import { whatsappUsers, socialAuthTokens, tenants } from "@shared/schema";
-import type { WhatsAppUser, InsertWhatsAppUser, SocialAuthToken } from "@shared/schema";
+import { users, socialAuthTokens, tenants } from "@shared/schema";
+import type { User, UpsertUser, SocialAuthToken } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 
@@ -94,8 +94,8 @@ export async function createPendingSocialUser(
       // Existing user with social auth - check if mobile is verified
       const [existingUser] = await db
         .select()
-        .from(whatsappUsers)
-        .where(eq(whatsappUsers.id, existingToken[0].userId))
+        .from(users)
+        .where(eq(users.id, existingToken[0].userId))
         .limit(1);
 
       if (existingUser) {
@@ -110,12 +110,12 @@ export async function createPendingSocialUser(
         
         // User is fully verified - allow login
         await db
-          .update(whatsappUsers)
+          .update(users)
           .set({
             lastLoginAt: new Date(),
             updatedAt: new Date()
           })
-          .where(eq(whatsappUsers.id, existingUser.id));
+          .where(eq(users.id, existingUser.id));
           
         return {
           pendingUserId: existingUser.id,
@@ -129,8 +129,8 @@ export async function createPendingSocialUser(
     if (profile.email) {
       const emailUsers = await db
         .select()
-        .from(whatsappUsers)
-        .where(eq(whatsappUsers.email, profile.email))
+        .from(users)
+        .where(eq(users.email, profile.email))
         .limit(1);
       
       existingUserByEmail = emailUsers[0] || null;
@@ -155,13 +155,13 @@ export async function createPendingSocialUser(
         : [...(existingUserByEmail.socialProviders || []), profile.provider];
 
       await db
-        .update(whatsappUsers)
+        .update(users)
         .set({
           socialProviders: updatedSocialProviders,
           profileImageUrl: profile.profileImageUrl || existingUserByEmail.profileImageUrl,
           updatedAt: new Date()
         })
-        .where(eq(whatsappUsers.id, existingUserByEmail.id));
+        .where(eq(users.id, existingUserByEmail.id));
 
       return {
         pendingUserId: existingUserByEmail.id,
@@ -202,7 +202,7 @@ export async function createPendingSocialUser(
       };
 
       const [newUser] = await db
-        .insert(whatsappUsers)
+        .insert(users)
         .values(userData)
         .returning();
 
@@ -262,8 +262,8 @@ export async function unlinkSocialProvider(userId: string, provider: SocialProvi
   // Update user's social providers and auth methods
   const [user] = await db
     .select()
-    .from(whatsappUsers)
-    .where(eq(whatsappUsers.id, userId))
+    .from(users)
+    .where(eq(users.id, userId))
     .limit(1);
 
   if (user) {
@@ -271,13 +271,13 @@ export async function unlinkSocialProvider(userId: string, provider: SocialProvi
     const updatedAuthMethods = (user.authMethods || []).filter(m => m !== provider);
 
     await db
-      .update(whatsappUsers)
+      .update(users)
       .set({
         socialProviders: updatedSocialProviders,
         authMethods: updatedAuthMethods,
         updatedAt: new Date()
       })
-      .where(eq(whatsappUsers.id, userId));
+      .where(eq(users.id, userId));
   }
 }
 
@@ -294,8 +294,8 @@ export async function completeSocialAccountSetup(
   // Check if mobile is already in use
   const existingMobile = await db
     .select()
-    .from(whatsappUsers)
-    .where(eq(whatsappUsers.whatsappNumber, verifiedMobileNumber))
+    .from(users)
+    .where(eq(users.whatsappNumber, verifiedMobileNumber))
     .limit(1);
 
   if (existingMobile.length > 0 && existingMobile[0].id !== socialUserId) {
@@ -305,8 +305,8 @@ export async function completeSocialAccountSetup(
   // Get user's social providers
   const [existingUser] = await db
     .select()
-    .from(whatsappUsers)
-    .where(eq(whatsappUsers.id, socialUserId))
+    .from(users)
+    .where(eq(users.id, socialUserId))
     .limit(1);
 
   if (!existingUser) {
@@ -315,14 +315,14 @@ export async function completeSocialAccountSetup(
 
   // Complete account setup with verified mobile
   const [user] = await db
-    .update(whatsappUsers)
+    .update(users)
     .set({
       whatsappNumber: verifiedMobileNumber,
       isVerified: true, // Now verified via mobile OTP
       authMethods: ['whatsapp', ...(existingUser.socialProviders || [])],
       updatedAt: new Date()
     })
-    .where(eq(whatsappUsers.id, socialUserId))
+    .where(eq(users.id, socialUserId))
     .returning();
 
   return user;
@@ -336,8 +336,8 @@ export async function getPendingSocialVerification(userId: string): Promise<{
 }> {
   const [user] = await db
     .select()
-    .from(whatsappUsers)
-    .where(eq(whatsappUsers.id, userId))
+    .from(users)
+    .where(eq(users.id, userId))
     .limit(1);
 
   if (!user) {

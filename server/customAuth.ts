@@ -3,13 +3,11 @@ import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 import { z } from "zod";
-import { findWhatsAppUser, formatPhoneNumber, findWhatsAppUserById } from "./services/whatsappAuth";
 import { verifyPassword, hashPassword } from "./services/socialAuth";
 import bcrypt from "bcryptjs";
-import type { WhatsAppUser } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
-import { whatsappUsers } from "@shared/schema";
+import { users } from "@shared/schema";
 import type { RequestHandler } from "express";
 
 // Extended session interface to support additional session properties
@@ -698,38 +696,9 @@ export const adminAuthMiddleware: RequestHandler = async (req, res, next) => {
   }
 };
 
-// Enhanced authentication middleware that supports both WhatsApp and custom auth
+// Enhanced authentication middleware that supports unified user auth
 export const isAuthenticatedUnified: RequestHandler = async (req, res, next) => {
-  let user = null;
-  
-  // First, try WhatsApp authentication by checking session
-  const whatsappUserId = req.session?.whatsappUserId;
-  const whatsappNumber = req.session?.whatsappNumber;
-  
-  if (whatsappUserId && whatsappNumber) {
-    try {
-      const whatsappAuthService = await import('./services/whatsappAuth');
-      user = await whatsappAuthService.findWhatsAppUser(whatsappNumber);
-      if (user && user.isVerified && user.id === whatsappUserId) {
-        // Attach WhatsApp user to request with proper structure
-        (req as AuthenticatedRequest).user = {
-          id: user.id,
-          tenantId: user.tenantId!,
-          email: user.email || `${user.whatsappNumber}@wytnet.local`,
-          mobileNumber: user.whatsappNumber,
-          isSuperAdmin: user.isSuperAdmin,
-          role: user.role,
-          provider: 'whatsapp',
-          claims: { sub: user.id }
-        };
-        return next();
-      }
-    } catch (error) {
-      console.error("WhatsApp auth error:", error);
-    }
-  }
-  
-  // Fallback to custom authentication
+  // Try to get authenticated user from session
   const sessionUser = req.session?.user;
   if (sessionUser) {
     try {

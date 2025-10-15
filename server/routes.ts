@@ -36,9 +36,7 @@ import path from "path";
 import multer from "multer";
 import { promises as fs } from "fs";
 import { fileTypeFromBuffer } from "file-type";
-// NOTE: whatsappAuthService is only used by legacy social auth routes (/api/auth/social/*)
 // Main WytPass OAuth authentication (Google, Email OTP, Email/Password) is in wytpass-auth.ts
-import * as whatsappAuthService from "./services/whatsappAuth";
 import * as socialAuthService from "./services/socialAuth";
 import { storage } from "./storage";
 import { z } from "zod";
@@ -57,7 +55,6 @@ import {
   hubs,
   seoSettings,
   insertSeoSettingSchema,
-  whatsappUsers,
   assessmentCategories,
   assessmentQuestions,
   assessmentOptions,
@@ -1272,14 +1269,14 @@ export async function registerRoutes(app: Express): Promise<void> {
         // Find or create the super admin user in database
         let superAdminUser = await db
           .select()
-          .from(whatsappUsers)
-          .where(eq(whatsappUsers.email, 'jkm@jkmuthu.com'))
+          .from(users)
+          .where(eq(users.email, 'jkm@jkmuthu.com'))
           .limit(1);
 
         // If super admin doesn't exist, create it
         if (superAdminUser.length === 0) {
           const [newSuperAdmin] = await db
-            .insert(whatsappUsers)
+            .insert(users)
             .values({
               name: 'Super Admin',
               email: 'jkm@jkmuthu.com',
@@ -1374,8 +1371,8 @@ export async function registerRoutes(app: Express): Promise<void> {
         // Find and authenticate user
         const superAdminUser = await db
           .select()
-          .from(whatsappUsers)
-          .where(eq(whatsappUsers.whatsappNumber, '+919345228184'))
+          .from(users)
+          .where(eq(users.whatsappNumber, '+919345228184'))
           .limit(1);
 
         if (superAdminUser.length > 0) {
@@ -1490,8 +1487,8 @@ export async function registerRoutes(app: Express): Promise<void> {
         // Find the super admin user in database
         const superAdminUser = await db
           .select()
-          .from(whatsappUsers)
-          .where(eq(whatsappUsers.whatsappNumber, '+919345228184'))
+          .from(users)
+          .where(eq(users.whatsappNumber, '+919345228184'))
           .limit(1);
 
         if (superAdminUser.length > 0) {
@@ -4774,27 +4771,27 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       const [allUsers, totalCount] = await Promise.all([
         db.select({
-          id: whatsappUsers.id,
-          name: whatsappUsers.name,
-          email: whatsappUsers.email,
-          whatsappNumber: whatsappUsers.whatsappNumber,
-          country: whatsappUsers.country,
-          gender: whatsappUsers.gender,
-          role: whatsappUsers.role,
-          isVerified: whatsappUsers.isVerified,
-          isSuperAdmin: whatsappUsers.isSuperAdmin,
-          profileImageUrl: whatsappUsers.profileImageUrl,
-          createdAt: whatsappUsers.createdAt,
-          tenantId: whatsappUsers.tenantId,
+          id: users.id,
+          name: users.firstName,
+          email: users.email,
+          whatsappNumber: users.id,
+          country: users.country,
+          gender: users.gender,
+          role: users.role,
+          isVerified: users.isVerified,
+          isSuperAdmin: users.isSuperAdmin,
+          profileImageUrl: users.profileImageUrl,
+          createdAt: users.createdAt,
+          tenantId: users.tenantId,
           profileCompletionPercentage: userProfiles.profileCompletionPercentage
         })
-        .from(whatsappUsers)
-        .leftJoin(userProfiles, eq(userProfiles.userId, whatsappUsers.id))
+        .from(users)
+        .leftJoin(userProfiles, eq(userProfiles.userId, users.id))
         .limit(limit)
         .offset(offset)
-        .orderBy(desc(whatsappUsers.createdAt)),
+        .orderBy(desc(users.createdAt)),
         
-        db.select({ count: sql<number>`cast(count(*) as integer)` }).from(whatsappUsers)
+        db.select({ count: sql<number>`cast(count(*) as integer)` }).from(users)
       ]);
 
       res.json({
@@ -4876,38 +4873,38 @@ export async function registerRoutes(app: Express): Promise<void> {
       ] = await Promise.all([
         // Total users with social providers
         db.select({ count: sql<number>`cast(count(*) as integer)` })
-          .from(whatsappUsers)
+          .from(users)
           .where(sql`cardinality(social_providers) > 0`),
         
         // Pending mobile verifications
         db.select({ count: sql<number>`cast(count(*) as integer)` })
-          .from(whatsappUsers)
+          .from(users)
           .where(and(
             sql`cardinality(social_providers) > 0`,
-            eq(whatsappUsers.isVerified, false)
+            eq(users.isVerified, false)
           )),
         
         // Verified social accounts
         db.select({ count: sql<number>`cast(count(*) as integer)` })
-          .from(whatsappUsers)
+          .from(users)
           .where(and(
             sql`cardinality(social_providers) > 0`,
-            eq(whatsappUsers.isVerified, true)
+            eq(users.isVerified, true)
           )),
         
         // Recent social users
         db.select({
-          id: whatsappUsers.id,
-          name: whatsappUsers.name,
-          email: whatsappUsers.email,
-          socialProviders: whatsappUsers.socialProviders,
-          isVerified: whatsappUsers.isVerified,
-          whatsappNumber: whatsappUsers.whatsappNumber,
-          lastLoginAt: whatsappUsers.lastLoginAt
+          id: users.id,
+          name: users.firstName,
+          email: users.email,
+          socialProviders: users.socialProviders,
+          isVerified: users.isVerified,
+          whatsappNumber: users.id,
+          lastLoginAt: users.lastLoginAt
         })
-          .from(whatsappUsers)
+          .from(users)
           .where(sql`cardinality(social_providers) > 0`)
-          .orderBy(desc(whatsappUsers.lastLoginAt))
+          .orderBy(desc(users.lastLoginAt))
           .limit(50),
         
         // All social tokens for audit
@@ -7243,12 +7240,12 @@ export async function registerRoutes(app: Express): Promise<void> {
         category: wytWallPosts.category,
         description: wytWallPosts.description,
         createdAt: wytWallPosts.createdAt,
-        userName: whatsappUsers.name,
-        userEmail: whatsappUsers.email,
-        userProfileImage: whatsappUsers.profileImageUrl,
+        userName: users.firstName,
+        userEmail: users.email,
+        userProfileImage: users.profileImageUrl,
       })
       .from(wytWallPosts)
-      .leftJoin(whatsappUsers, eq(wytWallPosts.userId, whatsappUsers.id));
+      .leftJoin(whatsappUsers, eq(wytWallPosts.userId, users.id));
       
       if (postType && (postType === 'need' || postType === 'offer')) {
         query = query.where(eq(wytWallPosts.postType, postType));
@@ -7485,7 +7482,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       const { name, email, gender, dateOfBirth } = req.body;
 
-      await db.update(whatsappUsers)
+      await db.update(users)
         .set({
           name: name || undefined,
           email: email || undefined,
@@ -7493,7 +7490,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
           updatedAt: new Date(),
         })
-        .where(eq(whatsappUsers.id, principal.id));
+        .where(eq(users.id, principal.id));
 
       res.json({ success: true, message: 'Profile updated successfully' });
     } catch (error: any) {
@@ -7513,12 +7510,12 @@ export async function registerRoutes(app: Express): Promise<void> {
       const { socialLinks } = req.body;
 
       // Update profile as complete
-      await db.update(whatsappUsers)
+      await db.update(users)
         .set({
           profileComplete: true,
           updatedAt: new Date(),
         })
-        .where(eq(whatsappUsers.id, principal.id));
+        .where(eq(users.id, principal.id));
 
       // Get profile_complete points config
       const [config] = await db.select()
@@ -7742,8 +7739,8 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       // Fetch user from whatsappUsers table
       const [user] = await db.select()
-        .from(whatsappUsers)
-        .where(eq(whatsappUsers.id, principal.id));
+        .from(users)
+        .where(eq(users.id, principal.id));
 
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
@@ -7934,8 +7931,8 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       // Get user
       const [user] = await db.select()
-        .from(whatsappUsers)
-        .where(eq(whatsappUsers.id, principal.id));
+        .from(users)
+        .where(eq(users.id, principal.id));
 
       if (!user || !user.passwordHash) {
         return res.status(400).json({ error: 'No password set for this account' });
@@ -7952,9 +7949,9 @@ export async function registerRoutes(app: Express): Promise<void> {
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
       // Update password
-      await db.update(whatsappUsers)
+      await db.update(users)
         .set({ passwordHash: hashedPassword, updatedAt: new Date() })
-        .where(eq(whatsappUsers.id, principal.id));
+        .where(eq(users.id, principal.id));
 
       res.json({ success: true, message: 'Password updated successfully' });
     } catch (error: any) {
@@ -8299,8 +8296,8 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       // Check if user is admin/super admin
       const user = await db.select()
-        .from(whatsappUsers)
-        .where(eq(whatsappUsers.id, principal.id))
+        .from(users)
+        .where(eq(users.id, principal.id))
         .limit(1);
 
       if (!user[0]?.isSuperAdmin && user[0]?.role !== 'admin') {
