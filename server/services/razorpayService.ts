@@ -478,7 +478,7 @@ export class RazorpayService {
   }> {
     try {
       // Get user details - WhatsApp users only
-      const user = await db.select().from(whatsappUsers).where(eq(whatsappUsers.id, userId)).limit(1);
+      const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
       if (!user[0]) {
         return { success: false, error: "WytPoints are only available for WhatsApp-authenticated users" };
       }

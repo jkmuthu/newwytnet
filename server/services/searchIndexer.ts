@@ -8,13 +8,11 @@ import type {
   App, 
   Trademark, 
   TMNumber,
-  Media,
-  WhatsAppUser
+  Media
 } from '@shared/schema';
 import { 
   tenants,
   users,
-  whatsappUsers,
   models,
   pages,
   apps,
@@ -69,7 +67,6 @@ class SearchIndexer {
       const indexChecks = [
         { index: SEARCH_INDEXES.TENANTS, populateFn: () => this.indexAllTenants() },
         { index: SEARCH_INDEXES.USERS, populateFn: () => this.indexAllUsers() },
-        { index: SEARCH_INDEXES.WHATSAPP_USERS, populateFn: () => this.indexAllWhatsAppUsers() },
         { index: SEARCH_INDEXES.MODELS, populateFn: () => this.indexAllModels() },
         { index: SEARCH_INDEXES.PAGES, populateFn: () => this.indexAllPages() },
         { index: SEARCH_INDEXES.APPS, populateFn: () => this.indexAllApps() },
@@ -128,20 +125,6 @@ class SearchIndexer {
     }
   }
 
-  // Index all WhatsApp users
-  async indexAllWhatsAppUsers(): Promise<void> {
-    try {
-      const allWhatsAppUsers = await db.select().from(whatsappUsers);
-      
-      if (allWhatsAppUsers.length > 0) {
-        await this.processBatch(SEARCH_INDEXES.WHATSAPP_USERS, allWhatsAppUsers);
-        console.log(`Indexed ${allWhatsAppUsers.length} WhatsApp users`);
-      }
-    } catch (error) {
-      console.error('Failed to index WhatsApp users:', error);
-      throw error;
-    }
-  }
 
   // Index all models
   async indexAllModels(): Promise<void> {

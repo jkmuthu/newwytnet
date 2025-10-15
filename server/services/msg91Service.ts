@@ -262,18 +262,18 @@ class MSG91Service {
       // Check if user exists
       const [existingUser] = await db
         .select()
-        .from(whatsappUsers)
-        .where(eq(whatsappUsers.email, email));
+        .from(users)
+        .where(eq(users.email, email));
 
       if (existingUser) {
         // Update last login
         const [updatedUser] = await db
-          .update(whatsappUsers)
+          .update(users)
           .set({
             lastLoginAt: new Date(),
             updatedAt: new Date(),
           })
-          .where(eq(whatsappUsers.id, existingUser.id))
+          .where(eq(users.id, existingUser.id))
           .returning();
 
         return {
@@ -288,7 +288,7 @@ class MSG91Service {
       } else {
         // Create new user for OTP authentication
         const [newUser] = await db
-          .insert(whatsappUsers)
+          .insert(users)
           .values({
             name: name || email.split("@")[0], // Use email prefix as name
             email: email,

@@ -188,7 +188,7 @@ export async function createPendingSocialUser(
       }
 
       // Create UNVERIFIED user account - mobile verification required
-      const userData: InsertWhatsAppUser = {
+      const userData: UpsertUser = {
         name: profile.name,
         whatsappNumber: '', // Empty until verified
         email: profile.email,
@@ -285,7 +285,7 @@ export async function unlinkSocialProvider(userId: string, provider: SocialProvi
 export async function completeSocialAccountSetup(
   socialUserId: string, 
   verifiedMobileNumber: string
-): Promise<WhatsAppUser> {
+): Promise<User> {
   // Validate mobile number format
   if (!validateMobileNumber(verifiedMobileNumber)) {
     throw new Error('Invalid mobile number format');
@@ -330,7 +330,7 @@ export async function completeSocialAccountSetup(
 
 // Get pending social verification status
 export async function getPendingSocialVerification(userId: string): Promise<{
-  user: WhatsAppUser | null;
+  user: User | null;
   socialProviders: string[];
   requiresMobileVerification: boolean;
 }> {

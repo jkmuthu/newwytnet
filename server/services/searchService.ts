@@ -100,7 +100,6 @@ export interface TenantSearchOptions extends SearchOptions {
 export type SearchableDocument = 
   | (Tenant & { _type: 'tenant' })
   | (User & { _type: 'user' })
-  | (WhatsAppUser & { _type: 'whatsapp_user' })
   | (Model & { _type: 'model' })
   | (Page & { _type: 'page' })
   | (App & { _type: 'app' })
@@ -138,9 +137,6 @@ class SearchService {
       
       // Configure users index
       await this.configureUsersIndex();
-      
-      // Configure WhatsApp users index
-      await this.configureWhatsAppUsersIndex();
       
       // Configure models index
       await this.configureModelsIndex();
@@ -194,17 +190,6 @@ class SearchService {
     });
   }
 
-  // Configure WhatsApp users index
-  private async configureWhatsAppUsersIndex(): Promise<void> {
-    const index = this.client.index(SEARCH_INDEXES.USERS);
-    
-    await index.updateSettings({
-      searchableAttributes: ['name', 'whatsappNumber'],
-      filterableAttributes: ['country', 'isVerified', 'tenantId', 'createdAt'],
-      sortableAttributes: ['createdAt', 'lastLoginAt', 'name'],
-      displayedAttributes: ['id', 'name', 'country', 'whatsappNumber', 'isVerified'],
-    });
-  }
 
   // Configure models index
   private async configureModelsIndex(): Promise<void> {
