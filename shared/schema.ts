@@ -78,56 +78,11 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Enhanced User Authentication System (supports mobile + social auth)
-export const whatsappUsers = pgTable("whatsapp_users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: varchar("name", { length: 255 }).notNull(),
-  country: varchar("country", { length: 10 }).notNull().default('IN'),
-  whatsappNumber: varchar("whatsapp_number", { length: 20 }).notNull().unique(),
-  email: varchar("email", { length: 255 }),
-  gender: genderEnum("gender"),
-  dateOfBirth: timestamp("date_of_birth"),
-  role: userRoleEnum("role").notNull().default('user'),
-  isVerified: boolean("is_verified").default(false),
-  isSuperAdmin: boolean("is_super_admin").default(false),
-  tenantId: uuid("tenant_id").references(() => tenants.id),
-  permissions: jsonb("permissions").default({}),
-  
-  // Social Auth Integration
-  socialProviders: jsonb("social_providers").default([]), // ['google', 'facebook', 'linkedin']
-  socialIds: jsonb("social_ids").default({}), // {google: 'id123', facebook: 'id456'}
-  profileImageUrl: varchar("profile_image_url", { length: 500 }),
-  
-  // Referral System
-  referralCode: varchar("referral_code", { length: 20 }).unique(),
-  referredBy: varchar("referred_by", { length: 20 }),
-  
-  // Authentication Methods
-  authMethods: jsonb("auth_methods").default(['whatsapp']), // ['whatsapp', 'password', 'google', 'facebook']
-  passwordHash: varchar("password_hash", { length: 255 }),
-  
-  // Profile completion tracking
-  profileComplete: boolean("profile_complete").default(false),
-  
-  lastLoginAt: timestamp("last_login_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const whatsappOtpSessions = pgTable("whatsapp_otp_sessions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  whatsappNumber: varchar("whatsapp_number", { length: 20 }).notNull(),
-  otp: varchar("otp", { length: 6 }).notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  isUsed: boolean("is_used").default(false),
-  tenantId: uuid("tenant_id").references(() => tenants.id),
-  createdAt: timestamp("created_at").defaultNow(),
-});
 
 // User Profiles - Detailed user information
 export const userProfiles = pgTable("user_profiles", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   username: varchar("username", { length: 50 }).unique(),
   
   // Personal Information (Personal Tab)
@@ -197,7 +152,7 @@ export const bucketList = pgTable("bucket_list", {
 // User Needs - Marketplace needs
 export const userNeeds = pgTable("user_needs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description").notNull(),
   category: varchar("category", { length: 100 }),
@@ -214,7 +169,7 @@ export const userNeeds = pgTable("user_needs", {
 // User Offers - Marketplace offers
 export const userOffers = pgTable("user_offers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id),
+  userId: varchar("user_id").notNull().references(() => users.id),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description").notNull(),
   category: varchar("category", { length: 100 }),
@@ -379,7 +334,7 @@ export const platformModules = pgTable("platform_modules", {
   order: integer("order").default(0),
   
   tenantId: uuid("tenant_id").references(() => tenants.id),
-  createdBy: varchar("created_by").references(() => whatsappUsers.id),
+  createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -393,7 +348,7 @@ export const platformModuleActivations = pgTable("platform_module_activations", 
   context: varchar("context", { length: 20 }).notNull().default('platform'), // 'platform', 'hub', 'app', 'game'
   isActive: boolean("is_active").notNull().default(true),
   settings: jsonb("settings").default({}), // Module-specific configuration
-  activatedBy: varchar("activated_by").references(() => whatsappUsers.id),
+  activatedBy: varchar("activated_by").references(() => users.id),
   activatedAt: timestamp("activated_at").defaultNow().notNull(),
   deactivatedAt: timestamp("deactivated_at"),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -409,7 +364,7 @@ export const hubModuleActivations = pgTable("hub_module_activations", {
   moduleId: varchar("module_id", { length: 255 }).notNull().references(() => platformModules.id),
   isActive: boolean("is_active").notNull().default(true),
   settings: jsonb("settings").default({}),
-  activatedBy: varchar("activated_by").references(() => whatsappUsers.id),
+  activatedBy: varchar("activated_by").references(() => users.id),
   activatedAt: timestamp("activated_at").defaultNow().notNull(),
   deactivatedAt: timestamp("deactivated_at"),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -425,7 +380,7 @@ export const appModuleActivations = pgTable("app_module_activations", {
   moduleId: varchar("module_id", { length: 255 }).notNull().references(() => platformModules.id),
   isActive: boolean("is_active").notNull().default(true),
   settings: jsonb("settings").default({}),
-  activatedBy: varchar("activated_by").references(() => whatsappUsers.id),
+  activatedBy: varchar("activated_by").references(() => users.id),
   activatedAt: timestamp("activated_at").defaultNow().notNull(),
   deactivatedAt: timestamp("deactivated_at"),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -478,7 +433,7 @@ export const orderStatusEnum = pgEnum("order_status", [
 export const orders = pgTable("orders", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   tenantId: uuid("tenant_id").references(() => tenants.id),
-  userId: varchar("user_id").references(() => whatsappUsers.id),
+  userId: varchar("user_id").references(() => users.id),
   planId: uuid("plan_id").references(() => plans.id),
   
   // Order details
@@ -979,12 +934,6 @@ export const insertMediaSchema = createInsertSchema(media);
 export const insertAuditLogSchema = createInsertSchema(auditLogs);
 export const insertSeoSettingSchema = createInsertSchema(seoSettings);
 
-// WhatsApp OTP schemas
-export const insertWhatsAppUserSchema = createInsertSchema(whatsappUsers);
-export const selectWhatsAppUserSchema = createSelectSchema(whatsappUsers);
-export const insertWhatsAppOtpSessionSchema = createInsertSchema(whatsappOtpSessions);
-export const selectWhatsAppOtpSessionSchema = createSelectSchema(whatsappOtpSessions);
-
 // User Profile schemas
 export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({ id: true, createdAt: true, updatedAt: true }).extend({
   dateOfBirth: z.union([z.date(), z.string()]).optional().transform(val => {
@@ -1076,12 +1025,6 @@ export type NiceClassification = typeof niceClassifications.$inferSelect;
 export type InsertNiceClassification = z.infer<typeof insertNiceClassificationSchema>;
 export type IngestJob = typeof ingestJobs.$inferSelect;
 export type InsertIngestJob = z.infer<typeof insertIngestJobSchema>;
-
-// WhatsApp OTP Authentication types
-export type WhatsAppUser = typeof whatsappUsers.$inferSelect;
-export type InsertWhatsAppUser = typeof whatsappUsers.$inferInsert;
-export type WhatsAppOtpSession = typeof whatsappOtpSessions.$inferSelect;
-export type InsertWhatsAppOtpSession = typeof whatsappOtpSessions.$inferInsert;
 
 // WytAi Trademark Engine - Proprietary AI-Powered Indian Trademark Intelligence
 export const trademarkStatusEnum = pgEnum('trademark_status', ['pending', 'registered', 'opposed', 'abandoned', 'expired', 'renewal_due']);
@@ -1271,7 +1214,7 @@ export const tmNumbers = pgTable("tm_numbers", {
 // Social Authentication Tokens
 export const socialAuthTokens = pgTable("social_auth_tokens", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => whatsappUsers.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   provider: varchar("provider", { length: 50 }).notNull(), // 'google', 'facebook', 'linkedin', 'instagram'
   providerId: varchar("provider_id", { length: 255 }).notNull(),
   accessToken: text("access_token"),
@@ -1286,9 +1229,9 @@ export const socialAuthTokens = pgTable("social_auth_tokens", {
 ]);
 
 export const socialAuthTokensRelations = relations(socialAuthTokens, ({ one }) => ({
-  user: one(whatsappUsers, {
+  user: one(users, {
     fields: [socialAuthTokens.userId],
-    references: [whatsappUsers.id],
+    references: [users.id],
   }),
 }));
 
