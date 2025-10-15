@@ -31,6 +31,7 @@ import {
   generateRecommendations,
   initializeSampleTrademarkData
 } from "./services/trademarkAnalysis";
+import { requireModule, requireAnyModule } from "./helpers/moduleMiddleware";
 import { razorpayService } from "./services/razorpayService";
 import path from "path";
 import multer from "multer";
@@ -5558,7 +5559,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   // ==========================================
 
   // Get available plans
-  app.get('/api/payments/plans', async (req, res) => {
+  app.get('/api/payments/plans', requireModule('razorpay-payment'), async (req, res) => {
     try {
       const result = await razorpayService.getPlans();
       
@@ -5583,7 +5584,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Create payment order
-  app.post('/api/payments/create-order', isAuthenticatedUnified, async (req, res) => {
+  app.post('/api/payments/create-order', isAuthenticatedUnified, requireModule('razorpay-payment'), async (req, res) => {
     try {
       const principal = getPrincipal(req);
       if (!principal) {
