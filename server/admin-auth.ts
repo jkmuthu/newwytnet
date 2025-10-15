@@ -1,6 +1,7 @@
 import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
+import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { users, tenants, models, apps } from "@shared/schema";
 import { eq, sql, count, and, isNotNull } from "drizzle-orm";
@@ -66,24 +67,19 @@ export function setupAdminAuth(app: Express) {
         // Find or create super admin user
         let [superAdmin] = await db
           .select()
-          .from(whatsappUsers)
-          .where(eq(whatsappUsers.email, "jkm@jkmuthu.com"))
+          .from(users)
+          .where(eq(users.email, "jkm@jkmuthu.com"))
           .limit(1);
 
         if (!superAdmin) {
           [superAdmin] = await db
-            .insert(whatsappUsers)
+            .insert(users)
             .values({
-              name: "Super Admin",
+              firstName: "Super",
+              lastName: "Admin",
               email: "jkm@jkmuthu.com",
-              whatsappNumber: "ADMIN_SUPER",
-              role: "super_admin",
-              isVerified: true,
-              authMethods: ["email"],
-              socialProviders: [],
-              country: "IN",
-              tenantId: null,
-              isSuperAdmin: true,
+              role: "admin",
+              passwordHash: await bcrypt.hash("SuperAdmin@2025", 10),
             })
             .returning();
         }
@@ -91,9 +87,9 @@ export function setupAdminAuth(app: Express) {
         // Store admin principal in isolated session
         (req.session as any).adminPrincipal = {
           id: superAdmin.id,
-          name: superAdmin.name || "Super Admin",
+          name: `${superAdmin.firstName} ${superAdmin.lastName}`,
           email: superAdmin.email || "jkm@jkmuthu.com",
-          role: "super_admin",
+          role: "admin",
           isSuperAdmin: true,
         };
 
@@ -187,7 +183,7 @@ export function setupAdminAuth(app: Express) {
       // Get total users count
       const [usersCount] = await db
         .select({ count: count() })
-        .from(whatsappUsers);
+        .from(users);
 
       // Get active tenants count
       const [tenantsCount] = await db
