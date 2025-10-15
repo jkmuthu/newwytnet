@@ -591,6 +591,34 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     icon: 'search',
     color: 'blue'
   },
+  {
+    id: 'wytdata-api',
+    name: 'WytData - Universal Dataset API',
+    description: 'Access to 15+ curated datasets: countries, languages, currencies, timezones, and more',
+    category: 'data',
+    type: 'native',
+    contexts: ['platform', 'hub', 'app', 'game'],
+    dependencies: [],
+    apiEndpoints: [
+      { method: 'GET', path: '/api/modules/wytdata/collections', auth: true, description: 'List all available datasets' },
+      { method: 'GET', path: '/api/modules/wytdata/:key', auth: true, description: 'Get dataset items by key (countries, languages, etc.)' },
+      { method: 'GET', path: '/api/modules/wytdata/:key/search', auth: true, description: 'Search within a dataset' },
+      { method: 'GET', path: '/api/modules/wytdata/:key/locale/:locale', auth: true, description: 'Get localized dataset' },
+      { method: 'POST', path: '/api/modules/wytdata/batch', auth: true, description: 'Fetch multiple datasets in one request' }
+    ],
+    settings: {},
+    compatibilityMatrix: {},
+    pricing: 'usage-based',
+    price: 0.50,
+    icon: 'database',
+    color: 'violet',
+    upstream: {
+      provider: 'WytNet',
+      baseUrl: '',
+      credentialKey: '',
+      type: 'native'
+    }
+  },
 
   // ===== 6. USER & ORGANIZATION =====
   {
