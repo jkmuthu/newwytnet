@@ -88,6 +88,16 @@ export default function WytWall() {
     setCurrentPage(1);
   };
 
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+
+  const handlePostTypeChange = (type: "all" | "needs" | "offers") => {
+    setPostType(type);
+    setCurrentPage(1);
+  };
+
   const handleMakeOffer = (needId: string) => {
     console.log('Make offer on need:', needId);
   };
@@ -147,7 +157,7 @@ export default function WytWall() {
                 type="text"
                 placeholder="Search"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10 h-8 text-sm border-0 bg-white/20 backdrop-blur-xl text-white placeholder:text-white/70 focus:ring-2 focus:ring-white/50 rounded-xl"
                 data-testid="input-search-needs"
               />
@@ -172,7 +182,7 @@ export default function WytWall() {
                 type="text"
                 placeholder="Search"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10 h-8 text-sm border-0 bg-white/20 backdrop-blur-xl text-white placeholder:text-white/70 focus:ring-2 focus:ring-white/50 rounded-xl w-full"
                 data-testid="input-search-needs-mobile"
               />
@@ -188,7 +198,7 @@ export default function WytWall() {
             key={cat}
             variant={selectedCategory === cat ? "default" : "outline"}
             size="sm"
-            onClick={() => setSelectedCategory(cat)}
+            onClick={() => handleCategoryChange(cat)}
             className={`whitespace-nowrap rounded-full px-5 py-2 font-bold transition-all ${
               selectedCategory === cat
                 ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-xl border-0 scale-105"
