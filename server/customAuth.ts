@@ -7,8 +7,7 @@ import { verifyPassword, hashPassword } from "./services/socialAuth";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
-import { users } from "@shared/schema";
-import type { RequestHandler } from "express";
+import { users, type User } from "@shared/schema";
 
 // Extended session interface to support additional session properties
 declare module 'express-session' {
@@ -43,28 +42,13 @@ export interface Principal {
   lastName?: string;
   mobileNumber?: string;
   profileImageUrl?: string;
-  provider: 'whatsapp' | 'legacy' | 'replit';
+  provider: 'whatsapp' | 'legacy' | 'replit' | 'admin' | 'unified';
   claims?: { sub: string; [key: string]: any };
 }
 
 // Request interface extension for authenticated requests
-export interface AuthenticatedRequest extends Express.Request {
+export interface AuthenticatedRequest extends Omit<Express.Request, 'user'> {
   user?: Principal;
-}
-
-// Unified Principal DTO for consistent user representation (keeping for backward compatibility)
-export interface Principal {
-  id: string;
-  tenantId: string;
-  role?: string;
-  isSuperAdmin?: boolean;
-  email?: string;
-  name?: string;
-  firstName?: string;
-  lastName?: string;
-  mobileNumber?: string;
-  profileImageUrl?: string;
-  provider: 'whatsapp' | 'legacy' | 'replit';
 }
 
 // Session structure with provider type for unified handling
@@ -76,36 +60,35 @@ export interface SessionUser {
   isSuperAdmin?: boolean;
 }
 
-// Helper function to normalize user data into Principal DTO
-function createPrincipal(user: any, provider: 'whatsapp' | 'legacy' | 'replit'): Principal {
-  if (provider === 'whatsapp') {
-    const whatsappUser = user as WhatsAppUser;
-    return {
-      id: whatsappUser.id,
-      tenantId: whatsappUser.tenantId!,
-      role: whatsappUser.role,
-      isSuperAdmin: whatsappUser.isSuperAdmin || false,
-      email: whatsappUser.email || undefined,
-      name: whatsappUser.name,
-      mobileNumber: whatsappUser.whatsappNumber,
-      profileImageUrl: whatsappUser.profileImageUrl || undefined,
-      provider: 'whatsapp'
-    };
-  } else {
-    // Legacy user from users table
-    return {
-      id: user.id,
-      tenantId: user.tenantId,
-      role: 'user', // Default role for legacy users
-      isSuperAdmin: false,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || undefined,
-      profileImageUrl: user.profileImageUrl || undefined,
-      provider: 'legacy'
-    };
+// Helper function to format phone number
+function formatPhoneNumber(phoneNumber: string): string {
+  // Remove all non-digit characters except +
+  let formatted = phoneNumber.replace(/[^\d+]/g, '');
+  
+  // If it doesn't start with +, add country code
+  if (!formatted.startsWith('+')) {
+    // Assume Indian number if not international format
+    formatted = '+91' + formatted;
   }
+  
+  return formatted;
+}
+
+// Helper function to normalize user data into Principal DTO
+function createPrincipal(user: User, provider: 'whatsapp' | 'legacy' | 'replit' | 'admin' | 'unified'): Principal {
+  return {
+    id: user.id,
+    tenantId: user.tenantId || '',
+    role: user.role || 'user',
+    isSuperAdmin: user.isSuperAdmin || false,
+    email: user.email || undefined,
+    name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || undefined,
+    firstName: user.firstName || undefined,
+    lastName: user.lastName || undefined,
+    mobileNumber: user.whatsappNumber || undefined,
+    profileImageUrl: user.profileImageUrl || undefined,
+    provider
+  };
 }
 
 // Helper function to resolve user from session
@@ -115,15 +98,16 @@ export async function resolveUserFromSession(sessionUser: any): Promise<Principa
     if (sessionUser.type) {
       const typedSession = sessionUser as SessionUser;
       
-      if (typedSession.type === 'whatsapp') {
-        const whatsappUser = await findWhatsAppUserById(typedSession.id);
-        if (whatsappUser) {
-          return createPrincipal(whatsappUser, 'whatsapp');
-        }
-      } else if (typedSession.type === 'legacy') {
-        const legacyUser = await storage.getUser(typedSession.id);
-        if (legacyUser) {
-          return createPrincipal(legacyUser, 'legacy');
+      if (typedSession.type === 'whatsapp' || typedSession.type === 'legacy') {
+        // Query unified users table
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, typedSession.id))
+          .limit(1);
+        
+        if (user) {
+          return createPrincipal(user, typedSession.type);
         }
       }
       
@@ -131,18 +115,17 @@ export async function resolveUserFromSession(sessionUser: any): Promise<Principa
     }
     
     // Handle legacy session format for backward compatibility
-    // First try to find in WhatsApp users (check if it has role/isSuperAdmin properties)
-    if (sessionUser.role !== undefined || sessionUser.isSuperAdmin !== undefined) {
-      const whatsappUser = await findWhatsAppUserById(sessionUser.id);
-      if (whatsappUser) {
-        return createPrincipal(whatsappUser, 'whatsapp');
-      }
-    }
+    // Query unified users table
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, sessionUser.id))
+      .limit(1);
     
-    // Fall back to regular users table
-    const legacyUser = await storage.getUser(sessionUser.id);
-    if (legacyUser) {
-      return createPrincipal(legacyUser, 'legacy');
+    if (user) {
+      // Determine provider based on user data
+      const provider = user.whatsappNumber ? 'whatsapp' : 'legacy';
+      return createPrincipal(user, provider);
     }
     
     return null;
@@ -336,8 +319,12 @@ export async function setupAuth(app: Express) {
         // Format the mobile number consistently
         const formattedNumber = formatPhoneNumber(mobileNumber);
         
-        // Find user by mobile number
-        const user = await findWhatsAppUser(formattedNumber);
+        // Find user by mobile number using direct db query
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.whatsappNumber, formattedNumber))
+          .limit(1);
         
         if (!user) {
           return res.status(401).json({ message: "Invalid mobile number or password" });
@@ -383,7 +370,7 @@ export async function setupAuth(app: Express) {
           message: "Login successful", 
           user: {
             id: user.id,
-            name: user.name,
+            name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
             mobileNumber: user.whatsappNumber,
             role: user.role,
             isSuperAdmin: user.isSuperAdmin,
@@ -612,11 +599,11 @@ export const adminAuthMiddleware: RequestHandler = async (req, res, next) => {
     if (whatsappUserId && superAdminAuth) {
       console.log('DEBUG: Found WhatsApp super admin session');
       try {
-        // Verify this is actually a super admin user
+        // Verify this is actually a super admin user - use unified users table
         const adminUser = await db
           .select()
-          .from(whatsappUsers)
-          .where(eq(whatsappUsers.id, whatsappUserId))
+          .from(users)
+          .where(eq(users.id, whatsappUserId))
           .limit(1);
 
         if (adminUser.length > 0) {

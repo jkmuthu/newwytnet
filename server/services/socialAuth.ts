@@ -150,9 +150,12 @@ export async function createPendingSocialUser(
         });
 
       // Update social providers
-      const updatedSocialProviders = existingUserByEmail.socialProviders?.includes(profile.provider)
-        ? existingUserByEmail.socialProviders
-        : [...(existingUserByEmail.socialProviders || []), profile.provider];
+      const socialProviders = Array.isArray(existingUserByEmail.socialProviders) 
+        ? existingUserByEmail.socialProviders as string[]
+        : [];
+      const updatedSocialProviders = socialProviders.includes(profile.provider)
+        ? socialProviders
+        : [...socialProviders, profile.provider];
 
       await db
         .update(users)
@@ -188,13 +191,14 @@ export async function createPendingSocialUser(
       }
 
       // Create UNVERIFIED user account - mobile verification required
-      const userData: UpsertUser = {
+      const userData = {
+        id: `usr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: profile.name,
         whatsappNumber: '', // Empty until verified
         email: profile.email,
         profileImageUrl: profile.profileImageUrl,
         tenantId: tenant.id,
-        role: 'user',
+        role: 'user' as const,
         isVerified: false, // SECURITY: Must verify mobile before activation
         socialProviders: [profile.provider],
         authMethods: [], // Empty until mobile verified
@@ -267,8 +271,10 @@ export async function unlinkSocialProvider(userId: string, provider: SocialProvi
     .limit(1);
 
   if (user) {
-    const updatedSocialProviders = (user.socialProviders || []).filter(p => p !== provider);
-    const updatedAuthMethods = (user.authMethods || []).filter(m => m !== provider);
+    const socialProviders = Array.isArray(user.socialProviders) ? user.socialProviders as string[] : [];
+    const authMethods = Array.isArray(user.authMethods) ? user.authMethods as string[] : [];
+    const updatedSocialProviders = socialProviders.filter(p => p !== provider);
+    const updatedAuthMethods = authMethods.filter(m => m !== provider);
 
     await db
       .update(users)
@@ -314,12 +320,13 @@ export async function completeSocialAccountSetup(
   }
 
   // Complete account setup with verified mobile
+  const socialProviders = Array.isArray(existingUser.socialProviders) ? existingUser.socialProviders as string[] : [];
   const [user] = await db
     .update(users)
     .set({
       whatsappNumber: verifiedMobileNumber,
       isVerified: true, // Now verified via mobile OTP
-      authMethods: ['whatsapp', ...(existingUser.socialProviders || [])],
+      authMethods: ['whatsapp', ...socialProviders],
       updatedAt: new Date()
     })
     .where(eq(users.id, socialUserId))
@@ -348,9 +355,10 @@ export async function getPendingSocialVerification(userId: string): Promise<{
     };
   }
 
+  const socialProviders = Array.isArray(user.socialProviders) ? user.socialProviders as string[] : [];
   return {
     user,
-    socialProviders: user.socialProviders || [],
+    socialProviders,
     requiresMobileVerification: !user.isVerified || !validateMobileNumber(user.whatsappNumber || '')
   };
 }

@@ -5,8 +5,7 @@ import {
   users, 
   tenants, 
   apps, 
-  hubs, 
-  whatsappUsers,
+  hubs,
   assessmentSessions,
   assessmentResponses,
   assessmentResults,
@@ -35,24 +34,16 @@ export async function getAdminDashboardData() {
     const userStats = await db
       .select({
         total: sql<number>`count(*)`,
-        withTenants: sql<number>`count(*) filter (where ${users.tenantId} is not null)`
+        withTenants: sql<number>`count(*) filter (where ${users.tenantId} is not null)`,
+        admins: sql<number>`count(*) filter (where ${users.role} = 'admin')`
       })
       .from(users);
-
-    // Get WhatsApp user stats
-    const whatsappStats = await db
-      .select({
-        total: sql<number>`count(*)`,
-        verified: sql<number>`count(*) filter (where ${whatsappUsers.isVerified} = true)`,
-        superAdmins: sql<number>`count(*) filter (where ${whatsappUsers.isSuperAdmin} = true)`
-      })
-      .from(whatsappUsers);
 
     // Get tenant stats
     const tenantStats = await db
       .select({
         total: sql<number>`count(*)`,
-        active: sql<number>`count(*) filter (where ${tenants.isActive} = true)`
+        active: sql<number>`count(*) filter (where ${tenants.status} = 'active')`
       })
       .from(tenants);
 
@@ -94,8 +85,7 @@ export async function getAdminDashboardData() {
 
     return {
       modules: moduleStats[0] || { total: 0, enabled: 0, disabled: 0 },
-      users: userStats[0] || { total: 0, withTenants: 0 },
-      whatsappUsers: whatsappStats[0] || { total: 0, verified: 0, superAdmins: 0 },
+      users: userStats[0] || { total: 0, withTenants: 0, admins: 0 },
       tenants: tenantStats[0] || { total: 0, active: 0 },
       apps: appStats[0] || { total: 0 },
       hubs: hubStats[0] || { total: 0 },

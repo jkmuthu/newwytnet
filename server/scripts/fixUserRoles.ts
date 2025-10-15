@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { whatsappUsers } from "@shared/schema";
+import { users } from "@shared/schema";
 import { eq, ne } from "drizzle-orm";
 
 /**
@@ -12,38 +12,40 @@ export async function fixUserRoles() {
 
     // Fix super admin - ensure only +919345228184 has super_admin role
     const superAdminResult = await db
-      .update(whatsappUsers)
+      .update(users)
       .set({
         role: 'super_admin',
         isSuperAdmin: true,
         permissions: { all: true },
         updatedAt: new Date(),
       })
-      .where(eq(whatsappUsers.whatsappNumber, '+919345228184'))
+      .where(eq(users.whatsappNumber, '+919345228184'))
       .returning();
 
     console.log(`✅ Updated super admin user: ${superAdminResult.length} users`);
 
     // Fix all other users - ensure they have 'user' role
     const regularUsersResult = await db
-      .update(whatsappUsers)
+      .update(users)
       .set({
         role: 'user',
         isSuperAdmin: false,
         permissions: {},
         updatedAt: new Date(),
       })
-      .where(ne(whatsappUsers.whatsappNumber, '+919345228184'))
+      .where(ne(users.whatsappNumber, '+919345228184'))
       .returning();
 
     console.log(`✅ Updated regular users: ${regularUsersResult.length} users`);
 
     // Show summary
-    const allUsers = await db.select().from(whatsappUsers);
+    const allUsers = await db.select().from(users);
     console.log('\n📊 User Role Summary:');
     console.log('===================');
     for (const user of allUsers) {
-      console.log(`${user.whatsappNumber}: ${user.role} (Super Admin: ${user.isSuperAdmin})`);
+      const displayName = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown';
+      const mobileNumber = user.whatsappNumber || 'N/A';
+      console.log(`${mobileNumber} (${displayName}): ${user.role} (Super Admin: ${user.isSuperAdmin})`);
     }
 
     console.log('\n🎉 User role fix completed successfully!');

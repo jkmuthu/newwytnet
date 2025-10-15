@@ -276,22 +276,26 @@ class MSG91Service {
           .where(eq(users.id, existingUser.id))
           .returning();
 
+        const authMethods = Array.isArray(updatedUser.authMethods) ? updatedUser.authMethods as string[] : [];
+        const socialProviders = Array.isArray(updatedUser.socialProviders) ? updatedUser.socialProviders as string[] : [];
         return {
           id: updatedUser.id,
-          name: updatedUser.name,
+          name: updatedUser.name || `${updatedUser.firstName || ''} ${updatedUser.lastName || ''}`.trim(),
           email: updatedUser.email,
           profileImageUrl: updatedUser.profileImageUrl,
           role: updatedUser.role,
-          authMethods: updatedUser.authMethods as string[],
-          socialProviders: updatedUser.socialProviders as string[],
+          authMethods,
+          socialProviders,
         };
       } else {
         // Create new user for OTP authentication
         const [newUser] = await db
           .insert(users)
           .values({
-            name: name || email.split("@")[0], // Use email prefix as name
+            id: `usr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             email: email,
+            firstName: name?.split(' ')[0] || email.split("@")[0],
+            lastName: name?.split(' ').slice(1).join(' ') || undefined,
             role: "user",
             authMethods: ["email_otp"],
             socialProviders: [],
@@ -302,14 +306,16 @@ class MSG91Service {
           })
           .returning();
 
+        const authMethods = Array.isArray(newUser.authMethods) ? newUser.authMethods as string[] : [];
+        const socialProviders = Array.isArray(newUser.socialProviders) ? newUser.socialProviders as string[] : [];
         return {
           id: newUser.id,
-          name: newUser.name,
+          name: newUser.name || `${newUser.firstName || ''} ${newUser.lastName || ''}`.trim(),
           email: newUser.email,
           profileImageUrl: newUser.profileImageUrl,
           role: newUser.role,
-          authMethods: newUser.authMethods as string[],
-          socialProviders: newUser.socialProviders as string[],
+          authMethods,
+          socialProviders,
         };
       }
     } catch (error) {

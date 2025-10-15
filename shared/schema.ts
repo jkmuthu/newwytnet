@@ -49,8 +49,10 @@ export const userRoleEnum = pgEnum("user_role", ["super_admin", "admin", "manage
 export const users = pgTable("users", {
   id: varchar("id").primaryKey(),
   email: varchar("email").unique(),
+  name: varchar("name", { length: 255 }),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
+  whatsappNumber: varchar("whatsapp_number", { length: 20 }),
   profileImageUrl: varchar("profile_image_url"),
   passwordHash: varchar("password_hash", { length: 255 }),
   tenantId: uuid("tenant_id").references(() => tenants.id),
