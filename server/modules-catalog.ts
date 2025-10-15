@@ -19,7 +19,7 @@ export interface ModuleDefinition {
   id: string;
   name: string;
   description: string;
-  category: 'auth' | 'payment' | 'content' | 'communication' | 'data' | 'user-org' | 'productivity' | 'platform-core';
+  category: 'auth' | 'payment' | 'content' | 'communication' | 'data' | 'user-org' | 'productivity' | 'platform-core' | 'location';
   type: string;
   contexts: Array<'platform' | 'hub' | 'app' | 'game'>;
   dependencies: string[]; // Module IDs that must be enabled first
@@ -42,6 +42,12 @@ export interface ModuleDefinition {
   price?: number;
   icon: string;
   color: string;
+  upstream?: {
+    provider: string;
+    baseUrl: string;
+    credentialKey: string; // Environment variable name for API key
+    type: 'proxy' | 'native' | 'hybrid';
+  };
 }
 
 export const MODULE_CATALOG: ModuleDefinition[] = [
@@ -180,6 +186,42 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     pricing: 'free',
     icon: 'facebook',
     color: 'blue'
+  },
+  {
+    id: 'wytkyc-digio',
+    name: 'WytKYC - Identity Verification',
+    description: 'Aadhaar eSign, PAN verification, eKYC powered by Digio',
+    category: 'auth',
+    type: 'verification',
+    contexts: ['platform', 'hub', 'app'],
+    dependencies: ['wytpass-auth'],
+    apiEndpoints: [
+      { method: 'POST', path: '/api/modules/wytkyc/esign/initiate', auth: true, description: 'Initiate Aadhaar eSign' },
+      { method: 'GET', path: '/api/modules/wytkyc/esign/status/:requestId', auth: true, description: 'Check eSign status' },
+      { method: 'POST', path: '/api/modules/wytkyc/verify/pan', auth: true, description: 'Verify PAN card' },
+      { method: 'POST', path: '/api/modules/wytkyc/verify/aadhaar', auth: true, description: 'Verify Aadhaar' },
+      { method: 'POST', path: '/api/modules/wytkyc/face-match', auth: true, description: 'Face verification & matching' }
+    ],
+    settings: {
+      apiKeyRequired: true,
+      configFields: [
+        { key: 'DIGIO_API_KEY', type: 'string', required: true },
+        { key: 'DIGIO_CLIENT_ID', type: 'string', required: false }
+      ]
+    },
+    compatibilityMatrix: {
+      conflicts: ['signzy-kyc', 'perfios-kyc']
+    },
+    pricing: 'usage-based',
+    price: 5.0,
+    icon: 'shield-check',
+    color: 'teal',
+    upstream: {
+      provider: 'Digio',
+      baseUrl: 'https://api.digio.in/v2',
+      credentialKey: 'DIGIO_API_KEY',
+      type: 'proxy'
+    }
   },
 
   // ===== 2. PAYMENT GATEWAYS =====
@@ -891,6 +933,44 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     icon: 'star',
     color: 'yellow'
   },
+
+  // ===== 9. LOCATION SERVICES =====
+  {
+    id: 'wytmap-mappls',
+    name: 'WytMap - Location Services',
+    description: 'Maps, geocoding, navigation & POI powered by Mappls (MapMyIndia)',
+    category: 'location',
+    type: 'location',
+    contexts: ['platform', 'hub', 'app'],
+    dependencies: [],
+    apiEndpoints: [
+      { method: 'GET', path: '/api/modules/wytmap/geocode', auth: true, description: 'Geocode address to coordinates' },
+      { method: 'GET', path: '/api/modules/wytmap/reverse-geocode', auth: true, description: 'Reverse geocode coordinates' },
+      { method: 'GET', path: '/api/modules/wytmap/directions', auth: true, description: 'Get directions between points' },
+      { method: 'GET', path: '/api/modules/wytmap/nearby', auth: true, description: 'Find nearby points of interest' },
+      { method: 'GET', path: '/api/modules/wytmap/distance', auth: true, description: 'Calculate distance and ETA' }
+    ],
+    settings: {
+      apiKeyRequired: true,
+      configFields: [
+        { key: 'MAPPLS_API_KEY', type: 'string', required: true },
+        { key: 'MAPPLS_CLIENT_ID', type: 'string', required: false }
+      ]
+    },
+    compatibilityMatrix: {
+      conflicts: ['google-maps', 'here-maps']
+    },
+    pricing: 'usage-based',
+    price: 2.0,
+    icon: 'map',
+    color: 'green',
+    upstream: {
+      provider: 'Mappls',
+      baseUrl: 'https://apis.mappls.com/advancedmaps/v1',
+      credentialKey: 'MAPPLS_API_KEY',
+      type: 'proxy'
+    }
+  },
 ];
 
 export const MODULE_CATEGORIES = {
@@ -901,7 +981,8 @@ export const MODULE_CATEGORIES = {
   'data': { name: 'Data Management', icon: 'database', color: 'indigo' },
   'user-org': { name: 'User & Organization', icon: 'users', color: 'blue' },
   'productivity': { name: 'Productivity', icon: 'check-square', color: 'teal' },
-  'platform-core': { name: 'Platform Core', icon: 'layers', color: 'gray' }
+  'platform-core': { name: 'Platform Core', icon: 'layers', color: 'gray' },
+  'location': { name: 'Location Services', icon: 'map-pin', color: 'green' }
 };
 
 // Helper functions
