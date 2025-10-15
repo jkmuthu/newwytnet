@@ -148,14 +148,23 @@ export class ModuleProxyService {
    * Transform Mappls-specific request
    */
   private transformMapplsRequest(request: ProxyRequest, apiKey: string, headers: Record<string, string>) {
-    // Mappls uses query parameters
-    return {
-      query: {
-        ...request.query,
-        ...request.body // Body params go to query for GET requests
-      },
-      headers
-    };
+    // For GET requests, merge body params into query (Mappls pattern)
+    // For POST/PUT requests, preserve body as JSON payload
+    if (request.method === 'GET') {
+      return {
+        query: {
+          ...request.query,
+          ...request.body
+        },
+        headers
+      };
+    } else {
+      return {
+        body: request.body,
+        query: request.query,
+        headers
+      };
+    }
   }
 
   /**
