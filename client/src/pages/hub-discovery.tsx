@@ -31,6 +31,8 @@ export default function HubDiscovery() {
 
   const { data: hubs, isLoading, error } = useQuery<MarketplaceHub[]>({
     queryKey: ["/api/marketplace/hubs"],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
   const subscribeMutation = useMutation({
@@ -93,8 +95,8 @@ export default function HubDiscovery() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-foreground mb-2">Unable to load hubs</h2>
-          <p className="text-muted-foreground">Please try again later.</p>
+          <h2 className="text-2xl font-bold text-foreground mb-2" data-testid="error-message-title">Unable to load hubs</h2>
+          <p className="text-muted-foreground" data-testid="error-message-description">Please try again later.</p>
         </div>
       </div>
     );
@@ -202,8 +204,8 @@ export default function HubDiscovery() {
           {regularHubs.length === 0 ? (
             <div className="text-center py-12">
               <Network className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-foreground mb-2">No hubs available</h3>
-              <p className="text-muted-foreground">Check back later for new content hubs.</p>
+              <h3 className="text-xl font-semibold text-foreground mb-2" data-testid="empty-state-title">No hubs available</h3>
+              <p className="text-muted-foreground" data-testid="empty-state-description">Check back later for new content hubs.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

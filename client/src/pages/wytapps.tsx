@@ -162,8 +162,8 @@ export default function WytApps() {
               <div className="text-red-400 mb-4">
                 <Zap className="h-16 w-16 mx-auto" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Failed to load WytApps</h3>
-              <p className="text-gray-600 dark:text-gray-300">Please refresh the page to try again.</p>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2" data-testid="error-message-title">Failed to load WytApps</h3>
+              <p className="text-gray-600 dark:text-gray-300" data-testid="error-message-description">Please refresh the page to try again.</p>
             </div>
           ) : wytApps.length === 0 ? (
             // No apps available
@@ -171,8 +171,8 @@ export default function WytApps() {
               <div className="text-gray-400 mb-4">
                 <Zap className="h-16 w-16 mx-auto" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No WytApps Available</h3>
-              <p className="text-gray-600 dark:text-gray-300">All WytApps are currently being updated. Check back soon!</p>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2" data-testid="empty-state-title">No WytApps Available</h3>
+              <p className="text-gray-600 dark:text-gray-300" data-testid="empty-state-description">All WytApps are currently being updated. Check back soon!</p>
             </div>
           ) : (
             // Apps grid
