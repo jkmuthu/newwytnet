@@ -374,4 +374,168 @@ router.get("/admin/users/:userId/platform-hubs", adminAuthMiddleware, requirePer
   }
 });
 
+// ============================================
+// DOMAIN CONFIGURATION & VERIFICATION
+// ============================================
+
+// GET /api/admin/platform-hubs/:id/dns-records - Get DNS configuration for custom domain
+router.get("/admin/platform-hubs/:id/dns-records", adminAuthMiddleware, requirePermission('hubs', 'configure'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const [hub] = await db
+      .select()
+      .from(platformHubs)
+      .where(eq(platformHubs.id, id))
+      .limit(1);
+
+    if (!hub) {
+      return res.status(404).json({ success: false, error: "Hub not found" });
+    }
+
+    if (!hub.customDomain) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "No custom domain configured for this hub" 
+      });
+    }
+
+    // Generate DNS records based on current system configuration
+    const replicateUrl = process.env.REPLIT_DEV_DOMAIN || 'wytnet.com';
+    
+    const dnsRecords = [
+      {
+        type: 'A',
+        name: '@',
+        value: '76.76.21.21', // Replit's IP (example, replace with actual)
+        ttl: 3600,
+        priority: null,
+      },
+      {
+        type: 'CNAME',
+        name: 'www',
+        value: replicateUrl,
+        ttl: 3600,
+        priority: null,
+      },
+    ];
+
+    res.json({ 
+      success: true, 
+      domain: hub.customDomain,
+      dnsRecords,
+      verified: hub.domainVerified,
+    });
+  } catch (error) {
+    console.error("Error fetching DNS records:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch DNS records" });
+  }
+});
+
+// POST /api/admin/platform-hubs/:id/verify-domain - Verify custom domain configuration
+router.post("/admin/platform-hubs/:id/verify-domain", adminAuthMiddleware, requirePermission('hubs', 'configure'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const [hub] = await db
+      .select()
+      .from(platformHubs)
+      .where(eq(platformHubs.id, id))
+      .limit(1);
+
+    if (!hub) {
+      return res.status(404).json({ success: false, error: "Hub not found" });
+    }
+
+    if (!hub.customDomain) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "No custom domain configured for this hub" 
+      });
+    }
+
+    // In production, this would perform actual DNS verification
+    // For now, we'll simulate it based on environment
+    const isVerified = process.env.NODE_ENV === 'development' || false;
+
+    const [updatedHub] = await db
+      .update(platformHubs)
+      .set({
+        domainVerified: isVerified,
+        updatedAt: new Date(),
+      })
+      .where(eq(platformHubs.id, id))
+      .returning();
+
+    res.json({ 
+      success: true, 
+      verified: isVerified,
+      hub: updatedHub,
+      message: isVerified 
+        ? "Domain verified successfully" 
+        : "Domain verification failed. Please check DNS records.",
+    });
+  } catch (error) {
+    console.error("Error verifying domain:", error);
+    res.status(500).json({ success: false, error: "Failed to verify domain" });
+  }
+});
+
+// PUT /api/admin/platform-hubs/:id/domain - Update custom domain configuration
+router.put("/admin/platform-hubs/:id/domain", adminAuthMiddleware, requirePermission('hubs', 'configure'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { customDomain } = z.object({
+      customDomain: z.string().nullable(),
+    }).parse(req.body);
+
+    // If setting a new domain, reset verification status
+    const updateData: any = {
+      customDomain,
+      updatedAt: new Date(),
+    };
+
+    // Reset verification if domain changed
+    const [currentHub] = await db
+      .select()
+      .from(platformHubs)
+      .where(eq(platformHubs.id, id))
+      .limit(1);
+
+    if (currentHub && currentHub.customDomain !== customDomain) {
+      updateData.domainVerified = false;
+    }
+
+    const [updatedHub] = await db
+      .update(platformHubs)
+      .set(updateData)
+      .where(eq(platformHubs.id, id))
+      .returning();
+
+    if (!updatedHub) {
+      return res.status(404).json({ success: false, error: "Hub not found" });
+    }
+
+    res.json({ 
+      success: true, 
+      hub: updatedHub,
+      message: customDomain 
+        ? "Custom domain updated. Please configure DNS records and verify." 
+        : "Custom domain removed.",
+    });
+  } catch (error: any) {
+    console.error("Error updating domain:", error);
+    if (error.name === "ZodError") {
+      return res.status(400).json({ success: false, error: error.errors });
+    }
+    if (error.code === "23505") {
+      return res.status(409).json({ 
+        success: false, 
+        error: "This custom domain is already in use by another hub" 
+      });
+    }
+    res.status(500).json({ success: false, error: "Failed to update domain" });
+  }
+});
+
 export default router;
