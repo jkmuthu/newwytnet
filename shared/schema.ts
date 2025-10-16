@@ -1823,10 +1823,52 @@ export type GeoRegulatoryRule = typeof geoRegulatoryRules.$inferSelect;
 export type InsertGeoRegulatoryRule = typeof geoRegulatoryRules.$inferInsert;
 
 // Zod schemas for geo-regulatory rules
-export const insertGeoRegulatoryRuleSchema = createInsertSchema(geoRegulatoryRules).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertGeoRegulatoryRuleSchema = createInsertSchema(geoRegulatoryRules).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true,
+  createdBy: true,
+  updatedBy: true 
+});
+
 export const selectGeoRegulatoryRuleSchema = createSelectSchema(geoRegulatoryRules);
 export type InsertGeoRegulatoryRuleType = z.infer<typeof insertGeoRegulatoryRuleSchema>;
 export type SelectGeoRegulatoryRuleType = z.infer<typeof selectGeoRegulatoryRuleSchema>;
+
+// API validation schemas for geo-regulatory rules - Whitelisted fields only
+export const createGeoRegulatoryRuleSchema = z.object({
+  tenantId: z.string().uuid().optional(),
+  hubId: z.string().uuid().optional(),
+  appId: z.string().uuid().optional(),
+  countryCode: z.string().length(2).toUpperCase(),
+  stateCode: z.string().max(10).optional(),
+  regionName: z.string().min(1).max(255),
+  complianceTemplate: z.enum(['GDPR', 'CCPA', 'PDPA', 'IT_ACT_2000', 'custom']).optional(),
+  complianceLevel: z.enum(['basic', 'detailed', 'strict']).default('basic'),
+  legalBasis: z.string().optional(),
+  effectiveDate: z.string().datetime().optional(),
+  expiryDate: z.string().datetime().optional(),
+  restrictedModules: z.array(z.string()).default([]),
+  restrictedFeatures: z.array(z.string()).default([]),
+  allowedModules: z.array(z.string()).default([]),
+  contentFilters: z.record(z.any()).default({}),
+  ageRestrictions: z.record(z.any()).default({}),
+  dataResidency: z.boolean().default(false),
+  dataExportAllowed: z.boolean().default(true),
+  dataRetentionDays: z.number().int().positive().optional(),
+  governmentMonitoringEnabled: z.boolean().default(false),
+  governmentAccessLevel: z.enum(['none', 'read_only', 'analytics_only']).optional(),
+  governmentContactEmail: z.string().email().optional(),
+  governmentConsentCaptured: z.boolean().default(false),
+  isActive: z.boolean().default(true),
+  enforcementLevel: z.enum(['block', 'warn', 'log']).default('warn'),
+  notes: z.string().optional(),
+});
+
+export const updateGeoRegulatoryRuleSchema = createGeoRegulatoryRuleSchema.partial();
+
+export type CreateGeoRegulatoryRuleType = z.infer<typeof createGeoRegulatoryRuleSchema>;
+export type UpdateGeoRegulatoryRuleType = z.infer<typeof updateGeoRegulatoryRuleSchema>;
 
 // Geo-Compliance Logs Types
 export type GeoComplianceLog = typeof geoComplianceLogs.$inferSelect;
@@ -1837,6 +1879,34 @@ export const insertGeoComplianceLogSchema = createInsertSchema(geoComplianceLogs
 export const selectGeoComplianceLogSchema = createSelectSchema(geoComplianceLogs);
 export type InsertGeoComplianceLogType = z.infer<typeof insertGeoComplianceLogSchema>;
 export type SelectGeoComplianceLogType = z.infer<typeof selectGeoComplianceLogSchema>;
+
+// API validation schema for creating compliance logs - Whitelisted fields only
+export const createGeoComplianceLogSchema = z.object({
+  ruleId: z.string().uuid().optional(),
+  eventType: z.enum(['access_blocked', 'module_restricted', 'content_filtered', 'data_export', 'government_access', 'rule_triggered']),
+  severity: z.enum(['info', 'warning', 'critical']).default('info'),
+  countryCode: z.string().length(2).toUpperCase(),
+  stateCode: z.string().max(10).optional(),
+  tenantId: z.string().uuid().optional(),
+  hubId: z.string().uuid().optional(),
+  appId: z.string().uuid().optional(),
+  userId: z.string().optional(),
+  resourceType: z.enum(['module', 'feature', 'content', 'data', 'api']).optional(),
+  resourceId: z.string().max(255).optional(),
+  requestId: z.string().max(100).optional(),
+  sessionId: z.string().max(255).optional(),
+  action: z.string().min(1).max(100),
+  result: z.enum(['allowed', 'blocked', 'warned', 'filtered']),
+  ipAddress: z.string().max(45).optional(),
+  userAgent: z.string().optional(),
+  metadata: z.record(z.any()).default({}),
+  governmentAccess: z.boolean().default(false),
+  governmentOfficer: z.string().max(255).optional(),
+  accessReason: z.string().optional(),
+  warrantNumber: z.string().max(100).optional(),
+});
+
+export type CreateGeoComplianceLogType = z.infer<typeof createGeoComplianceLogSchema>;
 
 // User App Installations Types
 export type UserAppInstallation = typeof userAppInstallations.$inferSelect;
