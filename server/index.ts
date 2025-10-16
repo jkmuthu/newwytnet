@@ -108,6 +108,17 @@ app.use((req, res, next) => {
     console.log('Continuing without Admin Auth - Admin login unavailable');
   }
 
+  // Setup Hub Admin Authentication (for WytNet.com Hub management)
+  try {
+    console.log('Setting up Hub Admin Auth...');
+    const { setupHubAdminAuth } = await import('./hub-admin-auth');
+    setupHubAdminAuth(app);
+    console.log('Hub Admin Auth initialized successfully');
+  } catch (error) {
+    console.warn('Hub Admin Auth initialization failed:', error);
+    console.log('Continuing without Hub Admin Auth - Hub admin login unavailable');
+  }
+
   // Seed platform modules from catalog
   try {
     const { moduleSeedingService } = await import('./services/moduleSeedingService');

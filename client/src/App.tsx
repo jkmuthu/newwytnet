@@ -8,11 +8,13 @@ import { useState, useEffect } from "react";
 // Authentication Context Providers
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
+import { HubAdminAuthProvider } from "@/contexts/HubAdminAuthContext";
 
 // Portal Routers
 import PublicRouter from "@/portals/public/PublicRouter";
 import PanelRouter from "@/portals/panel/PanelRouter";
 import EngineRouter from "@/portals/admin/AdminRouter"; // Engine = Super Admin Panel
+import HubAdminRouter from "@/portals/hub-admin/HubAdminRouter"; // Hub Admin = WytNet.com Hub Admin
 
 // Profile Wizard
 import ProfileWizard from "@/components/ProfileWizard";
@@ -25,7 +27,8 @@ import DevDocumentation from "@/pages/dev-documentation";
 /**
  * PortalRouter - Top-level router that determines which portal to use
  * Routes are separated into distinct portals:
- * - /engine/* = Engine Admin (Super Admin Panel for infrastructure management)
+ * - /engine/* = Engine Admin (Super Admin Panel for platform infrastructure)
+ * - /admin/* = Hub Admin (WytNet.com hub content management)
  * - /mypanel/*, /orgpanel/* = User/Org Panel
  * - / = WytNet Hub (First Hub built on Engine)
  */
@@ -48,13 +51,9 @@ function PortalRouter() {
         <Route path="/engine" component={EngineRouter} />
         <Route path="/engine/:rest*" component={EngineRouter} />
         
-        {/* Legacy /admin redirect to /engine */}
-        <Route path="/admin">
-          {() => <Redirect to="/engine" />}
-        </Route>
-        <Route path="/admin/:rest*">
-          {(params) => <Redirect to={`/engine/${params['rest*']}`} />}
-        </Route>
+        {/* Hub Admin Portal - Routes: /admin, /admin/* (WytNet.com Hub Admin) */}
+        <Route path="/admin" component={HubAdminRouter} />
+        <Route path="/admin/:rest*" component={HubAdminRouter} />
 
         {/* Panel Portal - MyPanel and OrgPanel Routes */}
         <Route path="/mypanel" component={PanelRouter} />
@@ -99,19 +98,21 @@ function PortalRouter() {
 
 /**
  * App - Main application component with authentication providers and portal routing
- * Supports dual sessions: users can be both regular users AND admins simultaneously
+ * Supports triple sessions: users can be regular users, hub admins, AND super admins simultaneously
  */
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Wrap with authentication providers to support dual sessions */}
+      {/* Wrap with authentication providers to support triple sessions */}
       <AuthProvider>
         {/* Note: AuthProvider already wraps UserAuthProvider internally */}
         <AdminAuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <PortalRouter />
-          </TooltipProvider>
+          <HubAdminAuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <PortalRouter />
+            </TooltipProvider>
+          </HubAdminAuthProvider>
         </AdminAuthProvider>
       </AuthProvider>
     </QueryClientProvider>

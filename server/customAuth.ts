@@ -42,7 +42,7 @@ export interface Principal {
   lastName?: string;
   mobileNumber?: string;
   profileImageUrl?: string;
-  provider: 'whatsapp' | 'legacy' | 'replit' | 'admin' | 'unified';
+  provider: 'whatsapp' | 'legacy' | 'replit' | 'admin' | 'unified' | 'hub_admin';
   claims?: { sub: string; [key: string]: any };
 }
 
@@ -75,7 +75,7 @@ function formatPhoneNumber(phoneNumber: string): string {
 }
 
 // Helper function to normalize user data into Principal DTO
-function createPrincipal(user: User, provider: 'whatsapp' | 'legacy' | 'replit' | 'admin' | 'unified'): Principal {
+function createPrincipal(user: User, provider: 'whatsapp' | 'legacy' | 'replit' | 'admin' | 'unified' | 'hub_admin'): Principal {
   return {
     id: user.id,
     tenantId: user.tenantId || '',
@@ -676,6 +676,46 @@ export const adminAuthMiddleware: RequestHandler = async (req, res, next) => {
     
   } catch (error) {
     console.error('Admin auth middleware error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Authentication error'
+    });
+  }
+};
+
+// Hub Admin authentication middleware - checks for hub admin sessions
+export const hubAdminAuthMiddleware: RequestHandler = async (req, res, next) => {
+  try {
+    console.log('DEBUG: hubAdminAuthMiddleware called');
+    
+    // Check for hubAdminPrincipal session
+    const hubAdminPrincipal = (req.session as any)?.hubAdminPrincipal;
+    
+    console.log('DEBUG: Hub admin principal session exists:', !!hubAdminPrincipal);
+    
+    if (hubAdminPrincipal) {
+      console.log('DEBUG: Found hubAdminPrincipal session');
+      (req as AuthenticatedRequest).user = {
+        id: hubAdminPrincipal.id,
+        tenantId: hubAdminPrincipal.tenantId || 'wytnet_hub',
+        role: hubAdminPrincipal.role || 'hub_admin',
+        isSuperAdmin: false, // Hub admins are NOT super admins
+        provider: 'hub_admin',
+        claims: { sub: hubAdminPrincipal.id }
+      };
+      console.log('DEBUG: Setting req.user from hubAdminPrincipal:', (req as AuthenticatedRequest).user);
+      return next();
+    }
+
+    // No valid hub admin session found
+    console.log('DEBUG: No valid hub admin session found');
+    return res.status(401).json({
+      success: false,
+      error: 'Hub admin authentication required'
+    });
+    
+  } catch (error) {
+    console.error('Hub admin auth middleware error:', error);
     return res.status(500).json({
       success: false,
       error: 'Authentication error'
