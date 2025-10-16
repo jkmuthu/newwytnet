@@ -628,22 +628,26 @@ export const adminAuthMiddleware: RequestHandler = async (req, res, next) => {
       }
     }
 
-    // Method 3: Check adminPrincipal session (from admin-auth.ts)
-    const adminPrincipal = (req.session as any)?.adminPrincipal;
+    // Method 3: Check WytPass Principal session (from admin-auth.ts)
+    const wytpassPrincipal = (req.session as any)?.wytpassPrincipal;
     
-    console.log('DEBUG: Admin principal session exists:', !!adminPrincipal);
+    console.log('DEBUG: WytPass principal session exists:', !!wytpassPrincipal);
     
-    if (adminPrincipal) {
-      console.log('DEBUG: Found adminPrincipal session');
+    if (wytpassPrincipal) {
+      console.log('DEBUG: Found wytpassPrincipal session');
+      // Attach the full WytPass principal to the request
+      (req as any).principal = wytpassPrincipal;
+      
+      // Also set req.user for backward compatibility
       (req as AuthenticatedRequest).user = {
-        id: adminPrincipal.id,
-        tenantId: adminPrincipal.tenantId || 'admin_tenant',
-        role: adminPrincipal.role || 'super_admin',
-        isSuperAdmin: adminPrincipal.isSuperAdmin || false,
+        id: wytpassPrincipal.id,
+        tenantId: wytpassPrincipal.tenantId || 'admin_tenant',
+        role: wytpassPrincipal.role || 'super_admin',
+        isSuperAdmin: wytpassPrincipal.isSuperAdmin || false,
         provider: 'admin',
-        claims: { sub: adminPrincipal.id }
+        claims: { sub: wytpassPrincipal.id }
       };
-      console.log('DEBUG: Setting req.user from adminPrincipal:', (req as AuthenticatedRequest).user);
+      console.log('DEBUG: Setting req.principal from wytpassPrincipal');
       return next();
     }
 
