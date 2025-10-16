@@ -1003,6 +1003,52 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     route: '/geo-regulatory'
   },
   {
+    id: 'wytentities',
+    name: 'WytEntities - Knowledge Graph',
+    description: 'Meta-entity layer for knowledge graph management and tag-based duplication prevention. Tag meaningful words instead of re-creating them.',
+    category: 'platform-core',
+    type: 'knowledge-graph',
+    contexts: ['platform', 'hub', 'app'],
+    dependencies: [],
+    apiEndpoints: [
+      { method: 'GET', path: '/api/entities/types', auth: true, description: 'List all entity types' },
+      { method: 'POST', path: '/api/entities/types', auth: true, description: 'Create entity type' },
+      { method: 'GET', path: '/api/entities', auth: true, description: 'List entities with filters' },
+      { method: 'POST', path: '/api/entities', auth: true, description: 'Create entity' },
+      { method: 'GET', path: '/api/entities/:entityId', auth: true, description: 'Get entity with relationships' },
+      { method: 'PATCH', path: '/api/entities/:entityId', auth: true, description: 'Update entity' },
+      { method: 'DELETE', path: '/api/entities/:entityId', auth: true, description: 'Delete entity' },
+      { method: 'POST', path: '/api/entities/relationships', auth: true, description: 'Create Parent/Child/Friend relationship' },
+      { method: 'GET', path: '/api/entities/:entityId/relationships', auth: true, description: 'Get entity relationships' },
+      { method: 'POST', path: '/api/entities/tags', auth: true, description: 'Tag entity to resource (module/app/content)' },
+      { method: 'GET', path: '/api/entities/search', auth: true, description: 'Search entities by name/alias' },
+      { method: 'GET', path: '/api/entities/types/catalog', auth: true, description: 'Get entity types catalog' }
+    ],
+    settings: {
+      configFields: [
+        { key: 'AUTO_TAG_ENABLED', type: 'boolean', required: false, description: 'Enable AI-powered auto-tagging' },
+        { key: 'MAX_ALIASES_PER_ENTITY', type: 'number', required: false, description: 'Maximum aliases per entity' },
+        { key: 'RELATIONSHIP_STRENGTH_THRESHOLD', type: 'number', required: false, description: 'Minimum strength for relationship display' }
+      ]
+    },
+    compatibilityMatrix: {
+      minVersion: '1.0.0'
+    },
+    pricing: 'premium',
+    price: 249,
+    icon: 'network',
+    color: 'purple',
+    version: '1.0.0',
+    changelog: 'Initial release with 10 core entity types (Location, Industry, Language, JobRole, Skill, Business, Person, Event, Product, Category), Parent/Child/Friend relationship system, entity tagging for duplication prevention, and knowledge graph foundation',
+    route: '/entities',
+    restrictedTo: ['platform-engine'],
+    metadata: {
+      entityTypes: ['location', 'industry', 'language', 'job-role', 'skill', 'business', 'person', 'event', 'product', 'category'],
+      relationshipTypes: ['parent', 'child', 'friend', 'related', 'synonym'],
+      philosophy: 'Tag instead of duplicate - Wikipedia-style entity linking for knowledge graph'
+    }
+  },
+  {
     id: 'api-key-manager',
     name: 'API Key Manager',
     description: 'Generate and manage API keys for module access',
