@@ -43,16 +43,16 @@ async function ensureSequence(entityType: EntityType): Promise<void> {
   const sequenceName = `${entityType}_display_id_seq`;
   
   try {
-    // Check if sequence exists, create if not
-    await db.execute(sql`
+    // Check if sequence exists, create if not - use raw SQL string to avoid parameterization issues
+    await db.execute(sql.raw(`
       DO $$
       BEGIN
-        IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = ${sequenceName}) THEN
-          CREATE SEQUENCE ${sql.raw(sequenceName)} START WITH 1 INCREMENT BY 1;
+        IF NOT EXISTS (SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = '${sequenceName}') THEN
+          CREATE SEQUENCE ${sequenceName} START WITH 1 INCREMENT BY 1;
         END IF;
       END
       $$;
-    `);
+    `));
   } catch (error) {
     console.error(`Error ensuring sequence for ${entityType}:`, error);
     throw error;
@@ -74,7 +74,7 @@ export async function generateDisplayId(entityType: EntityType): Promise<string>
   
   // Get next value from sequence
   const sequenceName = `${entityType}_display_id_seq`;
-  const result = await db.execute(sql`SELECT nextval(${sequenceName}) as next_val`);
+  const result = await db.execute(sql.raw(`SELECT nextval('${sequenceName}') as next_val`));
   const nextVal = (result.rows[0] as any).next_val;
   
   // Format with prefix and padding
@@ -103,9 +103,9 @@ export async function generateDisplayIds(entityType: EntityType, count: number):
   
   // Get next N values from sequence
   const sequenceName = `${entityType}_display_id_seq`;
-  const result = await db.execute(
-    sql`SELECT nextval(${sequenceName}) as next_val FROM generate_series(1, ${count})`
-  );
+  const result = await db.execute(sql.raw(
+    `SELECT nextval('${sequenceName}') as next_val FROM generate_series(1, ${count})`
+  ));
   
   // Format each ID
   return result.rows.map((row: any) => {
@@ -121,7 +121,7 @@ export async function getCurrentSequenceValue(entityType: EntityType): Promise<n
   const sequenceName = `${entityType}_display_id_seq`;
   
   try {
-    const result = await db.execute(sql`SELECT last_value FROM ${sql.raw(sequenceName)}`);
+    const result = await db.execute(sql.raw(`SELECT last_value FROM ${sequenceName}`));
     return (result.rows[0] as any).last_value || 0;
   } catch (error) {
     // Sequence doesn't exist yet
@@ -134,7 +134,7 @@ export async function getCurrentSequenceValue(entityType: EntityType): Promise<n
  */
 export async function resetSequence(entityType: EntityType, value: number = 1): Promise<void> {
   const sequenceName = `${entityType}_display_id_seq`;
-  await db.execute(sql`ALTER SEQUENCE ${sql.raw(sequenceName)} RESTART WITH ${value}`);
+  await db.execute(sql.raw(`ALTER SEQUENCE ${sequenceName} RESTART WITH ${value}`));
 }
 
 /**
