@@ -108,6 +108,14 @@ app.use((req, res, next) => {
     console.log('Continuing without Admin Auth - Admin login unavailable');
   }
 
+  // Seed platform modules from catalog
+  try {
+    const { moduleSeedingService } = await import('./services/moduleSeedingService');
+    await moduleSeedingService.seedModules();
+  } catch (error) {
+    console.error('Module seeding failed:', error);
+  }
+
   await registerRoutes(app);
   const server = createServer(app);
 

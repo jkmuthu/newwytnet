@@ -8946,23 +8946,28 @@ CONSTRAINTS:
   // PRICING PLANS ADMIN ROUTES
   // ========================================
 
-  // Get all apps with plan counts for pricing configuration
+  // Get all apps with plan counts and module counts for pricing configuration
   app.get('/api/admin/pricing/apps', adminAuthMiddleware, async (req: any, res) => {
     try {
       const apps = await db.select()
         .from(appsRegistry)
         .orderBy(appsRegistry.name);
 
-      // Get plan counts for each app
+      // Get plan counts and module counts for each app
       const appsWithCounts = await Promise.all(
         apps.map(async (app) => {
           const planCount = await db.select({ count: sql<number>`count(*)::int` })
             .from(pricingPlans)
             .where(eq(pricingPlans.appId, app.id));
 
+          const moduleCount = await db.select({ count: sql<number>`count(*)::int` })
+            .from(appModules)
+            .where(eq(appModules.appId, app.id));
+
           return {
             ...app,
             planCount: planCount[0]?.count || 0,
+            moduleCount: moduleCount[0]?.count || 0,
           };
         })
       );
