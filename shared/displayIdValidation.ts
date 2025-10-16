@@ -4,19 +4,19 @@
  */
 
 export type DisplayIdPrefix = 
-  | 'USR' // User
-  | 'ORG' // Organization
-  | 'TNT' // Tenant
-  | 'ENT' // Entity
-  | 'MOD' // Module
-  | 'APP' // App
-  | 'HUB' // Hub
-  | 'MED' // Media
-  | 'WID' // WytID Entity
-  | 'NED' // Need
-  | 'OFR' // Offer
-  | 'ASM' // Assessment
-  | 'TMK'; // Trademark
+  | 'UR' // User
+  | 'OR' // Organization
+  | 'TN' // Tenant
+  | 'EN' // Entity
+  | 'MD' // Module
+  | 'AP' // App
+  | 'HB' // Hub
+  | 'ME' // Media
+  | 'WI' // WytID Entity
+  | 'ND' // Need
+  | 'OF' // Offer
+  | 'AS' // Assessment
+  | 'TM'; // Trademark
 
 export interface ParsedDisplayId {
   prefix: DisplayIdPrefix;
@@ -25,58 +25,58 @@ export interface ParsedDisplayId {
   entityType: string;
 }
 
-// Regex patterns for each display ID type
+// Regex patterns for each display ID type (no hyphens)
 export const DISPLAY_ID_PATTERNS = {
-  USR: /^USR-\d{7}$/,  // USR-0000001
-  ORG: /^ORG-\d{5}$/,  // ORG-00001
-  TNT: /^TNT-\d{5}$/,  // TNT-00001
-  ENT: /^ENT-\d{5}$/,  // ENT-00001
-  MOD: /^MOD-\d{4}$/,  // MOD-0001
-  APP: /^APP-\d{4}$/,  // APP-0001
-  HUB: /^HUB-\d{3}$/,  // HUB-001
-  MED: /^MED-\d{5}$/,  // MED-00001
-  WID: /^WID-\d{5}$/,  // WID-00001
-  NED: /^NED-\d{5}$/,  // NED-00001
-  OFR: /^OFR-\d{5}$/,  // OFR-00001
-  ASM: /^ASM-\d{4}$/,  // ASM-0001
-  TMK: /^TMK-\d{5}$/,  // TMK-00001
+  UR: /^UR\d{7}$/,  // UR0000001
+  OR: /^OR\d{5}$/,  // OR00001
+  TN: /^TN\d{5}$/,  // TN00001
+  EN: /^EN\d{5}$/,  // EN00001
+  MD: /^MD\d{4}$/,  // MD0001
+  AP: /^AP\d{4}$/,  // AP0001
+  HB: /^HB\d{3}$/,  // HB001
+  ME: /^ME\d{5}$/,  // ME00001
+  WI: /^WI\d{5}$/,  // WI00001
+  ND: /^ND\d{5}$/,  // ND00001
+  OF: /^OF\d{5}$/,  // OF00001
+  AS: /^AS\d{4}$/,  // AS0001
+  TM: /^TM\d{5}$/,  // TM00001
 } as const;
 
-// Combined pattern for any display ID
-export const ANY_DISPLAY_ID_PATTERN = /^(USR|ORG|TNT|ENT|MOD|APP|HUB|MED|WID|NED|OFR|ASM|TMK)-\d+$/;
+// Combined pattern for any display ID (no hyphens)
+export const ANY_DISPLAY_ID_PATTERN = /^(UR|OR|TN|EN|MD|AP|HB|ME|WI|ND|OF|AS|TM)\d+$/;
 
 // Map prefix to entity type
 export const PREFIX_TO_ENTITY_TYPE: Record<DisplayIdPrefix, string> = {
-  USR: 'users',
-  ORG: 'organizations',
-  TNT: 'tenants',
-  ENT: 'entities',
-  MOD: 'platformModules',
-  APP: 'apps',
-  HUB: 'hubs',
-  MED: 'media',
-  WID: 'wytidEntities',
-  NED: 'needs',
-  OFR: 'offers',
-  ASM: 'assessmentQuestions',
-  TMK: 'trademarks',
+  UR: 'users',
+  OR: 'organizations',
+  TN: 'tenants',
+  EN: 'entities',
+  MD: 'platformModules',
+  AP: 'apps',
+  HB: 'hubs',
+  ME: 'media',
+  WI: 'wytidEntities',
+  ND: 'needs',
+  OF: 'offers',
+  AS: 'assessmentQuestions',
+  TM: 'trademarks',
 };
 
 // Map entity type to prefix
 export const ENTITY_TYPE_TO_PREFIX: Record<string, DisplayIdPrefix> = {
-  users: 'USR',
-  organizations: 'ORG',
-  tenants: 'TNT',
-  entities: 'ENT',
-  platformModules: 'MOD',
-  apps: 'APP',
-  hubs: 'HUB',
-  media: 'MED',
-  wytidEntities: 'WID',
-  needs: 'NED',
-  offers: 'OFR',
-  assessmentQuestions: 'ASM',
-  trademarks: 'TMK',
+  users: 'UR',
+  organizations: 'OR',
+  tenants: 'TN',
+  entities: 'EN',
+  platformModules: 'MD',
+  apps: 'AP',
+  hubs: 'HB',
+  media: 'ME',
+  wytidEntities: 'WI',
+  needs: 'ND',
+  offers: 'OF',
+  assessmentQuestions: 'AS',
+  trademarks: 'TM',
 };
 
 /**
@@ -102,7 +102,7 @@ export function getEntityTypeFromDisplayId(displayId: string): string | null {
     return null;
   }
   
-  const prefix = displayId.split('-')[0] as DisplayIdPrefix;
+  const prefix = displayId.substring(0, 2) as DisplayIdPrefix;
   return PREFIX_TO_ENTITY_TYPE[prefix] || null;
 }
 
@@ -114,16 +114,17 @@ export function parseDisplayId(displayId: string): ParsedDisplayId | null {
     return null;
   }
   
-  const [prefix, numberStr] = displayId.split('-');
+  const prefix = displayId.substring(0, 2) as DisplayIdPrefix;
+  const numberStr = displayId.substring(2);
   const number = parseInt(numberStr, 10);
-  const entityType = PREFIX_TO_ENTITY_TYPE[prefix as DisplayIdPrefix];
+  const entityType = PREFIX_TO_ENTITY_TYPE[prefix];
   
   if (!entityType || isNaN(number)) {
     return null;
   }
   
   return {
-    prefix: prefix as DisplayIdPrefix,
+    prefix,
     number,
     raw: displayId,
     entityType,
@@ -174,7 +175,8 @@ export function formatDisplayId(displayId: string): string {
     return displayId;
   }
   
-  return `${parsed.prefix}-${parsed.number.toString().padStart(parsed.raw.split('-')[1].length, '0')}`;
+  const numberPart = parsed.raw.substring(2);
+  return `${parsed.prefix}${parsed.number.toString().padStart(numberPart.length, '0')}`;
 }
 
 /**
