@@ -5,6 +5,7 @@ import {
   Principal, 
   AuthenticatedRequest,
   adminAuthMiddleware,
+  hubAdminAuthMiddleware,
   isAuthenticatedUnified,
   getPrincipal,
   getAdminPrincipal,
@@ -12,6 +13,7 @@ import {
   requireSuperAdmin
 } from "./customAuth";
 import { setupReplitAuth, isReplitAuthenticated } from "./replitAuth";
+import { ObjectStorageService, objectStorageClient } from "./objectStorage";
 import { 
   getAdminDashboardData,
   successResponse,
@@ -113,7 +115,10 @@ import {
   hubModuleActivations,
   appModuleActivations,
   moduleEditHistory,
-  appEditHistory
+  appEditHistory,
+  media,
+  insertMediaSchema,
+  type InsertMedia
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -11243,5 +11248,314 @@ CONSTRAINTS:
 
   // ========================================
   // END APP FEATURES & PLAN FEATURE ACCESS ROUTES
+  // ========================================
+
+  // ========================================
+  // HUB ADMIN MEDIA LIBRARY APIs
+  // ========================================
+
+  // Initialize Object Storage Service
+  const objectStorageService = new ObjectStorageService();
+
+  // Configure multer for media upload
+  const mediaUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB limit
+    },
+    fileFilter: (req, file, cb) => {
+      // Accept images, videos, and documents
+      const allowedMimeTypes = [
+        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+        'video/mp4', 'video/webm', 'video/ogg',
+        'application/pdf', 'application/msword', 
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      ];
+      
+      if (allowedMimeTypes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('Invalid file type. Only images, videos, and documents are allowed.'));
+      }
+    },
+  });
+
+  // POST /api/hub-admin/media/upload - Upload media file
+  app.post('/api/hub-admin/media/upload', hubAdminAuthMiddleware, mediaUpload.single('file'), async (req: any, res) => {
+    try {
+      const hubAdminPrincipal = (req.session as any)?.hubAdminPrincipal;
+      
+      if (!hubAdminPrincipal) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Hub admin authentication required' 
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'No file uploaded' 
+        });
+      }
+
+      const file = req.file;
+      const tenantId = hubAdminPrincipal.tenantId;
+      const userId = hubAdminPrincipal.id;
+
+      // Server-side file type validation (security critical!)
+      const detectedType = await fileTypeFromBuffer(file.buffer);
+      
+      // Allowed MIME types for security
+      const allowedMimes = [
+        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+        'video/mp4', 'video/webm', 'video/quicktime',
+        'application/pdf', 'application/msword', 
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ];
+
+      if (!detectedType || !allowedMimes.includes(detectedType.mime)) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid file type. Detected: ${detectedType?.mime || 'unknown'}. Only images, videos, and documents are allowed.`
+        });
+      }
+
+      // Use detected MIME type instead of client-provided one
+      const trustedMimeType = detectedType.mime;
+
+      // Generate unique filename with correct extension
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const fileExtension = `.${detectedType.ext}`;
+      const filename = `${timestamp}_${randomSuffix}${fileExtension}`;
+
+      // Upload to Object Storage private directory
+      const privateDir = objectStorageService.getPrivateObjectDir();
+      const objectPath = `${privateDir}/media/${tenantId}/${filename}`;
+      
+      // Parse bucket and object name
+      const pathParts = objectPath.startsWith('/') ? objectPath : `/${objectPath}`;
+      const parts = pathParts.split('/');
+      const bucketName = parts[1];
+      const objectName = parts.slice(2).join('/');
+
+      // Upload file to Object Storage
+      const bucket = objectStorageClient.bucket(bucketName);
+      const fileObj = bucket.file(objectName);
+      
+      await fileObj.save(file.buffer, {
+        metadata: {
+          contentType: trustedMimeType, // Use server-detected MIME type
+        },
+      });
+
+      // Generate file URL (can be signed URL for private access)
+      const fileUrl = `${objectPath}`;
+
+      // Store metadata in database
+      const [mediaRecord] = await db.insert(media).values({
+        tenantId,
+        filename,
+        originalName: file.originalname,
+        mimeType: trustedMimeType, // Use server-validated MIME type
+        size: file.size,
+        url: fileUrl,
+        metadata: {
+          uploadedAt: new Date().toISOString(),
+          bucket: bucketName,
+          objectName,
+        },
+        createdBy: userId,
+      }).returning();
+
+      res.json({
+        success: true,
+        message: 'Media uploaded successfully',
+        media: mediaRecord,
+      });
+    } catch (error) {
+      console.error('Error uploading media:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to upload media' 
+      });
+    }
+  });
+
+  // GET /api/hub-admin/media - List media files with pagination and filters
+  app.get('/api/hub-admin/media', hubAdminAuthMiddleware, async (req: any, res) => {
+    try {
+      const hubAdminPrincipal = (req.session as any)?.hubAdminPrincipal;
+      
+      if (!hubAdminPrincipal) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Hub admin authentication required' 
+        });
+      }
+
+      const tenantId = hubAdminPrincipal.tenantId;
+      
+      // Pagination parameters
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      // Filter by mimeType category
+      const mimeTypeFilter = req.query.mimeType as string;
+
+      let query = db.select()
+        .from(media)
+        .where(eq(media.tenantId, tenantId))
+        .orderBy(desc(media.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      // Apply mimeType filter if provided
+      if (mimeTypeFilter) {
+        const conditions = [];
+        
+        if (mimeTypeFilter === 'images') {
+          conditions.push(like(media.mimeType, 'image/%'));
+        } else if (mimeTypeFilter === 'videos') {
+          conditions.push(like(media.mimeType, 'video/%'));
+        } else if (mimeTypeFilter === 'documents') {
+          conditions.push(
+            or(
+              like(media.mimeType, 'application/pdf'),
+              like(media.mimeType, 'application/msword'),
+              like(media.mimeType, 'application/vnd.%')
+            )!
+          );
+        }
+        
+        if (conditions.length > 0) {
+          query = db.select()
+            .from(media)
+            .where(and(eq(media.tenantId, tenantId), ...conditions)!)
+            .orderBy(desc(media.createdAt))
+            .limit(limit)
+            .offset(offset);
+        }
+      }
+
+      const mediaFiles = await query;
+
+      // Get total count
+      let countQuery = db.select({ count: sql<number>`count(*)` })
+        .from(media)
+        .where(eq(media.tenantId, tenantId));
+
+      if (mimeTypeFilter) {
+        const conditions = [];
+        
+        if (mimeTypeFilter === 'images') {
+          conditions.push(like(media.mimeType, 'image/%'));
+        } else if (mimeTypeFilter === 'videos') {
+          conditions.push(like(media.mimeType, 'video/%'));
+        } else if (mimeTypeFilter === 'documents') {
+          conditions.push(
+            or(
+              like(media.mimeType, 'application/pdf'),
+              like(media.mimeType, 'application/msword'),
+              like(media.mimeType, 'application/vnd.%')
+            )!
+          );
+        }
+        
+        if (conditions.length > 0) {
+          countQuery = db.select({ count: sql<number>`count(*)` })
+            .from(media)
+            .where(and(eq(media.tenantId, tenantId), ...conditions)!);
+        }
+      }
+
+      const [{ count }] = await countQuery;
+
+      res.json({
+        success: true,
+        data: mediaFiles,
+        pagination: {
+          total: Number(count),
+          limit,
+          offset,
+          hasMore: offset + limit < Number(count),
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching media:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch media files' 
+      });
+    }
+  });
+
+  // DELETE /api/hub-admin/media/:id - Delete media file
+  app.delete('/api/hub-admin/media/:id', hubAdminAuthMiddleware, async (req: any, res) => {
+    try {
+      const hubAdminPrincipal = (req.session as any)?.hubAdminPrincipal;
+      
+      if (!hubAdminPrincipal) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Hub admin authentication required' 
+        });
+      }
+
+      const { id } = req.params;
+      const tenantId = hubAdminPrincipal.tenantId;
+
+      // Find media record
+      const [mediaRecord] = await db.select()
+        .from(media)
+        .where(and(eq(media.id, id), eq(media.tenantId, tenantId))!)
+        .limit(1);
+
+      if (!mediaRecord) {
+        return res.status(404).json({ 
+          success: false, 
+          error: 'Media file not found' 
+        });
+      }
+
+      // Delete from Object Storage
+      try {
+        const objectPath = mediaRecord.url;
+        const pathParts = objectPath.startsWith('/') ? objectPath : `/${objectPath}`;
+        const parts = pathParts.split('/');
+        const bucketName = parts[1];
+        const objectName = parts.slice(2).join('/');
+
+        const bucket = objectStorageClient.bucket(bucketName);
+        const file = bucket.file(objectName);
+        
+        await file.delete();
+      } catch (storageError) {
+        console.error('Error deleting from Object Storage:', storageError);
+        // Continue with database deletion even if storage deletion fails
+      }
+
+      // Delete from database
+      await db.delete(media)
+        .where(and(eq(media.id, id), eq(media.tenantId, tenantId))!);
+
+      res.json({
+        success: true,
+        message: 'Media file deleted successfully',
+      });
+    } catch (error) {
+      console.error('Error deleting media:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to delete media file' 
+      });
+    }
+  });
+
+  // ========================================
+  // END HUB ADMIN MEDIA LIBRARY APIs
   // ========================================
 }

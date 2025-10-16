@@ -1,6 +1,7 @@
 import { Switch, Route } from "wouter";
 import HubAdminLayout from "./HubAdminLayout";
 import HubAdminGate from "./HubAdminGate";
+import MediaLibrary from "@/pages/hub-admin/MediaLibrary";
 
 // Placeholder pages - will be created/moved later
 function HubAdminDashboard() {
@@ -55,14 +56,7 @@ export default function HubAdminRouter() {
             )}
           </Route>
           
-          <Route path="/admin/media">
-            {() => (
-              <div className="text-center py-12">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Media Library</h2>
-                <p className="text-gray-600 dark:text-gray-400 mt-2">Hub media management coming soon</p>
-              </div>
-            )}
-          </Route>
+          <Route path="/admin/media" component={MediaLibrary} />
           
           <Route path="/admin/apps">
             {() => (
