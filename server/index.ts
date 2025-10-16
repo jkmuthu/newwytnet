@@ -151,6 +151,15 @@ app.use((req, res, next) => {
     console.error('Platform hubs seeding failed:', error);
   }
 
+  // Seed permissions and default roles
+  try {
+    const { seedEnginePermissions, seedDefaultEngineRoles } = await import('./services/permissionsSeedingService');
+    await seedEnginePermissions();
+    await seedDefaultEngineRoles();
+  } catch (error) {
+    console.error('Permissions seeding failed:', error);
+  }
+
   // Setup Hub Routing Middleware (Multi-domain routing)
   try {
     console.log('🌐 Setting up Hub Routing Middleware...');
