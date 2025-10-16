@@ -4168,29 +4168,70 @@ When suggesting improvements, format your response with suggestions in a structu
   // GEO-REGULATORY CONTROL - Multi-country Compliance & Data Sovereignty
   // =============================================================================
 
-  // Get all geo-regulatory rules (with optional filters)
+  // Import geo-regulatory tables and validation schemas
+  const { 
+    geoRegulatoryRules, 
+    geoComplianceLogs,
+    createGeoRegulatoryRuleSchema,
+    updateGeoRegulatoryRuleSchema
+  } = await import("@shared/schema");
+
+  // Get all geo-regulatory rules (with optional filters + pagination)
   app.get('/api/geo-regulatory/rules', adminAuthMiddleware, async (req: any, res) => {
     try {
-      const { countryCode, hubId, isActive } = req.query;
+      const { 
+        countryCode, 
+        hubId, 
+        tenantId,
+        appId,
+        isActive,
+        page = '1',
+        limit = '50'
+      } = req.query;
       
-      let query = db.select().from(geoRegulatoryRules);
+      // Pagination
+      const pageNum = Math.max(1, parseInt(page as string, 10));
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit as string, 10))); // Max 100 per page
+      const offset = (pageNum - 1) * limitNum;
       
-      // Apply filters
+      // Build query with filters
       const conditions = [];
       if (countryCode) conditions.push(eq(geoRegulatoryRules.countryCode, countryCode as string));
       if (hubId) conditions.push(eq(geoRegulatoryRules.hubId, hubId as string));
+      if (tenantId) conditions.push(eq(geoRegulatoryRules.tenantId, tenantId as string));
+      if (appId) conditions.push(eq(geoRegulatoryRules.appId, appId as string));
       if (isActive !== undefined) conditions.push(eq(geoRegulatoryRules.isActive, isActive === 'true'));
       
-      if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+      // Get total count for pagination
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+      
+      const [totalResult] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(geoRegulatoryRules)
+        .where(whereClause);
+      
+      const total = totalResult?.count || 0;
+      
+      // Get paginated rules
+      let query = db.select().from(geoRegulatoryRules);
+      if (whereClause) {
+        query = query.where(whereClause);
       }
       
-      const rules = await query.orderBy(desc(geoRegulatoryRules.createdAt));
+      const rules = await query
+        .orderBy(desc(geoRegulatoryRules.createdAt))
+        .limit(limitNum)
+        .offset(offset);
       
       res.json({
         success: true,
         rules,
-        total: rules.length
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum)
+        }
       });
     } catch (error) {
       console.error('Error fetching geo-regulatory rules:', error);
@@ -4201,7 +4242,7 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Create new geo-regulatory rule
+  // Create new geo-regulatory rule (with Zod validation)
   app.post('/api/geo-regulatory/rules', adminAuthMiddleware, async (req: any, res) => {
     try {
       const user = req.user;
@@ -4210,28 +4251,38 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.status(401).json({ error: 'Not authenticated' });
       }
       
-      // Validate required fields
-      const { countryCode, regionName, complianceLevel } = req.body;
+      // Validate request body with Zod schema
+      const validationResult = createGeoRegulatoryRuleSchema.safeParse(req.body);
       
-      if (!countryCode || !regionName) {
+      if (!validationResult.success) {
         return res.status(400).json({
           success: false,
-          error: 'countryCode and regionName are required'
+          error: 'Validation failed',
+          details: validationResult.error.issues
         });
       }
       
+      const validatedData = validationResult.data;
+      
+      // Insert with validated data only - prevents privilege escalation
       const [newRule] = await db.insert(geoRegulatoryRules).values({
-        ...req.body,
-        createdBy: user.id
+        ...validatedData,
+        effectiveDate: validatedData.effectiveDate ? new Date(validatedData.effectiveDate) : new Date(),
+        expiryDate: validatedData.expiryDate ? new Date(validatedData.expiryDate) : null,
+        createdBy: user.id,
+        updatedBy: user.id
       }).returning();
       
       // Log compliance event
       await db.insert(geoComplianceLogs).values({
         ruleId: newRule.id,
-        eventType: 'rule_created',
+        eventType: 'rule_created' as any,
         severity: 'info',
         countryCode: newRule.countryCode,
         stateCode: newRule.stateCode,
+        tenantId: newRule.tenantId,
+        hubId: newRule.hubId,
+        appId: newRule.appId,
         userId: user.id,
         action: 'create_regulatory_rule',
         result: 'success',
@@ -4251,7 +4302,7 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Update geo-regulatory rule
+  // Update geo-regulatory rule (with Zod validation and field whitelisting)
   app.patch('/api/geo-regulatory/rules/:id', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
@@ -4261,9 +4312,33 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.status(401).json({ error: 'Not authenticated' });
       }
       
+      // Validate request body with partial update schema
+      const validationResult = updateGeoRegulatoryRuleSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: validationResult.error.issues
+        });
+      }
+      
+      const validatedData = validationResult.data;
+      
+      // Convert date strings to Date objects if present
+      const updateData: any = { ...validatedData };
+      if (validatedData.effectiveDate) {
+        updateData.effectiveDate = new Date(validatedData.effectiveDate);
+      }
+      if (validatedData.expiryDate) {
+        updateData.expiryDate = new Date(validatedData.expiryDate);
+      }
+      
+      // Update with validated data only - prevents privilege escalation
       const [updatedRule] = await db.update(geoRegulatoryRules)
         .set({
-          ...req.body,
+          ...updateData,
+          updatedBy: user.id,
           updatedAt: new Date()
         })
         .where(eq(geoRegulatoryRules.id, id))
@@ -4279,14 +4354,17 @@ When suggesting improvements, format your response with suggestions in a structu
       // Log compliance event
       await db.insert(geoComplianceLogs).values({
         ruleId: id,
-        eventType: 'rule_updated',
+        eventType: 'rule_updated' as any,
         severity: 'info',
         countryCode: updatedRule.countryCode,
         stateCode: updatedRule.stateCode,
+        tenantId: updatedRule.tenantId,
+        hubId: updatedRule.hubId,
+        appId: updatedRule.appId,
         userId: user.id,
         action: 'update_regulatory_rule',
         result: 'success',
-        metadata: { changes: Object.keys(req.body) }
+        metadata: { changes: Object.keys(validatedData) }
       });
       
       res.json({
@@ -4302,7 +4380,7 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Delete geo-regulatory rule
+  // Delete geo-regulatory rule (with enhanced audit logging)
   app.delete('/api/geo-regulatory/rules/:id', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
@@ -4312,28 +4390,39 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.status(401).json({ error: 'Not authenticated' });
       }
       
-      const [deletedRule] = await db.delete(geoRegulatoryRules)
-        .where(eq(geoRegulatoryRules.id, id))
-        .returning();
+      // First get the rule to capture full details for audit
+      const [ruleToDelete] = await db.select().from(geoRegulatoryRules)
+        .where(eq(geoRegulatoryRules.id, id));
       
-      if (!deletedRule) {
+      if (!ruleToDelete) {
         return res.status(404).json({
           success: false,
           error: 'Rule not found'
         });
       }
       
-      // Log compliance event
+      // Delete the rule
+      await db.delete(geoRegulatoryRules)
+        .where(eq(geoRegulatoryRules.id, id));
+      
+      // Log compliance event with full context
       await db.insert(geoComplianceLogs).values({
         ruleId: id,
-        eventType: 'rule_deleted',
+        eventType: 'rule_deleted' as any,
         severity: 'warning',
-        countryCode: deletedRule.countryCode,
-        stateCode: deletedRule.stateCode,
+        countryCode: ruleToDelete.countryCode,
+        stateCode: ruleToDelete.stateCode,
+        tenantId: ruleToDelete.tenantId,
+        hubId: ruleToDelete.hubId,
+        appId: ruleToDelete.appId,
         userId: user.id,
         action: 'delete_regulatory_rule',
         result: 'success',
-        metadata: { ruleName: deletedRule.regionName }
+        metadata: { 
+          ruleName: ruleToDelete.regionName,
+          complianceTemplate: ruleToDelete.complianceTemplate,
+          deletedAt: new Date().toISOString()
+        }
       });
       
       res.json({
@@ -4349,32 +4438,66 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Get compliance logs (with filters)
+  // Get compliance logs (with filters and pagination)
   app.get('/api/geo-regulatory/compliance-logs', adminAuthMiddleware, async (req: any, res) => {
     try {
-      const { countryCode, eventType, severity, governmentAccess, limit = '100' } = req.query;
+      const { 
+        countryCode, 
+        eventType, 
+        severity, 
+        governmentAccess,
+        tenantId,
+        hubId,
+        appId,
+        page = '1',
+        limit = '50'
+      } = req.query;
       
-      let query = db.select().from(geoComplianceLogs);
+      // Pagination
+      const pageNum = Math.max(1, parseInt(page as string, 10));
+      const limitNum = Math.min(500, Math.max(1, parseInt(limit as string, 10))); // Max 500 per page for logs
+      const offset = (pageNum - 1) * limitNum;
       
-      // Apply filters
+      // Build query with filters
       const conditions = [];
       if (countryCode) conditions.push(eq(geoComplianceLogs.countryCode, countryCode as string));
       if (eventType) conditions.push(eq(geoComplianceLogs.eventType, eventType as string));
       if (severity) conditions.push(eq(geoComplianceLogs.severity, severity as string));
       if (governmentAccess !== undefined) conditions.push(eq(geoComplianceLogs.governmentAccess, governmentAccess === 'true'));
+      if (tenantId) conditions.push(eq(geoComplianceLogs.tenantId, tenantId as string));
+      if (hubId) conditions.push(eq(geoComplianceLogs.hubId, hubId as string));
+      if (appId) conditions.push(eq(geoComplianceLogs.appId, appId as string));
       
-      if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+      
+      // Get total count for pagination
+      const [totalResult] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(geoComplianceLogs)
+        .where(whereClause);
+      
+      const total = totalResult?.count || 0;
+      
+      // Get paginated logs
+      let query = db.select().from(geoComplianceLogs);
+      if (whereClause) {
+        query = query.where(whereClause);
       }
       
       const logs = await query
         .orderBy(desc(geoComplianceLogs.timestamp))
-        .limit(parseInt(limit as string, 10));
+        .limit(limitNum)
+        .offset(offset);
       
       res.json({
         success: true,
         logs,
-        total: logs.length
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum)
+        }
       });
     } catch (error) {
       console.error('Error fetching compliance logs:', error);
