@@ -64,6 +64,7 @@ interface ApiEndpoint {
 
 export default function DevDocumentation() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -78,6 +79,7 @@ export default function DevDocumentation() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "kanban" | "timeline">("table");
   const [showArchived, setShowArchived] = useState(false);
+  const [adminBypass, setAdminBypass] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -131,9 +133,35 @@ export default function DevDocumentation() {
     localStorage.setItem('wytnet-api-endpoints', JSON.stringify(apiEndpoints));
   }, [apiEndpoints]);
 
+  // Check if user is already authenticated as admin
   useEffect(() => {
     document.title = "Development Documentation - WytNet Platform";
-  }, []);
+    
+    const checkAdminSession = async () => {
+      try {
+        const response = await fetch('/api/admin/session', {
+          credentials: 'include'
+        });
+        const data = await response.json();
+        
+        if (data.authenticated && data.admin) {
+          // Admin is logged in, bypass password
+          setIsAuthenticated(true);
+          setAdminBypass(true);
+          toast({
+            title: "Admin Access Granted",
+            description: `Welcome ${data.admin.name || 'Admin'}! Password bypassed.`,
+          });
+        }
+      } catch (err) {
+        console.log('No admin session found, password required');
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+    
+    checkAdminSession();
+  }, [toast]);
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -434,6 +462,19 @@ export default function DevDocumentation() {
 
   const changeLogs: ChangeLog[] = [
     {
+      date: "2025-01-15",
+      version: "v1.10.0",
+      changes: [
+        "Added multi-level sidebar navigation for better documentation organization",
+        "Implemented smart authentication: Admin session bypass for logged-in admins",
+        "External users now require password authentication for security",
+        "Enhanced UI with fixed left sidebar for quick navigation",
+        "Added authentication status indicators and badges"
+      ],
+      author: "Development Team",
+      type: "feature"
+    },
+    {
       date: "2025-01-14",
       version: "v1.9.0",
       changes: [
@@ -520,6 +561,24 @@ export default function DevDocumentation() {
     );
   };
 
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-6">
+            <div className="flex flex-col items-center space-y-4">
+              <Shield className="h-8 w-8 text-blue-600 animate-pulse" />
+              <div className="text-center">
+                <h3 className="text-lg font-semibold">Checking Authentication</h3>
+                <p className="text-sm text-muted-foreground mt-1">Please wait...</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
@@ -532,6 +591,9 @@ export default function DevDocumentation() {
             <p className="text-muted-foreground mt-2">
               Enterprise Development Portal
             </p>
+            <Badge variant="outline" className="mt-4">
+              External Access - Password Required
+            </Badge>
           </CardHeader>
           <CardContent>
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
@@ -549,6 +611,9 @@ export default function DevDocumentation() {
                 Access Portal
               </Button>
             </form>
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg text-xs text-muted-foreground">
+              💡 Tip: Admins logged into Engine Portal can access without password
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -557,6 +622,94 @@ export default function DevDocumentation() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="flex">
+        {/* Left Sidebar Navigation */}
+        <aside className="hidden lg:block w-64 fixed left-0 top-0 h-screen bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 overflow-y-auto">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-800">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-6 w-6 text-blue-600" />
+              <h2 className="text-lg font-bold">DevDoc</h2>
+            </div>
+            {adminBypass && (
+              <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Admin Access
+              </Badge>
+            )}
+          </div>
+          
+          <nav className="p-4 space-y-1">
+            <Button
+              variant={activeTab === "features" ? "secondary" : "ghost"}
+              className="w-full justify-start"
+              onClick={() => setActiveTab("features")}
+            >
+              <Target className="h-4 w-4 mr-2" />
+              Task Management
+            </Button>
+            
+            <Button
+              variant={activeTab === "testing" ? "secondary" : "ghost"}
+              className="w-full justify-start"
+              onClick={() => setActiveTab("testing")}
+            >
+              <TestTube className="h-4 w-4 mr-2" />
+              Testing Suite
+            </Button>
+            
+            <Button
+              variant={activeTab === "api" ? "secondary" : "ghost"}
+              className="w-full justify-start"
+              onClick={() => setActiveTab("api")}
+            >
+              <Code className="h-4 w-4 mr-2" />
+              API Reference
+            </Button>
+            
+            <Button
+              variant={activeTab === "changelog" ? "secondary" : "ghost"}
+              className="w-full justify-start"
+              onClick={() => setActiveTab("changelog")}
+            >
+              <GitBranch className="h-4 w-4 mr-2" />
+              Version History
+            </Button>
+            
+            <Button
+              variant={activeTab === "standards" ? "secondary" : "ghost"}
+              className="w-full justify-start"
+              onClick={() => setActiveTab("standards")}
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              Standards & Best Practices
+            </Button>
+            
+            <Button
+              variant={activeTab === "analytics" ? "secondary" : "ghost"}
+              className="w-full justify-start"
+              onClick={() => setActiveTab("analytics")}
+            >
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Project Analytics
+            </Button>
+          </nav>
+          
+          <div className="p-4 border-t border-gray-200 dark:border-gray-800 mt-auto">
+            <div className="text-xs text-muted-foreground">
+              <div className="flex items-center gap-2 mb-2">
+                <Activity className="h-3 w-3" />
+                <span>Last updated: {new Date().toLocaleDateString()}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Users className="h-3 w-3" />
+                <span>Version: v1.9.0</span>
+              </div>
+            </div>
+          </div>
+        </aside>
+        
+        {/* Main Content Area */}
+        <div className="flex-1 lg:ml-64">
       <section className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
@@ -568,6 +721,12 @@ export default function DevDocumentation() {
               <p className="text-gray-600 dark:text-gray-300">
                 Enterprise Development Command Center
               </p>
+              {adminBypass && (
+                <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Authenticated via Admin Session
+                </Badge>
+              )}
             </div>
             <div className="flex gap-2">
               <Button 
@@ -1126,6 +1285,8 @@ export default function DevDocumentation() {
           </Dialog>
         </div>
       </section>
+        </div>
+      </div>
     </div>
   );
 }
