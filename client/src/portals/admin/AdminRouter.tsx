@@ -40,6 +40,7 @@ import AdminSystemMonitor from "@/pages/admin/system-monitor";
 import AdminSystemStatus from "@/pages/admin/system-status";
 import AdminSecurity from "@/pages/admin/security";
 import AdminPlatformRegistry from "@/pages/admin/platform-registry";
+import AdminGeoRegulatory from "@/pages/admin/geo-regulatory";
 
 // Keep AdminIntegrations, AdminLogs, and AdminAI as inline components for now
 function AdminIntegrations() {
@@ -205,6 +206,7 @@ export default function AdminRouter() {
           {/* System & Config Routes */}
           <Route path="/engine/platform-registry" component={AdminPlatformRegistry} />
           <Route path="/engine/integrations" component={AdminIntegrations} />
+          <Route path="/engine/geo-regulatory" component={AdminGeoRegulatory} />
           <Route path="/engine/seo-settings" component={AdminSeoSettings} />
           <Route path="/engine/global-settings" component={AdminGlobalSettings} />
           <Route path="/engine/roles-permissions" component={AdminRolesPermissions} />

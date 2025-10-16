@@ -4165,6 +4165,314 @@ When suggesting improvements, format your response with suggestions in a structu
   });
 
   // =============================================================================
+  // GEO-REGULATORY CONTROL - Multi-country Compliance & Data Sovereignty
+  // =============================================================================
+
+  // Get all geo-regulatory rules (with optional filters)
+  app.get('/api/geo-regulatory/rules', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { countryCode, hubId, isActive } = req.query;
+      
+      let query = db.select().from(geoRegulatoryRules);
+      
+      // Apply filters
+      const conditions = [];
+      if (countryCode) conditions.push(eq(geoRegulatoryRules.countryCode, countryCode as string));
+      if (hubId) conditions.push(eq(geoRegulatoryRules.hubId, hubId as string));
+      if (isActive !== undefined) conditions.push(eq(geoRegulatoryRules.isActive, isActive === 'true'));
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+      
+      const rules = await query.orderBy(desc(geoRegulatoryRules.createdAt));
+      
+      res.json({
+        success: true,
+        rules,
+        total: rules.length
+      });
+    } catch (error) {
+      console.error('Error fetching geo-regulatory rules:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch geo-regulatory rules'
+      });
+    }
+  });
+
+  // Create new geo-regulatory rule
+  app.post('/api/geo-regulatory/rules', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const user = req.user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+      
+      // Validate required fields
+      const { countryCode, regionName, complianceLevel } = req.body;
+      
+      if (!countryCode || !regionName) {
+        return res.status(400).json({
+          success: false,
+          error: 'countryCode and regionName are required'
+        });
+      }
+      
+      const [newRule] = await db.insert(geoRegulatoryRules).values({
+        ...req.body,
+        createdBy: user.id
+      }).returning();
+      
+      // Log compliance event
+      await db.insert(geoComplianceLogs).values({
+        ruleId: newRule.id,
+        eventType: 'rule_created',
+        severity: 'info',
+        countryCode: newRule.countryCode,
+        stateCode: newRule.stateCode,
+        userId: user.id,
+        action: 'create_regulatory_rule',
+        result: 'success',
+        metadata: { ruleName: newRule.regionName }
+      });
+      
+      res.json({
+        success: true,
+        rule: newRule
+      });
+    } catch (error) {
+      console.error('Error creating geo-regulatory rule:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create geo-regulatory rule'
+      });
+    }
+  });
+
+  // Update geo-regulatory rule
+  app.patch('/api/geo-regulatory/rules/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const user = req.user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+      
+      const [updatedRule] = await db.update(geoRegulatoryRules)
+        .set({
+          ...req.body,
+          updatedAt: new Date()
+        })
+        .where(eq(geoRegulatoryRules.id, id))
+        .returning();
+      
+      if (!updatedRule) {
+        return res.status(404).json({
+          success: false,
+          error: 'Rule not found'
+        });
+      }
+      
+      // Log compliance event
+      await db.insert(geoComplianceLogs).values({
+        ruleId: id,
+        eventType: 'rule_updated',
+        severity: 'info',
+        countryCode: updatedRule.countryCode,
+        stateCode: updatedRule.stateCode,
+        userId: user.id,
+        action: 'update_regulatory_rule',
+        result: 'success',
+        metadata: { changes: Object.keys(req.body) }
+      });
+      
+      res.json({
+        success: true,
+        rule: updatedRule
+      });
+    } catch (error) {
+      console.error('Error updating geo-regulatory rule:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update geo-regulatory rule'
+      });
+    }
+  });
+
+  // Delete geo-regulatory rule
+  app.delete('/api/geo-regulatory/rules/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const user = req.user;
+      
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+      
+      const [deletedRule] = await db.delete(geoRegulatoryRules)
+        .where(eq(geoRegulatoryRules.id, id))
+        .returning();
+      
+      if (!deletedRule) {
+        return res.status(404).json({
+          success: false,
+          error: 'Rule not found'
+        });
+      }
+      
+      // Log compliance event
+      await db.insert(geoComplianceLogs).values({
+        ruleId: id,
+        eventType: 'rule_deleted',
+        severity: 'warning',
+        countryCode: deletedRule.countryCode,
+        stateCode: deletedRule.stateCode,
+        userId: user.id,
+        action: 'delete_regulatory_rule',
+        result: 'success',
+        metadata: { ruleName: deletedRule.regionName }
+      });
+      
+      res.json({
+        success: true,
+        message: 'Rule deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting geo-regulatory rule:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to delete geo-regulatory rule'
+      });
+    }
+  });
+
+  // Get compliance logs (with filters)
+  app.get('/api/geo-regulatory/compliance-logs', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { countryCode, eventType, severity, governmentAccess, limit = '100' } = req.query;
+      
+      let query = db.select().from(geoComplianceLogs);
+      
+      // Apply filters
+      const conditions = [];
+      if (countryCode) conditions.push(eq(geoComplianceLogs.countryCode, countryCode as string));
+      if (eventType) conditions.push(eq(geoComplianceLogs.eventType, eventType as string));
+      if (severity) conditions.push(eq(geoComplianceLogs.severity, severity as string));
+      if (governmentAccess !== undefined) conditions.push(eq(geoComplianceLogs.governmentAccess, governmentAccess === 'true'));
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+      
+      const logs = await query
+        .orderBy(desc(geoComplianceLogs.timestamp))
+        .limit(parseInt(limit as string, 10));
+      
+      res.json({
+        success: true,
+        logs,
+        total: logs.length
+      });
+    } catch (error) {
+      console.error('Error fetching compliance logs:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch compliance logs'
+      });
+    }
+  });
+
+  // Get compliance templates (GDPR, CCPA, PDPA, etc.)
+  app.get('/api/geo-regulatory/templates', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const templates = {
+        'GDPR': {
+          name: 'General Data Protection Regulation (EU)',
+          description: 'European Union data protection and privacy regulation',
+          applicableRegions: ['EU', 'GB'],
+          requirements: {
+            dataResidency: true,
+            dataExportAllowed: false,
+            minimumAge: 16,
+            retentionDays: 730,
+            governmentAccessLevel: 'analytics_only'
+          },
+          recommendations: {
+            restrictedModules: [],
+            contentFilters: {},
+            enforcementLevel: 'block'
+          }
+        },
+        'CCPA': {
+          name: 'California Consumer Privacy Act (US)',
+          description: 'California state privacy law',
+          applicableRegions: ['US-CA'],
+          requirements: {
+            dataResidency: false,
+            dataExportAllowed: true,
+            minimumAge: 13,
+            retentionDays: null,
+            governmentAccessLevel: 'read_only'
+          },
+          recommendations: {
+            restrictedModules: [],
+            contentFilters: {},
+            enforcementLevel: 'warn'
+          }
+        },
+        'PDPA': {
+          name: 'Personal Data Protection Act (Singapore)',
+          description: 'Singapore data protection regulation',
+          applicableRegions: ['SG'],
+          requirements: {
+            dataResidency: true,
+            dataExportAllowed: false,
+            minimumAge: 18,
+            retentionDays: 365,
+            governmentAccessLevel: 'analytics_only'
+          },
+          recommendations: {
+            restrictedModules: [],
+            contentFilters: {},
+            enforcementLevel: 'block'
+          }
+        },
+        'IT_ACT_2000': {
+          name: 'Information Technology Act 2000 (India)',
+          description: 'Indian cybersecurity and data protection law',
+          applicableRegions: ['IN'],
+          requirements: {
+            dataResidency: true,
+            dataExportAllowed: false,
+            minimumAge: 18,
+            retentionDays: 180,
+            governmentAccessLevel: 'read_only'
+          },
+          recommendations: {
+            restrictedModules: [],
+            contentFilters: {},
+            enforcementLevel: 'warn'
+          }
+        }
+      };
+      
+      res.json({
+        success: true,
+        templates
+      });
+    } catch (error) {
+      console.error('Error fetching compliance templates:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch compliance templates'
+      });
+    }
+  });
+
+  // =============================================================================
   // MODULE PROXY ROUTES - White-label API Gateway
   // =============================================================================
 
