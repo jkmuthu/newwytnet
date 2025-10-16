@@ -3991,6 +3991,180 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // =============================================================================
+  // AI-ASSISTED MODULE & APP MANAGEMENT
+  // =============================================================================
+
+  // AI Chat for Module Improvement
+  app.post('/api/admin/modules/:moduleId/ai-chat', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { moduleId } = req.params;
+      const { message, conversationHistory } = req.body;
+      const user = req.user;
+
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      if (!aiService.isReady()) {
+        return res.status(503).json({ 
+          error: 'AI service is not available. Please check OpenAI API configuration.' 
+        });
+      }
+
+      // Get module details for context
+      const [module] = await db
+        .select()
+        .from(platformModules)
+        .where(eq(platformModules.id, moduleId))
+        .limit(1);
+
+      if (!module) {
+        return res.status(404).json({ error: 'Module not found' });
+      }
+
+      // Build context for AI
+      const moduleContext = `
+Current Module Details:
+- Name: ${module.name}
+- Description: ${module.description || 'No description'}
+- Category: ${module.category}
+- Version: ${module.version}
+- Route: ${module.route || 'Not set'}
+- Contexts: ${module.contexts?.join(', ') || 'None'}
+- Dependencies: ${module.dependencies?.join(', ') || 'None'}
+- Changelog: ${module.changelog || 'No changelog'}
+
+You are an AI assistant helping to improve this module. Provide specific, actionable suggestions.
+When suggesting improvements, format your response with suggestions in a structured way.
+`;
+
+      // Build conversation messages
+      const messages = [
+        { role: 'system' as const, content: moduleContext },
+        ...(conversationHistory || []).slice(-5).map((msg: any) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content
+        })),
+        { role: 'user' as const, content: message }
+      ];
+
+      // Get AI response
+      const aiResponse = await aiService.chat(messages, {
+        model: 'gpt-4',
+        temperature: 0.7,
+        maxTokens: 1500
+      });
+
+      const responseText = aiResponse.choices[0]?.message?.content || 'I apologize, I could not generate a response.';
+
+      // Try to extract structured suggestions if present
+      let suggestions = null;
+      const jsonMatch = responseText.match(/\{[\s\S]*"suggestions"[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          suggestions = JSON.parse(jsonMatch[0]);
+        } catch (e) {
+          // Ignore parsing errors
+        }
+      }
+
+      res.json({
+        success: true,
+        response: responseText,
+        suggestions
+      });
+    } catch (error) {
+      console.error('Error in module AI chat:', error);
+      res.status(500).json({ error: 'Failed to process AI request' });
+    }
+  });
+
+  // AI Chat for App Improvement
+  app.post('/api/admin/apps/:appId/ai-chat', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { appId } = req.params;
+      const { message, conversationHistory } = req.body;
+      const user = req.user;
+
+      if (!user?.id) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      if (!aiService.isReady()) {
+        return res.status(503).json({ 
+          error: 'AI service is not available. Please check OpenAI API configuration.' 
+        });
+      }
+
+      // Get app details for context
+      const [app] = await db
+        .select()
+        .from(apps)
+        .where(eq(apps.id, appId))
+        .limit(1);
+
+      if (!app) {
+        return res.status(404).json({ error: 'App not found' });
+      }
+
+      // Build context for AI
+      const appContext = `
+Current App Details:
+- Name: ${app.name}
+- Description: ${app.description || 'No description'}
+- Category: ${app.category || 'Not set'}
+- Version: ${app.version || '1.0.0'}
+- Route: ${app.route || 'Not set'}
+- Contexts: ${app.contexts?.join(', ') || 'None'}
+- Module IDs: ${app.moduleIds?.join(', ') || 'None'}
+- Changelog: ${app.changelog || 'No changelog'}
+
+You are an AI assistant helping to improve this application. Provide specific, actionable suggestions.
+When suggesting improvements, format your response with suggestions in a structured way.
+`;
+
+      // Build conversation messages
+      const messages = [
+        { role: 'system' as const, content: appContext },
+        ...(conversationHistory || []).slice(-5).map((msg: any) => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content
+        })),
+        { role: 'user' as const, content: message }
+      ];
+
+      // Get AI response
+      const aiResponse = await aiService.chat(messages, {
+        model: 'gpt-4',
+        temperature: 0.7,
+        maxTokens: 1500
+      });
+
+      const responseText = aiResponse.choices[0]?.message?.content || 'I apologize, I could not generate a response.';
+
+      // Try to extract structured suggestions if present
+      let suggestions = null;
+      const jsonMatch = responseText.match(/\{[\s\S]*"suggestions"[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          suggestions = JSON.parse(jsonMatch[0]);
+        } catch (e) {
+          // Ignore parsing errors
+        }
+      }
+
+      res.json({
+        success: true,
+        response: responseText,
+        suggestions
+      });
+    } catch (error) {
+      console.error('Error in app AI chat:', error);
+      res.status(500).json({ error: 'Failed to process AI request' });
+    }
+  });
+
+  // =============================================================================
   // MODULE PROXY ROUTES - White-label API Gateway
   // =============================================================================
 
