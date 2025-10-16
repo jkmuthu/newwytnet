@@ -28,6 +28,10 @@ import {
   assessmentSessions,
   assessmentResponses,
   assessmentResults,
+  roles,
+  permissions,
+  rolePermissions,
+  userRoles,
   type User,
   type UpsertUser,
   type Tenant,
@@ -64,6 +68,9 @@ import {
   type InsertMarketplaceHub,
   type HubItem,
   type InsertHubItem,
+  type Role,
+  type Permission,
+  type InsertRole,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, like, count, sql } from "drizzle-orm";
@@ -197,6 +204,20 @@ export interface IStorage {
   createHubItem(itemData: InsertHubItem): Promise<HubItem>;
   updateHubItem(id: string, data: Partial<InsertHubItem>): Promise<HubItem | undefined>;
   deleteHubItem(id: string): Promise<boolean>;
+
+  // Roles & Permissions operations
+  getRoles(scope?: "engine" | "hub" | "app" | "global"): Promise<Role[]>;
+  getRole(id: string): Promise<Role | undefined>;
+  getRoleWithPermissions(id: string): Promise<(Role & { permissions: Permission[] }) | undefined>;
+  createRole(data: InsertRole): Promise<Role>;
+  updateRole(id: string, data: Partial<InsertRole>): Promise<Role | undefined>;
+  deleteRole(id: string): Promise<boolean>;
+  assignPermissionsToRole(roleId: string, permissionIds: string[]): Promise<void>;
+  removePermissionsFromRole(roleId: string, permissionIds: string[]): Promise<void>;
+  getPermissions(scope?: "engine" | "hub" | "app" | "global"): Promise<Permission[]>;
+  getUserRoles(userId: string): Promise<Role[]>;
+  assignRoleToUser(userId: string, roleId: string): Promise<void>;
+  removeRoleFromUser(userId: string, roleId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1123,6 +1144,121 @@ export class DatabaseStorage implements IStorage {
   async deleteHubItem(id: string): Promise<boolean> {
     const result = await db.delete(hubItems).where(eq(hubItems.id, id));
     return (result.rowCount || 0) > 0;
+  }
+
+  // Roles & Permissions operations
+  async getRoles(scope?: "engine" | "hub" | "app" | "global"): Promise<Role[]> {
+    if (scope) {
+      return await db.select().from(roles).where(eq(roles.scope, scope));
+    }
+    return await db.select().from(roles);
+  }
+
+  async getRole(id: string): Promise<Role | undefined> {
+    const [role] = await db.select().from(roles).where(eq(roles.id, id));
+    return role;
+  }
+
+  async getRoleWithPermissions(id: string): Promise<(Role & { permissions: Permission[] }) | undefined> {
+    const [role] = await db.select().from(roles).where(eq(roles.id, id));
+    if (!role) return undefined;
+
+    const rolePerms = await db
+      .select({
+        permission: permissions,
+      })
+      .from(rolePermissions)
+      .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+      .where(eq(rolePermissions.roleId, id));
+
+    return {
+      ...role,
+      permissions: rolePerms.map(rp => rp.permission),
+    };
+  }
+
+  async createRole(data: InsertRole): Promise<Role> {
+    const [role] = await db.insert(roles).values(data).returning();
+    return role;
+  }
+
+  async updateRole(id: string, data: Partial<InsertRole>): Promise<Role | undefined> {
+    const [role] = await db
+      .update(roles)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(roles.id, id))
+      .returning();
+    return role;
+  }
+
+  async deleteRole(id: string): Promise<boolean> {
+    const result = await db.delete(roles).where(eq(roles.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async assignPermissionsToRole(roleId: string, permissionIds: string[]): Promise<void> {
+    // Remove existing permissions first
+    await db.delete(rolePermissions).where(eq(rolePermissions.roleId, roleId));
+
+    // Add new permissions
+    if (permissionIds.length > 0) {
+      await db.insert(rolePermissions).values(
+        permissionIds.map(permissionId => ({
+          roleId,
+          permissionId,
+        }))
+      );
+    }
+  }
+
+  async removePermissionsFromRole(roleId: string, permissionIds: string[]): Promise<void> {
+    if (permissionIds.length > 0) {
+      await db
+        .delete(rolePermissions)
+        .where(
+          and(
+            eq(rolePermissions.roleId, roleId),
+            sql`${rolePermissions.permissionId} = ANY(${permissionIds})`
+          )
+        );
+    }
+  }
+
+  async getPermissions(scope?: "engine" | "hub" | "app" | "global"): Promise<Permission[]> {
+    if (scope) {
+      return await db.select().from(permissions).where(eq(permissions.scope, scope));
+    }
+    return await db.select().from(permissions);
+  }
+
+  async getUserRoles(userId: string): Promise<Role[]> {
+    const userRolesData = await db
+      .select({
+        role: roles,
+      })
+      .from(userRoles)
+      .innerJoin(roles, eq(userRoles.roleId, roles.id))
+      .where(eq(userRoles.userId, userId));
+
+    return userRolesData.map(ur => ur.role);
+  }
+
+  async assignRoleToUser(userId: string, roleId: string): Promise<void> {
+    await db.insert(userRoles).values({
+      userId,
+      roleId,
+    });
+  }
+
+  async removeRoleFromUser(userId: string, roleId: string): Promise<void> {
+    await db
+      .delete(userRoles)
+      .where(
+        and(
+          eq(userRoles.userId, userId),
+          eq(userRoles.roleId, roleId)
+        )
+      );
   }
 }
 
