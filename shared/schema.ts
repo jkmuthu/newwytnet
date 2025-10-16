@@ -3442,3 +3442,204 @@ export type AppFeature = typeof appFeatures.$inferSelect;
 export type InsertAppFeature = z.infer<typeof insertAppFeatureSchema>;
 export type PlanFeatureAccess = typeof planFeatureAccess.$inferSelect;
 export type InsertPlanFeatureAccess = z.infer<typeof insertPlanFeatureAccessSchema>;
+
+// ============================================
+// ROLES & PERMISSIONS MANAGEMENT SYSTEM
+// ============================================
+
+// Permission Scopes - where permissions apply
+export const permissionScopeEnum = pgEnum("permission_scope", ["engine", "hub", "app", "global"]);
+
+// Permission Actions
+export const permissionActionEnum = pgEnum("permission_action", ["view", "create", "edit", "delete", "manage", "configure"]);
+
+// Roles - Role definitions for the platform
+export const roles = pgTable("roles", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // RL00001
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  scope: permissionScopeEnum("scope").default("engine").notNull(),
+  isSystem: boolean("is_system").default(false).notNull(), // System roles cannot be deleted
+  isActive: boolean("is_active").default(true).notNull(),
+  tenantId: uuid("tenant_id").references(() => tenants.id), // null for engine-level roles
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_roles_display_id").on(table.displayId),
+  index("idx_roles_scope").on(table.scope),
+]);
+
+// Permissions - Individual permission definitions
+export const permissions = pgTable("permissions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // PM00001
+  resource: varchar("resource", { length: 100 }).notNull(), // e.g., "tenants", "users", "modules"
+  action: permissionActionEnum("action").notNull(), // e.g., "view", "create", "edit", "delete"
+  scope: permissionScopeEnum("scope").default("engine").notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_permissions_display_id").on(table.displayId),
+  index("idx_permissions_resource").on(table.resource),
+  unique("unique_permission").on(table.resource, table.action, table.scope),
+]);
+
+// Role Permissions - Junction table for role-permission relationships
+export const rolePermissions = pgTable("role_permissions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  roleId: uuid("role_id").notNull().references(() => roles.id, { onDelete: 'cascade' }),
+  permissionId: uuid("permission_id").notNull().references(() => permissions.id, { onDelete: 'cascade' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_role_permissions_role").on(table.roleId),
+  index("idx_role_permissions_permission").on(table.permissionId),
+  unique("unique_role_permission").on(table.roleId, table.permissionId),
+]);
+
+// User Roles - Assigns roles to users
+export const userRoles = pgTable("user_roles", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  roleId: uuid("role_id").notNull().references(() => roles.id, { onDelete: 'cascade' }),
+  assignedBy: varchar("assigned_by").references(() => users.id),
+  expiresAt: timestamp("expires_at"), // Optional expiration for temporary access
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_user_roles_user").on(table.userId),
+  index("idx_user_roles_role").on(table.roleId),
+  unique("unique_user_role").on(table.userId, table.roleId),
+]);
+
+// ============================================
+// PLATFORM HUB MANAGEMENT SYSTEM
+// ============================================
+
+// Platform Hub Status
+export const platformHubStatusEnum = pgEnum("platform_hub_status", ["active", "inactive", "suspended", "archived"]);
+
+// Platform Hubs - Manages platform-level hubs (e.g., WytNet.com, partner hubs)
+export const platformHubs = pgTable("platform_hubs", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // PH00001
+  name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  domain: varchar("domain", { length: 255 }).unique(),
+  subdomain: varchar("subdomain", { length: 100 }).unique(),
+  description: text("description"),
+  logo: varchar("logo", { length: 500 }),
+  status: platformHubStatusEnum("status").default("active").notNull(),
+  settings: jsonb("settings").default({}),
+  metadata: jsonb("metadata").default({}),
+  tenantId: uuid("tenant_id").references(() => tenants.id), // Associated tenant
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_platform_hubs_display_id").on(table.displayId),
+  index("idx_platform_hubs_slug").on(table.slug),
+  index("idx_platform_hubs_status").on(table.status),
+]);
+
+// Platform Hub Admins - Assigns admin users to platform hubs
+export const platformHubAdmins = pgTable("platform_hub_admins", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  hubId: uuid("hub_id").notNull().references(() => platformHubs.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  roleId: uuid("role_id").references(() => roles.id), // Specific role for this hub
+  assignedBy: varchar("assigned_by").references(() => users.id),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_platform_hub_admins_hub").on(table.hubId),
+  index("idx_platform_hub_admins_user").on(table.userId),
+  unique("unique_platform_hub_admin").on(table.hubId, table.userId),
+]);
+
+// Relations
+export const rolesRelations = relations(roles, ({ many }) => ({
+  rolePermissions: many(rolePermissions),
+  userRoles: many(userRoles),
+  platformHubAdmins: many(platformHubAdmins),
+}));
+
+export const permissionsRelations = relations(permissions, ({ many }) => ({
+  rolePermissions: many(rolePermissions),
+}));
+
+export const rolePermissionsRelations = relations(rolePermissions, ({ one }) => ({
+  role: one(roles, {
+    fields: [rolePermissions.roleId],
+    references: [roles.id],
+  }),
+  permission: one(permissions, {
+    fields: [rolePermissions.permissionId],
+    references: [permissions.id],
+  }),
+}));
+
+export const userRolesRelations = relations(userRoles, ({ one }) => ({
+  user: one(users, {
+    fields: [userRoles.userId],
+    references: [users.id],
+  }),
+  role: one(roles, {
+    fields: [userRoles.roleId],
+    references: [roles.id],
+  }),
+}));
+
+export const platformHubsRelations = relations(platformHubs, ({ one, many }) => ({
+  tenant: one(tenants, {
+    fields: [platformHubs.tenantId],
+    references: [tenants.id],
+  }),
+  platformHubAdmins: many(platformHubAdmins),
+}));
+
+export const platformHubAdminsRelations = relations(platformHubAdmins, ({ one }) => ({
+  hub: one(platformHubs, {
+    fields: [platformHubAdmins.hubId],
+    references: [platformHubs.id],
+  }),
+  user: one(users, {
+    fields: [platformHubAdmins.userId],
+    references: [users.id],
+  }),
+  role: one(roles, {
+    fields: [platformHubAdmins.roleId],
+    references: [roles.id],
+  }),
+}));
+
+// Schema exports for Roles & Permissions
+export const insertRoleSchema = createInsertSchema(roles).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectRoleSchema = createSelectSchema(roles);
+export const insertPermissionSchema = createInsertSchema(permissions).omit({ id: true, createdAt: true });
+export const selectPermissionSchema = createSelectSchema(permissions);
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions).omit({ id: true, createdAt: true });
+export const selectRolePermissionSchema = createSelectSchema(rolePermissions);
+export const insertUserRoleSchema = createInsertSchema(userRoles).omit({ id: true, createdAt: true });
+export const selectUserRoleSchema = createSelectSchema(userRoles);
+
+// Type exports for Roles & Permissions
+export type Role = typeof roles.$inferSelect;
+export type InsertRole = z.infer<typeof insertRoleSchema>;
+export type Permission = typeof permissions.$inferSelect;
+export type InsertPermission = z.infer<typeof insertPermissionSchema>;
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+export type UserRole = typeof userRoles.$inferSelect;
+export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
+
+// Schema exports for Platform Hubs
+export const insertPlatformHubSchema = createInsertSchema(platformHubs).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectPlatformHubSchema = createSelectSchema(platformHubs);
+export const insertPlatformHubAdminSchema = createInsertSchema(platformHubAdmins).omit({ id: true, createdAt: true });
+export const selectPlatformHubAdminSchema = createSelectSchema(platformHubAdmins);
+
+// Type exports for Platform Hubs
+export type PlatformHub = typeof platformHubs.$inferSelect;
+export type InsertPlatformHub = z.infer<typeof insertPlatformHubSchema>;
+export type PlatformHubAdmin = typeof platformHubAdmins.$inferSelect;
+export type InsertPlatformHubAdmin = z.infer<typeof insertPlatformHubAdminSchema>;

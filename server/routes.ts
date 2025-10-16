@@ -144,6 +144,8 @@ import {
 import { db } from "./db";
 import { eq, desc, and, sql, gte, lte, like, or, ilike, not, asc, inArray } from "drizzle-orm";
 import { aiService } from "./services/aiService";
+import rolesRouter from "./routes/roles";
+import platformHubsRouter from "./routes/platform-hubs";
 
 // Trademark analysis functions now imported from services/trademarkAnalysis.ts
 
@@ -184,6 +186,12 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Initialize WytData datasets
   const { datasetSeedingService } = await import('./services/datasetSeedingService');
   await datasetSeedingService.initializeDatasets();
+
+  // Register Roles & Permissions Management Router
+  app.use('/api', rolesRouter);
+  
+  // Register Platform Hubs Management Router
+  app.use('/api', platformHubsRouter);
 
   // Auth routes - unified endpoint for both authentication systems
   app.get('/api/auth/user', async (req: any, res) => {

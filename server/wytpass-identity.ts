@@ -2,8 +2,8 @@ import { Express, Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
-import { users } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { users, userRoles, roles, rolePermissions, permissions } from "@shared/schema";
+import { eq, inArray } from "drizzle-orm";
 
 /**
  * WytPass Unified Identity System
@@ -25,6 +25,18 @@ export interface WytPassPrincipal {
   roles: string[];  // ['super_admin', 'hub_admin', 'user']
   isSuperAdmin: boolean;
   isHubAdmin: boolean;
+  
+  // Database Roles & Permissions System
+  systemRoles?: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    scope: string;
+  }>;
+  permissions?: {
+    [resource: string]: string[]; // { "users": ["view", "create"], "tenants": ["view"] }
+  };
+  hasPermission?: (resource: string, action: string) => boolean;
   
   // Panel Access Map
   panels: {
@@ -81,7 +93,7 @@ export function createWytPassSession() {
  * Helper: Create unified principal from user record
  */
 export async function createWytPassPrincipal(user: any, loginType: 'engine_admin' | 'hub_admin' | 'user' = 'user'): Promise<WytPassPrincipal> {
-  const roles: string[] = [];
+  const rolesList: string[] = [];
   const panels: WytPassPrincipal['panels'] = {};
   
   // Determine roles based on user properties
@@ -90,12 +102,12 @@ export async function createWytPassPrincipal(user: any, loginType: 'engine_admin
   
   // Add role claims
   if (isSuperAdmin) {
-    roles.push('super_admin');
+    rolesList.push('super_admin');
     panels.engine = { access: true, role: 'Super Admin' };
   }
   
   if (isHubAdmin || isSuperAdmin) {
-    roles.push('hub_admin');
+    rolesList.push('hub_admin');
     panels.hubAdmin = { 
       access: true, 
       hubId: 'wytnet_hub',
@@ -104,8 +116,66 @@ export async function createWytPassPrincipal(user: any, loginType: 'engine_admin
   }
   
   // All authenticated users have user panel access
-  roles.push('user');
+  rolesList.push('user');
   panels.user = { access: true };
+  
+  // Fetch database roles and permissions for the user
+  let systemRoles: Array<any> = [];
+  let permissionsMap: { [resource: string]: string[] } = {};
+  
+  try {
+    // Fetch user's roles from database
+    const userRolesData = await db
+      .select({
+        roleId: userRoles.roleId,
+        roleName: roles.name,
+        roleDescription: roles.description,
+        roleScope: roles.scope,
+      })
+      .from(userRoles)
+      .innerJoin(roles, eq(roles.id, userRoles.roleId))
+      .where(eq(userRoles.userId, user.id));
+    
+    if (userRolesData.length > 0) {
+      const roleIds = userRolesData.map(r => r.roleId);
+      
+      // Format system roles
+      systemRoles = userRolesData.map(r => ({
+        id: r.roleId,
+        name: r.roleName,
+        description: r.roleDescription,
+        scope: r.roleScope,
+      }));
+      
+      // Fetch permissions for these roles
+      const userPermissionsData = await db
+        .select({
+          resource: permissions.resource,
+          action: permissions.action,
+        })
+        .from(rolePermissions)
+        .innerJoin(permissions, eq(permissions.id, rolePermissions.permissionId))
+        .where(inArray(rolePermissions.roleId, roleIds));
+      
+      // Group permissions by resource
+      userPermissionsData.forEach(perm => {
+        if (!permissionsMap[perm.resource]) {
+          permissionsMap[perm.resource] = [];
+        }
+        if (!permissionsMap[perm.resource].includes(perm.action)) {
+          permissionsMap[perm.resource].push(perm.action);
+        }
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching user roles and permissions:", error);
+    // Continue without database roles/permissions
+  }
+  
+  // Helper function to check permissions
+  const hasPermission = (resource: string, action: string): boolean => {
+    return permissionsMap[resource]?.includes(action) || false;
+  };
   
   return {
     id: user.id,
@@ -115,9 +185,12 @@ export async function createWytPassPrincipal(user: any, loginType: 'engine_admin
     lastName: user.lastName,
     tenantId: user.tenantId,
     profileImageUrl: user.profileImageUrl,
-    roles,
+    roles: rolesList,
     isSuperAdmin,
     isHubAdmin,
+    systemRoles,
+    permissions: permissionsMap,
+    hasPermission,
     panels,
     provider: loginType,
     lastLoginAt: new Date().toISOString(),
