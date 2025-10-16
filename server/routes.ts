@@ -221,7 +221,6 @@ export async function registerRoutes(app: Express): Promise<void> {
         path: string;
         icon: string;
         user: any;
-        active: boolean;
       }> = [];
 
       // Check Engine Admin session
@@ -236,8 +235,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             name: adminPrincipal.name,
             email: adminPrincipal.email,
             role: 'Super Admin'
-          },
-          active: req.path.startsWith('/engine')
+          }
         });
       }
 
@@ -253,8 +251,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             name: hubAdminPrincipal.name,
             email: hubAdminPrincipal.email,
             role: 'Hub Admin'
-          },
-          active: req.path.startsWith('/admin')
+          }
         });
       }
 
@@ -270,8 +267,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             name: principal.name,
             email: principal.email,
             role: principal.role || 'User'
-          },
-          active: !req.path.startsWith('/engine') && !req.path.startsWith('/admin')
+          }
         });
       }
 

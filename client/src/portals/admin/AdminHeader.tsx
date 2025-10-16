@@ -24,7 +24,7 @@ export default function AdminHeader({
   const { adminUser } = useAdminAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
 
   // Fetch available contexts/panels
   const { data: contextsData } = useQuery({
@@ -32,7 +32,16 @@ export default function AdminHeader({
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  const availableContexts = contextsData?.contexts || [];
+  const rawContexts = contextsData?.contexts || [];
+
+  // Compute active status client-side based on current location
+  const availableContexts = rawContexts.map((context: any) => ({
+    ...context,
+    active: 
+      (context.type === 'engine_admin' && location.startsWith('/engine')) ||
+      (context.type === 'hub_admin' && location.startsWith('/admin')) ||
+      (context.type === 'user' && !location.startsWith('/engine') && !location.startsWith('/admin'))
+  }));
 
   const handleSwitchContext = (path: string) => {
     setLocation(path);
