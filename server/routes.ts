@@ -111,7 +111,9 @@ import {
   insertPlanFeatureAccessSchema,
   platformModuleActivations,
   hubModuleActivations,
-  appModuleActivations
+  appModuleActivations,
+  moduleEditHistory,
+  appEditHistory
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -3712,6 +3714,278 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.status(500).json({
         success: false,
         error: 'Failed to fetch enabled modules'
+      });
+    }
+  });
+
+  // =============================================================================
+  // MODULE & APP UPDATE WITH EDIT HISTORY
+  // =============================================================================
+
+  // Update module with edit history tracking
+  app.patch('/api/modules/:moduleId/update', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { moduleId } = req.params;
+      const user = req.user;
+      const updates = req.body;
+
+      if (!user?.id) {
+        return res.status(401).json({
+          success: false,
+          error: 'User not authenticated'
+        });
+      }
+
+      // Get current module
+      const [currentModule] = await db
+        .select()
+        .from(platformModules)
+        .where(eq(platformModules.id, moduleId))
+        .limit(1);
+
+      if (!currentModule) {
+        return res.status(404).json({
+          success: false,
+          error: 'Module not found'
+        });
+      }
+
+      // Track fields that can be updated with history
+      const trackableFields = ['name', 'description', 'route', 'category', 'contexts', 'restrictedTo'];
+      const historyRecords = [];
+
+      // Compare old vs new values and track changes
+      for (const field of trackableFields) {
+        if (updates[field] !== undefined) {
+          const oldValue = currentModule[field as keyof typeof currentModule];
+          const newValue = updates[field];
+          
+          // Convert to string for comparison
+          const oldValueStr = typeof oldValue === 'object' ? JSON.stringify(oldValue) : String(oldValue || '');
+          const newValueStr = typeof newValue === 'object' ? JSON.stringify(newValue) : String(newValue || '');
+
+          if (oldValueStr !== newValueStr) {
+            historyRecords.push({
+              moduleId,
+              field,
+              oldValue: oldValueStr,
+              newValue: newValueStr,
+              editedBy: user.id
+            });
+          }
+        }
+      }
+
+      // Update the module
+      const [updatedModule] = await db
+        .update(platformModules)
+        .set({
+          ...updates,
+          updatedAt: new Date()
+        })
+        .where(eq(platformModules.id, moduleId))
+        .returning();
+
+      // Insert history records
+      if (historyRecords.length > 0) {
+        await db.insert(moduleEditHistory).values(historyRecords);
+      }
+
+      res.json({
+        success: true,
+        message: 'Module updated successfully',
+        module: updatedModule,
+        changesTracked: historyRecords.length
+      });
+    } catch (error) {
+      console.error('Error updating module:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update module'
+      });
+    }
+  });
+
+  // Update app with edit history tracking
+  app.patch('/api/apps/:appId/update', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { appId } = req.params;
+      const user = req.user;
+      const updates = req.body;
+
+      if (!user?.id) {
+        return res.status(401).json({
+          success: false,
+          error: 'User not authenticated'
+        });
+      }
+
+      // Get current app
+      const [currentApp] = await db
+        .select()
+        .from(apps)
+        .where(eq(apps.id, appId))
+        .limit(1);
+
+      if (!currentApp) {
+        return res.status(404).json({
+          success: false,
+          error: 'App not found'
+        });
+      }
+
+      // Track fields that can be updated with history
+      const trackableFields = ['name', 'description', 'route', 'categories', 'contexts', 'restrictedTo', 'changelog'];
+      const historyRecords = [];
+
+      // Compare old vs new values and track changes
+      for (const field of trackableFields) {
+        if (updates[field] !== undefined) {
+          const oldValue = currentApp[field as keyof typeof currentApp];
+          const newValue = updates[field];
+          
+          // Convert to string for comparison
+          const oldValueStr = typeof oldValue === 'object' ? JSON.stringify(oldValue) : String(oldValue || '');
+          const newValueStr = typeof newValue === 'object' ? JSON.stringify(newValue) : String(newValue || '');
+
+          if (oldValueStr !== newValueStr) {
+            historyRecords.push({
+              appId,
+              field,
+              oldValue: oldValueStr,
+              newValue: newValueStr,
+              editedBy: user.id
+            });
+          }
+        }
+      }
+
+      // Update the app
+      const [updatedApp] = await db
+        .update(apps)
+        .set({
+          ...updates,
+          updatedAt: new Date()
+        })
+        .where(eq(apps.id, appId))
+        .returning();
+
+      // Insert history records
+      if (historyRecords.length > 0) {
+        await db.insert(appEditHistory).values(historyRecords);
+      }
+
+      res.json({
+        success: true,
+        message: 'App updated successfully',
+        app: updatedApp,
+        changesTracked: historyRecords.length
+      });
+    } catch (error) {
+      console.error('Error updating app:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update app'
+      });
+    }
+  });
+
+  // Get edit history for a module
+  app.get('/api/modules/:moduleId/history', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { moduleId } = req.params;
+
+      // Verify module exists
+      const [module] = await db
+        .select()
+        .from(platformModules)
+        .where(eq(platformModules.id, moduleId))
+        .limit(1);
+
+      if (!module) {
+        return res.status(404).json({
+          success: false,
+          error: 'Module not found'
+        });
+      }
+
+      // Get edit history with user information
+      const history = await db
+        .select({
+          id: moduleEditHistory.id,
+          field: moduleEditHistory.field,
+          oldValue: moduleEditHistory.oldValue,
+          newValue: moduleEditHistory.newValue,
+          editedAt: moduleEditHistory.editedAt,
+          editedBy: moduleEditHistory.editedBy,
+          userName: users.name,
+          userEmail: users.email
+        })
+        .from(moduleEditHistory)
+        .leftJoin(users, eq(moduleEditHistory.editedBy, users.id))
+        .where(eq(moduleEditHistory.moduleId, moduleId))
+        .orderBy(desc(moduleEditHistory.editedAt));
+
+      res.json({
+        success: true,
+        history,
+        total: history.length
+      });
+    } catch (error) {
+      console.error('Error fetching module history:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch module history'
+      });
+    }
+  });
+
+  // Get edit history for an app
+  app.get('/api/apps/:appId/history', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { appId } = req.params;
+
+      // Verify app exists
+      const [app] = await db
+        .select()
+        .from(apps)
+        .where(eq(apps.id, appId))
+        .limit(1);
+
+      if (!app) {
+        return res.status(404).json({
+          success: false,
+          error: 'App not found'
+        });
+      }
+
+      // Get edit history with user information
+      const history = await db
+        .select({
+          id: appEditHistory.id,
+          field: appEditHistory.field,
+          oldValue: appEditHistory.oldValue,
+          newValue: appEditHistory.newValue,
+          editedAt: appEditHistory.editedAt,
+          editedBy: appEditHistory.editedBy,
+          userName: users.name,
+          userEmail: users.email
+        })
+        .from(appEditHistory)
+        .leftJoin(users, eq(appEditHistory.editedBy, users.id))
+        .where(eq(appEditHistory.appId, appId))
+        .orderBy(desc(appEditHistory.editedAt));
+
+      res.json({
+        success: true,
+        history,
+        total: history.length
+      });
+    } catch (error) {
+      console.error('Error fetching app history:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch app history'
       });
     }
   });

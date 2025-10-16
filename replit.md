@@ -67,6 +67,43 @@ The platform features modern UI elements like animated gradient backgrounds, gla
 - **Module Seeding System**: An auto-seeding system that syncs module definitions from a `MODULE_CATALOG` in code to the database on server startup, ensuring consistency and version control.
 - **Dual App Architecture**: Distinguishes between Composed Apps (admin-created from multiple modules) and Module Apps (individual features/tools from platform modules, acting as marketplace items).
 
+## Enhanced Module & App Management System
+The platform implements comprehensive version control and access management for both Modules and Apps:
+
+### Version Control & History Tracking
+- **Version Management**: All modules and apps track version numbers (e.g., '1.0.0'), version history arrays, and changelogs
+- **Edit History**: Automatic logging of all changes to name, description, route, category, contexts, and restrictedTo fields
+- **Audit Trail**: Complete edit history with editor information, timestamps, old/new values stored in `module_edit_history` and `app_edit_history` tables
+- **UI Display**: Version badges, changelog sections, and version history timelines in management interfaces
+
+### Route & URL Management
+- **Custom Routes**: Modules and Apps can have custom routes/URLs (e.g., `/auth`, `/payments/razorpay`, `/content/editor`)
+- **Route Editor**: Admin UI allows editing routes with validation and history tracking
+- **Route Redirects**: System tracks route changes to maintain backward compatibility
+
+### Context-Based Access Control
+- **Module Contexts**: Modules specify where they can be activated: Platform, Hub, App, or Game
+- **App Contexts**: Apps define their activation contexts (typically Hub and App)
+- **Granular Restrictions**: `restrictedTo` field enforces specific access levels:
+  - **Engine-Only**: Core platform modules restricted to Engine administration (e.g., payment-core, analytics-engine, audit-logs)
+  - **Hub-Only**: Hub-specific features (e.g., hub-aggregator)
+  - **App-Only**: Application-specific modules
+  - **Game-Only**: Gaming context modules
+- **UI Controls**: Checkbox interfaces for context and restriction management in admin panels
+
+### API Endpoints for Management
+- **PATCH /api/modules/:moduleId/update** - Update module fields with edit history tracking
+- **PATCH /api/apps/:appId/update** - Update app fields with edit history tracking
+- **GET /api/modules/:moduleId/history** - Retrieve complete edit history for a module
+- **GET /api/apps/:appId/history** - Retrieve complete edit history for an app
+
+### Implementation Details
+- **Database Schema**: Enhanced `platform_modules` and `apps` tables with version, versionHistory, changelog, route, contexts, and restrictedTo columns
+- **Edit History Tables**: Dedicated `module_edit_history` and `app_edit_history` tables track field-level changes
+- **Zod Validation**: Updated insert/select schemas for type-safe operations
+- **Module Catalog**: All 45 modules in MODULE_CATALOG include version, changelog, route, and restriction information
+- **Admin UI**: Enhanced management interfaces display version info, allow route editing, show edit history, and provide context/restriction controls
+
 # External Dependencies
 
 ## Database Integration

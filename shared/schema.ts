@@ -258,6 +258,18 @@ export const apps = pgTable("apps", {
   status: varchar("status", { length: 20 }).notNull().default('draft'),
   isPublic: boolean("is_public").default(false),
   pricing: jsonb("pricing").default({}),
+  
+  // Route & Context Support (like Modules)
+  route: varchar("route", { length: 255 }), // App route/URL
+  contexts: jsonb("contexts").default(['hub', 'app']), // Where app can be activated
+  
+  // Version Control & History
+  versionHistory: jsonb("version_history").default([]), // [{ version: '1.0.0', changes: '...', date: '...' }]
+  changelog: text("changelog"), // Latest version changelog
+  
+  // Access Restrictions - Granular control
+  restrictedTo: jsonb("restricted_to").default([]), // ['engine-only', 'hub-only', 'specific-tenant']
+  
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -327,6 +339,14 @@ export const platformModules = pgTable("platform_modules", {
   color: varchar("color", { length: 50 }).default('blue'),
   route: varchar("route", { length: 255 }),
   
+  // Version Control & History
+  version: varchar("version", { length: 20 }).notNull().default('1.0.0'),
+  versionHistory: jsonb("version_history").default([]), // [{ version: '1.0.0', changes: '...', date: '...' }]
+  changelog: text("changelog"), // Latest version changelog
+  
+  // Access Restrictions - Granular control beyond contexts
+  restrictedTo: jsonb("restricted_to").default([]), // ['engine-only', 'hub-only', 'app-only', 'game-only']
+  
   // Legacy fields (kept for backward compatibility)
   features: jsonb("features").default([]),
   metadata: jsonb("metadata").default({}),
@@ -389,6 +409,32 @@ export const appModuleActivations = pgTable("app_module_activations", {
 }, (table) => ({
   appModuleIdx: index("app_module_idx").on(table.appId, table.moduleId),
   uniqueAppModule: unique("unique_app_module").on(table.appId, table.moduleId),
+}));
+
+// Module Edit History - Track all title/description/route/category changes for modules
+export const moduleEditHistory = pgTable("module_edit_history", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  moduleId: varchar("module_id", { length: 255 }).notNull().references(() => platformModules.id, { onDelete: 'cascade' }),
+  field: varchar("field", { length: 50 }).notNull(), // 'name', 'description', 'route', 'category', 'contexts', 'restrictedTo'
+  oldValue: text("old_value"),
+  newValue: text("new_value"),
+  editedBy: varchar("edited_by").notNull().references(() => users.id),
+  editedAt: timestamp("edited_at").defaultNow().notNull(),
+}, (table) => ({
+  moduleFieldIdx: index("module_edit_field_idx").on(table.moduleId, table.field),
+}));
+
+// App Edit History - Track all title/description/route/category changes for apps
+export const appEditHistory = pgTable("app_edit_history", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  appId: uuid("app_id").notNull().references(() => apps.id, { onDelete: 'cascade' }),
+  field: varchar("field", { length: 50 }).notNull(), // 'name', 'description', 'route', 'categories', 'contexts', 'restrictedTo'
+  oldValue: text("old_value"),
+  newValue: text("new_value"),
+  editedBy: varchar("edited_by").notNull().references(() => users.id),
+  editedAt: timestamp("edited_at").defaultNow().notNull(),
+}, (table) => ({
+  appFieldIdx: index("app_edit_field_idx").on(table.appId, table.field),
 }));
 
 // User App Installations - Tracks which platform modules/apps users have installed
@@ -1633,6 +1679,26 @@ export const insertPlatformModuleSchema = createInsertSchema(platformModules);
 export const selectPlatformModuleSchema = createSelectSchema(platformModules);
 export type InsertPlatformModuleType = z.infer<typeof insertPlatformModuleSchema>;
 export type SelectPlatformModuleType = z.infer<typeof selectPlatformModuleSchema>;
+
+// Module Edit History Types
+export type ModuleEditHistory = typeof moduleEditHistory.$inferSelect;
+export type InsertModuleEditHistory = typeof moduleEditHistory.$inferInsert;
+
+// Zod schemas for module edit history
+export const insertModuleEditHistorySchema = createInsertSchema(moduleEditHistory).omit({ id: true });
+export const selectModuleEditHistorySchema = createSelectSchema(moduleEditHistory);
+export type InsertModuleEditHistoryType = z.infer<typeof insertModuleEditHistorySchema>;
+export type SelectModuleEditHistoryType = z.infer<typeof selectModuleEditHistorySchema>;
+
+// App Edit History Types
+export type AppEditHistory = typeof appEditHistory.$inferSelect;
+export type InsertAppEditHistory = typeof appEditHistory.$inferInsert;
+
+// Zod schemas for app edit history
+export const insertAppEditHistorySchema = createInsertSchema(appEditHistory).omit({ id: true });
+export const selectAppEditHistorySchema = createSelectSchema(appEditHistory);
+export type InsertAppEditHistoryType = z.infer<typeof insertAppEditHistorySchema>;
+export type SelectAppEditHistoryType = z.infer<typeof selectAppEditHistorySchema>;
 
 // User App Installations Types
 export type UserAppInstallation = typeof userAppInstallations.$inferSelect;

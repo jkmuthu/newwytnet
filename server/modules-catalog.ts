@@ -42,6 +42,15 @@ export interface ModuleDefinition {
   price?: number;
   icon: string;
   color: string;
+  
+  // Version Control & History
+  version: string; // Current version e.g. '1.0.0'
+  changelog?: string; // Latest version changelog
+  route?: string; // Module route/URL
+  
+  // Access Restrictions
+  restrictedTo?: Array<'engine-only' | 'hub-only' | 'app-only' | 'game-only'>;
+  
   upstream?: {
     provider: string;
     baseUrl: string;
@@ -70,7 +79,11 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'shield',
-    color: 'blue'
+    color: 'blue',
+    version: '1.0.0',
+    changelog: 'Initial release with core authentication features including login, registration, and session management',
+    route: '/auth',
+    restrictedTo: ['engine-only']
   },
   {
     id: 'google-oauth',
@@ -94,7 +107,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'google',
-    color: 'red'
+    color: 'red',
+    version: '1.0.0',
+    changelog: 'Initial release with Google OAuth 2.0 authentication integration',
+    route: '/auth/google'
   },
   {
     id: 'email-otp-auth',
@@ -119,7 +135,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     pricing: 'usage-based',
     price: 0.50,
     icon: 'mail',
-    color: 'blue'
+    color: 'blue',
+    version: '1.0.0',
+    changelog: 'Initial release with passwordless email OTP authentication using MSG91',
+    route: '/auth/email-otp'
   },
   {
     id: 'whatsapp-otp-auth',
@@ -137,7 +156,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'message-circle',
-    color: 'green'
+    color: 'green',
+    version: '1.0.0',
+    changelog: 'Initial release with cost-free WhatsApp OTP authentication',
+    route: '/auth/whatsapp'
   },
   {
     id: 'linkedin-oauth',
@@ -161,7 +183,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'linkedin',
-    color: 'blue'
+    color: 'blue',
+    version: '1.0.0',
+    changelog: 'Initial release with LinkedIn OAuth authentication for professional networks',
+    route: '/auth/linkedin'
   },
   {
     id: 'facebook-oauth',
@@ -185,7 +210,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'facebook',
-    color: 'blue'
+    color: 'blue',
+    version: '1.0.0',
+    changelog: 'Initial release with Facebook OAuth authentication integration',
+    route: '/auth/facebook'
   },
   {
     id: 'wytkyc-digio',
@@ -221,7 +249,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
       baseUrl: 'https://api.digio.in/v2',
       credentialKey: 'DIGIO_API_KEY',
       type: 'proxy'
-    }
+    },
+    version: '1.0.0',
+    changelog: 'Initial release with Aadhaar eSign, PAN verification, and eKYC integration via Digio',
+    route: '/kyc'
   },
 
   // ===== 2. PAYMENT GATEWAYS =====
@@ -242,7 +273,11 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'credit-card',
-    color: 'purple'
+    color: 'purple',
+    version: '1.0.0',
+    changelog: 'Initial release with core payment infrastructure for order creation and verification',
+    route: '/payments',
+    restrictedTo: ['engine-only']
   },
   {
     id: 'razorpay-payment',
@@ -271,7 +306,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     pricing: 'usage-based',
     price: 2.0,
     icon: 'wallet',
-    color: 'indigo'
+    color: 'indigo',
+    version: '1.0.0',
+    changelog: 'Initial release with Razorpay integration for Indian payments including UPI, cards, and wallets',
+    route: '/payments/razorpay'
   },
   {
     id: 'bank-transfer-payment',
@@ -295,7 +333,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'building',
-    color: 'green'
+    color: 'green',
+    version: '1.0.0',
+    changelog: 'Initial release with manual bank transfer payment support for NEFT/RTGS/IMPS',
+    route: '/payments/bank-transfer'
   },
   {
     id: 'stripe-payment',
@@ -323,7 +364,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     pricing: 'usage-based',
     price: 2.9,
     icon: 'credit-card',
-    color: 'purple'
+    color: 'purple',
+    version: '1.0.0',
+    changelog: 'Initial release with Stripe integration for international payments',
+    route: '/payments/stripe'
   },
 
   // ===== 3. CONTENT & MEDIA =====
@@ -348,7 +392,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'image',
-    color: 'orange'
+    color: 'orange',
+    version: '1.0.0',
+    changelog: 'Initial release with automatic image cropping for profile pictures and logos',
+    route: '/media/avatar'
   },
   {
     id: 'multi-image-uploader',
@@ -371,7 +418,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'images',
-    color: 'teal'
+    color: 'teal',
+    version: '1.0.0',
+    changelog: 'Initial release with multiple image upload, preview, and gallery management',
+    route: '/media/gallery'
   },
   {
     id: 'video-player',
@@ -388,7 +438,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'video',
-    color: 'red'
+    color: 'red',
+    version: '1.0.0',
+    changelog: 'Initial release with video embedding and playback controls',
+    route: '/media/video'
   },
   {
     id: 'rich-text-editor',
@@ -403,7 +456,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'type',
-    color: 'gray'
+    color: 'gray',
+    version: '1.0.0',
+    changelog: 'Initial release with WYSIWYG rich text editing capabilities',
+    route: '/content/editor'
   },
   {
     id: 'object-storage',
@@ -428,7 +484,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     pricing: 'usage-based',
     price: 0.023,
     icon: 'cloud',
-    color: 'blue'
+    color: 'blue',
+    version: '1.0.0',
+    changelog: 'Initial release with cloud object storage for files and media',
+    restrictedTo: ['engine-only']
   },
 
   // ===== 4. COMMUNICATION =====
@@ -457,7 +516,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     pricing: 'usage-based',
     price: 0.10,
     icon: 'mail',
-    color: 'blue'
+    color: 'blue',
+    version: '1.0.0',
+    changelog: 'Initial release with transactional and marketing email sending capabilities',
+    restrictedTo: ['engine-only']
   },
   {
     id: 'sms-service',
@@ -481,7 +543,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     pricing: 'usage-based',
     price: 0.05,
     icon: 'smartphone',
-    color: 'green'
+    color: 'green',
+    version: '1.0.0',
+    changelog: 'Initial release with SMS notifications and OTP delivery',
+    restrictedTo: ['engine-only']
   },
   {
     id: 'push-notifications',
@@ -505,7 +570,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'bell',
-    color: 'yellow'
+    color: 'yellow',
+    version: '1.0.0',
+    changelog: 'Initial release with web and mobile push notifications support',
+    route: '/notifications'
   },
   {
     id: 'chat-system',
@@ -524,7 +592,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     pricing: 'premium',
     price: 49,
     icon: 'message-square',
-    color: 'purple'
+    color: 'purple',
+    version: '1.0.0',
+    changelog: 'Initial release with WebSocket-based real-time chat and messaging',
+    route: '/chat'
   },
 
   // ===== 5. DATA MANAGEMENT =====
@@ -546,7 +617,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'database',
-    color: 'indigo'
+    color: 'indigo',
+    version: '1.0.0',
+    changelog: 'Initial release with dataset creation and management tools',
+    route: '/datasets'
   },
   {
     id: 'csv-import-export',
@@ -564,7 +638,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'file-text',
-    color: 'green'
+    color: 'green',
+    version: '1.0.0',
+    changelog: 'Initial release with CSV import and export functionality',
+    route: '/data/csv'
   },
   {
     id: 'search-engine',
@@ -589,7 +666,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     pricing: 'premium',
     price: 29,
     icon: 'search',
-    color: 'blue'
+    color: 'blue',
+    version: '1.0.0',
+    changelog: 'Initial release with Meilisearch-powered full-text search capabilities',
+    route: '/search'
   },
   {
     id: 'wytgeo',
@@ -618,7 +698,9 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
       baseUrl: '',
       credentialKey: '',
       type: 'native'
-    }
+    },
+    version: '1.0.0',
+    changelog: 'Initial release with comprehensive geography data: 50 countries, 37 Indian states, 100 cities, 10 timezones'
   },
   {
     id: 'wyti18n',
@@ -646,7 +728,9 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
       baseUrl: '',
       credentialKey: '',
       type: 'native'
-    }
+    },
+    version: '1.0.0',
+    changelog: 'Initial release with internationalization data: 20 languages, 20 currencies with symbols'
   },
   {
     id: 'wytbiz',
@@ -675,7 +759,9 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
       baseUrl: '',
       credentialKey: '',
       type: 'native'
-    }
+    },
+    version: '1.0.0',
+    changelog: 'Initial release with business reference data: 15 industries, 6 company sizes, 15 job roles, 34 GST codes'
   },
 
   // ===== 6. USER & ORGANIZATION =====
@@ -697,7 +783,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     pricing: 'premium',
     price: 99,
     icon: 'users',
-    color: 'blue'
+    color: 'blue',
+    version: '1.0.0',
+    changelog: 'Initial release with multi-level organization and team management capabilities',
+    route: '/organizations'
   },
   {
     id: 'rbac-system',
@@ -716,7 +805,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     pricing: 'premium',
     price: 79,
     icon: 'shield-check',
-    color: 'red'
+    color: 'red',
+    version: '1.0.0',
+    changelog: 'Initial release with granular role-based access control and permissions',
+    route: '/rbac'
   },
   {
     id: 'user-profile-manager',
@@ -734,7 +826,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'user',
-    color: 'blue'
+    color: 'blue',
+    version: '1.0.0',
+    changelog: 'Initial release with comprehensive user profile management',
+    route: '/profile'
   },
 
   // ===== 7. PRODUCTIVITY =====
@@ -756,7 +851,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'calendar',
-    color: 'purple'
+    color: 'purple',
+    version: '1.0.0',
+    changelog: 'Initial release with event scheduling and calendar management',
+    route: '/calendar'
   },
   {
     id: 'task-manager',
@@ -775,7 +873,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'check-square',
-    color: 'green'
+    color: 'green',
+    version: '1.0.0',
+    changelog: 'Initial release with task assignment and tracking capabilities',
+    route: '/tasks'
   },
   {
     id: 'kanban-board',
@@ -794,7 +895,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     pricing: 'premium',
     price: 39,
     icon: 'trello',
-    color: 'blue'
+    color: 'blue',
+    version: '1.0.0',
+    changelog: 'Initial release with visual Kanban board for task workflow management',
+    route: '/kanban'
   },
   {
     id: 'pricing-plans',
@@ -813,7 +917,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'dollar-sign',
-    color: 'green'
+    color: 'green',
+    version: '1.0.0',
+    changelog: 'Initial release with subscription and pricing plan management',
+    route: '/pricing'
   },
 
   // ===== 8. PLATFORM CORE =====
@@ -834,7 +941,11 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     pricing: 'premium',
     price: 149,
     icon: 'bar-chart',
-    color: 'purple'
+    color: 'purple',
+    version: '1.0.0',
+    changelog: 'Initial release with platform-wide analytics and usage tracking',
+    route: '/analytics',
+    restrictedTo: ['engine-only']
   },
   {
     id: 'audit-logs',
@@ -852,7 +963,11 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     pricing: 'premium',
     price: 99,
     icon: 'file-text',
-    color: 'red'
+    color: 'red',
+    version: '1.0.0',
+    changelog: 'Initial release with comprehensive audit logging for compliance',
+    route: '/audit-logs',
+    restrictedTo: ['engine-only']
   },
   {
     id: 'api-key-manager',
@@ -871,7 +986,11 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'key',
-    color: 'yellow'
+    color: 'yellow',
+    version: '1.0.0',
+    changelog: 'Initial release with API key generation and management',
+    route: '/api-keys',
+    restrictedTo: ['engine-only']
   },
   {
     id: 'rate-limiter',
@@ -890,7 +1009,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'activity',
-    color: 'orange'
+    color: 'orange',
+    version: '1.0.0',
+    changelog: 'Initial release with API rate limiting and throttling',
+    restrictedTo: ['engine-only']
   },
   {
     id: 'webhook-manager',
@@ -909,7 +1031,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'git-branch',
-    color: 'gray'
+    color: 'gray',
+    version: '1.0.0',
+    changelog: 'Initial release with outgoing webhook management and event handling',
+    route: '/webhooks'
   },
   {
     id: 'multi-tenant-core',
@@ -924,7 +1049,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'layers',
-    color: 'blue'
+    color: 'blue',
+    version: '1.0.0',
+    changelog: 'Initial release with core multi-tenancy and row-level security',
+    restrictedTo: ['engine-only']
   },
   {
     id: 'cms-builder',
@@ -943,7 +1071,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'layout',
-    color: 'purple'
+    color: 'purple',
+    version: '1.0.0',
+    changelog: 'Initial release with drag-and-drop CMS page builder',
+    route: '/cms'
   },
   {
     id: 'hub-aggregator',
@@ -960,7 +1091,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'share-2',
-    color: 'teal'
+    color: 'teal',
+    version: '1.0.0',
+    changelog: 'Initial release with cross-tenant data aggregation for hub networks',
+    restrictedTo: ['hub-only']
   },
 
   // Additional specialized modules from WytNet
@@ -979,7 +1113,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'qr-code',
-    color: 'emerald'
+    color: 'emerald',
+    version: '1.0.0',
+    changelog: 'Initial release with customizable QR code generation',
+    route: '/qr'
   },
   {
     id: 'wytid-validation',
@@ -998,7 +1135,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     pricing: 'premium',
     price: 199,
     icon: 'shield-check',
-    color: 'violet'
+    color: 'violet',
+    version: '1.0.0',
+    changelog: 'Initial release with blockchain-anchored identity validation and proof creation',
+    route: '/wytid'
   },
   {
     id: 'wytpoints-economy',
@@ -1017,7 +1157,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     compatibilityMatrix: {},
     pricing: 'free',
     icon: 'star',
-    color: 'yellow'
+    color: 'yellow',
+    version: '1.0.0',
+    changelog: 'Initial release with gamification points, rewards, and redemption system',
+    route: '/wytpoints'
   },
 
   // ===== 9. LOCATION SERVICES =====
@@ -1055,7 +1198,10 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
       baseUrl: 'https://apis.mappls.com/advancedmaps/v1',
       credentialKey: 'MAPPLS_API_KEY',
       type: 'proxy'
-    }
+    },
+    version: '1.0.0',
+    changelog: 'Initial release with Mappls (MapMyIndia) integration for maps, geocoding, navigation, and POI',
+    route: '/map'
   },
 ];
 

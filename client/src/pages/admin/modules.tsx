@@ -5,6 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { 
   Search, Package, Grid, List, Globe, Building2, Layers, Gamepad2,
-  Link2, AlertTriangle, Code, Info, CheckCircle2
+  Link2, AlertTriangle, Code, Info, CheckCircle2, FileText, Settings, Shield, Route
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +42,9 @@ interface ModuleDefinition {
   compatibilityMatrix?: Record<string, string[]>;
   version: string;
   status: 'stable' | 'beta' | 'alpha';
+  route?: string;
+  changelog?: string;
+  restrictedTo?: string[];
 }
 
 export default function AdminModuleLibrary() {
@@ -46,6 +53,13 @@ export default function AdminModuleLibrary() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [selectedModule, setSelectedModule] = useState<ModuleDefinition | null>(null);
   const [showModuleDetails, setShowModuleDetails] = useState(false);
+  const [editedRoute, setEditedRoute] = useState('');
+  const [contextRestrictions, setContextRestrictions] = useState({
+    engineOnly: false,
+    hubOnly: false,
+    appOnly: false,
+    gameOnly: false,
+  });
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -463,20 +477,31 @@ export default function AdminModuleLibrary() {
       )}
 
       {/* Module Details Dialog */}
-      <Dialog open={showModuleDetails} onOpenChange={setShowModuleDetails}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+      <Dialog 
+        open={showModuleDetails} 
+        onOpenChange={(open) => {
+          setShowModuleDetails(open);
+          if (open && selectedModule) {
+            setEditedRoute(selectedModule.route || '');
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
               {selectedModule?.name}
+              <Badge variant="outline" className="ml-2">
+                v{selectedModule?.version}
+              </Badge>
             </DialogTitle>
             <DialogDescription>{selectedModule?.description}</DialogDescription>
           </DialogHeader>
           
           {selectedModule && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Metadata */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Category</p>
                   <Badge className={getCategoryColor(selectedModule.category)}>
@@ -489,12 +514,162 @@ export default function AdminModuleLibrary() {
                     {selectedModule.status}
                   </Badge>
                 </div>
+                <div>
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Version</p>
+                  <Badge variant="outline">v{selectedModule.version}</Badge>
+                </div>
               </div>
+
+              <Separator />
+
+              {/* Changelog */}
+              {selectedModule.changelog && (
+                <>
+                  <div>
+                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Changelog
+                    </h4>
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <p className="text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+                        {selectedModule.changelog}
+                      </p>
+                    </div>
+                  </div>
+                  <Separator />
+                </>
+              )}
+
+              {/* Route Editor */}
+              <div>
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <Route className="h-4 w-4" />
+                  Module Route
+                </h4>
+                <div className="space-y-2">
+                  <Label htmlFor="module-route" className="text-sm text-gray-600 dark:text-gray-400">
+                    URL Path/Route
+                  </Label>
+                  <Input
+                    id="module-route"
+                    value={editedRoute}
+                    onChange={(e) => setEditedRoute(e.target.value)}
+                    placeholder="/module-path"
+                    className="font-mono"
+                    data-testid="input-module-route"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Define the URL route where this module is accessible
+                  </p>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Context Restrictions */}
+              <div>
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Context Restrictions
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="engine-only"
+                      checked={contextRestrictions.engineOnly}
+                      onCheckedChange={(checked) => 
+                        setContextRestrictions(prev => ({ ...prev, engineOnly: checked as boolean }))
+                      }
+                      data-testid="checkbox-engine-only"
+                    />
+                    <Label htmlFor="engine-only" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                      <Globe className="h-3 w-3" />
+                      Engine Only
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="hub-only"
+                      checked={contextRestrictions.hubOnly}
+                      onCheckedChange={(checked) => 
+                        setContextRestrictions(prev => ({ ...prev, hubOnly: checked as boolean }))
+                      }
+                      data-testid="checkbox-hub-only"
+                    />
+                    <Label htmlFor="hub-only" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                      <Building2 className="h-3 w-3" />
+                      Hub Only
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="app-only"
+                      checked={contextRestrictions.appOnly}
+                      onCheckedChange={(checked) => 
+                        setContextRestrictions(prev => ({ ...prev, appOnly: checked as boolean }))
+                      }
+                      data-testid="checkbox-app-only"
+                    />
+                    <Label htmlFor="app-only" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                      <Layers className="h-3 w-3" />
+                      App Only
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="game-only"
+                      checked={contextRestrictions.gameOnly}
+                      onCheckedChange={(checked) => 
+                        setContextRestrictions(prev => ({ ...prev, gameOnly: checked as boolean }))
+                      }
+                      data-testid="checkbox-game-only"
+                    />
+                    <Label htmlFor="game-only" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                      <Gamepad2 className="h-3 w-3" />
+                      Game Only
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Access Restrictions */}
+              {selectedModule.restrictedTo && selectedModule.restrictedTo.length > 0 && (
+                <>
+                  <div>
+                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Access Restrictions
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedModule.restrictedTo.map((restriction, idx) => (
+                        <Badge 
+                          key={idx} 
+                          variant="secondary" 
+                          className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100"
+                          data-testid={`badge-restriction-${idx}`}
+                        >
+                          <Shield className="h-3 w-3 mr-1" />
+                          {restriction}
+                        </Badge>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      This module is restricted to specific user roles or permissions
+                    </p>
+                  </div>
+                  <Separator />
+                </>
+              )}
 
               {/* Dependencies */}
               {selectedModule.dependencies.length > 0 && (
                 <div>
-                  <h4 className="font-medium mb-2 flex items-center gap-2">
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
                     <Link2 className="h-4 w-4" />
                     Dependencies
                   </h4>
@@ -508,23 +683,32 @@ export default function AdminModuleLibrary() {
 
               {/* API Endpoints */}
               {selectedModule.apiEndpoints.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-2 flex items-center gap-2">
-                    <Code className="h-4 w-4" />
-                    API Endpoints
-                  </h4>
-                  <div className="space-y-2">
-                    {selectedModule.apiEndpoints.map((endpoint, idx) => (
-                      <div key={idx} className="border rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline">{endpoint.method}</Badge>
-                          <code className="text-sm">{endpoint.path}</code>
+                <>
+                  <Separator />
+                  <div>
+                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                      <Code className="h-4 w-4" />
+                      API Endpoints ({selectedModule.apiEndpoints.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {selectedModule.apiEndpoints.map((endpoint, idx) => (
+                        <div key={idx} className="border rounded-lg p-3 bg-muted/30">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="outline" className="font-mono text-xs">
+                              {endpoint.method}
+                            </Badge>
+                            <code className="text-sm font-mono text-gray-700 dark:text-gray-300">
+                              {endpoint.path}
+                            </code>
+                          </div>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">
+                            {endpoint.description}
+                          </p>
                         </div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">{endpoint.description}</p>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                </>
               )}
             </div>
           )}
