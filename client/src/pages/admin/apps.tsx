@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AdminAppBuilder from "./app-builder";
+import { AdminDetailWorkspace } from "@/components/admin/AdminDetailWorkspace";
+import { AIAssistantChat } from "@/components/admin/AIAssistantChat";
 
 // App interface with new fields
 interface AppDefinition {
@@ -556,7 +558,7 @@ export default function AdminApps() {
           }
         }}
       >
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[85vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
@@ -571,7 +573,9 @@ export default function AdminApps() {
           </DialogHeader>
           
           {selectedApp && (
-            <div className="space-y-6">
+            <AdminDetailWorkspace
+              leftContent={
+                <div className="space-y-6">
               {/* Metadata */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
@@ -804,7 +808,36 @@ export default function AdminApps() {
                   </div>
                 </>
               )}
-            </div>
+                </div>
+              }
+              rightContent={
+                <AIAssistantChat
+                  resourceType="app"
+                  resourceId={selectedApp.id}
+                  resourceName={selectedApp.name}
+                  onApplySuggestions={(suggestions) => {
+                    if (suggestions.route) setEditedRoute(suggestions.route);
+                    if (suggestions.contexts) {
+                      setEditedContexts({
+                        hub: suggestions.contexts.includes('hub'),
+                        app: suggestions.contexts.includes('app'),
+                      });
+                    }
+                    if (suggestions.restrictions) {
+                      setAccessRestrictions({
+                        engineOnly: suggestions.restrictions.includes('engine_only'),
+                        hubOnly: suggestions.restrictions.includes('hub_only'),
+                        tenantSpecific: suggestions.restrictions.includes('tenant_specific'),
+                      });
+                    }
+                    toast({
+                      title: "Suggestions Applied",
+                      description: "AI suggestions have been applied. Review and save changes.",
+                    });
+                  }}
+                />
+              }
+            />
           )}
         </DialogContent>
       </Dialog>
