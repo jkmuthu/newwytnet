@@ -4730,21 +4730,32 @@ When suggesting improvements, format your response with suggestions in a structu
       const limitNum = Math.min(parseInt(limit), 100);
       const offset = (pageNum - 1) * limitNum;
       
-      let query = db.select().from(entities).$dynamic();
+      // Build filter conditions array
+      const conditions: any[] = [];
       
-      if (typeId) query = query.where(eq(entities.entityTypeId, typeId));
-      if (search) query = query.where(like(entities.title, `%${search}%`));
-      if (isPublic !== undefined) query = query.where(eq(entities.isPublic, isPublic === 'true'));
-      if (isVerified !== undefined) query = query.where(eq(entities.isVerified, isVerified === 'true'));
-      if (tenantId) query = query.where(eq(entities.tenantId, tenantId));
-      if (hubId) query = query.where(eq(entities.hubId, hubId));
+      if (typeId) conditions.push(eq(entities.entityTypeId, typeId));
+      if (search) conditions.push(like(entities.title, `%${search}%`));
+      if (isPublic !== undefined) conditions.push(eq(entities.isPublic, isPublic === 'true'));
+      if (isVerified !== undefined) conditions.push(eq(entities.isVerified, isVerified === 'true'));
+      if (tenantId) conditions.push(eq(entities.tenantId, tenantId));
+      if (hubId) conditions.push(eq(entities.hubId, hubId));
+      
+      let query = db.select().from(entities).$dynamic();
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
       
       const results = await query
         .orderBy(desc(entities.tagCount), desc(entities.createdAt))
         .limit(limitNum)
         .offset(offset);
       
-      const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(entities);
+      // Get filtered count
+      let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(entities).$dynamic();
+      if (conditions.length > 0) {
+        countQuery = countQuery.where(and(...conditions));
+      }
+      const [{ count }] = await countQuery;
       
       res.json({
         success: true,

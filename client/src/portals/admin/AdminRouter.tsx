@@ -19,6 +19,7 @@ import AdminSeoSettings from "@/pages/admin/seo-settings";
 import AppManagement from "@/pages/admin/AppManagement";
 import AdminWytPoints from "@/pages/admin/wytpoints";
 import AdminDatasetManagement from "@/pages/admin/dataset-management";
+import AdminEntities from "@/pages/admin/entities";
 
 // Import admin analytics (legacy)
 import AdminAnalytics from "@/pages/admin-analytics";
@@ -186,6 +187,7 @@ export default function AdminRouter() {
           <Route path="/engine/users" component={AdminUsers} />
           <Route path="/engine/tenants" component={AdminTenants} />
           <Route path="/engine/datasets" component={AdminDatasetManagement} />
+          <Route path="/engine/entities" component={AdminEntities} />
           <Route path="/engine/media" component={AdminMedia} />
 
           {/* Platform Management Routes */}
