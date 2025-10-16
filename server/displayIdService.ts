@@ -149,3 +149,26 @@ export async function getAllSequenceStatuses(): Promise<Record<EntityType, numbe
   
   return statuses;
 }
+
+/**
+ * Helper to add display ID to insert data
+ * Use this when creating new records to automatically generate display IDs
+ */
+export async function withDisplayId<T extends Record<string, any>>(
+  entityType: EntityType,
+  data: T
+): Promise<T & { displayId: string }> {
+  const displayId = await generateDisplayId(entityType);
+  return { ...data, displayId };
+}
+
+/**
+ * Helper to add display IDs to multiple insert records
+ */
+export async function withDisplayIds<T extends Record<string, any>>(
+  entityType: EntityType,
+  dataArray: T[]
+): Promise<Array<T & { displayId: string }>> {
+  const displayIds = await generateDisplayIds(entityType, dataArray.length);
+  return dataArray.map((data, index) => ({ ...data, displayId: displayIds[index] }));
+}

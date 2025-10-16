@@ -19,6 +19,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface User {
   id: string;
+  displayId?: string;
   name: string;
   email: string;
   whatsappNumber: string;
@@ -280,6 +281,7 @@ export default function AdminUsers() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead>Display ID</TableHead>
                         <TableHead>User</TableHead>
                         <TableHead>Contact</TableHead>
                         <TableHead>Role</TableHead>
@@ -291,6 +293,11 @@ export default function AdminUsers() {
                     <TableBody>
                       {usersData.users.map((user) => (
                         <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
+                          <TableCell>
+                            <div className="font-mono text-sm font-medium text-blue-600 dark:text-blue-400" data-testid={`text-display-id-${user.id}`}>
+                              {user.displayId || 'N/A'}
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <Avatar className="h-10 w-10">

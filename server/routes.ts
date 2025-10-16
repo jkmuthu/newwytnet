@@ -6268,6 +6268,7 @@ When suggesting improvements, format your response with suggestions in a structu
       const [allUsers, totalCount] = await Promise.all([
         db.select({
           id: users.id,
+          displayId: users.displayId,
           name: users.firstName,
           email: users.email,
           whatsappNumber: users.id,
