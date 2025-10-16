@@ -212,6 +212,79 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Multi-Context Detection API - checks all active sessions
+  app.get('/api/auth/contexts', async (req: any, res) => {
+    try {
+      const contexts: Array<{
+        type: 'engine_admin' | 'hub_admin' | 'user';
+        name: string;
+        path: string;
+        icon: string;
+        user: any;
+        active: boolean;
+      }> = [];
+
+      // Check Engine Admin session
+      if (req.session && (req.session as any).adminPrincipal) {
+        const adminPrincipal = (req.session as any).adminPrincipal;
+        contexts.push({
+          type: 'engine_admin',
+          name: 'Engine Portal',
+          path: '/engine/dashboard',
+          icon: 'Shield',
+          user: {
+            name: adminPrincipal.name,
+            email: adminPrincipal.email,
+            role: 'Super Admin'
+          },
+          active: req.path.startsWith('/engine')
+        });
+      }
+
+      // Check Hub Admin session
+      if (req.session && (req.session as any).hubAdminPrincipal) {
+        const hubAdminPrincipal = (req.session as any).hubAdminPrincipal;
+        contexts.push({
+          type: 'hub_admin',
+          name: 'Hub Admin',
+          path: '/admin/dashboard',
+          icon: 'Settings',
+          user: {
+            name: hubAdminPrincipal.name,
+            email: hubAdminPrincipal.email,
+            role: 'Hub Admin'
+          },
+          active: req.path.startsWith('/admin')
+        });
+      }
+
+      // Check Regular User session (WytPass/Passport)
+      const principal = await getPrincipal(req);
+      if (principal) {
+        contexts.push({
+          type: 'user',
+          name: 'WytNet Hub',
+          path: '/dashboard',
+          icon: 'User',
+          user: {
+            name: principal.name,
+            email: principal.email,
+            role: principal.role || 'User'
+          },
+          active: !req.path.startsWith('/engine') && !req.path.startsWith('/admin')
+        });
+      }
+
+      res.json({
+        contexts,
+        count: contexts.length
+      });
+    } catch (error) {
+      console.error("Error fetching contexts:", error);
+      res.status(500).json({ message: "Failed to fetch contexts" });
+    }
+  });
+
   // Dashboard stats
   app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
     try {
