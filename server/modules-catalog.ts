@@ -970,6 +970,39 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     restrictedTo: ['engine-only']
   },
   {
+    id: 'geo-regulatory-control',
+    name: 'Geo-Regulatory Control',
+    description: 'Multi-country compliance, data sovereignty, and geographic access control layer',
+    category: 'platform-core',
+    type: 'compliance',
+    contexts: ['hub', 'app'], // Hub and App level only, not Engine-wide
+    dependencies: [],
+    apiEndpoints: [
+      { method: 'GET', path: '/api/geo-regulatory/rules', auth: true, description: 'List geo-regulatory rules' },
+      { method: 'POST', path: '/api/geo-regulatory/rules', auth: true, description: 'Create regulatory rule' },
+      { method: 'PATCH', path: '/api/geo-regulatory/rules/:id', auth: true, description: 'Update regulatory rule' },
+      { method: 'DELETE', path: '/api/geo-regulatory/rules/:id', auth: true, description: 'Delete regulatory rule' },
+      { method: 'GET', path: '/api/geo-regulatory/compliance-logs', auth: true, description: 'Get compliance audit logs' },
+      { method: 'GET', path: '/api/geo-regulatory/templates', auth: true, description: 'Get compliance templates (GDPR, CCPA, PDPA, etc.)' }
+    ],
+    settings: {
+      configFields: [
+        { key: 'DEFAULT_COMPLIANCE_LEVEL', type: 'string', required: false },
+        { key: 'GOVERNMENT_MONITORING_ENABLED', type: 'boolean', required: false }
+      ]
+    },
+    compatibilityMatrix: {
+      minVersion: '1.0.0'
+    },
+    pricing: 'premium',
+    price: 199,
+    icon: 'globe',
+    color: 'indigo',
+    version: '1.0.0',
+    changelog: 'Initial release with country/state-level regulatory controls, data sovereignty features, compliance templates (GDPR, CCPA, PDPA), government monitoring dashboard (read-only), and comprehensive audit logging',
+    route: '/geo-regulatory'
+  },
+  {
     id: 'api-key-manager',
     name: 'API Key Manager',
     description: 'Generate and manage API keys for module access',
