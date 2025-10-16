@@ -86,34 +86,42 @@ app.use((req, res, next) => {
     console.log('Server starting with limited functionality');
   }
 
-  // Setup WytPass Authentication (for regular users)
+  // Setup WytPass Unified Identity System (MUST be first - creates session middleware)
   try {
-    console.log('Setting up WytPass Auth...');
-    const { setupWytPassAuth } = await import('./wytpass-auth');
+    console.log('🔐 Setting up WytPass Unified Identity System...');
+    const { setupWytPassAuth } = await import('./wytpass-identity');
     setupWytPassAuth(app);
-    console.log('WytPass Auth initialized successfully');
   } catch (error) {
-    console.warn('WytPass Auth initialization failed:', error);
-    console.log('Continuing without WytPass Auth - Google/Facebook login unavailable');
+    console.error('WytPass Identity initialization failed:', error);
+    throw error; // Critical - app cannot function without unified auth
   }
 
-  // Setup Admin Authentication (completely separate from user auth)
+  // Setup WytPass OAuth (Google, LinkedIn, etc.)
   try {
-    console.log('Setting up Admin Auth...');
+    console.log('Setting up WytPass OAuth...');
+    const { setupWytPassAuth: setupOAuth } = await import('./wytpass-auth');
+    setupOAuth(app);
+    console.log('WytPass OAuth initialized successfully');
+  } catch (error) {
+    console.warn('WytPass OAuth initialization failed:', error);
+    console.log('Continuing without WytPass OAuth - Google/Facebook login unavailable');
+  }
+
+  // Setup Engine Admin Authentication (now uses WytPass)
+  try {
+    console.log('Setting up Engine Admin Auth...');
     const { setupAdminAuth } = await import('./admin-auth');
     setupAdminAuth(app);
-    console.log('Admin Auth initialized successfully');
   } catch (error) {
-    console.warn('Admin Auth initialization failed:', error);
+    console.warn('Engine Admin Auth initialization failed:', error);
     console.log('Continuing without Admin Auth - Admin login unavailable');
   }
 
-  // Setup Hub Admin Authentication (for WytNet.com Hub management)
+  // Setup Hub Admin Authentication (now uses WytPass)
   try {
     console.log('Setting up Hub Admin Auth...');
     const { setupHubAdminAuth } = await import('./hub-admin-auth');
     setupHubAdminAuth(app);
-    console.log('Hub Admin Auth initialized successfully');
   } catch (error) {
     console.warn('Hub Admin Auth initialization failed:', error);
     console.log('Continuing without Hub Admin Auth - Hub admin login unavailable');

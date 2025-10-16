@@ -1,63 +1,19 @@
 import { Express, Request, Response, NextFunction } from "express";
-import session from "express-session";
-import connectPg from "connect-pg-simple";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { users, tenants, models, apps } from "@shared/schema";
 import { eq, sql, count, and, isNotNull } from "drizzle-orm";
-
-// Extend Express Request to include admin session
-declare global {
-  namespace Express {
-    interface Request {
-      adminSession?: {
-        adminPrincipal?: {
-          id: string;
-          name: string;
-          email: string;
-          role: string;
-          isSuperAdmin: boolean;
-        };
-      };
-    }
-  }
-}
+import { createWytPassPrincipal, requireSuperAdmin } from "./wytpass-identity";
 
 /**
- * Enterprise Admin Authentication System
- * Completely isolated from user authentication - uses separate session store and cookie
+ * Engine Admin Authentication System
+ * Now uses unified WytPass identity instead of separate sessions
  */
 export function setupAdminAuth(app: Express) {
-  // Create dedicated PostgreSQL session store for admin sessions
-  const PostgresSessionStore = connectPg(session);
-  const adminSessionStore = new PostgresSessionStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: true,
-    tableName: "admin_sessions", // Separate table from user sessions
-  });
-
-  // Admin session middleware with dedicated cookie name
-  const adminSessionMiddleware = session({
-    name: "admin.sid", // Different cookie name to prevent mixing
-    secret: process.env.SESSION_SECRET || "admin-secret-key",
-    store: adminSessionStore,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      domain: process.env.NODE_ENV === "production" ? ".wytnet.com" : undefined,
-      sameSite: "lax",
-    },
-  });
-
-  // Apply admin session middleware only to admin routes
-  app.use("/api/admin", adminSessionMiddleware);
 
   // Admin Session API Endpoints
   
-  // POST /api/admin/session - Admin login
+  // POST /api/admin/session - Admin login (WytPass Unified)
   app.post("/api/admin/session", async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
@@ -75,32 +31,27 @@ export function setupAdminAuth(app: Express) {
           [superAdmin] = await db
             .insert(users)
             .values({
-              firstName: "Super",
-              lastName: "Admin",
+              name: "Super Admin",
               email: "jkm@jkmuthu.com",
               role: "admin",
               passwordHash: await bcrypt.hash("SuperAdmin@2025", 10),
+              isSuperAdmin: true,
             })
             .returning();
         }
 
-        // Store admin principal in isolated session
-        (req.session as any).adminPrincipal = {
-          id: superAdmin.id,
-          name: `${superAdmin.firstName} ${superAdmin.lastName}`,
-          email: superAdmin.email || "jkm@jkmuthu.com",
-          role: "admin",
-          isSuperAdmin: true,
-        };
+        // Create unified WytPass principal
+        const principal = await createWytPassPrincipal(superAdmin, 'engine_admin');
+        req.session.wytpassPrincipal = principal;
 
         // Save session explicitly
         await new Promise<void>((resolve, reject) => {
           req.session.save((err) => {
             if (err) {
-              console.error("Admin session save error:", err);
+              console.error("WytPass session save error:", err);
               reject(err);
             } else {
-              console.log("Admin session saved successfully");
+              console.log("✅ WytPass session created for Super Admin");
               resolve();
             }
           });
@@ -109,7 +60,14 @@ export function setupAdminAuth(app: Express) {
         return res.json({
           success: true,
           message: "Admin login successful",
-          admin: (req.session as any).adminPrincipal,
+          admin: {
+            id: principal.id,
+            name: principal.name,
+            email: principal.email,
+            role: "Super Admin",
+            isSuperAdmin: principal.isSuperAdmin,
+            panels: principal.panels,
+          },
         });
       }
 
@@ -127,14 +85,21 @@ export function setupAdminAuth(app: Express) {
     }
   });
 
-  // GET /api/admin/session - Check admin session status
+  // GET /api/admin/session - Check admin session status (WytPass Unified)
   app.get("/api/admin/session", (req: Request, res: Response) => {
-    const adminPrincipal = (req.session as any)?.adminPrincipal;
+    const principal = req.session.wytpassPrincipal;
 
-    if (adminPrincipal && adminPrincipal.isSuperAdmin) {
+    if (principal && principal.isSuperAdmin) {
       return res.json({
         authenticated: true,
-        admin: adminPrincipal,
+        admin: {
+          id: principal.id,
+          name: principal.name,
+          email: principal.email,
+          role: "Super Admin",
+          isSuperAdmin: principal.isSuperAdmin,
+          panels: principal.panels,
+        },
       });
     }
 
@@ -143,18 +108,18 @@ export function setupAdminAuth(app: Express) {
     });
   });
 
-  // DELETE /api/admin/session - Admin logout
+  // DELETE /api/admin/session - Admin logout (WytPass Unified)
   app.delete("/api/admin/session", (req: Request, res: Response) => {
     req.session.destroy((err) => {
       if (err) {
-        console.error("Admin logout error:", err);
+        console.error("WytPass logout error:", err);
         return res.status(500).json({
           success: false,
           error: "Logout failed",
         });
       }
 
-      res.clearCookie("admin.sid");
+      res.clearCookie("wytpass.sid");
       return res.json({
         success: true,
         message: "Logged out successfully",
@@ -162,18 +127,8 @@ export function setupAdminAuth(app: Express) {
     });
   });
 
-  // Middleware to check admin authentication
-  const requireAdminAuth = (req: Request, res: Response, next: NextFunction) => {
-    const adminPrincipal = (req.session as any)?.adminPrincipal;
-    
-    if (!adminPrincipal || !adminPrincipal.isSuperAdmin) {
-      return res.status(401).json({
-        error: "Unauthorized - Admin access required",
-      });
-    }
-    
-    next();
-  };
+  // Middleware now uses WytPass unified system
+  const requireAdminAuth = requireSuperAdmin;
 
   // GET /api/admin/dashboard - Dashboard statistics
   app.get("/api/admin/dashboard", requireAdminAuth, async (req: Request, res: Response) => {
@@ -239,9 +194,21 @@ export function setupAdminAuth(app: Express) {
     }
   });
 
-  // GET /api/auth/admin/user - Get current admin user info
+  // GET /api/auth/admin/user - Get current admin user info (WytPass Unified)
   app.get("/api/auth/admin/user", requireAdminAuth, (req: Request, res: Response) => {
-    const adminPrincipal = (req.session as any)?.adminPrincipal;
-    return res.json(adminPrincipal);
+    const principal = req.session.wytpassPrincipal;
+    if (principal) {
+      return res.json({
+        id: principal.id,
+        name: principal.name,
+        email: principal.email,
+        role: "Super Admin",
+        isSuperAdmin: principal.isSuperAdmin,
+        panels: principal.panels,
+      });
+    }
+    return res.status(401).json({ error: "Not authenticated" });
   });
+  
+  console.log("✅ Engine Admin Auth (WytPass Unified) initialized");
 }
