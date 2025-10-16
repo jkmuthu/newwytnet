@@ -212,7 +212,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Multi-Context Detection API - checks all active sessions
+  // Multi-Context Detection API - checks all available panels based on user access
   app.get('/api/auth/contexts', async (req: any, res) => {
     try {
       const contexts: Array<{
@@ -221,11 +221,15 @@ export async function registerRoutes(app: Express): Promise<void> {
         path: string;
         icon: string;
         user: any;
+        active: boolean;
       }> = [];
+
+      let userEmail: string | null = null;
 
       // Check Engine Admin session
       if (req.session && (req.session as any).adminPrincipal) {
         const adminPrincipal = (req.session as any).adminPrincipal;
+        userEmail = adminPrincipal.email;
         contexts.push({
           type: 'engine_admin',
           name: 'Engine Portal',
@@ -235,13 +239,15 @@ export async function registerRoutes(app: Express): Promise<void> {
             name: adminPrincipal.name,
             email: adminPrincipal.email,
             role: 'Super Admin'
-          }
+          },
+          active: true
         });
       }
 
       // Check Hub Admin session
       if (req.session && (req.session as any).hubAdminPrincipal) {
         const hubAdminPrincipal = (req.session as any).hubAdminPrincipal;
+        userEmail = userEmail || hubAdminPrincipal.email;
         contexts.push({
           type: 'hub_admin',
           name: 'Hub Admin',
@@ -251,13 +257,15 @@ export async function registerRoutes(app: Express): Promise<void> {
             name: hubAdminPrincipal.name,
             email: hubAdminPrincipal.email,
             role: 'Hub Admin'
-          }
+          },
+          active: true
         });
       }
 
       // Check Regular User session (WytPass/Passport)
       const principal = await getPrincipal(req);
       if (principal) {
+        userEmail = userEmail || principal.email;
         contexts.push({
           type: 'user',
           name: 'WytNet Hub',
@@ -267,8 +275,59 @@ export async function registerRoutes(app: Express): Promise<void> {
             name: principal.name,
             email: principal.email,
             role: principal.role || 'User'
-          }
+          },
+          active: true
         });
+      }
+
+      // If user has admin session, check for other potential access
+      if (userEmail) {
+        // Check if user has a regular user account (if not already in contexts)
+        if (!contexts.some(c => c.type === 'user')) {
+          try {
+            const [regularUser] = await db.select().from(users).where(eq(users.email, userEmail)).limit(1);
+            if (regularUser) {
+              contexts.push({
+                type: 'user',
+                name: 'WytNet Hub',
+                path: '/dashboard',
+                icon: 'User',
+                user: {
+                  name: regularUser.name || 'User',
+                  email: regularUser.email,
+                  role: regularUser.role || 'User'
+                },
+                active: false
+              });
+            }
+          } catch (error) {
+            console.error('Error checking regular user account:', error);
+          }
+        }
+
+        // Check if user has hub admin access (if not already in contexts)
+        if (!contexts.some(c => c.type === 'hub_admin')) {
+          try {
+            const [hubAdminUser] = await db.select().from(users).where(eq(users.email, userEmail)).limit(1);
+            // Check if user has hub admin role or permissions
+            if (hubAdminUser && (hubAdminUser.role === 'admin' || hubAdminUser.role === 'hub_admin')) {
+              contexts.push({
+                type: 'hub_admin',
+                name: 'Hub Admin',
+                path: '/admin/dashboard',
+                icon: 'Settings',
+                user: {
+                  name: hubAdminUser.name || 'Hub Admin',
+                  email: hubAdminUser.email,
+                  role: 'Hub Admin'
+                },
+                active: false
+              });
+            }
+          } catch (error) {
+            console.error('Error checking hub admin access:', error);
+          }
+        }
       }
 
       res.json({

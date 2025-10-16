@@ -32,16 +32,7 @@ export default function AdminHeader({
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  const rawContexts = contextsData?.contexts || [];
-
-  // Compute active status client-side based on current location
-  const availableContexts = rawContexts.map((context: any) => ({
-    ...context,
-    active: 
-      (context.type === 'engine_admin' && location.startsWith('/engine')) ||
-      (context.type === 'hub_admin' && location.startsWith('/admin')) ||
-      (context.type === 'user' && !location.startsWith('/engine') && !location.startsWith('/admin'))
-  }));
+  const availableContexts = contextsData?.contexts || [];
 
   const handleSwitchContext = (path: string) => {
     setLocation(path);
