@@ -555,6 +555,166 @@ export const geoComplianceLogs = pgTable("geo_compliance_logs", {
   requestIdx: index("geo_log_request_idx").on(table.requestId),
 }));
 
+// =============================================================================
+// WYTENTITIES - Meta-Entity Layer for Knowledge Graph & Tag Prevention
+// =============================================================================
+
+// Entity Types - Defines categories of entities (User, Location, Business, etc.)
+export const entityTypes = pgTable("entity_types", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 100 }).notNull().unique(), // 'User', 'Location', 'Business'
+  slug: varchar("slug", { length: 100 }).notNull().unique(), // 'user', 'location', 'business'
+  description: text("description"),
+  icon: varchar("icon", { length: 50 }), // Lucide icon name
+  color: varchar("color", { length: 20 }), // UI color theme
+  
+  // Schema Definition
+  schema: jsonb("schema").default({}), // JSON schema for entity fields
+  requiredFields: jsonb("required_fields").default([]), // ['title', 'description']
+  
+  // Behavior & Settings
+  allowsChildren: boolean("allows_children").default(true),
+  allowsFriends: boolean("allows_friends").default(true),
+  maxAliases: integer("max_aliases").default(10),
+  
+  // Meta
+  isActive: boolean("is_active").default(true),
+  isSystem: boolean("is_system").default(false), // System types can't be deleted
+  displayOrder: integer("display_order").default(0),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  slugIdx: index("entity_type_slug_idx").on(table.slug),
+  activeIdx: index("entity_type_active_idx").on(table.isActive),
+}));
+
+// Entities - Main entity data (the "Objects" from original concept)
+export const entities = pgTable("entities", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Core Identity
+  title: varchar("title", { length: 255 }).notNull(), // Primary name
+  aliases: jsonb("aliases").default([]), // Alternative names/spellings
+  slug: varchar("slug", { length: 255 }).notNull(),
+  
+  // Type & Classification
+  entityTypeId: uuid("entity_type_id").notNull().references(() => entityTypes.id, { onDelete: 'restrict' }),
+  
+  // Content
+  shortDescription: text("short_description"),
+  description: text("description"),
+  metadata: jsonb("metadata").default({}), // Type-specific fields
+  
+  // Media
+  imageUrl: varchar("image_url", { length: 500 }),
+  thumbnailUrl: varchar("thumbnail_url", { length: 500 }),
+  
+  // SEO & Discovery
+  keywords: jsonb("keywords").default([]), // Search keywords
+  seoTitle: varchar("seo_title", { length: 255 }),
+  seoDescription: text("seo_description"),
+  
+  // Multi-tenant Context (optional)
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: 'set null' }),
+  hubId: uuid("hub_id").references(() => hubs.id, { onDelete: 'set null' }),
+  
+  // Visibility & Access
+  isPublic: boolean("is_public").default(true),
+  isVerified: boolean("is_verified").default(false), // Admin verified
+  isActive: boolean("is_active").default(true),
+  
+  // Statistics
+  tagCount: integer("tag_count").default(0), // How many times tagged
+  viewCount: integer("view_count").default(0),
+  
+  // Audit
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: 'set null' }),
+  updatedBy: varchar("updated_by").references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  typeIdx: index("entity_type_idx").on(table.entityTypeId),
+  slugIdx: index("entity_slug_idx").on(table.slug),
+  titleIdx: index("entity_title_idx").on(table.title),
+  tenantIdx: index("entity_tenant_idx").on(table.tenantId),
+  hubIdx: index("entity_hub_idx").on(table.hubId),
+  activeIdx: index("entity_active_idx").on(table.isActive),
+  publicIdx: index("entity_public_idx").on(table.isPublic),
+  verifiedIdx: index("entity_verified_idx").on(table.isVerified),
+  tagCountIdx: index("entity_tag_count_idx").on(table.tagCount),
+  uniqueTypeSlug: unique("entity_unique_type_slug").on(table.entityTypeId, table.slug),
+}));
+
+// Entity Relationships - Parent/Child/Friend connections
+export const entityRelationships = pgTable("entity_relationships", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Source & Target
+  sourceEntityId: uuid("source_entity_id").notNull().references(() => entities.id, { onDelete: 'cascade' }),
+  targetEntityId: uuid("target_entity_id").notNull().references(() => entities.id, { onDelete: 'cascade' }),
+  
+  // Relationship Type
+  relationshipType: varchar("relationship_type", { length: 50 }).notNull(), // 'parent', 'child', 'friend', 'related', 'synonym'
+  
+  // Bidirectional Support
+  isBidirectional: boolean("is_bidirectional").default(false), // For 'friend' relationships
+  
+  // Context & Metadata
+  context: varchar("context", { length: 100 }), // Why this relationship exists
+  metadata: jsonb("metadata").default({}), // Additional relationship data
+  strength: integer("strength").default(1), // Relationship weight (1-10)
+  
+  // Visibility
+  isActive: boolean("is_active").default(true),
+  
+  // Audit
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  sourceIdx: index("entity_rel_source_idx").on(table.sourceEntityId),
+  targetIdx: index("entity_rel_target_idx").on(table.targetEntityId),
+  typeIdx: index("entity_rel_type_idx").on(table.relationshipType),
+  activeIdx: index("entity_rel_active_idx").on(table.isActive),
+  uniqueRelationship: unique("entity_unique_relationship").on(table.sourceEntityId, table.targetEntityId, table.relationshipType),
+}));
+
+// Entity Tags - Tracks which modules/resources tag entities
+export const entityTags = pgTable("entity_tags", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Entity Being Tagged
+  entityId: uuid("entity_id").notNull().references(() => entities.id, { onDelete: 'cascade' }),
+  
+  // Resource That Uses This Entity
+  resourceType: varchar("resource_type", { length: 50 }).notNull(), // 'module', 'app', 'content', 'job', 'event'
+  resourceId: varchar("resource_id", { length: 255 }).notNull(),
+  
+  // Context
+  tagContext: varchar("tag_context", { length: 100 }), // 'location', 'industry', 'skill', 'category'
+  
+  // Multi-tenant Context
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: 'set null' }),
+  hubId: uuid("hub_id").references(() => hubs.id, { onDelete: 'set null' }),
+  appId: uuid("app_id").references(() => apps.id, { onDelete: 'set null' }),
+  
+  // Metadata
+  metadata: jsonb("metadata").default({}),
+  
+  // Audit
+  taggedBy: varchar("tagged_by").references(() => users.id, { onDelete: 'set null' }),
+  taggedAt: timestamp("tagged_at").defaultNow().notNull(),
+}, (table) => ({
+  entityIdx: index("entity_tag_entity_idx").on(table.entityId),
+  resourceIdx: index("entity_tag_resource_idx").on(table.resourceType, table.resourceId),
+  tenantIdx: index("entity_tag_tenant_idx").on(table.tenantId),
+  hubIdx: index("entity_tag_hub_idx").on(table.hubId),
+  appIdx: index("entity_tag_app_idx").on(table.appId),
+  contextIdx: index("entity_tag_context_idx").on(table.tagContext),
+  uniqueTag: unique("entity_unique_tag").on(table.entityId, table.resourceType, table.resourceId),
+}));
+
 // User App Installations - Tracks which platform modules/apps users have installed
 export const userAppInstallations = pgTable("user_app_installations", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1907,6 +2067,122 @@ export const createGeoComplianceLogSchema = z.object({
 });
 
 export type CreateGeoComplianceLogType = z.infer<typeof createGeoComplianceLogSchema>;
+
+// =============================================================================
+// WYTENTITIES - Zod Schemas & Types
+// =============================================================================
+
+// Entity Types
+export type EntityType = typeof entityTypes.$inferSelect;
+export type InsertEntityType = typeof entityTypes.$inferInsert;
+
+export const insertEntityTypeSchema = createInsertSchema(entityTypes).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectEntityTypeSchema = createSelectSchema(entityTypes);
+export type InsertEntityTypeType = z.infer<typeof insertEntityTypeSchema>;
+export type SelectEntityTypeType = z.infer<typeof selectEntityTypeSchema>;
+
+// API validation schema for creating entity types - Whitelisted fields only
+export const createEntityTypeSchema = z.object({
+  name: z.string().min(1).max(100),
+  slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/),
+  description: z.string().optional(),
+  icon: z.string().max(50).optional(),
+  color: z.string().max(20).optional(),
+  schema: z.record(z.any()).default({}),
+  requiredFields: z.array(z.string()).default([]),
+  allowsChildren: z.boolean().default(true),
+  allowsFriends: z.boolean().default(true),
+  maxAliases: z.number().int().min(1).max(100).default(10),
+  isActive: z.boolean().default(true),
+  displayOrder: z.number().int().default(0),
+});
+
+export const updateEntityTypeSchema = createEntityTypeSchema.partial();
+export type CreateEntityTypeType = z.infer<typeof createEntityTypeSchema>;
+export type UpdateEntityTypeType = z.infer<typeof updateEntityTypeSchema>;
+
+// Entities
+export type Entity = typeof entities.$inferSelect;
+export type InsertEntity = typeof entities.$inferInsert;
+
+export const insertEntitySchema = createInsertSchema(entities).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectEntitySchema = createSelectSchema(entities);
+export type InsertEntityType = z.infer<typeof insertEntitySchema>;
+export type SelectEntityType = z.infer<typeof selectEntitySchema>;
+
+// API validation schema for creating entities - Whitelisted fields only
+export const createEntitySchema = z.object({
+  title: z.string().min(1).max(255),
+  aliases: z.array(z.string()).default([]),
+  slug: z.string().min(1).max(255).regex(/^[a-z0-9-]+$/),
+  entityTypeId: z.string().uuid(),
+  shortDescription: z.string().optional(),
+  description: z.string().optional(),
+  metadata: z.record(z.any()).default({}),
+  imageUrl: z.string().url().max(500).optional(),
+  thumbnailUrl: z.string().url().max(500).optional(),
+  keywords: z.array(z.string()).default([]),
+  seoTitle: z.string().max(255).optional(),
+  seoDescription: z.string().optional(),
+  tenantId: z.string().uuid().optional(),
+  hubId: z.string().uuid().optional(),
+  isPublic: z.boolean().default(true),
+  isActive: z.boolean().default(true),
+});
+
+export const updateEntitySchema = createEntitySchema.partial();
+export type CreateEntityType = z.infer<typeof createEntitySchema>;
+export type UpdateEntityType = z.infer<typeof updateEntitySchema>;
+
+// Entity Relationships
+export type EntityRelationship = typeof entityRelationships.$inferSelect;
+export type InsertEntityRelationship = typeof entityRelationships.$inferInsert;
+
+export const insertEntityRelationshipSchema = createInsertSchema(entityRelationships).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectEntityRelationshipSchema = createSelectSchema(entityRelationships);
+export type InsertEntityRelationshipType = z.infer<typeof insertEntityRelationshipSchema>;
+export type SelectEntityRelationshipType = z.infer<typeof selectEntityRelationshipSchema>;
+
+// API validation schema for creating entity relationships - Whitelisted fields only
+export const createEntityRelationshipSchema = z.object({
+  sourceEntityId: z.string().uuid(),
+  targetEntityId: z.string().uuid(),
+  relationshipType: z.enum(['parent', 'child', 'friend', 'related', 'synonym']),
+  isBidirectional: z.boolean().default(false),
+  context: z.string().max(100).optional(),
+  metadata: z.record(z.any()).default({}),
+  strength: z.number().int().min(1).max(10).default(1),
+  isActive: z.boolean().default(true),
+});
+
+export const updateEntityRelationshipSchema = createEntityRelationshipSchema.partial();
+export type CreateEntityRelationshipType = z.infer<typeof createEntityRelationshipSchema>;
+export type UpdateEntityRelationshipType = z.infer<typeof updateEntityRelationshipSchema>;
+
+// Entity Tags
+export type EntityTag = typeof entityTags.$inferSelect;
+export type InsertEntityTag = typeof entityTags.$inferInsert;
+
+export const insertEntityTagSchema = createInsertSchema(entityTags).omit({ id: true, taggedAt: true });
+export const selectEntityTagSchema = createSelectSchema(entityTags);
+export type InsertEntityTagType = z.infer<typeof insertEntityTagSchema>;
+export type SelectEntityTagType = z.infer<typeof selectEntityTagSchema>;
+
+// API validation schema for creating entity tags - Whitelisted fields only
+export const createEntityTagSchema = z.object({
+  entityId: z.string().uuid(),
+  resourceType: z.enum(['module', 'app', 'content', 'job', 'event', 'offer', 'need', 'business']),
+  resourceId: z.string().min(1).max(255),
+  tagContext: z.string().max(100).optional(),
+  tenantId: z.string().uuid().optional(),
+  hubId: z.string().uuid().optional(),
+  appId: z.string().uuid().optional(),
+  metadata: z.record(z.any()).default({}),
+});
+
+export const updateEntityTagSchema = createEntityTagSchema.partial();
+export type CreateEntityTagType = z.infer<typeof createEntityTagSchema>;
+export type UpdateEntityTagType = z.infer<typeof updateEntityTagSchema>;
 
 // User App Installations Types
 export type UserAppInstallation = typeof userAppInstallations.$inferSelect;
