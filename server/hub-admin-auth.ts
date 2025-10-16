@@ -56,9 +56,13 @@ export function setupHubAdminAuth(app: Express) {
           .limit(1);
 
         if (!hubAdmin) {
+          // Generate unique ID for hub admin user
+          const hubAdminId = `usr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          
           [hubAdmin] = await db
             .insert(users)
             .values({
+              id: hubAdminId,
               firstName: "Hub",
               lastName: "Admin",
               email: "hubadmin@wytnet.com",
