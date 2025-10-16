@@ -151,6 +151,17 @@ app.use((req, res, next) => {
     console.error('Platform hubs seeding failed:', error);
   }
 
+  // Setup Hub Routing Middleware (Multi-domain routing)
+  try {
+    console.log('🌐 Setting up Hub Routing Middleware...');
+    const { hubRoutingMiddleware } = await import('./hub-routing-middleware');
+    app.use(hubRoutingMiddleware());
+    console.log('✅ Hub Routing Middleware initialized (subdomain, custom domain, path routing)');
+  } catch (error) {
+    console.warn('Hub Routing Middleware initialization failed:', error);
+    console.log('Continuing without hub routing');
+  }
+
   await registerRoutes(app);
   const server = createServer(app);
 

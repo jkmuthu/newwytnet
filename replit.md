@@ -38,6 +38,7 @@ The platform features modern UI elements like animated gradient backgrounds, gla
 - **White-label API Proxy Gateway**: A unified API gateway that proxies third-party services under WytNet branding, handling request/response transformation, credential management, and error handling.
 - **Enhanced Module & App Management System**: Includes comprehensive version control (version numbers, history, changelogs), edit history tracking, custom route management with redirects, and context-based access control (`restrictedTo` fields for Engine-Only, Hub-Only, App-Only, Game-Only access).
 - **AI-Assisted Module & App Improvement Workflow**: Integrates GPT-4 powered AI assistance into management interfaces for conversational support, quick actions (e.g., "Suggest Title," "Draft Changelog"), and one-click application of AI recommendations.
+- **White-Label Multi-Domain Hub System** (October 2025): Comprehensive platform hub management with multi-domain routing (custom domains, subdomains, path-based), SEO configuration, branding customization, domain verification, and hub-level RBAC. Supports WytNet.com as primary hub (PH0000001) with verified custom domain. Includes hub routing middleware for automatic domain detection and context propagation.
 
 # External Dependencies
 
