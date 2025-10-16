@@ -116,6 +116,14 @@ app.use((req, res, next) => {
     console.error('Module seeding failed:', error);
   }
 
+  // Seed entity types and starter entities
+  try {
+    const { entitySeedingService } = await import('./services/entitySeedingService');
+    await entitySeedingService.seedAll();
+  } catch (error) {
+    console.error('Entity seeding failed:', error);
+  }
+
   await registerRoutes(app);
   const server = createServer(app);
 
