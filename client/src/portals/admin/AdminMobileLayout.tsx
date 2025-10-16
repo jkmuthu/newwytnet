@@ -152,6 +152,7 @@ export default function AdminMobileLayout({ children }: AdminMobileLayoutProps) 
         { icon: Package, label: 'Integrations', href: '/engine/integrations' },
         { icon: Settings, label: 'SEO Settings', href: '/engine/seo-settings' },
         { icon: Settings, label: 'Global Settings', href: '/engine/global-settings' },
+        { icon: Building, label: 'Platform Hubs', href: '/engine/platform-hubs' },
         { icon: Shield, label: 'Roles & Permissions', href: '/engine/roles-permissions' },
         { icon: Users, label: 'Admin Users', href: '/engine/admin-users' },
         { icon: Package, label: 'Backups', href: '/engine/backups' },

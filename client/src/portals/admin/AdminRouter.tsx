@@ -34,6 +34,7 @@ import AdminBillingPage from "@/pages/admin/billing";
 import AdminTransactions from "@/pages/admin/transactions";
 import AdminGlobalSettings from "@/pages/admin/global-settings";
 import AdminRolesPermissions from "@/pages/admin/roles-permissions";
+import AdminPlatformHubs from "@/pages/admin/platform-hubs";
 import AdminAdminUsers from "@/pages/admin/admin-users";
 import AdminBackups from "@/pages/admin/backups";
 import AdminSystemLogs from "@/pages/admin/system-logs";
@@ -218,6 +219,7 @@ export default function AdminRouter() {
 
           {/* System & Config Routes */}
           <Route path="/engine/platform-registry" component={AdminPlatformRegistry} />
+          <Route path="/engine/platform-hubs" component={AdminPlatformHubs} />
           <Route path="/engine/integrations" component={AdminIntegrations} />
           <Route path="/engine/geo-regulatory" component={AdminGeoRegulatory} />
           <Route path="/engine/seo-settings" component={AdminSeoSettings} />

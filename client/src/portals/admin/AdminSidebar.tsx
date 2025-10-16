@@ -231,6 +231,12 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
             active: location === "/engine/global-settings"
           },
           { 
+            label: "Platform Hubs", 
+            icon: Building, 
+            href: "/engine/platform-hubs", 
+            active: location === "/engine/platform-hubs"
+          },
+          { 
             label: "Roles & Permissions", 
             icon: Shield, 
             href: "/engine/roles-permissions", 
