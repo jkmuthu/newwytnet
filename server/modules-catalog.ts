@@ -592,25 +592,83 @@ export const MODULE_CATALOG: ModuleDefinition[] = [
     color: 'blue'
   },
   {
-    id: 'wytdata-api',
-    name: 'WytData - Universal Dataset API',
-    description: 'Access to 15+ curated datasets: countries, languages, currencies, timezones, and more',
+    id: 'wytgeo',
+    name: 'WytGeo - Location & Geography Data',
+    description: 'Comprehensive location datasets: 50 countries, 37 Indian states, 100 cities, 10 timezones',
     category: 'data',
     type: 'native',
     contexts: ['platform', 'hub', 'app', 'game'],
     dependencies: [],
     apiEndpoints: [
-      { method: 'GET', path: '/api/modules/wytdata/collections', auth: true, description: 'List all available datasets' },
-      { method: 'GET', path: '/api/modules/wytdata/:key', auth: true, description: 'Get dataset items by key (countries, languages, etc.)' },
-      { method: 'GET', path: '/api/modules/wytdata/:key/search', auth: true, description: 'Search within a dataset' },
-      { method: 'GET', path: '/api/modules/wytdata/:key/locale/:locale', auth: true, description: 'Get localized dataset' },
-      { method: 'POST', path: '/api/modules/wytdata/batch', auth: true, description: 'Fetch multiple datasets in one request' }
+      { method: 'GET', path: '/api/modules/wytgeo/countries', auth: true, description: 'Get all countries with ISO codes, flags, currencies' },
+      { method: 'GET', path: '/api/modules/wytgeo/india-states', auth: true, description: 'Get all Indian states with codes and capitals' },
+      { method: 'GET', path: '/api/modules/wytgeo/india-cities', auth: true, description: 'Get top 100 Indian cities' },
+      { method: 'GET', path: '/api/modules/wytgeo/timezones', auth: true, description: 'Get timezones with UTC offsets and DST info' },
+      { method: 'GET', path: '/api/modules/wytgeo/:key/search', auth: true, description: 'Search within geography datasets' },
+      { method: 'POST', path: '/api/modules/wytgeo/batch', auth: true, description: 'Fetch multiple geography datasets' }
     ],
     settings: {},
     compatibilityMatrix: {},
     pricing: 'usage-based',
-    price: 0.50,
-    icon: 'database',
+    price: 0.30,
+    icon: 'globe',
+    color: 'green',
+    upstream: {
+      provider: 'WytNet',
+      baseUrl: '',
+      credentialKey: '',
+      type: 'native'
+    }
+  },
+  {
+    id: 'wyti18n',
+    name: 'WytI18n - Internationalization Data',
+    description: 'Global i18n datasets: 20 languages with ISO codes, 20 currencies with symbols',
+    category: 'data',
+    type: 'native',
+    contexts: ['platform', 'hub', 'app', 'game'],
+    dependencies: [],
+    apiEndpoints: [
+      { method: 'GET', path: '/api/modules/wyti18n/languages', auth: true, description: 'Get languages with ISO 639 codes, native names, RTL/LTR' },
+      { method: 'GET', path: '/api/modules/wyti18n/currencies', auth: true, description: 'Get currencies with ISO 4217 codes, symbols' },
+      { method: 'GET', path: '/api/modules/wyti18n/:key/locale/:locale', auth: true, description: 'Get localized i18n data' },
+      { method: 'GET', path: '/api/modules/wyti18n/:key/search', auth: true, description: 'Search within i18n datasets' },
+      { method: 'POST', path: '/api/modules/wyti18n/batch', auth: true, description: 'Fetch multiple i18n datasets' }
+    ],
+    settings: {},
+    compatibilityMatrix: {},
+    pricing: 'usage-based',
+    price: 0.20,
+    icon: 'languages',
+    color: 'blue',
+    upstream: {
+      provider: 'WytNet',
+      baseUrl: '',
+      credentialKey: '',
+      type: 'native'
+    }
+  },
+  {
+    id: 'wytbiz',
+    name: 'WytBiz - Business Reference Data',
+    description: 'Business datasets: 15 industries, 6 company sizes, 15 job roles, 34 GST codes',
+    category: 'data',
+    type: 'native',
+    contexts: ['platform', 'hub', 'app', 'game'],
+    dependencies: [],
+    apiEndpoints: [
+      { method: 'GET', path: '/api/modules/wytbiz/industries', auth: true, description: 'Get industry classifications' },
+      { method: 'GET', path: '/api/modules/wytbiz/company-sizes', auth: true, description: 'Get company size ranges' },
+      { method: 'GET', path: '/api/modules/wytbiz/job-roles', auth: true, description: 'Get professional job roles' },
+      { method: 'GET', path: '/api/modules/wytbiz/gst-state-codes', auth: true, description: 'Get Indian GST state codes' },
+      { method: 'GET', path: '/api/modules/wytbiz/:key/search', auth: true, description: 'Search within business datasets' },
+      { method: 'POST', path: '/api/modules/wytbiz/batch', auth: true, description: 'Fetch multiple business datasets' }
+    ],
+    settings: {},
+    compatibilityMatrix: {},
+    pricing: 'usage-based',
+    price: 0.20,
+    icon: 'briefcase',
     color: 'violet',
     upstream: {
       provider: 'WytNet',

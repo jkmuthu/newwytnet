@@ -3962,7 +3962,150 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // =============================================================================
-  // WYTDATA API ROUTES - Universal Dataset API
+  // WYTGEO, WYTI18N, WYTBIZ API ROUTES - Split Dataset Modules
+  // =============================================================================
+
+  // Dataset module mapping
+  const DATASET_MODULE_MAP: Record<string, string[]> = {
+    'wytgeo': ['countries', 'india-states', 'india-cities', 'timezones'],
+    'wyti18n': ['languages', 'currencies'],
+    'wytbiz': ['industries', 'company-sizes', 'job-roles', 'gst-state-codes']
+  };
+
+  // Helper to get datasets by module
+  const getDatasetsByModule = async (modulePrefix: string): Promise<any[]> => {
+    const datasetKeys = DATASET_MODULE_MAP[modulePrefix] || [];
+    const collections = await db.select()
+      .from(datasetCollections)
+      .where(sql`${datasetCollections.key} = ANY(${datasetKeys})`);
+    return collections;
+  };
+
+  // WytGeo Routes - Geography & Location
+  app.get('/api/modules/wytgeo/countries', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'countries'));
+      if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
+      
+      const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
+      res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wytgeo' } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/modules/wytgeo/india-states', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'india-states'));
+      if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
+      
+      const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
+      res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wytgeo' } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/modules/wytgeo/india-cities', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'india-cities'));
+      if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
+      
+      const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
+      res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wytgeo' } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/modules/wytgeo/timezones', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'timezones'));
+      if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
+      
+      const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
+      res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wytgeo' } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // WytI18n Routes - Internationalization
+  app.get('/api/modules/wyti18n/languages', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'languages'));
+      if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
+      
+      const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
+      res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wyti18n' } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/modules/wyti18n/currencies', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'currencies'));
+      if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
+      
+      const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
+      res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wyti18n' } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // WytBiz Routes - Business Reference
+  app.get('/api/modules/wytbiz/industries', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'industries'));
+      if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
+      
+      const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
+      res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wytbiz' } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/modules/wytbiz/company-sizes', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'company-sizes'));
+      if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
+      
+      const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
+      res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wytbiz' } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/modules/wytbiz/job-roles', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'job-roles'));
+      if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
+      
+      const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
+      res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wytbiz' } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/api/modules/wytbiz/gst-state-codes', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'gst-state-codes'));
+      if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
+      
+      const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
+      res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wytbiz' } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // =============================================================================
+  // WYTDATA API ROUTES - Legacy/Backward Compatibility
   // =============================================================================
 
   // Get all available dataset collections
