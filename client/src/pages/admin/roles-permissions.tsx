@@ -359,7 +359,32 @@ export default function AdminRolesPermissions() {
   );
 }
 
-// Create Role Dialog Component
+// Helper to get a nice label for resources
+function getResourceLabel(resource: string): string {
+  const labels: Record<string, string> = {
+    "all-users": "All Users",
+    "all-orgs": "All Orgs",
+    "all-entity": "All Entity",
+    "all-datasets": "All DataSets",
+    "all-modules": "All Modules",
+    "all-apps": "All Apps",
+    "all-hubs": "All Hubs",
+    "all-media": "All Media",
+    "all-themes": "All Themes",
+    "all-integrations": "All Integrations",
+    "pricing-plans": "Pricing Plans",
+    "roles-permissions": "Roles & Permissions",
+    "servers-backups": "Servers & Backups",
+    "help-centre": "Help Centre",
+    "engine-cms": "Engine CMS",
+    "system-security": "System & Security",
+    "analytics": "Analytics",
+    "global-settings": "Global Settings",
+  };
+  return labels[resource] || resource;
+}
+
+// Create Role Dialog Component with Table-based Permission Matrix
 function CreateRoleDialog({
   open,
   onOpenChange,
@@ -381,132 +406,147 @@ function CreateRoleDialog({
     scope: "engine",
     isActive: true,
   });
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
-  const [currentTab, setCurrentTab] = useState<"details" | "permissions">("details");
+  const [selectedPermissions, setSelectedPermissions] = useState<Record<string, Set<string>>>({});
 
   const handleSubmit = async () => {
+    // Convert selected permissions to array of IDs
+    const permissionIds = Object.values(selectedPermissions)
+      .flatMap((actions) => Array.from(actions));
+    
     // Submit role data with selected permissions
-    await onSubmit({ ...formData, permissionIds: selectedPermissions });
+    await onSubmit({ ...formData, permissionIds });
+    
     // Reset form
     setFormData({ name: "", description: "", scope: "engine", isActive: true });
-    setSelectedPermissions([]);
-    setCurrentTab("details");
+    setSelectedPermissions({});
   };
 
-  const togglePermission = (permId: string) => {
-    setSelectedPermissions((prev) =>
-      prev.includes(permId) ? prev.filter((id) => id !== permId) : [...prev, permId]
-    );
+  const togglePermission = (resource: string, action: string, permId: string) => {
+    setSelectedPermissions((prev) => {
+      const resourcePerms = new Set(prev[resource] || []);
+      if (resourcePerms.has(permId)) {
+        resourcePerms.delete(permId);
+      } else {
+        resourcePerms.add(permId);
+      }
+      return {
+        ...prev,
+        [resource]: resourcePerms,
+      };
+    });
   };
+
+  const isPermissionSelected = (resource: string, permId: string) => {
+    return selectedPermissions[resource]?.has(permId) || false;
+  };
+
+  // Filter engine-scoped permissions
+  const engineResources = Object.entries(groupedPermissions).filter(([resource, perms]) => 
+    perms.some(p => p.scope === 'engine')
+  );
+
+  const actions = ['view', 'create', 'edit', 'delete'];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New Role</DialogTitle>
-          <DialogDescription>Define a new role and assign permissions</DialogDescription>
+          <DialogTitle>Create New Engine Role</DialogTitle>
+          <DialogDescription>Define role details and assign permissions</DialogDescription>
         </DialogHeader>
-        <Tabs value={currentTab} onValueChange={(val) => setCurrentTab(val as "details" | "permissions")}>
-          <TabsList>
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="permissions">
-              Permissions ({selectedPermissions.length} selected)
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="details" className="space-y-4">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Role Name</Label>
-                <Input
-                  id="name"
-                  placeholder="e.g., Content Editor"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  data-testid="input-role-name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Describe the role's responsibilities..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  data-testid="input-role-description"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="scope">Scope</Label>
-                <Select
-                  value={formData.scope}
-                  onValueChange={(value) => setFormData({ ...formData, scope: value })}
-                >
-                  <SelectTrigger data-testid="select-scope">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="engine">Engine</SelectItem>
-                    <SelectItem value="hub">Hub</SelectItem>
-                    <SelectItem value="app">App</SelectItem>
-                    <SelectItem value="global">Global</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+        
+        <div className="space-y-6">
+          {/* Role Name and Description */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Role Name</Label>
+              <Input
+                id="name"
+                placeholder="e.g., Content Manager, Analytics Viewer"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+                data-testid="input-role-name"
+              />
             </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                onClick={() => setCurrentTab("permissions")}
-                data-testid="button-next-permissions"
-              >
-                Next: Permissions
-              </Button>
-            </DialogFooter>
-          </TabsContent>
-          <TabsContent value="permissions" className="space-y-4">
-            <div className="space-y-4 max-h-[400px] overflow-y-auto">
-              {Object.entries(groupedPermissions).map(([resource, perms]) => (
-                <div key={resource}>
-                  <h4 className="font-semibold mb-2 capitalize sticky top-0 bg-background py-2">
-                    {resource}
-                  </h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    {perms.map((perm) => (
-                      <div key={perm.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`create-perm-${perm.id}`}
-                          checked={selectedPermissions.includes(perm.id)}
-                          onCheckedChange={() => togglePermission(perm.id)}
-                          data-testid={`checkbox-create-permission-${perm.id}`}
-                        />
-                        <Label htmlFor={`create-perm-${perm.id}`} className="text-sm">
-                          {perm.action}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+            <div className="space-y-2">
+              <Label htmlFor="description">Role Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Describe the role's responsibilities and access level..."
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={2}
+                data-testid="input-role-description"
+              />
             </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setCurrentTab("details")}>
-                Back
-              </Button>
-              <Button
-                type="button"
-                onClick={handleSubmit}
-                disabled={isLoading || !formData.name}
-                data-testid="button-submit-role"
-              >
-                {isLoading ? "Creating..." : `Create Role with ${selectedPermissions.length} Permissions`}
-              </Button>
-            </DialogFooter>
-          </TabsContent>
-        </Tabs>
+          </div>
+
+          {/* Permission Matrix Table */}
+          <div>
+            <h3 className="text-sm font-semibold mb-3">Permissions Matrix</h3>
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[200px]">Sections</TableHead>
+                    <TableHead className="text-center w-[100px]">View</TableHead>
+                    <TableHead className="text-center w-[100px]">Create</TableHead>
+                    <TableHead className="text-center w-[100px]">Edit</TableHead>
+                    <TableHead className="text-center w-[100px]">Delete</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {engineResources.map(([resource, perms]) => {
+                    // Group permissions by action for this resource
+                    const permsByAction = perms.reduce((acc, perm) => {
+                      if (perm.scope === 'engine') {
+                        acc[perm.action] = perm.id;
+                      }
+                      return acc;
+                    }, {} as Record<string, string>);
+
+                    return (
+                      <TableRow key={resource}>
+                        <TableCell className="font-medium">{getResourceLabel(resource)}</TableCell>
+                        {actions.map((action) => {
+                          const permId = permsByAction[action];
+                          return (
+                            <TableCell key={action} className="text-center">
+                              {permId ? (
+                                <Checkbox
+                                  checked={isPermissionSelected(resource, permId)}
+                                  onCheckedChange={() => togglePermission(resource, action, permId)}
+                                  data-testid={`checkbox-${resource}-${action}`}
+                                />
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isLoading || !formData.name}
+            data-testid="button-create-role"
+          >
+            {isLoading ? "Creating..." : "Create"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
