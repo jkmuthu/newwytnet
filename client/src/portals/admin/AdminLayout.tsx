@@ -5,6 +5,7 @@ import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import AdminHeader from "./AdminHeader";
 import AdminSidebar from "./AdminSidebar";
 import AdminMobileLayout from "./AdminMobileLayout";
+import WytAIAgent from "@/components/wytai/WytAIAgent";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -39,9 +40,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // Use mobile-specific layout for small screens
   if (isMobile) {
     return (
-      <AdminMobileLayout>
-        {children}
-      </AdminMobileLayout>
+      <>
+        <AdminMobileLayout>
+          {children}
+        </AdminMobileLayout>
+        {/* WytAI Agent - Available on mobile too */}
+        <WytAIAgent />
+      </>
     );
   }
 
@@ -67,6 +72,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </div>
         </main>
       </div>
+      
+      {/* WytAI Agent - Floating AI Assistant */}
+      <WytAIAgent />
     </div>
   );
 }

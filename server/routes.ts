@@ -146,6 +146,7 @@ import { eq, desc, and, sql, gte, lte, like, or, ilike, not, asc, inArray } from
 import { aiService } from "./services/aiService";
 import rolesRouter from "./routes/roles";
 import platformHubsRouter from "./routes/platform-hubs";
+import wytaiRouter from "./routes/wytai";
 
 // Trademark analysis functions now imported from services/trademarkAnalysis.ts
 
@@ -192,6 +193,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   // Register Platform Hubs Management Router
   app.use('/api', platformHubsRouter);
+  
+  // Register WytAI Agent Router
+  app.use('/api', wytaiRouter);
 
   // Auth routes - unified endpoint for both authentication systems
   app.get('/api/auth/user', async (req: any, res) => {
