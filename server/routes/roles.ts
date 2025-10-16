@@ -13,6 +13,7 @@ import {
 } from "@shared/schema";
 import { eq, and, sql, inArray } from "drizzle-orm";
 import { adminAuthMiddleware } from "../customAuth";
+import { requirePermission } from "../permission-middleware";
 
 const router = Router();
 
@@ -31,7 +32,7 @@ async function generateDisplayId(prefix: string): Promise<string> {
 // ============================================
 
 // GET /api/admin/roles - Get all roles
-router.get("/admin/roles", adminAuthMiddleware, async (req, res) => {
+router.get("/admin/roles", adminAuthMiddleware, requirePermission('roles', 'view'), async (req, res) => {
   try {
     const allRoles = await db
       .select()
@@ -64,7 +65,7 @@ router.get("/admin/roles", adminAuthMiddleware, async (req, res) => {
 });
 
 // GET /api/admin/roles/:id - Get role by ID
-router.get("/admin/roles/:id", adminAuthMiddleware, async (req, res) => {
+router.get("/admin/roles/:id", adminAuthMiddleware, requirePermission('roles', 'view'), async (req, res) => {
   try {
     const [role] = await db
       .select()
@@ -110,7 +111,7 @@ router.get("/admin/roles/:id", adminAuthMiddleware, async (req, res) => {
 });
 
 // POST /api/admin/roles - Create new role
-router.post("/admin/roles", adminAuthMiddleware, async (req, res) => {
+router.post("/admin/roles", adminAuthMiddleware, requirePermission('roles', 'create'), async (req, res) => {
   try {
     const validatedData = insertRoleSchema.parse(req.body);
     
@@ -136,7 +137,7 @@ router.post("/admin/roles", adminAuthMiddleware, async (req, res) => {
 });
 
 // PUT /api/admin/roles/:id - Update role
-router.put("/admin/roles/:id", adminAuthMiddleware, async (req, res) => {
+router.put("/admin/roles/:id", adminAuthMiddleware, requirePermission('roles', 'edit'), async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = insertRoleSchema.partial().parse(req.body);
@@ -165,7 +166,7 @@ router.put("/admin/roles/:id", adminAuthMiddleware, async (req, res) => {
 });
 
 // DELETE /api/admin/roles/:id - Delete role
-router.delete("/admin/roles/:id", adminAuthMiddleware, async (req, res) => {
+router.delete("/admin/roles/:id", adminAuthMiddleware, requirePermission('roles', 'delete'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -201,7 +202,7 @@ router.delete("/admin/roles/:id", adminAuthMiddleware, async (req, res) => {
 // ============================================
 
 // POST /api/admin/roles/:id/permissions - Assign permissions to role
-router.post("/admin/roles/:roleId/permissions", adminAuthMiddleware, async (req, res) => {
+router.post("/admin/roles/:roleId/permissions", adminAuthMiddleware, requirePermission('roles', 'edit'), async (req, res) => {
   try {
     const { roleId } = req.params;
     const { permissionIds } = z.object({
