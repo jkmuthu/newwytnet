@@ -48,11 +48,36 @@ The system is organized into self-contained packages (`kernel`, `builder`, `cms`
 ## Security Architecture
 Security includes PostgreSQL Row Level Security, session-based authentication with httpOnly cookies, role-based access control, CSRF protection, and Zod schema validation.
 
-### User Role Hierarchy
-The platform implements a three-tier authentication system:
-- **Super Admin (Engine Level)**: Full access to Engine administration at `/engine/*`, manages infrastructure, modules, and global settings. Has `isSuperAdmin: true` flag.
-- **Hub Owner (Hub Level)**: Administrative access to their specific Hub (e.g., WytNet Hub admin), manages hub content, settings, and activated modules. Uses `/admin` routes for hub management.
-- **Hub Users (End Users)**: Regular users who access hub features and applications. Standard authentication with hub-specific permissions.
+### User Role Hierarchy & Two-Tier Admin Authentication
+The platform implements a **two-tier admin authentication system** with completely isolated sessions, separate from regular user authentication:
+
+#### Admin Portals
+1. **Engine Portal (`/engine/*`)** - Platform Infrastructure
+   - **Super Admin Access**: Full platform infrastructure management
+   - **Purpose**: Module management, WytEntities knowledge graph, Geo-Regulatory controls, Platform Registry, system monitoring
+   - **Session**: Dedicated PostgreSQL session store (`admin_sessions` table), cookie: `admin.sid`
+   - **Middleware**: `adminAuthMiddleware` with provider type `admin`
+   - **Test Credentials**: `jkm@jkmuthu.com` / `SuperAdmin@2025`
+   - **Features**: Infrastructure foundation, module catalog (47 modules), entity management, regulatory compliance
+
+2. **Hub Admin Portal (`/admin/*`)** - WytNet.com Hub Management
+   - **Hub Admin Access**: WytNet.com hub content and feature management
+   - **Purpose**: CMS content, media library, hub apps, themes, SEO settings, hub analytics
+   - **Session**: Separate PostgreSQL session store (`hub_admin_sessions` table), cookie: `hubadmin.sid`
+   - **Middleware**: `hubAdminAuthMiddleware` with provider type `hub_admin`
+   - **Test Credentials**: `hubadmin@wytnet.com` / `hubadmin123`
+   - **Features**: Hub content management, theme customization, app configuration, hub-level settings
+
+#### Authentication Architecture
+- **Triple Session Support**: Users can be authenticated as regular users, hub admins, AND super admins simultaneously
+- **Complete Isolation**: Each portal has dedicated session stores, cookies, and middleware to prevent credential mixing
+- **Frontend Contexts**: `AuthProvider` (users), `AdminAuthProvider` (super admin), `HubAdminAuthProvider` (hub admin)
+- **Provider Types**: `whatsapp`, `legacy`, `replit`, `admin` (super admin), `unified` (users), `hub_admin` (hub admin)
+
+#### User Roles
+- **Super Admin (Engine Level)**: Platform infrastructure management with `isSuperAdmin: true` flag
+- **Hub Admin (Hub Level)**: Content management for specific hub (WytNet.com), no super admin privileges
+- **Hub Users (End Users)**: Regular users accessing hub features with hub-specific permissions
 
 ## UI/UX Decisions
 The platform features modern UI elements like animated gradient backgrounds, glassmorphism cards, micro animations, and responsive designs. UTM tracking is standardized for external links.
