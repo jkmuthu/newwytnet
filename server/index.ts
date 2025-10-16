@@ -143,6 +143,14 @@ app.use((req, res, next) => {
     console.error('Entity seeding failed:', error);
   }
 
+  // Seed platform hubs
+  try {
+    const { seedPlatformHubs } = await import('./services/platformHubsSeedingService');
+    await seedPlatformHubs();
+  } catch (error) {
+    console.error('Platform hubs seeding failed:', error);
+  }
+
   await registerRoutes(app);
   const server = createServer(app);
 

@@ -3525,20 +3525,41 @@ export const platformHubs = pgTable("platform_hubs", {
   displayId: varchar("display_id", { length: 20 }).unique(), // PH00001
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
-  domain: varchar("domain", { length: 255 }).unique(),
-  subdomain: varchar("subdomain", { length: 100 }).unique(),
+  
+  // Domain Configuration
+  domain: varchar("domain", { length: 255 }).unique(), // Custom domain (e.g., ownernet.com)
+  subdomain: varchar("subdomain", { length: 100 }).unique(), // Subdomain (e.g., ownernet for ownernet.wytnet.com)
+  customDomain: varchar("custom_domain", { length: 255 }).unique(), // User's custom domain
+  domainVerified: boolean("domain_verified").default(false).notNull(),
+  dnsConfiguration: jsonb("dns_configuration").default({}), // { aRecord, cname, txt, verified, verifiedAt }
+  
+  // Branding
   description: text("description"),
   logo: varchar("logo", { length: 500 }),
+  favicon: varchar("favicon", { length: 500 }),
+  ogImage: varchar("og_image", { length: 500 }),
+  themeSettings: jsonb("theme_settings").default({}), // { primaryColor, secondaryColor, fontFamily, etc. }
+  
+  // SEO Configuration
+  seoTitle: varchar("seo_title", { length: 255 }),
+  seoDescription: text("seo_description"),
+  seoKeywords: text("seo_keywords"),
+  seoRobots: varchar("seo_robots", { length: 50 }).default('index, follow'),
+  
+  // Status and Settings
   status: platformHubStatusEnum("status").default("active").notNull(),
   settings: jsonb("settings").default({}),
   metadata: jsonb("metadata").default({}),
   tenantId: uuid("tenant_id").references(() => tenants.id), // Associated tenant
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_platform_hubs_display_id").on(table.displayId),
   index("idx_platform_hubs_slug").on(table.slug),
   index("idx_platform_hubs_status").on(table.status),
+  index("idx_platform_hubs_subdomain").on(table.subdomain),
+  index("idx_platform_hubs_custom_domain").on(table.customDomain),
 ]);
 
 // Platform Hub Admins - Assigns admin users to platform hubs
