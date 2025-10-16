@@ -1,12 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Menu, User, Settings, LogOut, Home, Activity, Bell, Search } from "lucide-react";
-import { Link } from "wouter";
+import { Menu, User, Settings, LogOut, Home, Activity, Bell, Search, Shield } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { useHubAdminAuth } from "@/contexts/HubAdminAuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 
 interface HubAdminHeaderProps {
   onToggleSidebar: () => void;
@@ -24,6 +24,19 @@ export default function HubAdminHeader({
   const { hubAdminUser } = useHubAdminAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
+
+  // Fetch available contexts/panels
+  const { data: contextsData } = useQuery({
+    queryKey: ['/api/auth/contexts'],
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+
+  const availableContexts = contextsData?.contexts || [];
+
+  const handleSwitchContext = (path: string) => {
+    setLocation(path);
+  };
 
   const hubAdminLogoutMutation = useMutation({
     mutationFn: async () => {
@@ -157,6 +170,39 @@ export default function HubAdminHeader({
                     Hub Admin
                   </Badge>
                 </div>
+
+                {/* Panel/Role Switcher */}
+                {availableContexts.length > 1 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-xs text-muted-foreground font-normal px-2 py-1">
+                      Switch Panel
+                    </DropdownMenuLabel>
+                    {availableContexts.map((context: any) => (
+                      <DropdownMenuItem
+                        key={context.type}
+                        onClick={() => handleSwitchContext(context.path)}
+                        className={`cursor-pointer ${context.active ? 'bg-accent' : ''}`}
+                        data-testid={`switch-to-${context.type}`}
+                      >
+                        {context.type === 'engine_admin' && <Shield className="mr-2 h-4 w-4" />}
+                        {context.type === 'hub_admin' && <Settings className="mr-2 h-4 w-4" />}
+                        {context.type === 'user' && <User className="mr-2 h-4 w-4" />}
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">{context.name}</div>
+                          <div className="text-xs text-muted-foreground">{context.user.role}</div>
+                        </div>
+                        {context.active && (
+                          <Badge variant="outline" className="text-xs px-1 py-0 h-4 ml-2">
+                            Active
+                          </Badge>
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                  </>
+                )}
+
+                <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/admin/profile">
                     <User className="mr-2 h-4 w-4" />
