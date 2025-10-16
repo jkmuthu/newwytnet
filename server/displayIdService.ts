@@ -3,35 +3,35 @@ import { sql } from "drizzle-orm";
 
 /**
  * Display ID Generation Service
- * Generates human-readable, globally unique IDs with prefixes
- * Format: {PREFIX}-{SEQUENCE_NUMBER}
- * Examples: USR-0000001, ORG-00001, APP-0001, HUB-001
+ * Generates human-readable, globally unique IDs with 2-letter prefixes
+ * Format: {PREFIX}{SEQUENCE_NUMBER}
+ * Examples: UR0000001, OR00001, AP0001, HB001
  */
 
 // Prefix configuration for all entity types
 export const DISPLAY_ID_CONFIG = {
   // Core Platform Entities (High Volume)
-  users: { prefix: 'USR', padding: 7 },
-  organizations: { prefix: 'ORG', padding: 5 },
-  tenants: { prefix: 'TNT', padding: 5 },
+  users: { prefix: 'UR', padding: 7 },
+  organizations: { prefix: 'OR', padding: 5 },
+  tenants: { prefix: 'TN', padding: 5 },
   
   // Content & Structure
-  entities: { prefix: 'ENT', padding: 5 },
-  platformModules: { prefix: 'MOD', padding: 4 },
-  apps: { prefix: 'APP', padding: 4 },
-  hubs: { prefix: 'HUB', padding: 3 },
+  entities: { prefix: 'EN', padding: 5 },
+  platformModules: { prefix: 'MD', padding: 4 },
+  apps: { prefix: 'AP', padding: 4 },
+  hubs: { prefix: 'HB', padding: 3 },
   
   // Media & Assets
-  media: { prefix: 'MED', padding: 5 },
+  media: { prefix: 'ME', padding: 5 },
   
   // Identity & Validation
-  wytidEntities: { prefix: 'WID', padding: 5 },
+  wytidEntities: { prefix: 'WI', padding: 5 },
   
   // Business & Operations
-  needs: { prefix: 'NED', padding: 5 },
-  offers: { prefix: 'OFR', padding: 5 },
-  assessmentQuestions: { prefix: 'ASM', padding: 4 },
-  trademarks: { prefix: 'TMK', padding: 5 },
+  needs: { prefix: 'ND', padding: 5 },
+  offers: { prefix: 'OF', padding: 5 },
+  assessmentQuestions: { prefix: 'AS', padding: 4 },
+  trademarks: { prefix: 'TM', padding: 5 },
 } as const;
 
 export type EntityType = keyof typeof DISPLAY_ID_CONFIG;
@@ -77,9 +77,9 @@ export async function generateDisplayId(entityType: EntityType): Promise<string>
   const result = await db.execute(sql.raw(`SELECT nextval('${sequenceName}') as next_val`));
   const nextVal = (result.rows[0] as any).next_val;
   
-  // Format with prefix and padding
+  // Format with prefix and padding (no hyphen)
   const paddedNumber = String(nextVal).padStart(config.padding, '0');
-  const displayId = `${config.prefix}-${paddedNumber}`;
+  const displayId = `${config.prefix}${paddedNumber}`;
   
   return displayId;
 }
@@ -107,10 +107,10 @@ export async function generateDisplayIds(entityType: EntityType, count: number):
     `SELECT nextval('${sequenceName}') as next_val FROM generate_series(1, ${count})`
   ));
   
-  // Format each ID
+  // Format each ID (no hyphen)
   return result.rows.map((row: any) => {
     const paddedNumber = String(row.next_val).padStart(config.padding, '0');
-    return `${config.prefix}-${paddedNumber}`;
+    return `${config.prefix}${paddedNumber}`;
   });
 }
 
