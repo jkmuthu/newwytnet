@@ -78,8 +78,8 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
           { 
             label: "Overview", 
             icon: LayoutDashboard, 
-            href: "/admin", 
-            active: location === "/admin"
+            href: "/engine", 
+            active: location === "/engine"
           },
         ]
       },
@@ -89,26 +89,26 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
           { 
             label: "All Users", 
             icon: Users, 
-            href: "/admin/users", 
-            active: location === "/admin/users"
+            href: "/engine/users", 
+            active: location === "/engine/users"
           },
           { 
             label: "All Orgs", 
             icon: Building, 
-            href: "/admin/tenants", 
-            active: location === "/admin/tenants"
+            href: "/engine/tenants", 
+            active: location === "/engine/tenants"
           },
           { 
             label: "DataSets", 
             icon: Database, 
-            href: "/admin/datasets", 
-            active: location === "/admin/datasets"
+            href: "/engine/datasets", 
+            active: location === "/engine/datasets"
           },
           { 
             label: "Media", 
             icon: Images, 
-            href: "/admin/media", 
-            active: location === "/admin/media"
+            href: "/engine/media", 
+            active: location === "/engine/media"
           },
         ]
       },
@@ -118,20 +118,20 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
           { 
             label: "Module Library", 
             icon: Package, 
-            href: "/admin/modules", 
-            active: location === "/admin/modules"
+            href: "/engine/modules", 
+            active: location === "/engine/modules"
           },
           { 
             label: "Apps", 
             icon: Smartphone, 
-            href: "/admin/apps", 
-            active: location === "/admin/apps"
+            href: "/engine/apps", 
+            active: location === "/engine/apps"
           },
           { 
             label: "Hubs", 
             icon: Network, 
-            href: "/admin/hubs", 
-            active: location === "/admin/hubs"
+            href: "/engine/hubs", 
+            active: location === "/engine/hubs"
           },
         ]
       },
@@ -141,14 +141,14 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
           { 
             label: "CMS", 
             icon: FileText, 
-            href: "/admin/cms", 
-            active: location === "/admin/cms"
+            href: "/engine/cms", 
+            active: location === "/engine/cms"
           },
           { 
             label: "Themes", 
             icon: Palette, 
-            href: "/admin/themes", 
-            active: location === "/admin/themes"
+            href: "/engine/themes", 
+            active: location === "/engine/themes"
           },
         ]
       },
@@ -158,32 +158,32 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
           { 
             label: "Plans & Prices", 
             icon: CreditCard, 
-            href: "/admin/plans-prices", 
-            active: location === "/admin/plans-prices"
+            href: "/engine/plans-prices", 
+            active: location === "/engine/plans-prices"
           },
           { 
             label: "Help & Support", 
             icon: FileImage, 
-            href: "/admin/help-support", 
-            active: location === "/admin/help-support"
+            href: "/engine/help-support", 
+            active: location === "/engine/help-support"
           },
           { 
             label: "Billing", 
             icon: CreditCard, 
-            href: "/admin/billing", 
-            active: location === "/admin/billing"
+            href: "/engine/billing", 
+            active: location === "/engine/billing"
           },
           { 
             label: "Transactions", 
             icon: List, 
-            href: "/admin/transactions", 
-            active: location === "/admin/transactions"
+            href: "/engine/transactions", 
+            active: location === "/engine/transactions"
           },
           { 
             label: "Analytics", 
             icon: BarChart3, 
-            href: "/admin/analytics", 
-            active: location === "/admin/analytics"
+            href: "/engine/analytics", 
+            active: location === "/engine/analytics"
           },
         ]
       },
@@ -197,74 +197,74 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
           { 
             label: "Platform Registry", 
             icon: Server, 
-            href: "/admin/platform-registry", 
-            active: location === "/admin/platform-registry"
+            href: "/engine/platform-registry", 
+            active: location === "/engine/platform-registry"
           },
           { 
             label: "System Overview", 
             icon: Settings, 
-            href: "/admin/system-overview", 
-            active: location === "/admin/system-overview"
+            href: "/engine/system-overview", 
+            active: location === "/engine/system-overview"
           },
           { 
             label: "Integrations", 
             icon: Plug, 
-            href: "/admin/integrations", 
-            active: location === "/admin/integrations"
+            href: "/engine/integrations", 
+            active: location === "/engine/integrations"
           },
           { 
             label: "SEO Settings", 
             icon: Globe, 
-            href: "/admin/seo-settings", 
-            active: location === "/admin/seo-settings"
+            href: "/engine/seo-settings", 
+            active: location === "/engine/seo-settings"
           },
           { 
             label: "Global Settings", 
             icon: Settings, 
-            href: "/admin/global-settings", 
-            active: location === "/admin/global-settings"
+            href: "/engine/global-settings", 
+            active: location === "/engine/global-settings"
           },
           { 
             label: "Roles & Permissions", 
             icon: Shield, 
-            href: "/admin/roles-permissions", 
-            active: location === "/admin/roles-permissions"
+            href: "/engine/roles-permissions", 
+            active: location === "/engine/roles-permissions"
           },
           { 
             label: "Admin Users", 
             icon: Users, 
-            href: "/admin/admin-users", 
-            active: location === "/admin/admin-users"
+            href: "/engine/admin-users", 
+            active: location === "/engine/admin-users"
           },
           { 
             label: "Backups", 
             icon: Database, 
-            href: "/admin/backups", 
-            active: location === "/admin/backups"
+            href: "/engine/backups", 
+            active: location === "/engine/backups"
           },
           { 
             label: "System Logs", 
             icon: List, 
-            href: "/admin/system-logs", 
-            active: location === "/admin/system-logs"
+            href: "/engine/system-logs", 
+            active: location === "/engine/system-logs"
           },
           { 
             label: "System Monitor", 
             icon: Eye, 
-            href: "/admin/system-monitor", 
-            active: location === "/admin/system-monitor"
+            href: "/engine/system-monitor", 
+            active: location === "/engine/system-monitor"
           },
           { 
             label: "System Status", 
             icon: Server, 
-            href: "/admin/system-status", 
-            active: location === "/admin/system-status"
+            href: "/engine/system-status", 
+            active: location === "/engine/system-status"
           },
           { 
             label: "Security", 
             icon: Shield, 
-            href: "/admin/security", 
-            active: location === "/admin/security"
+            href: "/engine/security", 
+            active: location === "/engine/security"
           },
         ]
       });

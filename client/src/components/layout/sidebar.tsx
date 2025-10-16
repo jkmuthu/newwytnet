@@ -32,47 +32,47 @@ export default function Sidebar({ open, onClose, isCollapsed, onToggleCollapse }
           section: "🦸‍♂️ Super Admin",
           items: [
             { label: "Dashboard", icon: "tachometer-alt", href: "/dashboard", active: location === "/dashboard" },
-            { label: "System Overview", icon: "server", href: "/admin/system-overview", active: location === "/admin/system-overview" },
-            { label: "Global Settings", icon: "cogs", href: "/admin/global-settings", active: location === "/admin/global-settings" },
+            { label: "System Overview", icon: "server", href: "/engine/system-overview", active: location === "/engine/system-overview" },
+            { label: "Global Settings", icon: "cogs", href: "/engine/global-settings", active: location === "/engine/global-settings" },
           ]
         },
         {
           section: "Core Platform",
           items: [
-            { label: "Tenants", icon: "building", href: "/admin/tenants", active: location === "/admin/tenants" },
-            { label: "All Users", icon: "users", href: "/admin/users", active: location === "/admin/users" },
+            { label: "Tenants", icon: "building", href: "/engine/tenants", active: location === "/engine/tenants" },
+            { label: "All Users", icon: "users", href: "/engine/users", active: location === "/engine/users" },
             { label: "WytPass Management", icon: "id-badge", href: "/user-auth-methods", active: location === "/user-auth-methods" },
           ]
         },
         {
           section: "Builders",
           items: [
-            { label: "Modules (CRUD)", icon: "cubes", href: "/admin/modules", active: location === "/admin/modules" },
-            { label: "CMS Builder", icon: "edit", href: "/admin/cms", active: location === "/admin/cms" },
-            { label: "App Builder", icon: "mobile-alt", href: "/admin/apps", active: location === "/admin/apps" },
-            { label: "Hub Builder", icon: "network-wired", href: "/admin/hubs", active: location === "/admin/hubs" },
-            { label: "DataSets", icon: "database", href: "/admin/datasets", active: location === "/admin/datasets" },
+            { label: "Modules (CRUD)", icon: "cubes", href: "/engine/modules", active: location === "/engine/modules" },
+            { label: "CMS Builder", icon: "edit", href: "/engine/cms", active: location === "/engine/cms" },
+            { label: "App Builder", icon: "mobile-alt", href: "/engine/apps", active: location === "/engine/apps" },
+            { label: "Hub Builder", icon: "network-wired", href: "/engine/hubs", active: location === "/engine/hubs" },
+            { label: "DataSets", icon: "database", href: "/engine/datasets", active: location === "/engine/datasets" },
           ]
         },
         {
           section: "Business",
           items: [
-            { label: "Plan Management", icon: "credit-card", href: "/admin/plans", active: location === "/admin/plans" },
-            { label: "Payment Methods", icon: "wallet", href: "/admin/payments", active: location === "/admin/payments" },
-            { label: "Analytics", icon: "chart-line", href: "/analytics", active: location === "/analytics" },
+            { label: "Plan Management", icon: "credit-card", href: "/engine/plans", active: location === "/engine/plans" },
+            { label: "Payment Methods", icon: "wallet", href: "/engine/payments", active: location === "/engine/payments" },
+            { label: "Analytics", icon: "chart-line", href: "/engine/analytics", active: location === "/engine/analytics" },
           ]
         },
         {
           section: "System",
           items: [
             { label: "Search", icon: "search", href: "/search", active: location === "/search" },
-            { label: "SEO Settings", icon: "globe", href: "/admin/seo-settings", active: location === "/admin/seo-settings" },
-            { label: "Themes", icon: "palette", href: "/admin/themes", active: location === "/admin/themes" },
-            { label: "Media", icon: "images", href: "/admin/media", active: location === "/admin/media" },
-            { label: "APIs", icon: "plug", href: "/admin/apis", active: location === "/admin/apis" },
-            { label: "AI Management", icon: "robot", href: "/admin/ai", active: location === "/admin/ai" },
-            { label: "Policies", icon: "shield-alt", href: "/admin/policies", active: location === "/admin/policies" },
-            { label: "Logs", icon: "list-alt", href: "/admin/logs", active: location === "/admin/logs" },
+            { label: "SEO Settings", icon: "globe", href: "/engine/seo-settings", active: location === "/engine/seo-settings" },
+            { label: "Themes", icon: "palette", href: "/engine/themes", active: location === "/engine/themes" },
+            { label: "Media", icon: "images", href: "/engine/media", active: location === "/engine/media" },
+            { label: "APIs", icon: "plug", href: "/engine/apis", active: location === "/engine/apis" },
+            { label: "AI Management", icon: "robot", href: "/engine/ai", active: location === "/engine/ai" },
+            { label: "Policies", icon: "shield-alt", href: "/engine/policies", active: location === "/engine/policies" },
+            { label: "Logs", icon: "list-alt", href: "/engine/logs", active: location === "/engine/logs" },
           ]
         }
       ];

@@ -12,7 +12,7 @@ import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
 // Portal Routers
 import PublicRouter from "@/portals/public/PublicRouter";
 import PanelRouter from "@/portals/panel/PanelRouter";
-import AdminRouter from "@/portals/admin/AdminRouter";
+import EngineRouter from "@/portals/admin/AdminRouter"; // Engine = Super Admin Panel
 
 // Profile Wizard
 import ProfileWizard from "@/components/ProfileWizard";
@@ -24,7 +24,10 @@ import DevDocumentation from "@/pages/dev-documentation";
 
 /**
  * PortalRouter - Top-level router that determines which portal to use
- * Routes are separated into three distinct portals with no content mixing
+ * Routes are separated into distinct portals:
+ * - /engine/* = Engine Admin (Super Admin Panel for infrastructure management)
+ * - /mypanel/*, /orgpanel/* = User/Org Panel
+ * - / = WytNet Hub (First Hub built on Engine)
  */
 function PortalRouter() {
   const [showWizard, setShowWizard] = useState(false);
@@ -41,9 +44,17 @@ function PortalRouter() {
   return (
     <>
       <Switch>
-        {/* Admin Portal - Routes: /admin, /admin/* */}
-        <Route path="/admin" component={AdminRouter} />
-        <Route path="/admin/:rest*" component={AdminRouter} />
+        {/* Engine Portal - Routes: /engine, /engine/* (Super Admin Panel) */}
+        <Route path="/engine" component={EngineRouter} />
+        <Route path="/engine/:rest*" component={EngineRouter} />
+        
+        {/* Legacy /admin redirect to /engine */}
+        <Route path="/admin">
+          {() => <Redirect to="/engine" />}
+        </Route>
+        <Route path="/admin/:rest*">
+          {(params) => <Redirect to={`/engine/${params['rest*']}`} />}
+        </Route>
 
         {/* Panel Portal - MyPanel and OrgPanel Routes */}
         <Route path="/mypanel" component={PanelRouter} />
@@ -60,9 +71,9 @@ function PortalRouter() {
           {() => <Redirect to="/mypanel/dashboard" />}
         </Route>
 
-        {/* Analytics redirect - Move legacy /analytics to admin */}
+        {/* Analytics redirect - Move legacy /analytics to engine */}
         <Route path="/analytics">
-          {() => <Redirect to="/admin/analytics" />}
+          {() => <Redirect to="/engine/analytics" />}
         </Route>
 
         {/* API Reference */}

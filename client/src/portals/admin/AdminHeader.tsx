@@ -40,9 +40,9 @@ export default function AdminHeader({
       // Clear all cached queries
       queryClient.clear();
       
-      // Force a full page reload to the login page
+      // Force a full page reload to the Engine login page
       // This ensures all session state is completely cleared
-      window.location.href = '/admin/login';
+      window.location.href = '/engine/login';
     },
     onError: () => {
       toast({
@@ -83,7 +83,7 @@ export default function AdminHeader({
             </Button>
 
             <div className="flex items-center space-x-3">
-              <Link href="/admin" className="flex items-center">
+              <Link href="/engine" className="flex items-center">
                 <img 
                   src="/wytnet-logo.png" 
                   alt="WytNet" 
@@ -112,25 +112,25 @@ export default function AdminHeader({
               </Button>
             </Link>
 
-            <Link href="/admin/search">
+            <Link href="/engine/search">
               <Button variant="ghost" size="sm" data-testid="admin-search">
                 <Search className="h-5 w-5" />
               </Button>
             </Link>
 
-            <Link href="/admin/notifications">
+            <Link href="/engine/notifications">
               <Button variant="ghost" size="sm" data-testid="admin-notifications">
                 <Bell className="h-5 w-5" />
               </Button>
             </Link>
 
-            <Link href="/admin/system-status">
+            <Link href="/engine/system-status">
               <Button variant="ghost" size="sm" data-testid="admin-system-monitor">
                 <Activity className="h-5 w-5" />
               </Button>
             </Link>
 
-            <Link href="/admin/help">
+            <Link href="/engine/help">
               <Button variant="ghost" size="sm" data-testid="admin-help">
                 <HelpCircle className="h-5 w-5" />
               </Button>
@@ -184,19 +184,19 @@ export default function AdminHeader({
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                <Link href="/admin/profile">
+                <Link href="/engine/profile">
                   <DropdownMenuItem className="cursor-pointer" data-testid="admin-menu-profile">
                     <User className="mr-2 h-4 w-4" />
                     <span>Admin Profile</span>
                   </DropdownMenuItem>
                 </Link>
-                <Link href="/admin/settings">
+                <Link href="/engine/settings">
                   <DropdownMenuItem className="cursor-pointer" data-testid="admin-menu-settings">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Admin Settings</span>
                   </DropdownMenuItem>
                 </Link>
-                <Link href="/admin/security">
+                <Link href="/engine/security">
                   <DropdownMenuItem className="cursor-pointer" data-testid="admin-menu-security">
                     <Shield className="mr-2 h-4 w-4" />
                     <span>Security</span>

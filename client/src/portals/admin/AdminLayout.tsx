@@ -31,9 +31,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  // Redirect to admin login if not authenticated
+  // Redirect to engine login if not authenticated
   if (!isAdminAuthenticated) {
-    return <Redirect to="/admin/login" />;
+    return <Redirect to="/engine/login" />;
   }
 
   // Use mobile-specific layout for small screens
@@ -63,12 +63,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           sidebarCollapsed ? 'ml-16' : 'ml-64'
         }`}>
           <div className="p-6">
-            {/* Admin page indicator */}
+            {/* Engine admin indicator */}
             <div className="mb-6 p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 bg-red-600 rounded-full animate-pulse"></div>
                 <span className="text-sm font-medium text-red-700 dark:text-red-300">
-                  Admin Portal - {adminUser?.isSuperAdmin ? 'Super Admin' : 'Admin'} Access
+                  Engine Administration - {adminUser?.isSuperAdmin ? 'Super Admin' : 'Admin'} Access
                 </span>
               </div>
             </div>

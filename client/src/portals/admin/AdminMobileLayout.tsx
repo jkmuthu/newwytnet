@@ -55,9 +55,9 @@ export default function AdminMobileLayout({ children }: AdminMobileLayoutProps) 
       // Clear all cached queries
       queryClient.clear();
       
-      // Force a full page reload to the login page
+      // Force a full page reload to the Engine login page
       // This ensures all session state is completely cleared
-      window.location.href = '/admin/login';
+      window.location.href = '/engine/login';
     },
     onError: () => {
       toast({
@@ -84,28 +84,28 @@ export default function AdminMobileLayout({ children }: AdminMobileLayoutProps) 
   // Bottom navigation items for mobile admin
   const bottomNavItems = [
     {
-      href: "/admin",
+      href: "/engine",
       icon: LayoutDashboard,
       label: "Dashboard",
-      active: location === "/admin"
+      active: location === "/engine"
     },
     {
-      href: "/admin/users",
+      href: "/engine/users",
       icon: Users,
       label: "Users",
-      active: location === "/admin/users"
+      active: location === "/engine/users"
     },
     {
-      href: "/admin/modules",
+      href: "/engine/modules",
       icon: Package,
       label: "Modules",
-      active: location === "/admin/modules"
+      active: location === "/engine/modules"
     },
     {
-      href: "/admin/analytics",
+      href: "/engine/analytics",
       icon: BarChart3,
       label: "Analytics",
-      active: location === "/admin/analytics"
+      active: location === "/engine/analytics"
     }
   ];
 
@@ -114,51 +114,51 @@ export default function AdminMobileLayout({ children }: AdminMobileLayoutProps) 
     {
       section: "Dashboard",
       items: [
-        { icon: LayoutDashboard, label: 'Overview', href: '/admin' },
+        { icon: LayoutDashboard, label: 'Overview', href: '/engine' },
       ]
     },
     {
       section: "Data Management",
       items: [
-        { icon: Users, label: 'All Users', href: '/admin/users' },
-        { icon: Building, label: 'All Orgs', href: '/admin/tenants' },
-        { icon: Package, label: 'DataSets', href: '/admin/datasets' },
-        { icon: Package, label: 'Media', href: '/admin/media' },
+        { icon: Users, label: 'All Users', href: '/engine/users' },
+        { icon: Building, label: 'All Orgs', href: '/engine/tenants' },
+        { icon: Package, label: 'DataSets', href: '/engine/datasets' },
+        { icon: Package, label: 'Media', href: '/engine/media' },
       ]
     },
     {
       section: "Platform Management",
       items: [
-        { icon: Package, label: 'Modules', href: '/admin/modules' },
-        { icon: Package, label: 'Apps', href: '/admin/apps' },
-        { icon: Package, label: 'Hubs', href: '/admin/hubs' },
-        { icon: Package, label: 'CMS', href: '/admin/cms' },
-        { icon: Package, label: 'Themes', href: '/admin/themes' },
+        { icon: Package, label: 'Modules', href: '/engine/modules' },
+        { icon: Package, label: 'Apps', href: '/engine/apps' },
+        { icon: Package, label: 'Hubs', href: '/engine/hubs' },
+        { icon: Package, label: 'CMS', href: '/engine/cms' },
+        { icon: Package, label: 'Themes', href: '/engine/themes' },
       ]
     },
     {
       section: "Operations",
       items: [
-        { icon: Package, label: 'Plans & Prices', href: '/admin/plans-prices' },
-        { icon: Package, label: 'Help & Support', href: '/admin/help-support' },
-        { icon: Package, label: 'Billing', href: '/admin/billing' },
-        { icon: Package, label: 'Transactions', href: '/admin/transactions' },
-        { icon: BarChart3, label: 'Analytics', href: '/admin/analytics' },
+        { icon: Package, label: 'Plans & Prices', href: '/engine/plans-prices' },
+        { icon: Package, label: 'Help & Support', href: '/engine/help-support' },
+        { icon: Package, label: 'Billing', href: '/engine/billing' },
+        { icon: Package, label: 'Transactions', href: '/engine/transactions' },
+        { icon: BarChart3, label: 'Analytics', href: '/engine/analytics' },
       ]
     },
     {
       section: "System & Config",
       items: [
-        { icon: Package, label: 'Integrations', href: '/admin/integrations' },
-        { icon: Settings, label: 'SEO Settings', href: '/admin/seo-settings' },
-        { icon: Settings, label: 'Global Settings', href: '/admin/global-settings' },
-        { icon: Shield, label: 'Roles & Permissions', href: '/admin/roles-permissions' },
-        { icon: Users, label: 'Admin Users', href: '/admin/admin-users' },
-        { icon: Package, label: 'Backups', href: '/admin/backups' },
-        { icon: Package, label: 'System Logs', href: '/admin/system-logs' },
-        { icon: Package, label: 'System Monitor', href: '/admin/system-monitor' },
-        { icon: Package, label: 'System Status', href: '/admin/system-status' },
-        { icon: Shield, label: 'Security', href: '/admin/security' },
+        { icon: Package, label: 'Integrations', href: '/engine/integrations' },
+        { icon: Settings, label: 'SEO Settings', href: '/engine/seo-settings' },
+        { icon: Settings, label: 'Global Settings', href: '/engine/global-settings' },
+        { icon: Shield, label: 'Roles & Permissions', href: '/engine/roles-permissions' },
+        { icon: Users, label: 'Admin Users', href: '/engine/admin-users' },
+        { icon: Package, label: 'Backups', href: '/engine/backups' },
+        { icon: Package, label: 'System Logs', href: '/engine/system-logs' },
+        { icon: Package, label: 'System Monitor', href: '/engine/system-monitor' },
+        { icon: Package, label: 'System Status', href: '/engine/system-status' },
+        { icon: Shield, label: 'Security', href: '/engine/security' },
       ]
     }
   ];
@@ -179,7 +179,7 @@ export default function AdminMobileLayout({ children }: AdminMobileLayoutProps) 
                 />
               </Link>
               <Badge variant="destructive" className="bg-red-600 text-xs">
-                Admin
+                Engine
               </Badge>
               {adminUser?.isSuperAdmin && (
                 <Badge variant="outline" className="border-yellow-500 text-yellow-600 text-xs">
@@ -256,7 +256,7 @@ export default function AdminMobileLayout({ children }: AdminMobileLayoutProps) 
                   <SheetHeader>
                     <SheetTitle className="flex items-center gap-2">
                       <Shield className="h-6 w-6 text-red-600" />
-                      Admin Portal
+                      Engine Admin
                       {adminUser?.isSuperAdmin && (
                         <Badge variant="outline" className="border-yellow-500 text-yellow-600 text-xs">
                           Super Admin
@@ -294,12 +294,12 @@ export default function AdminMobileLayout({ children }: AdminMobileLayoutProps) 
         </div>
       </header>
 
-      {/* Admin Banner */}
+      {/* Engine Admin Banner */}
       <div className="bg-red-50 dark:bg-red-950 border-b border-red-200 dark:border-red-800 px-4 py-2">
         <div className="flex items-center justify-center gap-2 text-sm">
           <div className="h-2 w-2 bg-red-600 rounded-full animate-pulse"></div>
           <span className="font-medium text-red-700 dark:text-red-300">
-            Admin Portal - {adminUser?.isSuperAdmin ? 'Super Admin' : 'Admin'} Access
+            Engine Administration - {adminUser?.isSuperAdmin ? 'Super Admin' : 'Admin'} Access
           </span>
         </div>
       </div>

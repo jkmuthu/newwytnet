@@ -168,65 +168,68 @@ function AdminAI() {
 }
 
 /**
- * AdminRouter - Handles all admin routes
+ * AdminRouter (now EngineRouter) - Handles all Engine admin routes
+ * This is the Super Admin Panel for managing the Engine infrastructure
+ * Note: Component name kept as "AdminRouter" for backwards compatibility,
+ * but conceptually this is the Engine administration interface
  */
 export default function AdminRouter() {
   return (
     <AdminGate>
       <AdminLayout>
         <Switch>
-          {/* Main admin dashboard */}
-          <Route path="/admin" component={AdminDashboard} />
+          {/* Main engine dashboard */}
+          <Route path="/engine" component={AdminDashboard} />
 
           {/* Data Management Routes */}
-          <Route path="/admin/users" component={AdminUsers} />
-          <Route path="/admin/tenants" component={AdminTenants} />
-          <Route path="/admin/datasets" component={AdminDatasetManagement} />
-          <Route path="/admin/media" component={AdminMedia} />
+          <Route path="/engine/users" component={AdminUsers} />
+          <Route path="/engine/tenants" component={AdminTenants} />
+          <Route path="/engine/datasets" component={AdminDatasetManagement} />
+          <Route path="/engine/media" component={AdminMedia} />
 
           {/* Platform Management Routes */}
-          <Route path="/admin/app-builder" component={AdminAppBuilder} />
-          <Route path="/admin/modules" component={AdminModules} />
-          <Route path="/admin/apps" component={AdminApps} />
-          <Route path="/admin/hubs" component={AdminHubs} />
-          <Route path="/admin/cms" component={AdminCMS} />
-          <Route path="/admin/themes" component={AdminThemes} />
+          <Route path="/engine/app-builder" component={AdminAppBuilder} />
+          <Route path="/engine/modules" component={AdminModules} />
+          <Route path="/engine/apps" component={AdminApps} />
+          <Route path="/engine/hubs" component={AdminHubs} />
+          <Route path="/engine/cms" component={AdminCMS} />
+          <Route path="/engine/themes" component={AdminThemes} />
 
           {/* Operations Routes */}
-          <Route path="/admin/plans-prices" component={AdminPlansPrices} />
-          <Route path="/admin/help-support" component={AdminHelpSupport} />
-          <Route path="/admin/billing" component={AdminBillingPage} />
-          <Route path="/admin/transactions" component={AdminTransactions} />
-          <Route path="/admin/analytics" component={AdminAnalytics} />
+          <Route path="/engine/plans-prices" component={AdminPlansPrices} />
+          <Route path="/engine/help-support" component={AdminHelpSupport} />
+          <Route path="/engine/billing" component={AdminBillingPage} />
+          <Route path="/engine/transactions" component={AdminTransactions} />
+          <Route path="/engine/analytics" component={AdminAnalytics} />
 
           {/* System & Config Routes */}
-          <Route path="/admin/platform-registry" component={AdminPlatformRegistry} />
-          <Route path="/admin/integrations" component={AdminIntegrations} />
-          <Route path="/admin/seo-settings" component={AdminSeoSettings} />
-          <Route path="/admin/global-settings" component={AdminGlobalSettings} />
-          <Route path="/admin/roles-permissions" component={AdminRolesPermissions} />
-          <Route path="/admin/admin-users" component={AdminAdminUsers} />
-          <Route path="/admin/backups" component={AdminBackups} />
-          <Route path="/admin/system-logs" component={AdminSystemLogs} />
-          <Route path="/admin/system-monitor" component={AdminSystemMonitor} />
-          <Route path="/admin/system-status" component={AdminSystemStatus} />
-          <Route path="/admin/security" component={AdminSecurity} />
+          <Route path="/engine/platform-registry" component={AdminPlatformRegistry} />
+          <Route path="/engine/integrations" component={AdminIntegrations} />
+          <Route path="/engine/seo-settings" component={AdminSeoSettings} />
+          <Route path="/engine/global-settings" component={AdminGlobalSettings} />
+          <Route path="/engine/roles-permissions" component={AdminRolesPermissions} />
+          <Route path="/engine/admin-users" component={AdminAdminUsers} />
+          <Route path="/engine/backups" component={AdminBackups} />
+          <Route path="/engine/system-logs" component={AdminSystemLogs} />
+          <Route path="/engine/system-monitor" component={AdminSystemMonitor} />
+          <Route path="/engine/system-status" component={AdminSystemStatus} />
+          <Route path="/engine/security" component={AdminSecurity} />
 
           {/* Legacy/Other Routes */}
-          <Route path="/admin/wytpoints" component={AdminWytPoints} />
-          <Route path="/admin/system-overview" component={AdminSystemOverview} />
-          <Route path="/admin/logs" component={AdminLogs} />
-          <Route path="/admin/ai" component={AdminAI} />
+          <Route path="/engine/wytpoints" component={AdminWytPoints} />
+          <Route path="/engine/system-overview" component={AdminSystemOverview} />
+          <Route path="/engine/logs" component={AdminLogs} />
+          <Route path="/engine/ai" component={AdminAI} />
 
-          {/* 404 fallback for admin routes */}
+          {/* 404 fallback for engine routes */}
           <Route>
             <div className="flex items-center justify-center py-20">
               <div className="text-center">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                  Admin Route Not Found
+                  Engine Route Not Found
                 </h1>
                 <p className="text-gray-600 dark:text-gray-300">
-                  The requested admin route does not exist
+                  The requested engine route does not exist
                 </p>
               </div>
             </div>
