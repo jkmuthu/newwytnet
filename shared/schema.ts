@@ -442,16 +442,26 @@ export const appEditHistory = pgTable("app_edit_history", {
 // Geo-Regulatory Rules - Define country/state-specific rules and restrictions
 export const geoRegulatoryRules = pgTable("geo_regulatory_rules", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  hubId: uuid("hub_id").references(() => hubs.id, { onDelete: 'cascade' }), // null = platform-wide rule
+  
+  // Multi-tenant Scoping - At least one must be set
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: 'cascade' }), // Tenant-specific rule
+  hubId: uuid("hub_id").references(() => hubs.id, { onDelete: 'cascade' }), // Hub-specific rule
+  appId: uuid("app_id").references(() => apps.id, { onDelete: 'cascade' }), // App-specific rule
+  // null for all = platform-wide default rule
   
   // Geographic Scope
   countryCode: varchar("country_code", { length: 2 }).notNull(), // ISO 3166-1 alpha-2 (IN, US, GB, etc.)
   stateCode: varchar("state_code", { length: 10 }), // Optional state/province code (TN, CA, etc.)
-  regionName: varchar("region_name", { length: 255 }), // Display name (India, Tamil Nadu, etc.)
+  regionName: varchar("region_name", { length: 255 }).notNull(), // Display name (India, Tamil Nadu, etc.)
   
   // Compliance Framework
   complianceTemplate: varchar("compliance_template", { length: 50 }), // 'GDPR', 'CCPA', 'PDPA', 'IT_ACT_2000', 'custom'
   complianceLevel: varchar("compliance_level", { length: 20 }).notNull().default('basic'), // 'basic', 'detailed', 'strict'
+  legalBasis: text("legal_basis"), // Legal reference/justification for this rule
+  
+  // Lifecycle Management
+  effectiveDate: timestamp("effective_date").notNull().defaultNow(), // When rule becomes active
+  expiryDate: timestamp("expiry_date"), // null = permanent, or specific end date
   
   // Module & Feature Restrictions
   restrictedModules: jsonb("restricted_modules").default([]), // ['module-id-1', 'module-id-2'] - modules not allowed
@@ -471,6 +481,7 @@ export const geoRegulatoryRules = pgTable("geo_regulatory_rules", {
   governmentMonitoringEnabled: boolean("government_monitoring_enabled").default(false),
   governmentAccessLevel: varchar("government_access_level", { length: 20 }), // 'none', 'read_only', 'analytics_only'
   governmentContactEmail: varchar("government_contact_email", { length: 255 }),
+  governmentConsentCaptured: boolean("government_consent_captured").default(false), // User consent for monitoring
   
   // Rule Status & Metadata
   isActive: boolean("is_active").notNull().default(true),
@@ -478,11 +489,16 @@ export const geoRegulatoryRules = pgTable("geo_regulatory_rules", {
   notes: text("notes"), // Internal notes about this rule
   
   createdBy: varchar("created_by").references(() => users.id),
+  updatedBy: varchar("updated_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   countryIdx: index("geo_rule_country_idx").on(table.countryCode),
-  hubCountryIdx: index("geo_rule_hub_country_idx").on(table.hubId, table.countryCode),
+  stateIdx: index("geo_rule_state_idx").on(table.countryCode, table.stateCode),
+  tenantIdx: index("geo_rule_tenant_idx").on(table.tenantId),
+  hubIdx: index("geo_rule_hub_idx").on(table.hubId),
+  appIdx: index("geo_rule_app_idx").on(table.appId),
+  activeIdx: index("geo_rule_active_idx").on(table.isActive, table.effectiveDate, table.expiryDate),
 }));
 
 // Geo-Compliance Logs - Audit trail for regulatory compliance and government access
@@ -498,17 +514,25 @@ export const geoComplianceLogs = pgTable("geo_compliance_logs", {
   countryCode: varchar("country_code", { length: 2 }).notNull(),
   stateCode: varchar("state_code", { length: 10 }),
   
+  // Multi-tenant Context
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: 'set null' }),
+  hubId: uuid("hub_id").references(() => hubs.id, { onDelete: 'set null' }),
+  appId: uuid("app_id").references(() => apps.id, { onDelete: 'set null' }),
+  
   // User & Resource Context
   userId: varchar("user_id").references(() => users.id, { onDelete: 'set null' }),
-  hubId: uuid("hub_id").references(() => hubs.id, { onDelete: 'set null' }),
   resourceType: varchar("resource_type", { length: 50 }), // 'module', 'feature', 'content', 'data'
   resourceId: varchar("resource_id", { length: 255 }),
+  
+  // Request Context - Critical for audit trail
+  requestId: varchar("request_id", { length: 100 }), // Unique request identifier for tracing
+  sessionId: varchar("session_id", { length: 255 }), // User session ID
   
   // Action & Result
   action: varchar("action", { length: 100 }).notNull(), // 'access_attempt', 'module_load', 'data_export_request'
   result: varchar("result", { length: 50 }).notNull(), // 'allowed', 'blocked', 'warned', 'filtered'
   
-  // Additional Metadata
+  // Network & Client Context
   ipAddress: varchar("ip_address", { length: 45 }), // IPv4 or IPv6
   userAgent: text("user_agent"),
   metadata: jsonb("metadata").default({}), // Additional event-specific data
@@ -517,13 +541,18 @@ export const geoComplianceLogs = pgTable("geo_compliance_logs", {
   governmentAccess: boolean("government_access").default(false),
   governmentOfficer: varchar("government_officer", { length: 255 }), // If government accessed
   accessReason: text("access_reason"), // Legal/warrant reason for access
+  warrantNumber: varchar("warrant_number", { length: 100 }), // Legal warrant reference
   
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 }, (table) => ({
   eventTypeIdx: index("geo_log_event_type_idx").on(table.eventType),
   timestampIdx: index("geo_log_timestamp_idx").on(table.timestamp),
   userIdx: index("geo_log_user_idx").on(table.userId),
+  tenantIdx: index("geo_log_tenant_idx").on(table.tenantId),
+  hubIdx: index("geo_log_hub_idx").on(table.hubId),
+  appIdx: index("geo_log_app_idx").on(table.appId),
   governmentIdx: index("geo_log_government_idx").on(table.governmentAccess),
+  requestIdx: index("geo_log_request_idx").on(table.requestId),
 }));
 
 // User App Installations - Tracks which platform modules/apps users have installed
