@@ -104,6 +104,39 @@ The platform implements comprehensive version control and access management for 
 - **Module Catalog**: All 45 modules in MODULE_CATALOG include version, changelog, route, and restriction information
 - **Admin UI**: Enhanced management interfaces display version info, allow route editing, show edit history, and provide context/restriction controls
 
+### AI-Assisted Module & App Improvement Workflow
+The platform integrates GPT-4 powered AI assistance directly into Module and App management interfaces:
+
+#### Architecture
+- **AdminDetailWorkspace Component**: 2-column responsive layout (3fr controls + 2fr AI chat) with independent ScrollAreas
+- **AIAssistantChat Component**: Full-featured chat interface with message history, streaming responses, and contextual quick actions
+- **Backend Integration**: Dedicated AI chat endpoints with full module/app context aggregation
+
+#### Features
+- **Conversational Assistance**: Real-time chat with GPT-4 for iterative module/app improvement
+- **Quick Action Buttons**:
+  - "Suggest Title" - AI-powered title recommendations based on module/app functionality
+  - "Review Dependencies" - Dependency analysis and compatibility suggestions
+  - "Draft Changelog" - Automatic changelog generation for version updates
+- **Apply Suggestions**: One-click application of AI recommendations to draft fields (route, contexts, restrictions)
+- **Context-Aware**: AI receives complete module/app metadata (name, description, category, version, route, dependencies, changelog) for intelligent suggestions
+
+#### API Endpoints
+- **POST /api/admin/modules/:moduleId/ai-chat** - AI chat for module improvement with conversation history
+- **POST /api/admin/apps/:appId/ai-chat** - AI chat for app enhancement with conversation history
+
+#### User Experience
+- **Integrated Workflow**: AI assistant appears on right side of module/app detail dialogs (max-w-6xl)
+- **Streaming Responses**: Real-time AI responses with loading states
+- **Suggestion Preview**: Structured JSON suggestions parsed from AI responses when available
+- **Toast Notifications**: Confirmation when AI suggestions are applied to fields
+
+#### Technical Implementation
+- **OpenAI Integration**: Uses GPT-4 model via aiService with context injection
+- **Message Management**: Maintains last 5 conversation messages for context continuity
+- **Error Handling**: Graceful fallback when AI service unavailable (503 status)
+- **Security**: Admin-only access via adminAuthMiddleware, conversation history sanitization
+
 # External Dependencies
 
 ## Database Integration
