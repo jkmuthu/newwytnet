@@ -18,6 +18,9 @@ The backend is an Express.js application with TypeScript, providing RESTful APIs
 ## Data Storage Architecture
 PostgreSQL is the primary database, using Drizzle ORM. Multi-tenancy is implemented via `tenant_id` columns and Row Level Security. Core tables manage tenants, users, models, content, applications, and hubs, with junction tables handling complex entity relationships.
 
+### Global Display ID System
+The platform uses a unified Display ID system providing human-readable, globally unique identifiers across all entities. Format: 2-letter prefix + zero-padded number (e.g., UR0000001, OR00001). All Display IDs are generated using PostgreSQL sequences for concurrency safety and uniqueness. Key prefixes: UR (Users), OR (Organizations), TN (Tenants), EN (Entities), MD (Modules), AP (Apps), HB (Hubs), ME (Media), WI (WytID), ND (Needs), OF (Offers), AS (Assessments), TM (Trademarks).
+
 ## Modular Architecture
 The system is organized into self-contained packages (`kernel`, `builder`, `cms`, `appkit`, `hubkit`) within a monorepo. It features a context-based module system (WordPress-style) where modules are self-contained, context-aware components (Platform, Hub, App, Game) with dependency management and API exposure. This includes Engine-level (core infrastructure) and Hub-level modules (feature modules) and an auto-seeding system for module definitions.
 
