@@ -31,6 +31,7 @@ export const sessions = pgTable(
 // Core tenant table for multi-tenancy
 export const tenants = pgTable("tenants", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // TNT-00001
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
   domain: varchar("domain", { length: 255 }).unique(),
@@ -39,7 +40,9 @@ export const tenants = pgTable("tenants", {
   settings: jsonb("settings").default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_tenants_display_id").on(table.displayId),
+]);
 
 // Enums - must be defined before they are used
 export const genderEnum = pgEnum("gender", ["male", "female", "other", "prefer_not_to_say"]);
@@ -48,6 +51,7 @@ export const userRoleEnum = pgEnum("user_role", ["super_admin", "admin", "manage
 // Users table with RLS support - unified for all authentication methods
 export const users = pgTable("users", {
   id: varchar("id").primaryKey(),
+  displayId: varchar("display_id", { length: 20 }).unique(), // USR-0000001
   email: varchar("email").unique(),
   name: varchar("name", { length: 255 }),
   firstName: varchar("first_name"),
@@ -78,7 +82,9 @@ export const users = pgTable("users", {
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_users_display_id").on(table.displayId),
+]);
 
 
 // User Profiles - Detailed user information
@@ -247,6 +253,7 @@ export const blocks = pgTable("blocks", {
 // Apps
 export const apps = pgTable("apps", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // APP-0001
   tenantId: uuid("tenant_id").references(() => tenants.id),
   key: varchar("key", { length: 100 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
@@ -290,6 +297,7 @@ export const appInstalls = pgTable("app_installs", {
 // Hubs
 export const hubs = pgTable("hubs", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // HUB-001
   key: varchar("key", { length: 100 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
@@ -302,12 +310,15 @@ export const hubs = pgTable("hubs", {
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_hubs_display_id").on(table.displayId),
+]);
 
 // Platform Modules - Context-Aware Plugins (like WordPress plugins)
 // Modules are small, focused plugins that can be activated in different contexts
 export const platformModules = pgTable("platform_modules", {
   id: varchar("id").primaryKey(), // 'razorpay-payment', 'calendar', 'wytpass-auth', etc.
+  displayId: varchar("display_id", { length: 20 }).unique(), // MOD-0001
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   category: varchar("category", { length: 50 }).notNull().default('platform'),
@@ -592,6 +603,7 @@ export const entityTypes = pgTable("entity_types", {
 // Entities - Main entity data (the "Objects" from original concept)
 export const entities = pgTable("entities", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // ENT-00001
   
   // Core Identity
   title: varchar("title", { length: 255 }).notNull(), // Primary name
@@ -867,6 +879,7 @@ export const subscriptions = pgTable("subscriptions", {
 // Media files
 export const media = pgTable("media", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // MED-00001
   tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
   filename: varchar("filename", { length: 255 }).notNull(),
   originalName: varchar("original_name", { length: 255 }).notNull(),
@@ -876,7 +889,9 @@ export const media = pgTable("media", {
   metadata: jsonb("metadata").default({}),
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_media_display_id").on(table.displayId),
+]);
 
 // Audit logs
 export const auditLogs = pgTable("audit_logs", {
@@ -932,6 +947,7 @@ export const wytidTransferStatusEnum = pgEnum('wytid_transfer_status', ['pending
 // WytID Entities
 export const wytidEntities = pgTable("wytid_entities", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // WID-00001
   type: wytidEntityTypeEnum("type").notNull(),
   identifier: varchar("identifier", { length: 100 }).notNull().unique(),
   meta: jsonb("meta").notNull().default({}),
@@ -940,6 +956,7 @@ export const wytidEntities = pgTable("wytid_entities", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
+  index("idx_wytid_entities_display_id").on(table.displayId),
   index("idx_wytid_entities_owner").on(table.ownerUserId),
   index("idx_wytid_entities_tenant").on(table.tenantId),
   index("idx_wytid_entities_type").on(table.type),
@@ -1341,6 +1358,7 @@ export const similarityAlgorithmEnum = pgEnum('similarity_algorithm', ['wytai_se
 // Core trademark records from Indian Patent Office
 export const trademarks = pgTable("trademarks", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // TMK-00001
   // Official trademark details
   applicationNumber: varchar("application_number", { length: 50 }).notNull().unique(),
   registrationNumber: varchar("registration_number", { length: 50 }),
@@ -1621,6 +1639,7 @@ export const assessmentCategories = pgTable("assessment_categories", {
 
 export const assessmentQuestions = pgTable("assessment_questions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // ASM-0001
   categoryId: uuid("category_id").references(() => assessmentCategories.id),
   questionNumber: integer("question_number").notNull(),
   questionText: text("question_text").notNull(),
@@ -2074,7 +2093,7 @@ export type CreateGeoComplianceLogType = z.infer<typeof createGeoComplianceLogSc
 
 // Entity Types
 export type EntityType = typeof entityTypes.$inferSelect;
-export type InsertEntityType = typeof entityTypes.$inferInsert;
+export type InsertEntityTypeModel = typeof entityTypes.$inferInsert;
 
 export const insertEntityTypeSchema = createInsertSchema(entityTypes).omit({ id: true, createdAt: true, updatedAt: true });
 export const selectEntityTypeSchema = createSelectSchema(entityTypes);
@@ -2443,6 +2462,7 @@ export const approvalStatusEnum = pgEnum("approval_status", [
 // Needs - Marketplace needs posted by users
 export const needs = pgTable("needs", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // NED-00001
   userId: varchar("user_id").notNull().references(() => users.id),
   tenantId: uuid("tenant_id").references(() => tenants.id),
   title: varchar("title", { length: 255 }).notNull(),
@@ -2469,6 +2489,7 @@ export const needs = pgTable("needs", {
 // Offers - Standalone marketplace offers posted by users
 export const offers = pgTable("offers", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // OFR-00001
   userId: varchar("user_id").notNull().references(() => users.id),
   tenantId: uuid("tenant_id").references(() => tenants.id),
   title: varchar("title", { length: 255 }).notNull(),
@@ -2623,6 +2644,7 @@ export const matches = pgTable("matches", {
 // Organizations - For OurPanel multi-user workspaces
 export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // ORG-00001
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
   ownerId: varchar("owner_id").notNull().references(() => users.id),
@@ -2633,7 +2655,9 @@ export const organizations = pgTable("organizations", {
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_organizations_display_id").on(table.displayId),
+]);
 
 // Organization Members - Team members in organizations
 export const organizationMembers = pgTable("organization_members", {
