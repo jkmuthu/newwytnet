@@ -33,7 +33,7 @@ interface Organization {
 const sampleOrganizations: Organization[] = [
   {
     id: '1',
-    displayId: 'ORG-00001',
+    displayId: 'OR00001',
     name: 'TechCorp Solutions',
     slug: 'techcorp-solutions',
     status: 'active',
@@ -48,7 +48,7 @@ const sampleOrganizations: Organization[] = [
   },
   {
     id: '2',
-    displayId: 'ORG-00002',
+    displayId: 'OR00002',
     name: 'Global Innovations Inc',
     slug: 'global-innovations',
     status: 'active',
@@ -63,7 +63,7 @@ const sampleOrganizations: Organization[] = [
   },
   {
     id: '3',
-    displayId: 'ORG-00003',
+    displayId: 'OR00003',
     name: 'Creative Agency Pro',
     slug: 'creative-agency-pro',
     status: 'active',
@@ -78,7 +78,7 @@ const sampleOrganizations: Organization[] = [
   },
   {
     id: '4',
-    displayId: 'ORG-00004',
+    displayId: 'OR00004',
     name: 'FinTech Ventures',
     slug: 'fintech-ventures',
     status: 'inactive',
@@ -93,7 +93,7 @@ const sampleOrganizations: Organization[] = [
   },
   {
     id: '5',
-    displayId: 'ORG-00005',
+    displayId: 'OR00005',
     name: 'HealthCare Plus',
     slug: 'healthcare-plus',
     status: 'active',
