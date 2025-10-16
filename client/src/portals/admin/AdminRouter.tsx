@@ -8,7 +8,7 @@ import { Activity } from "lucide-react";
 
 // Import existing admin components
 import AdminDashboard from "@/pages/admin/AdminDashboard";
-import AdminUsers from "@/pages/admin/users";
+import AdminUsers from "@/pages/admin/users-improved";
 import AdminTenants from "@/pages/admin/tenants";
 import AdminModules from "@/pages/admin/modules";
 import AdminApps from "@/pages/admin/apps";
@@ -18,7 +18,7 @@ import AdminSystemOverview from "@/pages/admin/system-overview";
 import AdminSeoSettings from "@/pages/admin/seo-settings";
 import AppManagement from "@/pages/admin/AppManagement";
 import AdminWytPoints from "@/pages/admin/wytpoints";
-import AdminDatasetManagement from "@/pages/admin/dataset-management";
+import AdminDatasetManagement from "@/pages/admin/dataset-management-improved";
 import AdminEntities from "@/pages/admin/entities";
 
 // Import admin analytics (legacy)
@@ -42,6 +42,10 @@ import AdminSystemStatus from "@/pages/admin/system-status";
 import AdminSecurity from "@/pages/admin/security";
 import AdminPlatformRegistry from "@/pages/admin/platform-registry";
 import AdminGeoRegulatory from "@/pages/admin/geo-regulatory";
+import AdminProfile from "@/pages/admin/profile";
+import AdminSettings from "@/pages/admin/settings";
+import AdminSearch from "@/pages/admin/search";
+import AdminNotifications from "@/pages/admin/notifications";
 
 // Keep AdminIntegrations, AdminLogs, and AdminAI as inline components for now
 function AdminIntegrations() {
@@ -182,6 +186,13 @@ export default function AdminRouter() {
         <Switch>
           {/* Main engine dashboard */}
           <Route path="/engine" component={AdminDashboard} />
+
+          {/* Admin Profile & Settings */}
+          <Route path="/engine/profile" component={AdminProfile} />
+          <Route path="/engine/settings" component={AdminSettings} />
+          <Route path="/engine/search" component={AdminSearch} />
+          <Route path="/engine/notifications" component={AdminNotifications} />
+          <Route path="/engine/help" component={AdminHelpSupport} />
 
           {/* Data Management Routes */}
           <Route path="/engine/users" component={AdminUsers} />

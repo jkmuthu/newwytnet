@@ -294,16 +294,6 @@ export default function AdminMobileLayout({ children }: AdminMobileLayoutProps) 
         </div>
       </header>
 
-      {/* Engine Admin Banner */}
-      <div className="bg-red-50 dark:bg-red-950 border-b border-red-200 dark:border-red-800 px-4 py-2">
-        <div className="flex items-center justify-center gap-2 text-sm">
-          <div className="h-2 w-2 bg-red-600 rounded-full animate-pulse"></div>
-          <span className="font-medium text-red-700 dark:text-red-300">
-            Engine Administration - {adminUser?.isSuperAdmin ? 'Super Admin' : 'Admin'} Access
-          </span>
-        </div>
-      </div>
-
       {/* Main Content */}
       <main className="flex-1 pb-20 p-4">
         {children}
