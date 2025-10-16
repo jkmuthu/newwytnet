@@ -141,6 +141,7 @@ This guide provides step-by-step instructions for testing the complete Roles & P
 
 **API Endpoint Tests** (use browser DevTools or Postman):
 
+#### Roles API Tests:
 1. **Test Roles View Permission**:
    ```
    GET /api/admin/roles
@@ -170,11 +171,60 @@ This guide provides step-by-step instructions for testing the complete Roles & P
    Expected: 200 if has permission, 403 if not (also blocks system roles)
    ```
 
+#### Platform Hubs API Tests:
+5. **Test Hubs View Permission**:
+   ```
+   GET /api/admin/platform-hubs
+   Required: hubs:view permission
+   Expected: 200 if has permission, 403 if not
+   ```
+
+6. **Test Hub Admin Assignment Permission**:
+   ```
+   POST /api/admin/platform-hubs/:hubId/admins
+   Body: { "userId": "...", "roleId": "..." }
+   Required: hubs:configure permission
+   Expected: 200 if has permission, 403 if not
+   ```
+
+7. **Test User Hubs Listing Permission**:
+   ```
+   GET /api/admin/users/:userId/platform-hubs
+   Required: hubs:view permission
+   Expected: 200 if has permission, 403 if not
+   ```
+
 ### Step 5.2: Super Admin Bypass
 
 1. Log in as Super Admin
 2. Access any protected route
 3. **Expected**: Always succeeds (super admins bypass all permission checks)
+
+### Step 5.3: RBAC Security Verification
+
+**Verify no RBAC bypass vulnerabilities**:
+
+1. Create a test admin user with NO hubs permissions
+2. Attempt to access: `GET /api/admin/platform-hubs`
+3. **Expected**: 403 Forbidden with error message:
+   ```json
+   {
+     "success": false,
+     "error": "Insufficient permissions",
+     "required": { "resource": "hubs", "action": "view" }
+   }
+   ```
+
+4. Create another user with `hubs:view` but NOT `hubs:configure`
+5. Attempt to assign hub admin: `POST /api/admin/platform-hubs/:hubId/admins`
+6. **Expected**: 403 Forbidden with:
+   ```json
+   {
+     "success": false,
+     "error": "Insufficient permissions",
+     "required": { "resource": "hubs", "action": "configure" }
+   }
+   ```
 
 ---
 

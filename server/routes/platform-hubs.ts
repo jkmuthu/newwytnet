@@ -350,7 +350,7 @@ router.delete("/admin/platform-hubs/:hubId/admins/:adminId", adminAuthMiddleware
 });
 
 // GET /api/admin/users/:userId/platform-hubs - Get all hubs for a user
-router.get("/admin/users/:userId/platform-hubs", adminAuthMiddleware, async (req, res) => {
+router.get("/admin/users/:userId/platform-hubs", adminAuthMiddleware, requirePermission('hubs', 'view'), async (req, res) => {
   try {
     const { userId } = req.params;
 
