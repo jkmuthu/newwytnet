@@ -44,7 +44,8 @@ export class ModuleSeedingService {
                 pricing: module.pricing || 'free',
                 price: module.price?.toString() || null,
                 icon: module.icon,
-                color: module.color
+                color: module.color,
+                route: `/modules/${module.id}` // Ensure route is set for existing modules too
               })
               .where(eq(platformModules.id, module.id));
             
