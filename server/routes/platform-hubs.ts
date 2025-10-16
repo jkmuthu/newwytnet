@@ -11,6 +11,7 @@ import {
 } from "@shared/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
 import { adminAuthMiddleware } from "../customAuth";
+import { requirePermission } from "../permission-middleware";
 
 const router = Router();
 
@@ -29,7 +30,7 @@ async function generateDisplayId(prefix: string): Promise<string> {
 // ============================================
 
 // GET /api/admin/platform-hubs - Get all platform hubs
-router.get("/admin/platform-hubs", adminAuthMiddleware, async (req, res) => {
+router.get("/admin/platform-hubs", adminAuthMiddleware, requirePermission('hubs', 'view'), async (req, res) => {
   try {
     const allHubs = await db
       .select()
@@ -71,7 +72,7 @@ router.get("/admin/platform-hubs", adminAuthMiddleware, async (req, res) => {
 });
 
 // GET /api/admin/platform-hubs/:id - Get hub by ID
-router.get("/admin/platform-hubs/:id", adminAuthMiddleware, async (req, res) => {
+router.get("/admin/platform-hubs/:id", adminAuthMiddleware, requirePermission('hubs', 'view'), async (req, res) => {
   try {
     const [hub] = await db
       .select()
@@ -117,7 +118,7 @@ router.get("/admin/platform-hubs/:id", adminAuthMiddleware, async (req, res) => 
 });
 
 // POST /api/admin/platform-hubs - Create new hub
-router.post("/admin/platform-hubs", adminAuthMiddleware, async (req, res) => {
+router.post("/admin/platform-hubs", adminAuthMiddleware, requirePermission('hubs', 'create'), async (req, res) => {
   try {
     const validatedData = insertPlatformHubSchema.parse(req.body);
     
@@ -149,7 +150,7 @@ router.post("/admin/platform-hubs", adminAuthMiddleware, async (req, res) => {
 });
 
 // PUT /api/admin/platform-hubs/:id - Update hub
-router.put("/admin/platform-hubs/:id", adminAuthMiddleware, async (req, res) => {
+router.put("/admin/platform-hubs/:id", adminAuthMiddleware, requirePermission('hubs', 'edit'), async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = insertPlatformHubSchema.partial().parse(req.body);
@@ -184,7 +185,7 @@ router.put("/admin/platform-hubs/:id", adminAuthMiddleware, async (req, res) => 
 });
 
 // DELETE /api/admin/platform-hubs/:id - Delete hub
-router.delete("/admin/platform-hubs/:id", adminAuthMiddleware, async (req, res) => {
+router.delete("/admin/platform-hubs/:id", adminAuthMiddleware, requirePermission('hubs', 'delete'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -212,7 +213,7 @@ router.delete("/admin/platform-hubs/:id", adminAuthMiddleware, async (req, res) 
 // ============================================
 
 // POST /api/admin/platform-hubs/:hubId/admins - Assign admin to hub
-router.post("/admin/platform-hubs/:hubId/admins", adminAuthMiddleware, async (req, res) => {
+router.post("/admin/platform-hubs/:hubId/admins", adminAuthMiddleware, requirePermission('hubs', 'configure'), async (req, res) => {
   try {
     const { hubId } = req.params;
     const { userId, roleId } = z.object({
@@ -290,7 +291,7 @@ router.post("/admin/platform-hubs/:hubId/admins", adminAuthMiddleware, async (re
 });
 
 // PUT /api/admin/platform-hubs/:hubId/admins/:adminId - Update hub admin
-router.put("/admin/platform-hubs/:hubId/admins/:adminId", adminAuthMiddleware, async (req, res) => {
+router.put("/admin/platform-hubs/:hubId/admins/:adminId", adminAuthMiddleware, requirePermission('hubs', 'configure'), async (req, res) => {
   try {
     const { hubId, adminId } = req.params;
     const { roleId, isActive } = z.object({
@@ -328,7 +329,7 @@ router.put("/admin/platform-hubs/:hubId/admins/:adminId", adminAuthMiddleware, a
 });
 
 // DELETE /api/admin/platform-hubs/:hubId/admins/:adminId - Remove admin from hub
-router.delete("/admin/platform-hubs/:hubId/admins/:adminId", adminAuthMiddleware, async (req, res) => {
+router.delete("/admin/platform-hubs/:hubId/admins/:adminId", adminAuthMiddleware, requirePermission('hubs', 'configure'), async (req, res) => {
   try {
     const { hubId, adminId } = req.params;
 
