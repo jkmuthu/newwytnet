@@ -359,29 +359,27 @@ export default function AdminRolesPermissions() {
   );
 }
 
-// Helper to get a nice label for resources
+// Helper to get a nice label for resources - simplified flat structure
 function getResourceLabel(resource: string): string {
   const labels: Record<string, string> = {
-    "all-users": "All Users",
-    "all-orgs": "All Orgs",
-    "all-entity": "All Entity",
-    "all-datasets": "All DataSets",
-    "all-modules": "All Modules",
-    "all-apps": "All Apps",
-    "all-hubs": "All Hubs",
-    "all-media": "All Media",
-    "all-themes": "All Themes",
-    "all-integrations": "All Integrations",
-    "pricing-plans": "Pricing Plans",
-    "roles-permissions": "Roles & Permissions",
-    "servers-backups": "Servers & Backups",
-    "help-centre": "Help Centre",
-    "engine-cms": "Engine CMS",
-    "system-security": "System & Security",
+    "users": "Users",
+    "organizations": "Organizations",
+    "entities": "Entities",
+    "datasets": "DataSets",
+    "media": "Media",
+    "modules": "Modules",
+    "apps": "Apps",
+    "hubs": "Hubs",
+    "cms": "CMS",
+    "themes": "Themes",
+    "integrations": "Integrations",
+    "pricing": "Pricing",
+    "help-support": "Help & Support",
     "analytics": "Analytics",
-    "global-settings": "Global Settings",
+    "roles-permissions": "Roles & Permissions",
+    "system-security": "System & Security",
   };
-  return labels[resource] || resource;
+  return labels[resource] || resource.charAt(0).toUpperCase() + resource.slice(1);
 }
 
 // Create Role Dialog Component with Table-based Permission Matrix

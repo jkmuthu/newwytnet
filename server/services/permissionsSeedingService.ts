@@ -2,26 +2,24 @@ import { db } from "../db";
 import { permissions, roles, rolePermissions } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 
-// Define engine-level resources/sections
+// Define engine-level resources/sections - aligned with menu structure
 const ENGINE_RESOURCES = [
-  { key: "all-users", label: "All Users", description: "Manage all platform users" },
-  { key: "all-orgs", label: "All Orgs", description: "Manage all organizations" },
-  { key: "all-entity", label: "All Entity", description: "Manage all entities" },
-  { key: "all-datasets", label: "All DataSets", description: "Manage all datasets" },
-  { key: "all-modules", label: "All Modules", description: "Manage all modules" },
-  { key: "all-apps", label: "All Apps", description: "Manage all applications" },
-  { key: "all-hubs", label: "All Hubs", description: "Manage all platform hubs" },
-  { key: "all-media", label: "All Media", description: "Manage all media files" },
-  { key: "all-themes", label: "All Themes", description: "Manage all themes" },
-  { key: "all-integrations", label: "All Integrations", description: "Manage all integrations" },
-  { key: "pricing-plans", label: "Pricing Plans", description: "Manage pricing and plans" },
-  { key: "roles-permissions", label: "Roles & Permissions", description: "Manage roles and permissions" },
-  { key: "servers-backups", label: "Servers & Backups", description: "Manage servers and backups" },
-  { key: "help-centre", label: "Help Centre", description: "Manage help centre content" },
-  { key: "engine-cms", label: "Engine CMS", description: "Manage Engine CMS content" },
-  { key: "system-security", label: "System & Security", description: "Manage system security settings" },
+  { key: "users", label: "Users", description: "Manage all platform users" },
+  { key: "organizations", label: "Organizations", description: "Manage all organizations" },
+  { key: "entities", label: "Entities", description: "Manage all entities" },
+  { key: "datasets", label: "DataSets", description: "Manage all datasets" },
+  { key: "media", label: "Media", description: "Manage all media files" },
+  { key: "modules", label: "Modules", description: "Manage module library" },
+  { key: "apps", label: "Apps", description: "Manage all applications" },
+  { key: "hubs", label: "Hubs", description: "Manage platform hubs" },
+  { key: "cms", label: "CMS", description: "Manage CMS content" },
+  { key: "themes", label: "Themes", description: "Manage all themes" },
+  { key: "integrations", label: "Integrations", description: "Manage all integrations" },
+  { key: "pricing", label: "Pricing", description: "Manage pricing and plans" },
+  { key: "help-support", label: "Help & Support", description: "Manage help centre content" },
   { key: "analytics", label: "Analytics", description: "View and manage analytics" },
-  { key: "global-settings", label: "Global Settings", description: "Manage global platform settings" },
+  { key: "roles-permissions", label: "Roles & Permissions", description: "Manage roles and permissions" },
+  { key: "system-security", label: "System & Security", description: "Manage system and security settings" },
 ];
 
 // CRUD actions to seed
