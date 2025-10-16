@@ -43,6 +43,18 @@ export function AIAssistantChat({
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Reset chat state when switching to a different resource
+  useEffect(() => {
+    setMessages([
+      {
+        role: 'assistant',
+        content: `Hello! I'm your AI assistant for improving "${resourceName}". I can help you with:\n\n• Suggesting better titles and descriptions\n• Recommending appropriate categories\n• Reviewing dependencies\n• Drafting changelogs\n• Planning next version improvements\n\nHow can I help you today?`
+      }
+    ]);
+    setInput('');
+    setIsLoading(false);
+  }, [resourceId, resourceName]);
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
