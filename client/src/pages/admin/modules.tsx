@@ -22,6 +22,8 @@ import {
   Link2, AlertTriangle, Code, Info, CheckCircle2, FileText, Settings, Shield, Route
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AdminDetailWorkspace } from "@/components/admin/AdminDetailWorkspace";
+import { AIAssistantChat } from "@/components/admin/AIAssistantChat";
 
 interface ModuleEndpoint {
   path: string;
@@ -486,7 +488,7 @@ export default function AdminModuleLibrary() {
           }
         }}
       >
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[85vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
@@ -499,7 +501,9 @@ export default function AdminModuleLibrary() {
           </DialogHeader>
           
           {selectedModule && (
-            <div className="space-y-6">
+            <AdminDetailWorkspace
+              leftContent={
+                <div className="space-y-6">
               {/* Metadata */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
@@ -710,7 +714,31 @@ export default function AdminModuleLibrary() {
                   </div>
                 </>
               )}
-            </div>
+                </div>
+              }
+              rightContent={
+                <AIAssistantChat
+                  resourceType="module"
+                  resourceId={selectedModule.id}
+                  resourceName={selectedModule.name}
+                  onApplySuggestions={(suggestions) => {
+                    if (suggestions.route) setEditedRoute(suggestions.route);
+                    if (suggestions.restrictions) {
+                      setContextRestrictions({
+                        engineOnly: suggestions.restrictions.includes('engine'),
+                        hubOnly: suggestions.restrictions.includes('hub'),
+                        appOnly: suggestions.restrictions.includes('app'),
+                        gameOnly: suggestions.restrictions.includes('game'),
+                      });
+                    }
+                    toast({
+                      title: "Suggestions Applied",
+                      description: "AI suggestions have been applied. Review and save changes.",
+                    });
+                  }}
+                />
+              }
+            />
           )}
         </DialogContent>
       </Dialog>
