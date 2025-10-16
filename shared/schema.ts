@@ -437,6 +437,95 @@ export const appEditHistory = pgTable("app_edit_history", {
   appFieldIdx: index("app_edit_field_idx").on(table.appId, table.field),
 }));
 
+// Geo-Regulatory Control Tables - Multi-country compliance and data sovereignty
+
+// Geo-Regulatory Rules - Define country/state-specific rules and restrictions
+export const geoRegulatoryRules = pgTable("geo_regulatory_rules", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  hubId: uuid("hub_id").references(() => hubs.id, { onDelete: 'cascade' }), // null = platform-wide rule
+  
+  // Geographic Scope
+  countryCode: varchar("country_code", { length: 2 }).notNull(), // ISO 3166-1 alpha-2 (IN, US, GB, etc.)
+  stateCode: varchar("state_code", { length: 10 }), // Optional state/province code (TN, CA, etc.)
+  regionName: varchar("region_name", { length: 255 }), // Display name (India, Tamil Nadu, etc.)
+  
+  // Compliance Framework
+  complianceTemplate: varchar("compliance_template", { length: 50 }), // 'GDPR', 'CCPA', 'PDPA', 'IT_ACT_2000', 'custom'
+  complianceLevel: varchar("compliance_level", { length: 20 }).notNull().default('basic'), // 'basic', 'detailed', 'strict'
+  
+  // Module & Feature Restrictions
+  restrictedModules: jsonb("restricted_modules").default([]), // ['module-id-1', 'module-id-2'] - modules not allowed
+  restrictedFeatures: jsonb("restricted_features").default([]), // ['ai-chat', 'payments', 'exports'] - features blocked
+  allowedModules: jsonb("allowed_modules").default([]), // If set, ONLY these modules allowed (whitelist mode)
+  
+  // Content Moderation
+  contentFilters: jsonb("content_filters").default({}), // { keywords: ['word1', 'word2'], categories: ['adult'] }
+  ageRestrictions: jsonb("age_restrictions").default({}), // { minimumAge: 18, requireVerification: true }
+  
+  // Data Handling Rules
+  dataResidency: boolean("data_residency").default(false), // Must store data in local region
+  dataExportAllowed: boolean("data_export_allowed").default(true), // Can export data outside region
+  dataRetentionDays: integer("data_retention_days"), // null = unlimited, or specific days
+  
+  // Government Access
+  governmentMonitoringEnabled: boolean("government_monitoring_enabled").default(false),
+  governmentAccessLevel: varchar("government_access_level", { length: 20 }), // 'none', 'read_only', 'analytics_only'
+  governmentContactEmail: varchar("government_contact_email", { length: 255 }),
+  
+  // Rule Status & Metadata
+  isActive: boolean("is_active").notNull().default(true),
+  enforcementLevel: varchar("enforcement_level", { length: 20 }).notNull().default('warn'), // 'block', 'warn', 'log'
+  notes: text("notes"), // Internal notes about this rule
+  
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  countryIdx: index("geo_rule_country_idx").on(table.countryCode),
+  hubCountryIdx: index("geo_rule_hub_country_idx").on(table.hubId, table.countryCode),
+}));
+
+// Geo-Compliance Logs - Audit trail for regulatory compliance and government access
+export const geoComplianceLogs = pgTable("geo_compliance_logs", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  ruleId: uuid("rule_id").references(() => geoRegulatoryRules.id, { onDelete: 'set null' }),
+  
+  // Event Details
+  eventType: varchar("event_type", { length: 50 }).notNull(), // 'access_blocked', 'module_restricted', 'content_filtered', 'data_export', 'government_access'
+  severity: varchar("severity", { length: 20 }).notNull().default('info'), // 'info', 'warning', 'critical'
+  
+  // Geographic Context
+  countryCode: varchar("country_code", { length: 2 }).notNull(),
+  stateCode: varchar("state_code", { length: 10 }),
+  
+  // User & Resource Context
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'set null' }),
+  hubId: uuid("hub_id").references(() => hubs.id, { onDelete: 'set null' }),
+  resourceType: varchar("resource_type", { length: 50 }), // 'module', 'feature', 'content', 'data'
+  resourceId: varchar("resource_id", { length: 255 }),
+  
+  // Action & Result
+  action: varchar("action", { length: 100 }).notNull(), // 'access_attempt', 'module_load', 'data_export_request'
+  result: varchar("result", { length: 50 }).notNull(), // 'allowed', 'blocked', 'warned', 'filtered'
+  
+  // Additional Metadata
+  ipAddress: varchar("ip_address", { length: 45 }), // IPv4 or IPv6
+  userAgent: text("user_agent"),
+  metadata: jsonb("metadata").default({}), // Additional event-specific data
+  
+  // Government Access Tracking
+  governmentAccess: boolean("government_access").default(false),
+  governmentOfficer: varchar("government_officer", { length: 255 }), // If government accessed
+  accessReason: text("access_reason"), // Legal/warrant reason for access
+  
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+}, (table) => ({
+  eventTypeIdx: index("geo_log_event_type_idx").on(table.eventType),
+  timestampIdx: index("geo_log_timestamp_idx").on(table.timestamp),
+  userIdx: index("geo_log_user_idx").on(table.userId),
+  governmentIdx: index("geo_log_government_idx").on(table.governmentAccess),
+}));
+
 // User App Installations - Tracks which platform modules/apps users have installed
 export const userAppInstallations = pgTable("user_app_installations", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1699,6 +1788,26 @@ export const insertAppEditHistorySchema = createInsertSchema(appEditHistory).omi
 export const selectAppEditHistorySchema = createSelectSchema(appEditHistory);
 export type InsertAppEditHistoryType = z.infer<typeof insertAppEditHistorySchema>;
 export type SelectAppEditHistoryType = z.infer<typeof selectAppEditHistorySchema>;
+
+// Geo-Regulatory Control Types
+export type GeoRegulatoryRule = typeof geoRegulatoryRules.$inferSelect;
+export type InsertGeoRegulatoryRule = typeof geoRegulatoryRules.$inferInsert;
+
+// Zod schemas for geo-regulatory rules
+export const insertGeoRegulatoryRuleSchema = createInsertSchema(geoRegulatoryRules).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectGeoRegulatoryRuleSchema = createSelectSchema(geoRegulatoryRules);
+export type InsertGeoRegulatoryRuleType = z.infer<typeof insertGeoRegulatoryRuleSchema>;
+export type SelectGeoRegulatoryRuleType = z.infer<typeof selectGeoRegulatoryRuleSchema>;
+
+// Geo-Compliance Logs Types
+export type GeoComplianceLog = typeof geoComplianceLogs.$inferSelect;
+export type InsertGeoComplianceLog = typeof geoComplianceLogs.$inferInsert;
+
+// Zod schemas for geo-compliance logs
+export const insertGeoComplianceLogSchema = createInsertSchema(geoComplianceLogs).omit({ id: true, timestamp: true });
+export const selectGeoComplianceLogSchema = createSelectSchema(geoComplianceLogs);
+export type InsertGeoComplianceLogType = z.infer<typeof insertGeoComplianceLogSchema>;
+export type SelectGeoComplianceLogType = z.infer<typeof selectGeoComplianceLogSchema>;
 
 // User App Installations Types
 export type UserAppInstallation = typeof userAppInstallations.$inferSelect;
