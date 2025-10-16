@@ -99,6 +99,12 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
             active: location === "/engine/tenants"
           },
           { 
+            label: "All Entities", 
+            icon: Network, 
+            href: "/engine/entities", 
+            active: location === "/engine/entities"
+          },
+          { 
             label: "DataSets", 
             icon: Database, 
             href: "/engine/datasets", 
