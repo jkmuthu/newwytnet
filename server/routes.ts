@@ -4596,6 +4596,463 @@ When suggesting improvements, format your response with suggestions in a structu
   });
 
   // =============================================================================
+  // WYTENTITIES - Knowledge Graph & Entity Management APIs
+  // =============================================================================
+
+  const { 
+    entityTypes, 
+    entities, 
+    entityRelationships, 
+    entityTags,
+    createEntityTypeSchema,
+    updateEntityTypeSchema,
+    createEntitySchema,
+    updateEntitySchema,
+    createEntityRelationshipSchema,
+    updateEntityRelationshipSchema,
+    createEntityTagSchema
+  } = await import("@shared/schema");
+  
+  const { ENTITY_TYPES_CATALOG } = await import("./entity-types-catalog");
+
+  // Entity Types - CRUD APIs
+  
+  // GET all entity types
+  app.get('/api/entities/types', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const types = await db.select().from(entityTypes)
+        .orderBy(entityTypes.displayOrder, entityTypes.name);
+      
+      res.json({ success: true, types });
+    } catch (error) {
+      console.error('Error fetching entity types:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch entity types' });
+    }
+  });
+
+  // GET single entity type
+  app.get('/api/entities/types/:typeId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { typeId } = req.params;
+      const [type] = await db.select().from(entityTypes).where(eq(entityTypes.id, typeId));
+      
+      if (!type) {
+        return res.status(404).json({ success: false, error: 'Entity type not found' });
+      }
+      
+      res.json({ success: true, type });
+    } catch (error) {
+      console.error('Error fetching entity type:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch entity type' });
+    }
+  });
+
+  // POST create entity type
+  app.post('/api/entities/types', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const validatedData = createEntityTypeSchema.parse(req.body);
+      
+      const [newType] = await db.insert(entityTypes)
+        .values(validatedData)
+        .returning();
+      
+      res.status(201).json({ success: true, type: newType });
+    } catch (error: any) {
+      console.error('Error creating entity type:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ success: false, error: 'Validation error', details: error.errors });
+      }
+      res.status(500).json({ success: false, error: 'Failed to create entity type' });
+    }
+  });
+
+  // PATCH update entity type
+  app.patch('/api/entities/types/:typeId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { typeId } = req.params;
+      const validatedData = updateEntityTypeSchema.parse(req.body);
+      
+      const [updatedType] = await db.update(entityTypes)
+        .set({ ...validatedData, updatedAt: new Date() })
+        .where(eq(entityTypes.id, typeId))
+        .returning();
+      
+      if (!updatedType) {
+        return res.status(404).json({ success: false, error: 'Entity type not found' });
+      }
+      
+      res.json({ success: true, type: updatedType });
+    } catch (error: any) {
+      console.error('Error updating entity type:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ success: false, error: 'Validation error', details: error.errors });
+      }
+      res.status(500).json({ success: false, error: 'Failed to update entity type' });
+    }
+  });
+
+  // DELETE entity type (only if not system)
+  app.delete('/api/entities/types/:typeId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { typeId } = req.params;
+      
+      // Check if system type
+      const [type] = await db.select().from(entityTypes).where(eq(entityTypes.id, typeId));
+      if (type?.isSystem) {
+        return res.status(403).json({ success: false, error: 'Cannot delete system entity types' });
+      }
+      
+      await db.delete(entityTypes).where(eq(entityTypes.id, typeId));
+      res.json({ success: true, message: 'Entity type deleted' });
+    } catch (error) {
+      console.error('Error deleting entity type:', error);
+      res.status(500).json({ success: false, error: 'Failed to delete entity type' });
+    }
+  });
+
+  // Entities - CRUD APIs
+
+  // GET all entities (with filters and pagination)
+  app.get('/api/entities', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { 
+        typeId, 
+        search, 
+        isPublic, 
+        isVerified, 
+        tenantId, 
+        hubId,
+        page = '1', 
+        limit = '50' 
+      } = req.query;
+      
+      const pageNum = parseInt(page);
+      const limitNum = Math.min(parseInt(limit), 100);
+      const offset = (pageNum - 1) * limitNum;
+      
+      let query = db.select().from(entities).$dynamic();
+      
+      if (typeId) query = query.where(eq(entities.entityTypeId, typeId));
+      if (search) query = query.where(like(entities.title, `%${search}%`));
+      if (isPublic !== undefined) query = query.where(eq(entities.isPublic, isPublic === 'true'));
+      if (isVerified !== undefined) query = query.where(eq(entities.isVerified, isVerified === 'true'));
+      if (tenantId) query = query.where(eq(entities.tenantId, tenantId));
+      if (hubId) query = query.where(eq(entities.hubId, hubId));
+      
+      const results = await query
+        .orderBy(desc(entities.tagCount), desc(entities.createdAt))
+        .limit(limitNum)
+        .offset(offset);
+      
+      const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(entities);
+      
+      res.json({
+        success: true,
+        entities: results,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total: count,
+          totalPages: Math.ceil(count / limitNum)
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching entities:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch entities' });
+    }
+  });
+
+  // GET single entity (with relationships)
+  app.get('/api/entities/:entityId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { entityId } = req.params;
+      const { includeRelationships = 'true' } = req.query;
+      
+      const [entity] = await db.select().from(entities).where(eq(entities.id, entityId));
+      
+      if (!entity) {
+        return res.status(404).json({ success: false, error: 'Entity not found' });
+      }
+      
+      let relationships = null;
+      if (includeRelationships === 'true') {
+        const parents = await db.select().from(entityRelationships)
+          .where(and(
+            eq(entityRelationships.sourceEntityId, entityId),
+            eq(entityRelationships.relationshipType, 'parent')
+          ));
+        
+        const children = await db.select().from(entityRelationships)
+          .where(and(
+            eq(entityRelationships.sourceEntityId, entityId),
+            eq(entityRelationships.relationshipType, 'child')
+          ));
+        
+        const friends = await db.select().from(entityRelationships)
+          .where(and(
+            eq(entityRelationships.sourceEntityId, entityId),
+            eq(entityRelationships.relationshipType, 'friend')
+          ));
+        
+        relationships = { parents, children, friends };
+      }
+      
+      res.json({ success: true, entity, relationships });
+    } catch (error) {
+      console.error('Error fetching entity:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch entity' });
+    }
+  });
+
+  // POST create entity
+  app.post('/api/entities', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const admin = req.admin;
+      const validatedData = createEntitySchema.parse(req.body);
+      
+      const [newEntity] = await db.insert(entities)
+        .values({
+          ...validatedData,
+          createdBy: admin.id,
+          updatedBy: admin.id
+        })
+        .returning();
+      
+      res.status(201).json({ success: true, entity: newEntity });
+    } catch (error: any) {
+      console.error('Error creating entity:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ success: false, error: 'Validation error', details: error.errors });
+      }
+      res.status(500).json({ success: false, error: 'Failed to create entity' });
+    }
+  });
+
+  // PATCH update entity
+  app.patch('/api/entities/:entityId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { entityId } = req.params;
+      const admin = req.admin;
+      const validatedData = updateEntitySchema.parse(req.body);
+      
+      const [updatedEntity] = await db.update(entities)
+        .set({
+          ...validatedData,
+          updatedBy: admin.id,
+          updatedAt: new Date()
+        })
+        .where(eq(entities.id, entityId))
+        .returning();
+      
+      if (!updatedEntity) {
+        return res.status(404).json({ success: false, error: 'Entity not found' });
+      }
+      
+      res.json({ success: true, entity: updatedEntity });
+    } catch (error: any) {
+      console.error('Error updating entity:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ success: false, error: 'Validation error', details: error.errors });
+      }
+      res.status(500).json({ success: false, error: 'Failed to update entity' });
+    }
+  });
+
+  // DELETE entity
+  app.delete('/api/entities/:entityId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { entityId } = req.params;
+      
+      await db.delete(entities).where(eq(entities.id, entityId));
+      res.json({ success: true, message: 'Entity deleted' });
+    } catch (error) {
+      console.error('Error deleting entity:', error);
+      res.status(500).json({ success: false, error: 'Failed to delete entity' });
+    }
+  });
+
+  // Entity Relationships - APIs
+
+  // GET relationships for an entity
+  app.get('/api/entities/:entityId/relationships', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { entityId } = req.params;
+      const { type } = req.query; // parent, child, friend
+      
+      let query = db.select().from(entityRelationships)
+        .where(eq(entityRelationships.sourceEntityId, entityId)).$dynamic();
+      
+      if (type) {
+        query = query.where(eq(entityRelationships.relationshipType, type));
+      }
+      
+      const relationships = await query;
+      res.json({ success: true, relationships });
+    } catch (error) {
+      console.error('Error fetching relationships:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch relationships' });
+    }
+  });
+
+  // POST create relationship
+  app.post('/api/entities/relationships', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const admin = req.admin;
+      const validatedData = createEntityRelationshipSchema.parse(req.body);
+      
+      // Check for circular references
+      if (validatedData.sourceEntityId === validatedData.targetEntityId) {
+        return res.status(400).json({ success: false, error: 'Cannot create self-referential relationship' });
+      }
+      
+      const [newRelationship] = await db.insert(entityRelationships)
+        .values({
+          ...validatedData,
+          createdBy: admin.id
+        })
+        .returning();
+      
+      res.status(201).json({ success: true, relationship: newRelationship });
+    } catch (error: any) {
+      console.error('Error creating relationship:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ success: false, error: 'Validation error', details: error.errors });
+      }
+      res.status(500).json({ success: false, error: 'Failed to create relationship' });
+    }
+  });
+
+  // DELETE relationship
+  app.delete('/api/entities/relationships/:relationshipId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { relationshipId } = req.params;
+      
+      await db.delete(entityRelationships).where(eq(entityRelationships.id, relationshipId));
+      res.json({ success: true, message: 'Relationship deleted' });
+    } catch (error) {
+      console.error('Error deleting relationship:', error);
+      res.status(500).json({ success: false, error: 'Failed to delete relationship' });
+    }
+  });
+
+  // Entity Tags - APIs
+
+  // GET tags for an entity
+  app.get('/api/entities/:entityId/tags', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { entityId } = req.params;
+      
+      const tags = await db.select().from(entityTags)
+        .where(eq(entityTags.entityId, entityId))
+        .orderBy(desc(entityTags.taggedAt));
+      
+      res.json({ success: true, tags });
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch tags' });
+    }
+  });
+
+  // POST create entity tag
+  app.post('/api/entities/tags', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const admin = req.admin;
+      const validatedData = createEntityTagSchema.parse(req.body);
+      
+      const [newTag] = await db.insert(entityTags)
+        .values({
+          ...validatedData,
+          taggedBy: admin.id
+        })
+        .returning();
+      
+      // Increment tag count on entity
+      await db.update(entities)
+        .set({ tagCount: sql`${entities.tagCount} + 1` })
+        .where(eq(entities.id, validatedData.entityId));
+      
+      res.status(201).json({ success: true, tag: newTag });
+    } catch (error: any) {
+      console.error('Error creating tag:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ success: false, error: 'Validation error', details: error.errors });
+      }
+      res.status(500).json({ success: false, error: 'Failed to create tag' });
+    }
+  });
+
+  // DELETE entity tag
+  app.delete('/api/entities/tags/:tagId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { tagId } = req.params;
+      
+      const [tag] = await db.select().from(entityTags).where(eq(entityTags.id, tagId));
+      
+      if (tag) {
+        await db.delete(entityTags).where(eq(entityTags.id, tagId));
+        
+        // Decrement tag count
+        await db.update(entities)
+          .set({ tagCount: sql`GREATEST(${entities.tagCount} - 1, 0)` })
+          .where(eq(entities.id, tag.entityId));
+      }
+      
+      res.json({ success: true, message: 'Tag deleted' });
+    } catch (error) {
+      console.error('Error deleting tag:', error);
+      res.status(500).json({ success: false, error: 'Failed to delete tag' });
+    }
+  });
+
+  // Entity Search & Discovery
+
+  // GET search entities
+  app.get('/api/entities/search', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { q, typeId, limit = '20' } = req.query;
+      
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ success: false, error: 'Search query required' });
+      }
+      
+      const limitNum = Math.min(parseInt(limit as string), 50);
+      const searchTerm = `%${q}%`;
+      
+      let query = db.select().from(entities)
+        .where(
+          or(
+            like(entities.title, searchTerm),
+            like(entities.shortDescription, searchTerm),
+            sql`${entities.aliases}::text LIKE ${searchTerm}`
+          )
+        ).$dynamic();
+      
+      if (typeId) {
+        query = query.where(eq(entities.entityTypeId, typeId as string));
+      }
+      
+      const results = await query
+        .orderBy(desc(entities.isVerified), desc(entities.tagCount))
+        .limit(limitNum);
+      
+      res.json({ success: true, entities: results });
+    } catch (error) {
+      console.error('Error searching entities:', error);
+      res.status(500).json({ success: false, error: 'Failed to search entities' });
+    }
+  });
+
+  // GET entity type catalog (for seeding reference)
+  app.get('/api/entities/types/catalog', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      res.json({ success: true, catalog: ENTITY_TYPES_CATALOG });
+    } catch (error) {
+      console.error('Error fetching entity types catalog:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch catalog' });
+    }
+  });
+
+  // =============================================================================
   // MODULE PROXY ROUTES - White-label API Gateway
   // =============================================================================
 
