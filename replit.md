@@ -1,30 +1,6 @@
 # Overview
 
-WytNet is built on a strategic foundation called **"Engine"** - a white-label, multi-tenant SaaS infrastructure providing low-code tools for application building, content management, and cross-tenant hub creation. The Engine includes CRUD builders, a CMS, app composition, hub aggregation, and the WytID Universal Identity & Validation system.
-
-**Philosophy: "We are the first user of our own tools"**  
-WytNet.com itself is the first Hub built on the Engine, demonstrating our commitment to using the same infrastructure we provide to our customers. This approach validates our tools and ensures we build features that genuinely work.
-
-The platform offers white-label authentication (Google OAuth, Email OTP), role-based access control, comprehensive multi-tenancy with Row Level Security, and a blockchain-anchored identity system. Built as a monorepo with Express.js, React, and PostgreSQL with Drizzle ORM, WytNet aims to be a robust and scalable solution for SaaS applications.
-
-## Architecture Hierarchy
-
-```
-Engine (wytnet.com/engine)
-├── Infrastructure Foundation
-├── Module Management
-├── Super Admin Controls
-└── Core Services
-    ↓
-WytNet Hub (wytnet.com)
-├── First Implementation
-├── Marketing & Content
-├── Hub-specific Features
-└── Customer-facing Interface
-    ↓
-Customer Hubs
-└── Built using same Engine
-```
+WytNet is built on "Engine," a white-label, multi-tenant SaaS infrastructure providing low-code tools for application building, content management, and cross-tenant hub creation. The platform offers CRUD builders, a CMS, app composition, hub aggregation, and the WytID Universal Identity & Validation system. WytNet.com serves as the first Hub built on the Engine, demonstrating the "first user of our own tools" philosophy. The platform includes white-label authentication, role-based access control, comprehensive multi-tenancy with Row Level Security, and a blockchain-anchored identity system, aiming to be a robust and scalable SaaS solution.
 
 # User Preferences
 
@@ -34,7 +10,7 @@ Focus: Fully white-label multi-tenant SaaS platform with identity validation.
 # System Architecture
 
 ## Frontend Architecture
-The frontend uses React 18, TypeScript, and Vite, styled with Tailwind CSS and shadcn/ui components. Wouter handles routing, and TanStack Query manages server state. It supports component-based builders for modules, CMS, apps, and hubs.
+The frontend uses React 18, TypeScript, Vite, Tailwind CSS, and shadcn/ui components. Wouter handles routing, and TanStack Query manages server state. It supports component-based builders for modules, CMS, apps, and hubs.
 
 ## Backend Architecture
 The backend is an Express.js application with TypeScript, providing RESTful APIs for authentication, dashboard, and CRUD operations. Authentication uses WytPass OAuth (Google, Email OTP, Email/Password) with session-based authentication. Role-based access control and tenant isolation are enforced at the database level.
@@ -43,124 +19,19 @@ The backend is an Express.js application with TypeScript, providing RESTful APIs
 PostgreSQL is the primary database, using Drizzle ORM. Multi-tenancy is implemented via `tenant_id` columns and Row Level Security. Core tables manage tenants, users, models, content, applications, and hubs, with junction tables handling complex entity relationships.
 
 ## Modular Architecture
-The system is organized into self-contained packages (`kernel`, `builder`, `cms`, `appkit`, `hubkit`) within a monorepo, facilitating independent development.
+The system is organized into self-contained packages (`kernel`, `builder`, `cms`, `appkit`, `hubkit`) within a monorepo. It features a context-based module system (WordPress-style) where modules are self-contained, context-aware components (Platform, Hub, App, Game) with dependency management and API exposure. This includes Engine-level (core infrastructure) and Hub-level modules (feature modules) and an auto-seeding system for module definitions.
 
 ## Security Architecture
-Security includes PostgreSQL Row Level Security, session-based authentication with httpOnly cookies, role-based access control, CSRF protection, and Zod schema validation.
-
-### User Role Hierarchy & Two-Tier Admin Authentication
-The platform implements a **two-tier admin authentication system** with completely isolated sessions, separate from regular user authentication:
-
-#### Admin Portals
-1. **Engine Portal (`/engine/*`)** - Platform Infrastructure
-   - **Super Admin Access**: Full platform infrastructure management
-   - **Purpose**: Module management, WytEntities knowledge graph, Geo-Regulatory controls, Platform Registry, system monitoring
-   - **Session**: Dedicated PostgreSQL session store (`admin_sessions` table), cookie: `admin.sid`
-   - **Middleware**: `adminAuthMiddleware` with provider type `admin`
-   - **Test Credentials**: `jkm@jkmuthu.com` / `SuperAdmin@2025`
-   - **Features**: Infrastructure foundation, module catalog (47 modules), entity management, regulatory compliance
-
-2. **Hub Admin Portal (`/admin/*`)** - WytNet.com Hub Management
-   - **Hub Admin Access**: WytNet.com hub content and feature management
-   - **Purpose**: CMS content, media library, hub apps, themes, SEO settings, hub analytics
-   - **Session**: Separate PostgreSQL session store (`hub_admin_sessions` table), cookie: `hubadmin.sid`
-   - **Middleware**: `hubAdminAuthMiddleware` with provider type `hub_admin`
-   - **Test Credentials**: `hubadmin@wytnet.com` / `hubadmin123`
-   - **Features**: Hub content management, theme customization, app configuration, hub-level settings
-
-#### Authentication Architecture
-- **Triple Session Support**: Users can be authenticated as regular users, hub admins, AND super admins simultaneously
-- **Complete Isolation**: Each portal has dedicated session stores, cookies, and middleware to prevent credential mixing
-- **Frontend Contexts**: `AuthProvider` (users), `AdminAuthProvider` (super admin), `HubAdminAuthProvider` (hub admin)
-- **Provider Types**: `whatsapp`, `legacy`, `replit`, `admin` (super admin), `unified` (users), `hub_admin` (hub admin)
-
-#### User Roles
-- **Super Admin (Engine Level)**: Platform infrastructure management with `isSuperAdmin: true` flag
-- **Hub Admin (Hub Level)**: Content management for specific hub (WytNet.com), no super admin privileges
-- **Hub Users (End Users)**: Regular users accessing hub features with hub-specific permissions
+Security includes PostgreSQL Row Level Security, session-based authentication with httpOnly cookies, role-based access control, CSRF protection, and Zod schema validation. A two-tier admin authentication system provides isolated sessions for Super Admins (Engine Portal) and Hub Admins (Hub Admin Portal), separate from regular user authentication, enabling triple session support.
 
 ## UI/UX Decisions
 The platform features modern UI elements like animated gradient backgrounds, glassmorphism cards, micro animations, and responsive designs. UTM tracking is standardized for external links.
 
 ## Key Features & Implementations
 - **AI App Builder**: An admin-only, OpenAI-powered tool for natural language app creation.
-- **Context-Based Module System**: A WordPress-style plugin architecture where modules are self-contained, context-aware components that can be activated/deactivated across different contexts (Platform, Hub, App, Game). It includes dependency management, conflict detection, and API exposure. Modules are enforced at both backend (middleware guards) and frontend (React hooks) layers.
-  - **Engine-Level Modules**: Core infrastructure modules (category: 'platform-core', 'auth', 'data') that are always active at Engine level, providing foundational services like authentication, database, and core APIs.
-  - **Hub-Level Modules**: Feature modules that can be selectively activated per Hub, App, or Game, allowing customization of capabilities per tenant.
-  - **Module Hierarchy**: Engine provides the foundation → WytNet Hub selects its modules → Customer Hubs inherit or customize further.
-- **White-label API Proxy Gateway**: A unified API gateway that proxies third-party services (e.g., Mappls, Digio) under WytNet branding, handling request/response transformation, credential management, and error handling. It also includes native WytData modules for geographic, internationalization, and business reference data.
-- **Module Seeding System**: An auto-seeding system that syncs module definitions from a `MODULE_CATALOG` in code to the database on server startup, ensuring consistency and version control.
-- **Dual App Architecture**: Distinguishes between Composed Apps (admin-created from multiple modules) and Module Apps (individual features/tools from platform modules, acting as marketplace items).
-
-## Enhanced Module & App Management System
-The platform implements comprehensive version control and access management for both Modules and Apps:
-
-### Version Control & History Tracking
-- **Version Management**: All modules and apps track version numbers (e.g., '1.0.0'), version history arrays, and changelogs
-- **Edit History**: Automatic logging of all changes to name, description, route, category, contexts, and restrictedTo fields
-- **Audit Trail**: Complete edit history with editor information, timestamps, old/new values stored in `module_edit_history` and `app_edit_history` tables
-- **UI Display**: Version badges, changelog sections, and version history timelines in management interfaces
-
-### Route & URL Management
-- **Custom Routes**: Modules and Apps can have custom routes/URLs (e.g., `/auth`, `/payments/razorpay`, `/content/editor`)
-- **Route Editor**: Admin UI allows editing routes with validation and history tracking
-- **Route Redirects**: System tracks route changes to maintain backward compatibility
-
-### Context-Based Access Control
-- **Module Contexts**: Modules specify where they can be activated: Platform, Hub, App, or Game
-- **App Contexts**: Apps define their activation contexts (typically Hub and App)
-- **Granular Restrictions**: `restrictedTo` field enforces specific access levels:
-  - **Engine-Only**: Core platform modules restricted to Engine administration (e.g., payment-core, analytics-engine, audit-logs)
-  - **Hub-Only**: Hub-specific features (e.g., hub-aggregator)
-  - **App-Only**: Application-specific modules
-  - **Game-Only**: Gaming context modules
-- **UI Controls**: Checkbox interfaces for context and restriction management in admin panels
-
-### API Endpoints for Management
-- **PATCH /api/modules/:moduleId/update** - Update module fields with edit history tracking
-- **PATCH /api/apps/:appId/update** - Update app fields with edit history tracking
-- **GET /api/modules/:moduleId/history** - Retrieve complete edit history for a module
-- **GET /api/apps/:appId/history** - Retrieve complete edit history for an app
-
-### Implementation Details
-- **Database Schema**: Enhanced `platform_modules` and `apps` tables with version, versionHistory, changelog, route, contexts, and restrictedTo columns
-- **Edit History Tables**: Dedicated `module_edit_history` and `app_edit_history` tables track field-level changes
-- **Zod Validation**: Updated insert/select schemas for type-safe operations
-- **Module Catalog**: All 45 modules in MODULE_CATALOG include version, changelog, route, and restriction information
-- **Admin UI**: Enhanced management interfaces display version info, allow route editing, show edit history, and provide context/restriction controls
-
-### AI-Assisted Module & App Improvement Workflow
-The platform integrates GPT-4 powered AI assistance directly into Module and App management interfaces:
-
-#### Architecture
-- **AdminDetailWorkspace Component**: 2-column responsive layout (3fr controls + 2fr AI chat) with independent ScrollAreas
-- **AIAssistantChat Component**: Full-featured chat interface with message history, streaming responses, and contextual quick actions
-- **Backend Integration**: Dedicated AI chat endpoints with full module/app context aggregation
-
-#### Features
-- **Conversational Assistance**: Real-time chat with GPT-4 for iterative module/app improvement
-- **Quick Action Buttons**:
-  - "Suggest Title" - AI-powered title recommendations based on module/app functionality
-  - "Review Dependencies" - Dependency analysis and compatibility suggestions
-  - "Draft Changelog" - Automatic changelog generation for version updates
-- **Apply Suggestions**: One-click application of AI recommendations to draft fields (route, contexts, restrictions)
-- **Context-Aware**: AI receives complete module/app metadata (name, description, category, version, route, dependencies, changelog) for intelligent suggestions
-
-#### API Endpoints
-- **POST /api/admin/modules/:moduleId/ai-chat** - AI chat for module improvement with conversation history
-- **POST /api/admin/apps/:appId/ai-chat** - AI chat for app enhancement with conversation history
-
-#### User Experience
-- **Integrated Workflow**: AI assistant appears on right side of module/app detail dialogs (max-w-6xl)
-- **Streaming Responses**: Real-time AI responses with loading states
-- **Suggestion Preview**: Structured JSON suggestions parsed from AI responses when available
-- **Toast Notifications**: Confirmation when AI suggestions are applied to fields
-
-#### Technical Implementation
-- **OpenAI Integration**: Uses GPT-4 model via aiService with context injection
-- **Message Management**: Maintains last 5 conversation messages for context continuity
-- **Error Handling**: Graceful fallback when AI service unavailable (503 status)
-- **Security**: Admin-only access via adminAuthMiddleware, conversation history sanitization
+- **White-label API Proxy Gateway**: A unified API gateway that proxies third-party services under WytNet branding, handling request/response transformation, credential management, and error handling.
+- **Enhanced Module & App Management System**: Includes comprehensive version control (version numbers, history, changelogs), edit history tracking, custom route management with redirects, and context-based access control (`restrictedTo` fields for Engine-Only, Hub-Only, App-Only, Game-Only access).
+- **AI-Assisted Module & App Improvement Workflow**: Integrates GPT-4 powered AI assistance into management interfaces for conversational support, quick actions (e.g., "Suggest Title," "Draft Changelog"), and one-click application of AI recommendations.
 
 # External Dependencies
 
