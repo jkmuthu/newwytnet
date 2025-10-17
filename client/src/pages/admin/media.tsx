@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -7,106 +8,20 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Image, FileText, Video, Music, Upload, Search, Filter, Eye, Download, Trash2, Grid3x3, List } from "lucide-react";
 import { format } from "date-fns";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface MediaFile {
   id: string;
-  name: string;
-  type: 'image' | 'document' | 'video' | 'audio';
-  url: string;
-  thumbnail?: string;
-  size: string;
-  uploadedBy: string;
+  fileName: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  publicUrl: string | null;
   uploadedAt: string;
-  category?: string;
+  tenantId: string;
+  createdBy: string | null;
 }
-
-// Sample media files for demonstration
-const sampleMedia: MediaFile[] = [
-  {
-    id: '1',
-    name: 'hero-banner.jpg',
-    type: 'image',
-    url: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=800',
-    thumbnail: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=200',
-    size: '2.4 MB',
-    uploadedBy: 'Admin',
-    uploadedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    category: 'Marketing'
-  },
-  {
-    id: '2',
-    name: 'product-showcase.jpg',
-    type: 'image',
-    url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800',
-    thumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=200',
-    size: '1.8 MB',
-    uploadedBy: 'Admin',
-    uploadedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    category: 'Marketing'
-  },
-  {
-    id: '3',
-    name: 'team-photo.jpg',
-    type: 'image',
-    url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800',
-    thumbnail: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=200',
-    size: '3.1 MB',
-    uploadedBy: 'Admin',
-    uploadedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    category: 'Team'
-  },
-  {
-    id: '4',
-    name: 'office-workspace.jpg',
-    type: 'image',
-    url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800',
-    thumbnail: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=200',
-    size: '2.7 MB',
-    uploadedBy: 'Admin',
-    uploadedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    category: 'Office'
-  },
-  {
-    id: '5',
-    name: 'company-brochure.pdf',
-    type: 'document',
-    url: '#',
-    size: '5.2 MB',
-    uploadedBy: 'Admin',
-    uploadedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    category: 'Documents'
-  },
-  {
-    id: '6',
-    name: 'terms-and-conditions.pdf',
-    type: 'document',
-    url: '#',
-    size: '1.5 MB',
-    uploadedBy: 'Admin',
-    uploadedAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
-    category: 'Legal'
-  },
-  {
-    id: '7',
-    name: 'presentation-deck.pdf',
-    type: 'document',
-    url: '#',
-    size: '8.3 MB',
-    uploadedBy: 'Admin',
-    uploadedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-    category: 'Documents'
-  },
-  {
-    id: '8',
-    name: 'promo-video.mp4',
-    type: 'video',
-    url: '#',
-    size: '45.2 MB',
-    uploadedBy: 'Admin',
-    uploadedAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-    category: 'Marketing'
-  }
-];
 
 export default function AdminMedia() {
   const [mediaFilter, setMediaFilter] = useState<'all' | 'image' | 'document' | 'video' | 'audio'>('all');
