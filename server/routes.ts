@@ -543,6 +543,126 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Admin Pages CRUD - For Engine Admin Panel
+  app.get('/api/admin/pages', async (req, res) => {
+    try {
+      const principal = req.session.wytpassPrincipal;
+      if (!principal || !principal.isSuperAdmin) {
+        return res.status(403).json({ error: 'Super Admin access required' });
+      }
+
+      const allPages = await db.select()
+        .from(pages)
+        .orderBy(pages.createdAt);
+
+      res.json(allPages);
+    } catch (error: any) {
+      console.error('Error fetching pages:', error);
+      res.status(500).json({ error: 'Failed to fetch pages' });
+    }
+  });
+
+  app.get('/api/admin/pages/:id', async (req, res) => {
+    try {
+      const principal = req.session.wytpassPrincipal;
+      if (!principal || !principal.isSuperAdmin) {
+        return res.status(403).json({ error: 'Super Admin access required' });
+      }
+
+      const { id } = req.params;
+      const [page] = await db.select()
+        .from(pages)
+        .where(eq(pages.id, id));
+
+      if (!page) {
+        return res.status(404).json({ error: 'Page not found' });
+      }
+
+      res.json(page);
+    } catch (error: any) {
+      console.error('Error fetching page:', error);
+      res.status(500).json({ error: 'Failed to fetch page' });
+    }
+  });
+
+  app.post('/api/admin/pages', async (req, res) => {
+    try {
+      const principal = req.session.wytpassPrincipal;
+      if (!principal || !principal.isSuperAdmin) {
+        return res.status(403).json({ error: 'Super Admin access required' });
+      }
+
+      // Get the primary tenant (engine tenant)
+      const [engineTenant] = await db.select()
+        .from(tenants)
+        .limit(1);
+
+      if (!engineTenant) {
+        return res.status(500).json({ error: 'Engine tenant not found' });
+      }
+
+      const validatedData = insertPageSchema.parse({
+        ...req.body,
+        tenantId: engineTenant.id,
+        createdBy: principal.id,
+      });
+
+      const [page] = await db.insert(pages)
+        .values(validatedData)
+        .returning();
+
+      res.json(page);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation error', details: error.errors });
+      }
+      console.error('Error creating page:', error);
+      res.status(500).json({ error: 'Failed to create page' });
+    }
+  });
+
+  app.patch('/api/admin/pages/:id', async (req, res) => {
+    try {
+      const principal = req.session.wytpassPrincipal;
+      if (!principal || !principal.isSuperAdmin) {
+        return res.status(403).json({ error: 'Super Admin access required' });
+      }
+
+      const { id } = req.params;
+      const [page] = await db.update(pages)
+        .set({ ...req.body, updatedAt: new Date() })
+        .where(eq(pages.id, id))
+        .returning();
+
+      if (!page) {
+        return res.status(404).json({ error: 'Page not found' });
+      }
+
+      res.json(page);
+    } catch (error: any) {
+      console.error('Error updating page:', error);
+      res.status(500).json({ error: 'Failed to update page' });
+    }
+  });
+
+  app.delete('/api/admin/pages/:id', async (req, res) => {
+    try {
+      const principal = req.session.wytpassPrincipal;
+      if (!principal || !principal.isSuperAdmin) {
+        return res.status(403).json({ error: 'Super Admin access required' });
+      }
+
+      const { id } = req.params;
+      await db.delete(pages)
+        .where(eq(pages.id, id));
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting page:', error);
+      res.status(500).json({ error: 'Failed to delete page' });
+    }
+  });
+
   // Apps CRUD
   app.get('/api/apps', isAuthenticated, async (req: any, res) => {
     try {

@@ -52,7 +52,7 @@ export default function PagesMenuCMS() {
 
   // Fetch page when menu is selected
   const { data: page, isLoading: pageLoading } = useQuery<Page>({
-    queryKey: ['/api/pages', selectedMenu?.pageId],
+    queryKey: ['/api/admin/pages', selectedMenu?.pageId],
     enabled: !!selectedMenu?.pageId,
   });
 
@@ -75,7 +75,7 @@ export default function PagesMenuCMS() {
   const createPageMenuMutation = useMutation({
     mutationFn: async (data: { title: string; route: string }) => {
       // First create the page
-      const page = (await apiRequest('/api/pages', 'POST', {
+      const page = (await apiRequest('/api/admin/pages', 'POST', {
         title: data.title,
         slug: data.route.replace(/^\//, '').replace(/\//g, '-'),
         path: data.route,
@@ -99,7 +99,7 @@ export default function PagesMenuCMS() {
         description: "New page and menu item created successfully",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/navigation-menus'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/pages'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/pages'] });
     },
     onError: (error: any) => {
       toast({
@@ -115,7 +115,7 @@ export default function PagesMenuCMS() {
     mutationFn: async () => {
       if (!selectedPage) return;
       
-      return await apiRequest(`/api/pages/${selectedPage.id}`, 'PATCH', {
+      return await apiRequest(`/api/admin/pages/${selectedPage.id}`, 'PATCH', {
         content: pageBlocks,
       });
     },
@@ -124,7 +124,7 @@ export default function PagesMenuCMS() {
         title: "Changes Saved",
         description: "Page content saved successfully",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/pages', selectedPage?.id] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/pages', selectedPage?.id] });
     },
     onError: (error: any) => {
       toast({
