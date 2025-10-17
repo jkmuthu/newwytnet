@@ -29,84 +29,6 @@ interface Organization {
   teamMembers?: number;
 }
 
-// Sample organizations data
-const sampleOrganizations: Organization[] = [
-  {
-    id: '1',
-    displayId: 'OR00001',
-    name: 'TechCorp Solutions',
-    slug: 'techcorp-solutions',
-    status: 'active',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
-    industry: 'Technology',
-    employees: 250,
-    website: 'https://techcorp.example.com',
-    email: 'contact@techcorp.example.com',
-    phone: '+1 234 567 8900',
-    location: 'San Francisco, CA',
-    teamMembers: 12
-  },
-  {
-    id: '2',
-    displayId: 'OR00002',
-    name: 'Global Innovations Inc',
-    slug: 'global-innovations',
-    status: 'active',
-    createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(), // 45 days ago
-    industry: 'Manufacturing',
-    employees: 500,
-    website: 'https://globalinnovations.example.com',
-    email: 'hello@globalinnovations.example.com',
-    phone: '+1 234 567 8901',
-    location: 'New York, NY',
-    teamMembers: 25
-  },
-  {
-    id: '3',
-    displayId: 'OR00003',
-    name: 'Creative Agency Pro',
-    slug: 'creative-agency-pro',
-    status: 'active',
-    createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(), // 60 days ago
-    industry: 'Marketing',
-    employees: 75,
-    website: 'https://creativeagency.example.com',
-    email: 'studio@creativeagency.example.com',
-    phone: '+1 234 567 8902',
-    location: 'Los Angeles, CA',
-    teamMembers: 8
-  },
-  {
-    id: '4',
-    displayId: 'OR00004',
-    name: 'FinTech Ventures',
-    slug: 'fintech-ventures',
-    status: 'inactive',
-    createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), // 90 days ago
-    industry: 'Finance',
-    employees: 150,
-    website: 'https://fintechventures.example.com',
-    email: 'info@fintechventures.example.com',
-    phone: '+1 234 567 8903',
-    location: 'Chicago, IL',
-    teamMembers: 15
-  },
-  {
-    id: '5',
-    displayId: 'OR00005',
-    name: 'HealthCare Plus',
-    slug: 'healthcare-plus',
-    status: 'active',
-    createdAt: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000).toISOString(), // 120 days ago
-    industry: 'Healthcare',
-    employees: 300,
-    website: 'https://healthcareplus.example.com',
-    email: 'support@healthcareplus.example.com',
-    phone: '+1 234 567 8904',
-    location: 'Boston, MA',
-    teamMembers: 20
-  }
-];
 
 export default function AdminTenants() {
   const [orgStatusFilter, setOrgStatusFilter] = useState<'active' | 'inactive' | 'trash'>('active');
@@ -114,17 +36,12 @@ export default function AdminTenants() {
   const [isOrgDetailOpen, setIsOrgDetailOpen] = useState(false);
   const { toast } = useToast();
 
-  const { data: tenantsData, isLoading } = useQuery<{
-    success: boolean;
-    tenants: Organization[];
-  }>({
-    queryKey: ['/api/admin/tenants'],
-    enabled: false, // Disable automatic fetching since we're using sample data
+  const { data: orgsData, isLoading } = useQuery({
+    queryKey: ['/api/admin/organizations'],
   });
 
-  // Use sample data for now
-  const organizations = sampleOrganizations;
-  const filteredOrgs = organizations.filter(org => org.status === orgStatusFilter);
+  const organizations = ((orgsData as any)?.organizations || []) as Organization[];
+  const filteredOrgs = organizations.filter((org: Organization) => org.status === orgStatusFilter);
 
   const handleViewOrg = (org: Organization) => {
     setSelectedOrg(org);

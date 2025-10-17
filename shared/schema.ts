@@ -2674,6 +2674,13 @@ export const organizations = pgTable("organizations", {
   tenantId: uuid("tenant_id").references(() => tenants.id),
   description: text("description"),
   logo: varchar("logo", { length: 500 }),
+  status: varchar("status", { length: 20 }).default('active'),
+  industry: varchar("industry", { length: 100 }),
+  employees: integer("employees"),
+  website: varchar("website", { length: 500 }),
+  email: varchar("email", { length: 255 }),
+  phone: varchar("phone", { length: 50 }),
+  location: varchar("location", { length: 255 }),
   settings: jsonb("settings").default({}),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -3706,6 +3713,94 @@ export const platformThemesRelations = relations(platformThemes, ({ one }) => ({
     references: [tenants.id],
   }),
 }));
+
+// ========================================
+// HELP & SUPPORT SYSTEM
+// ========================================
+
+export const supportTickets = pgTable("support_tickets", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(),
+  ticketNumber: varchar("ticket_number", { length: 50 }).notNull().unique(),
+  userId: varchar("user_id").references(() => users.id),
+  subject: varchar("subject", { length: 500 }).notNull(),
+  description: text("description").notNull(),
+  category: varchar("category", { length: 100 }),
+  priority: varchar("priority", { length: 20 }).default('medium'),
+  status: varchar("status", { length: 20 }).default('open'),
+  assignedTo: varchar("assigned_to").references(() => users.id),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  attachments: jsonb("attachments").default([]),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at"),
+  closedAt: timestamp("closed_at"),
+}, (table) => [
+  index("idx_support_tickets_user").on(table.userId),
+  index("idx_support_tickets_assigned").on(table.assignedTo),
+  index("idx_support_tickets_status").on(table.status),
+]);
+
+export const supportResponses = pgTable("support_responses", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketId: uuid("ticket_id").notNull().references(() => supportTickets.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  message: text("message").notNull(),
+  isInternal: boolean("is_internal").default(false),
+  attachments: jsonb("attachments").default([]),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_support_responses_ticket").on(table.ticketId),
+  index("idx_support_responses_user").on(table.userId),
+]);
+
+export const knowledgeBaseArticles = pgTable("knowledge_base_articles", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(),
+  title: varchar("title", { length: 500 }).notNull(),
+  slug: varchar("slug", { length: 255 }).notNull().unique(),
+  content: text("content").notNull(),
+  category: varchar("category", { length: 100 }),
+  tags: jsonb("tags").default([]),
+  isPublished: boolean("is_published").default(false),
+  views: integer("views").default(0),
+  helpful: integer("helpful").default(0),
+  authorId: varchar("author_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  publishedAt: timestamp("published_at"),
+}, (table) => [
+  index("idx_kb_category").on(table.category),
+  index("idx_kb_published").on(table.isPublished),
+  index("idx_kb_author").on(table.authorId),
+]);
+
+// ========================================
+// INTEGRATIONS MANAGEMENT
+// ========================================
+
+export const platformIntegrations = pgTable("platform_integrations", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  category: varchar("category", { length: 100 }),
+  provider: varchar("provider", { length: 100 }),
+  isActive: boolean("is_active").default(false),
+  isConfigured: boolean("is_configured").default(false),
+  configFields: jsonb("config_fields").default({}),
+  credentials: jsonb("credentials").default({}),
+  webhooks: jsonb("webhooks").default({}),
+  rateLimits: jsonb("rate_limits").default({}),
+  iconUrl: varchar("icon_url", { length: 500 }),
+  documentationUrl: varchar("documentation_url", { length: 500 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_integrations_slug").on(table.slug),
+  index("idx_integrations_category").on(table.category),
+]);
 
 // Schema exports for Roles & Permissions
 export const insertRoleSchema = createInsertSchema(roles).omit({ id: true, createdAt: true, updatedAt: true });

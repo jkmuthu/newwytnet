@@ -156,6 +156,7 @@ import wytaiRouter from "./routes/wytai";
 import themesRouter from "./routes/themes";
 import supportRouter from "./routes/support";
 import integrationsRouter from "./routes/integrations";
+import organizationsRouter from "./routes/organizations";
 
 // Trademark analysis functions now imported from services/trademarkAnalysis.ts
 
@@ -214,6 +215,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   // Register Integrations Management Router
   app.use('/api', integrationsRouter);
+  
+  // Register Organizations Router
+  app.use('/api', organizationsRouter);
 
   // Auth routes - unified endpoint for both authentication systems
   app.get('/api/auth/user', async (req: any, res) => {
