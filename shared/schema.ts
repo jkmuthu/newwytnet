@@ -947,6 +947,37 @@ export const wytaiUsage = pgTable("wytai_usage", {
   index("idx_wytai_usage_provider").on(table.provider),
 ]);
 
+// WytAI Chat Conversations - Enum defined first
+export const wytaiMessageRoleEnum = pgEnum('wytai_message_role', ['user', 'assistant']);
+
+export const wytaiConversations = pgTable("wytai_conversations", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // CN0000001
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  title: varchar("title", { length: 255 }).notNull().default('New Conversation'),
+  model: varchar("model", { length: 100 }).notNull().default('gpt-4o'),
+  isArchived: boolean("is_archived").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_wytai_conversations_display_id").on(table.displayId),
+  index("idx_wytai_conversations_user_id").on(table.userId),
+  index("idx_wytai_conversations_created_at").on(table.createdAt),
+]);
+
+// WytAI Chat Messages
+export const wytaiMessages = pgTable("wytai_messages", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: uuid("conversation_id").notNull().references(() => wytaiConversations.id, { onDelete: 'cascade' }),
+  role: wytaiMessageRoleEnum("role").notNull(),
+  content: text("content").notNull(),
+  attachments: jsonb("attachments").default([]),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_wytai_messages_conversation_id").on(table.conversationId),
+  index("idx_wytai_messages_created_at").on(table.createdAt),
+]);
+
 // SEO Settings
 export const seoSettings = pgTable("seo_settings", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1270,6 +1301,8 @@ export type Plan = typeof plans.$inferSelect;
 export type Media = typeof media.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type WytaiUsage = typeof wytaiUsage.$inferSelect;
+export type WytaiConversation = typeof wytaiConversations.$inferSelect;
+export type WytaiMessage = typeof wytaiMessages.$inferSelect;
 export type SeoSetting = typeof seoSettings.$inferSelect;
 
 // Insert schemas
@@ -1296,6 +1329,8 @@ export const insertSubscriptionSchema = createInsertSchema(subscriptions);
 export const insertMediaSchema = createInsertSchema(media);
 export const insertAuditLogSchema = createInsertSchema(auditLogs);
 export const insertWytaiUsageSchema = createInsertSchema(wytaiUsage);
+export const insertWytaiConversationSchema = createInsertSchema(wytaiConversations).omit({ id: true, displayId: true, userId: true, createdAt: true, updatedAt: true });
+export const insertWytaiMessageSchema = createInsertSchema(wytaiMessages).omit({ id: true, conversationId: true, createdAt: true });
 export const insertSeoSettingSchema = createInsertSchema(seoSettings);
 
 // User Profile schemas
@@ -1357,6 +1392,8 @@ export const selectPlanSchema = createSelectSchema(plans);
 export const selectMediaSchema = createSelectSchema(media);
 export const selectAuditLogSchema = createSelectSchema(auditLogs);
 export const selectWytaiUsageSchema = createSelectSchema(wytaiUsage);
+export const selectWytaiConversationSchema = createSelectSchema(wytaiConversations);
+export const selectWytaiMessageSchema = createSelectSchema(wytaiMessages);
 export const selectSeoSettingSchema = createSelectSchema(seoSettings);
 
 
@@ -1374,6 +1411,8 @@ export type InsertPlan = z.infer<typeof insertPlanSchema>;
 export type InsertMedia = z.infer<typeof insertMediaSchema>;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type InsertWytaiUsage = z.infer<typeof insertWytaiUsageSchema>;
+export type InsertWytaiConversation = z.infer<typeof insertWytaiConversationSchema>;
+export type InsertWytaiMessage = z.infer<typeof insertWytaiMessageSchema>;
 export type InsertSeoSetting = z.infer<typeof insertSeoSettingSchema>;
 
 // WytAi Trademark types

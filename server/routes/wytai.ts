@@ -2,8 +2,8 @@ import { Router } from "express";
 import { adminAuthMiddleware } from "../customAuth";
 import { aiService } from "../services/aiService";
 import { db } from "../db";
-import { platformModules, apps, platformHubs, wytaiUsage, users } from "@shared/schema";
-import { eq, and, gte, sql } from "drizzle-orm";
+import { platformModules, apps, platformHubs, wytaiUsage, users, wytaiConversations, wytaiMessages, insertWytaiConversationSchema, insertWytaiMessageSchema } from "@shared/schema";
+import { eq, and, gte, sql, desc } from "drizzle-orm";
 
 const router = Router();
 
@@ -321,6 +321,217 @@ router.post("/admin/wytai/chat/stream", adminAuthMiddleware, async (req, res) =>
         error: error.message || "Failed to process stream request",
       });
     }
+  }
+});
+
+// ======================
+// Chat History API Routes
+// ======================
+
+// Get all conversations for the authenticated admin
+router.get("/api/admin/wytai/conversations", adminAuthMiddleware, async (req, res) => {
+  try {
+    const userId = req.session.adminUserId as string;
+
+    const conversations = await db.query.wytaiConversations.findMany({
+      where: eq(wytaiConversations.userId, userId),
+      orderBy: [desc(wytaiConversations.updatedAt)],
+    });
+
+    res.json({ success: true, conversations });
+  } catch (error: any) {
+    console.error("Error fetching conversations:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to fetch conversations",
+    });
+  }
+});
+
+// Create a new conversation
+router.post("/api/admin/wytai/conversations", adminAuthMiddleware, async (req, res) => {
+  try {
+    const userId = req.session.adminUserId as string;
+    const { title, model } = insertWytaiConversationSchema.parse(req.body);
+
+    // Generate Display ID (CN prefix for Conversations)
+    const count = await db.select({ count: sql<number>`cast(count(*) as int)` })
+      .from(wytaiConversations);
+    const displayId = `CN${String((count[0]?.count || 0) + 1).padStart(7, '0')}`;
+
+    const [conversation] = await db.insert(wytaiConversations).values({
+      displayId,
+      userId,
+      title: title || 'New Conversation',
+      model: model || 'gpt-4o',
+    }).returning();
+
+    res.json({ success: true, conversation });
+  } catch (error: any) {
+    console.error("Error creating conversation:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to create conversation",
+    });
+  }
+});
+
+// Get messages for a specific conversation
+router.get("/api/admin/wytai/conversations/:id/messages", adminAuthMiddleware, async (req, res) => {
+  try {
+    const userId = req.session.adminUserId as string;
+    const conversationId = req.params.id;
+
+    // Verify conversation belongs to user
+    const conversation = await db.query.wytaiConversations.findFirst({
+      where: and(
+        eq(wytaiConversations.id, conversationId),
+        eq(wytaiConversations.userId, userId)
+      ),
+    });
+
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        error: "Conversation not found",
+      });
+    }
+
+    const messages = await db.query.wytaiMessages.findMany({
+      where: eq(wytaiMessages.conversationId, conversationId),
+      orderBy: [wytaiMessages.createdAt],
+    });
+
+    res.json({ success: true, messages });
+  } catch (error: any) {
+    console.error("Error fetching messages:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to fetch messages",
+    });
+  }
+});
+
+// Add a message to a conversation
+router.post("/api/admin/wytai/conversations/:id/messages", adminAuthMiddleware, async (req, res) => {
+  try {
+    const userId = req.session.adminUserId as string;
+    const conversationId = req.params.id;
+    const { role, content, attachments } = insertWytaiMessageSchema.parse(req.body);
+
+    // Verify conversation belongs to user
+    const conversation = await db.query.wytaiConversations.findFirst({
+      where: and(
+        eq(wytaiConversations.id, conversationId),
+        eq(wytaiConversations.userId, userId)
+      ),
+    });
+
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        error: "Conversation not found",
+      });
+    }
+
+    // Insert message
+    const [message] = await db.insert(wytaiMessages).values({
+      conversationId,
+      role,
+      content,
+      attachments: attachments || [],
+    }).returning();
+
+    // Update conversation updatedAt
+    await db.update(wytaiConversations)
+      .set({ updatedAt: new Date() })
+      .where(eq(wytaiConversations.id, conversationId));
+
+    res.json({ success: true, message });
+  } catch (error: any) {
+    console.error("Error adding message:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to add message",
+    });
+  }
+});
+
+// Update conversation (title, model)
+router.patch("/api/admin/wytai/conversations/:id", adminAuthMiddleware, async (req, res) => {
+  try {
+    const userId = req.session.adminUserId as string;
+    const conversationId = req.params.id;
+    const { title, model, isArchived } = req.body;
+
+    // Verify conversation belongs to user
+    const conversation = await db.query.wytaiConversations.findFirst({
+      where: and(
+        eq(wytaiConversations.id, conversationId),
+        eq(wytaiConversations.userId, userId)
+      ),
+    });
+
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        error: "Conversation not found",
+      });
+    }
+
+    // Update conversation
+    const updateData: any = { updatedAt: new Date() };
+    if (title !== undefined) updateData.title = title;
+    if (model !== undefined) updateData.model = model;
+    if (isArchived !== undefined) updateData.isArchived = isArchived;
+
+    const [updated] = await db.update(wytaiConversations)
+      .set(updateData)
+      .where(eq(wytaiConversations.id, conversationId))
+      .returning();
+
+    res.json({ success: true, conversation: updated });
+  } catch (error: any) {
+    console.error("Error updating conversation:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to update conversation",
+    });
+  }
+});
+
+// Delete conversation
+router.delete("/api/admin/wytai/conversations/:id", adminAuthMiddleware, async (req, res) => {
+  try {
+    const userId = req.session.adminUserId as string;
+    const conversationId = req.params.id;
+
+    // Verify conversation belongs to user
+    const conversation = await db.query.wytaiConversations.findFirst({
+      where: and(
+        eq(wytaiConversations.id, conversationId),
+        eq(wytaiConversations.userId, userId)
+      ),
+    });
+
+    if (!conversation) {
+      return res.status(404).json({
+        success: false,
+        error: "Conversation not found",
+      });
+    }
+
+    // Delete conversation (messages will cascade delete)
+    await db.delete(wytaiConversations)
+      .where(eq(wytaiConversations.id, conversationId));
+
+    res.json({ success: true, message: "Conversation deleted" });
+  } catch (error: any) {
+    console.error("Error deleting conversation:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Failed to delete conversation",
+    });
   }
 });
 
