@@ -46,6 +46,7 @@ export default function WytAIAgent() {
   const [isLoading, setIsLoading] = useState(false);
   const [recognition, setRecognition] = useState<any>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [usageStats, setUsageStats] = useState<any>(null);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -214,10 +215,33 @@ export default function WytAIAgent() {
         };
         setMessages((prev) => [...prev, assistantMessage]);
 
+        // Update usage stats if available
+        if (data.stats) {
+          setUsageStats(data.stats);
+        }
+
         // Speak the response in Tamil if available
         speakText(data.message);
       } else {
-        throw new Error(data.error || "Failed to get response");
+        // Handle specific error codes
+        if (data.code === "ACCESS_DENIED") {
+          toast({
+            title: "Access Denied",
+            description: "WytAI is only available for Super Admins and Admins.",
+            variant: "destructive",
+          });
+        } else if (data.code === "RATE_LIMIT_EXCEEDED") {
+          toast({
+            title: "Rate Limit Exceeded",
+            description: data.error || "You have exceeded your usage limit.",
+            variant: "destructive",
+          });
+          if (data.stats) {
+            setUsageStats(data.stats);
+          }
+        } else {
+          throw new Error(data.error || "Failed to get response");
+        }
       }
     } catch (error: any) {
       toast({
@@ -539,6 +563,35 @@ export default function WytAIAgent() {
                       Choose the AI model that best fits your needs
                     </p>
                   </div>
+
+                  {/* Usage Stats */}
+                  {usageStats && (
+                    <div className="border rounded-lg p-4 space-y-3">
+                      <h4 className="font-semibold text-sm flex items-center gap-2">
+                        📊 Usage Stats
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-blue-50 dark:bg-blue-950/20 rounded p-3">
+                          <div className="text-xs text-muted-foreground mb-1">Daily Usage</div>
+                          <div className="text-lg font-bold">
+                            {usageStats.daily.used} / {usageStats.daily.limit}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {usageStats.daily.remaining} remaining
+                          </div>
+                        </div>
+                        <div className="bg-purple-50 dark:bg-purple-950/20 rounded p-3">
+                          <div className="text-xs text-muted-foreground mb-1">Monthly Usage</div>
+                          <div className="text-lg font-bold">
+                            {usageStats.monthly.used} / {usageStats.monthly.limit}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {usageStats.monthly.remaining} remaining
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* About */}
                   <div>
