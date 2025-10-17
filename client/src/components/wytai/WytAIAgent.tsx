@@ -27,6 +27,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -49,6 +56,52 @@ interface Conversation {
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+// Helper function to group conversations by date
+function groupConversationsByDate(conversations: Conversation[]): Record<string, Conversation[]> {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const thirtyDaysAgo = new Date(today);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const groups: Record<string, Conversation[]> = {
+    'இன்று': [],
+    'நேற்று': [],
+    'கடந்த 7 நாட்கள்': [],
+    'கடந்த 30 நாட்கள்': [],
+    'பழையவை': [],
+  };
+
+  conversations.forEach(conv => {
+    const convDate = new Date(conv.createdAt);
+    const convDateOnly = new Date(convDate.getFullYear(), convDate.getMonth(), convDate.getDate());
+
+    if (convDateOnly.getTime() === today.getTime()) {
+      groups['இன்று'].push(conv);
+    } else if (convDateOnly.getTime() === yesterday.getTime()) {
+      groups['நேற்று'].push(conv);
+    } else if (convDate >= sevenDaysAgo) {
+      groups['கடந்த 7 நாட்கள்'].push(conv);
+    } else if (convDate >= thirtyDaysAgo) {
+      groups['கடந்த 30 நாட்கள்'].push(conv);
+    } else {
+      groups['பழையவை'].push(conv);
+    }
+  });
+
+  // Remove empty groups
+  Object.keys(groups).forEach(key => {
+    if (groups[key].length === 0) {
+      delete groups[key];
+    }
+  });
+
+  return groups;
 }
 
 export default function WytAIAgent() {
@@ -74,7 +127,7 @@ export default function WytAIAgent() {
   const [selectedWorkflow, setSelectedWorkflow] = useState<string | null>(null);
   
   // Chat History State
-  const [showHistory, setShowHistory] = useState(!isMobile); // Show by default on desktop
+  const [isHistorySheetOpen, setIsHistorySheetOpen] = useState(false);
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
@@ -94,10 +147,7 @@ export default function WytAIAgent() {
   // Create new conversation mutation
   const createConversationMutation = useMutation({
     mutationFn: async (data: { title?: string; model?: string }) => {
-      return apiRequest("/api/admin/wytai/conversations", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      return apiRequest("/api/admin/wytai/conversations", "POST", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/wytai/conversations"] });
@@ -107,10 +157,7 @@ export default function WytAIAgent() {
   // Update conversation mutation (rename, archive)
   const updateConversationMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: { title?: string; model?: string; isArchived?: boolean } }) => {
-      return apiRequest(`/api/admin/wytai/conversations/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      });
+      return apiRequest(`/api/admin/wytai/conversations/${id}`, "PATCH", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/wytai/conversations"] });
@@ -121,9 +168,7 @@ export default function WytAIAgent() {
   // Delete conversation mutation
   const deleteConversationMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/admin/wytai/conversations/${id}`, {
-        method: "DELETE",
-      });
+      return apiRequest(`/api/admin/wytai/conversations/${id}`, "DELETE");
     },
     onSuccess: (_data, deletedId) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/wytai/conversations"] });
@@ -633,6 +678,9 @@ export default function WytAIAgent() {
     );
   }
 
+  // Group conversations by date for hamburger menu
+  const groupedConversations = groupConversationsByDate(conversations);
+
   return (
     <Card
       className={`fixed ${
@@ -640,9 +688,7 @@ export default function WytAIAgent() {
           ? 'inset-0 rounded-none' 
           : isMinimized 
             ? 'bottom-6 right-6 w-80' 
-            : showHistory 
-              ? 'bottom-6 right-6 w-[750px]' 
-              : 'bottom-6 right-6 w-[420px]'
+            : 'bottom-6 right-6 w-[420px]'
       } ${
         isMobile 
           ? 'h-screen' 
@@ -652,149 +698,161 @@ export default function WytAIAgent() {
     >
       {!isMinimized && (
         <>
-          {/* Chat History Sidebar */}
-          {showHistory && !isMobile && (
-            <div className="w-[300px] border-r bg-gray-50 dark:bg-gray-900 flex flex-col">
-              {/* Sidebar Header */}
-              <div className="p-3 border-b bg-white dark:bg-gray-800">
-                <Button
-                  onClick={handleNewChat}
-                  className="w-full gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-                  size="sm"
-                  data-testid="button-new-chat"
-                >
-                  <Plus className="h-4 w-4" />
-                  New Chat
-                </Button>
-              </div>
-
-              {/* Conversations List */}
-              <ScrollArea className="flex-1 p-2">
-                {conversationsLoading ? (
-                  <div className="space-y-2">
-                    {[1, 2, 3].map((i) => (
-                      <div key={i} className="h-16 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
-                    ))}
-                  </div>
-                ) : conversations.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                    <History className="h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-sm text-muted-foreground">No conversations yet</p>
-                    <p className="text-xs text-muted-foreground mt-1">Start a new chat to begin</p>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    {conversations.map((conversation) => (
-                      <div
-                        key={conversation.id}
-                        className={`group relative p-2 rounded-lg cursor-pointer transition-colors ${
-                          activeConversation?.id === conversation.id
-                            ? 'bg-purple-100 dark:bg-purple-900/30'
-                            : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                        }`}
-                        onClick={() => handleSwitchConversation(conversation)}
-                        data-testid={`conversation-${conversation.id}`}
-                      >
-                        {editingConversationId === conversation.id ? (
-                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                            <Input
-                              value={editingTitle}
-                              onChange={(e) => setEditingTitle(e.target.value)}
-                              onKeyPress={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleSaveTitle(conversation.id);
-                                } else if (e.key === 'Escape') {
-                                  setEditingConversationId(null);
-                                }
-                              }}
-                              className="h-7 text-xs"
-                              autoFocus
-                              data-testid="input-rename-conversation"
-                            />
-                            <Button
-                              onClick={() => handleSaveTitle(conversation.id)}
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 w-7 p-0"
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">{conversation.title}</p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {conversation.model} • {new Date(conversation.updatedAt).toLocaleDateString()}
-                                </p>
-                              </div>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
-                                    data-testid={`button-conversation-menu-${conversation.id}`}
-                                  >
-                                    <MoreVertical className="h-3 w-3" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleStartEditing(conversation);
-                                    }}
-                                    data-testid="menuitem-rename"
-                                  >
-                                    <Edit2 className="h-3 w-3 mr-2" />
-                                    Rename
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteConversation(conversation.id);
-                                    }}
-                                    className="text-red-600"
-                                    data-testid="menuitem-delete"
-                                  >
-                                    <Trash2 className="h-3 w-3 mr-2" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-            </div>
-          )}
-
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col min-w-0">
             {/* Header */}
-            <div className={`flex items-center justify-between p-3 sm:p-4 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white ${isMobile || showHistory ? '' : 'rounded-t-lg'}`}>
+            <div className="flex items-center justify-between p-3 sm:p-4 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-lg">
               <div className="flex items-center gap-2">
-                {!isMobile && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowHistory(!showHistory)}
-                    className="h-8 w-8 p-0 hover:bg-white/20 text-white mr-1"
-                    data-testid="button-toggle-history"
-                  >
-                    {showHistory ? (
-                      <ChevronLeft className="h-4 w-4" />
-                    ) : (
-                      <History className="h-4 w-4" />
-                    )}
-                  </Button>
-                )}
+                <Sheet open={isHistorySheetOpen} onOpenChange={setIsHistorySheetOpen}>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 hover:bg-white/20 text-white mr-1"
+                      data-testid="button-open-history"
+                    >
+                      <Menu className="h-4 w-4" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-[320px] sm:w-[400px] p-0">
+                    <SheetHeader className="p-4 border-b">
+                      <SheetTitle>Chat History</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex flex-col h-[calc(100vh-80px)]">
+                      {/* New Chat Button */}
+                      <div className="p-4 border-b">
+                        <Button
+                          onClick={() => {
+                            handleNewChat();
+                            setIsHistorySheetOpen(false);
+                          }}
+                          className="w-full gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                          data-testid="button-new-chat"
+                        >
+                          <Plus className="h-4 w-4" />
+                          New Chat
+                        </Button>
+                      </div>
+
+                      {/* Conversations List */}
+                      <ScrollArea className="flex-1">
+                        {conversationsLoading ? (
+                          <div className="space-y-2 p-4">
+                            {[1, 2, 3].map((i) => (
+                              <div key={i} className="h-16 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+                            ))}
+                          </div>
+                        ) : conversations.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                            <History className="h-12 w-12 text-gray-400 mb-3" />
+                            <p className="text-sm font-medium">No conversations yet</p>
+                            <p className="text-xs text-muted-foreground mt-1">Start a new chat to begin</p>
+                          </div>
+                        ) : (
+                          <div className="p-4 space-y-6">
+                            {Object.entries(groupedConversations).map(([dateGroup, convs]) => (
+                              <div key={dateGroup}>
+                                <h4 className="text-xs font-semibold text-muted-foreground mb-2 px-2">
+                                  {dateGroup}
+                                </h4>
+                                <div className="space-y-1">
+                                  {convs.map((conversation) => (
+                                    <div
+                                      key={conversation.id}
+                                      className={`group relative p-3 rounded-lg cursor-pointer transition-colors ${
+                                        activeConversation?.id === conversation.id
+                                          ? 'bg-purple-100 dark:bg-purple-900/30'
+                                          : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                                      }`}
+                                      onClick={() => {
+                                        handleSwitchConversation(conversation);
+                                        setIsHistorySheetOpen(false);
+                                      }}
+                                      data-testid={`conversation-${conversation.id}`}
+                                    >
+                                      {editingConversationId === conversation.id ? (
+                                        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                          <Input
+                                            value={editingTitle}
+                                            onChange={(e) => setEditingTitle(e.target.value)}
+                                            onKeyPress={(e) => {
+                                              if (e.key === 'Enter') {
+                                                handleSaveTitle(conversation.id);
+                                              } else if (e.key === 'Escape') {
+                                                setEditingConversationId(null);
+                                              }
+                                            }}
+                                            className="h-8 text-sm"
+                                            autoFocus
+                                            data-testid="input-rename-conversation"
+                                          />
+                                          <Button
+                                            onClick={() => handleSaveTitle(conversation.id)}
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 w-8 p-0"
+                                          >
+                                            <X className="h-4 w-4" />
+                                          </Button>
+                                        </div>
+                                      ) : (
+                                        <>
+                                          <div className="flex items-start justify-between">
+                                            <div className="flex-1 min-w-0">
+                                              <p className="text-sm font-medium truncate">{conversation.title}</p>
+                                              <p className="text-xs text-muted-foreground">
+                                                {conversation.model} • {new Date(conversation.updatedAt).toLocaleString('ta-IN', { month: 'short', day: 'numeric' })}
+                                              </p>
+                                            </div>
+                                            <DropdownMenu>
+                                              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100"
+                                                  data-testid={`button-conversation-menu-${conversation.id}`}
+                                                >
+                                                  <MoreVertical className="h-4 w-4" />
+                                                </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent align="end">
+                                                <DropdownMenuItem
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleStartEditing(conversation);
+                                                  }}
+                                                  data-testid="menuitem-rename"
+                                                >
+                                                  <Edit2 className="h-4 w-4 mr-2" />
+                                                  Rename
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteConversation(conversation.id);
+                                                  }}
+                                                  className="text-red-600"
+                                                  data-testid="menuitem-delete"
+                                                >
+                                                  <Trash2 className="h-4 w-4 mr-2" />
+                                                  Delete
+                                                </DropdownMenuItem>
+                                              </DropdownMenuContent>
+                                            </DropdownMenu>
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </ScrollArea>
+                    </div>
+                  </SheetContent>
+                </Sheet>
                 <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
                 <div>
                   <h3 className="font-semibold text-sm sm:text-base">
