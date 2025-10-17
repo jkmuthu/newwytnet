@@ -1,11 +1,48 @@
 import { Router } from "express";
 import { db } from "../db";
-import { platformSettings } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
+import { platformSettings, insertPlatformSettingSchema, updatePlatformSettingSchema } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import { adminAuthMiddleware } from "../customAuth";
 import { requirePermission } from "../permission-middleware";
+import { z } from "zod";
 
 const router = Router();
+
+// Helper function to parse value based on type
+function parseSettingValue(value: string, type: string): any {
+  switch (type) {
+    case 'number':
+      const num = Number(value);
+      if (isNaN(num)) throw new Error(`Invalid number value: ${value}`);
+      return num;
+    case 'boolean':
+      if (value === 'true') return true;
+      if (value === 'false') return false;
+      throw new Error(`Invalid boolean value: ${value}`);
+    case 'json':
+      try {
+        return JSON.parse(value);
+      } catch {
+        throw new Error(`Invalid JSON value: ${value}`);
+      }
+    default:
+      return value;
+  }
+}
+
+// Helper function to serialize value to string for storage
+function serializeSettingValue(value: any, type: string): string {
+  switch (type) {
+    case 'number':
+      return String(value);
+    case 'boolean':
+      return String(value);
+    case 'json':
+      return JSON.stringify(value);
+    default:
+      return String(value);
+  }
+}
 
 // GET /api/admin/settings - Get all platform settings
 router.get("/admin/settings", adminAuthMiddleware, requirePermission('system-security', 'view'), async (req, res) => {
@@ -20,8 +57,14 @@ router.get("/admin/settings", adminAuthMiddleware, requirePermission('system-sec
 
     const settings = await query.orderBy(platformSettings.category, platformSettings.key);
 
+    // Parse values based on type
+    const parsedSettings = settings.map(setting => ({
+      ...setting,
+      parsedValue: setting.value ? parseSettingValue(setting.value, setting.type) : null,
+    }));
+
     // Group settings by category
-    const grouped = settings.reduce((acc: any, setting) => {
+    const grouped = parsedSettings.reduce((acc: any, setting) => {
       if (!acc[setting.category]) {
         acc[setting.category] = [];
       }
@@ -29,7 +72,7 @@ router.get("/admin/settings", adminAuthMiddleware, requirePermission('system-sec
       return acc;
     }, {});
 
-    res.json({ success: true, settings, grouped });
+    res.json({ success: true, settings: parsedSettings, grouped });
   } catch (error) {
     console.error("Error fetching platform settings:", error);
     res.status(500).json({ success: false, error: "Failed to fetch settings" });
@@ -51,7 +94,12 @@ router.get("/admin/settings/:key", adminAuthMiddleware, requirePermission('syste
       return res.status(404).json({ success: false, error: "Setting not found" });
     }
 
-    res.json({ success: true, setting });
+    const parsedSetting = {
+      ...setting,
+      parsedValue: setting.value ? parseSettingValue(setting.value, setting.type) : null,
+    };
+
+    res.json({ success: true, setting: parsedSetting });
   } catch (error) {
     console.error("Error fetching setting:", error);
     res.status(500).json({ success: false, error: "Failed to fetch setting" });
@@ -62,24 +110,47 @@ router.get("/admin/settings/:key", adminAuthMiddleware, requirePermission('syste
 router.put("/admin/settings/:id", adminAuthMiddleware, requirePermission('system-security', 'edit'), async (req, res) => {
   try {
     const { id } = req.params;
-    const { value } = req.body;
     
+    // Validate request body
+    const validatedData = updatePlatformSettingSchema.parse(req.body);
+    
+    // Get current setting to check if editable and get type
+    const [currentSetting] = await db
+      .select()
+      .from(platformSettings)
+      .where(eq(platformSettings.id, id))
+      .limit(1);
+
+    if (!currentSetting) {
+      return res.status(404).json({ success: false, error: "Setting not found" });
+    }
+
+    if (!currentSetting.isEditable) {
+      return res.status(403).json({ success: false, error: "This setting is read-only and cannot be modified" });
+    }
+
+    // Validate and parse value based on type
+    try {
+      parseSettingValue(validatedData.value, currentSetting.type);
+    } catch (error: any) {
+      return res.status(400).json({ success: false, error: error.message });
+    }
+
     const [updated] = await db
       .update(platformSettings)
       .set({
-        value: String(value),
+        value: validatedData.value,
         updatedBy: (req.user as any)?.id || null,
         updatedAt: new Date(),
       })
       .where(eq(platformSettings.id, id))
       .returning();
 
-    if (!updated) {
-      return res.status(404).json({ success: false, error: "Setting not found" });
-    }
-
     res.json({ success: true, setting: updated });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ success: false, error: "Invalid request data", details: error.errors });
+    }
     console.error("Error updating setting:", error);
     res.status(500).json({ success: false, error: "Failed to update setting" });
   }
@@ -88,25 +159,42 @@ router.put("/admin/settings/:id", adminAuthMiddleware, requirePermission('system
 // POST /api/admin/settings - Create new setting
 router.post("/admin/settings", adminAuthMiddleware, requirePermission('system-security', 'create'), async (req, res) => {
   try {
-    const { key, value, type, category, label, description, isPublic, isEditable } = req.body;
+    // Validate request body
+    const validatedData = insertPlatformSettingSchema.parse(req.body);
     
+    // Check if key already exists
+    const [existing] = await db
+      .select()
+      .from(platformSettings)
+      .where(eq(platformSettings.key, validatedData.key))
+      .limit(1);
+
+    if (existing) {
+      return res.status(409).json({ success: false, error: `Setting with key '${validatedData.key}' already exists` });
+    }
+
+    // Validate value if provided
+    if (validatedData.value) {
+      try {
+        parseSettingValue(validatedData.value, validatedData.type);
+      } catch (error: any) {
+        return res.status(400).json({ success: false, error: error.message });
+      }
+    }
+
     const [newSetting] = await db
       .insert(platformSettings)
       .values({
-        key,
-        value: String(value),
-        type: type || 'string',
-        category,
-        label,
-        description,
-        isPublic: isPublic || false,
-        isEditable: isEditable !== false,
+        ...validatedData,
         updatedBy: (req.user as any)?.id || null,
       })
       .returning();
 
     res.json({ success: true, setting: newSetting });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ success: false, error: "Invalid request data", details: error.errors });
+    }
     console.error("Error creating setting:", error);
     res.status(500).json({ success: false, error: "Failed to create setting" });
   }

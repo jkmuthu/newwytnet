@@ -3825,6 +3825,26 @@ export const platformSettings = pgTable("platform_settings", {
   index("idx_platform_settings_category").on(table.category),
 ]);
 
+export const insertPlatformSettingSchema = createInsertSchema(platformSettings, {
+  key: z.string().min(1).max(255),
+  type: z.enum(['string', 'number', 'boolean', 'json']),
+  category: z.enum(['general', 'email', 'payment', 'security', 'api']),
+  value: z.string().optional(),
+  label: z.string().max(255).optional(),
+  description: z.string().optional(),
+  isPublic: z.boolean().optional(),
+  isEditable: z.boolean().optional(),
+  validationRules: z.record(z.any()).optional(),
+}).omit({ id: true, createdAt: true, updatedAt: true, updatedBy: true });
+
+export const updatePlatformSettingSchema = z.object({
+  value: z.string(),
+});
+
+export type InsertPlatformSetting = z.infer<typeof insertPlatformSettingSchema>;
+export type SelectPlatformSetting = typeof platformSettings.$inferSelect;
+export type UpdatePlatformSetting = z.infer<typeof updatePlatformSettingSchema>;
+
 // Schema exports for Roles & Permissions
 export const insertRoleSchema = createInsertSchema(roles).omit({ id: true, createdAt: true, updatedAt: true });
 export const selectRoleSchema = createSelectSchema(roles);

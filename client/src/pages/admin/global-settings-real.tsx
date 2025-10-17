@@ -24,6 +24,7 @@ interface PlatformSetting {
   id: string;
   key: string;
   value: string | null;
+  parsedValue: any;
   type: string;
   category: string;
   label: string | null;
@@ -37,6 +38,7 @@ export default function AdminGlobalSettingsReal() {
   const [selectedSetting, setSelectedSetting] = useState<PlatformSetting | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editValue, setEditValue] = useState("");
+  const [jsonError, setJsonError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const { data: settingsData, isLoading } = useQuery({
@@ -54,33 +56,74 @@ export default function AdminGlobalSettingsReal() {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/settings'] });
       setEditDialogOpen(false);
       setSelectedSetting(null);
+      setJsonError(null);
       toast({
         title: "Success",
         description: "Setting updated successfully",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.error || "Failed to update setting";
       toast({
         title: "Error",
-        description: "Failed to update setting",
+        description: errorMessage,
         variant: "destructive",
       });
     },
   });
 
   const handleEdit = (setting: PlatformSetting) => {
+    if (!setting.isEditable) {
+      toast({
+        title: "Cannot Edit",
+        description: "This setting is read-only",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSelectedSetting(setting);
-    setEditValue(setting.value || "");
+    
+    // Set initial value based on type
+    if (setting.type === 'json') {
+      setEditValue(setting.value ? JSON.stringify(setting.parsedValue, null, 2) : '{}');
+    } else if (setting.type === 'boolean') {
+      setEditValue(setting.value || 'false');
+    } else {
+      setEditValue(setting.value || "");
+    }
+    
+    setJsonError(null);
     setEditDialogOpen(true);
   };
 
   const handleSave = () => {
-    if (selectedSetting) {
-      updateSettingMutation.mutate({
-        id: selectedSetting.id,
-        value: editValue,
-      });
+    if (!selectedSetting) return;
+
+    // Validate based on type
+    if (selectedSetting.type === 'json') {
+      try {
+        JSON.parse(editValue);
+        setJsonError(null);
+      } catch (e) {
+        setJsonError("Invalid JSON format");
+        return;
+      }
+    } else if (selectedSetting.type === 'number') {
+      if (isNaN(Number(editValue))) {
+        toast({
+          title: "Invalid Value",
+          description: "Please enter a valid number",
+          variant: "destructive",
+        });
+        return;
+      }
     }
+
+    updateSettingMutation.mutate({
+      id: selectedSetting.id,
+      value: editValue,
+    });
   };
 
   const getCategoryIcon = (category: string) => {
@@ -97,6 +140,24 @@ export default function AdminGlobalSettingsReal() {
         return <Code className="h-5 w-5" />;
       default:
         return <Settings className="h-5 w-5" />;
+    }
+  };
+
+  const formatValue = (setting: PlatformSetting) => {
+    if (!setting.value) {
+      return <span className="text-muted-foreground italic">Not set</span>;
+    }
+
+    if (setting.type === 'boolean') {
+      return <Badge variant={setting.parsedValue ? 'default' : 'secondary'}>
+        {setting.parsedValue ? 'Enabled' : 'Disabled'}
+      </Badge>;
+    } else if (setting.type === 'json') {
+      return <pre className="text-sm font-mono bg-muted p-2 rounded max-w-md overflow-auto">
+        {JSON.stringify(setting.parsedValue, null, 2)}
+      </pre>;
+    } else {
+      return <span className="text-sm font-mono">{setting.value}</span>;
     }
   };
 
@@ -151,7 +212,7 @@ export default function AdminGlobalSettingsReal() {
                     {grouped[category]?.map((setting) => (
                       <div 
                         key={setting.id} 
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                        className="flex items-start justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                         data-testid={`setting-${setting.key}`}
                       >
                         <div className="flex-1">
@@ -163,13 +224,14 @@ export default function AdminGlobalSettingsReal() {
                             {!setting.isEditable && (
                               <Badge variant="secondary" className="text-xs">Read-only</Badge>
                             )}
+                            <Badge variant="outline" className="text-xs capitalize">{setting.type}</Badge>
                           </div>
                           {setting.description && (
                             <p className="text-sm text-muted-foreground mt-1">{setting.description}</p>
                           )}
-                          <p className="text-sm font-mono mt-2">
-                            {setting.value || <span className="text-muted-foreground italic">Not set</span>}
-                          </p>
+                          <div className="mt-2">
+                            {formatValue(setting)}
+                          </div>
                         </div>
                         {setting.isEditable && (
                           <Button
@@ -201,7 +263,9 @@ export default function AdminGlobalSettingsReal() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="value">Value</Label>
+              <Label htmlFor="value">
+                Value {selectedSetting?.type && <span className="text-muted-foreground">({selectedSetting.type})</span>}
+              </Label>
               {selectedSetting?.type === 'boolean' ? (
                 <div className="flex items-center space-x-2">
                   <Switch
@@ -212,14 +276,22 @@ export default function AdminGlobalSettingsReal() {
                   <Label>{editValue === 'true' ? 'Enabled' : 'Disabled'}</Label>
                 </div>
               ) : selectedSetting?.type === 'json' ? (
-                <Textarea
-                  id="value"
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  rows={6}
-                  className="font-mono text-sm"
-                  data-testid="textarea-setting-value"
-                />
+                <div className="space-y-2">
+                  <Textarea
+                    id="value"
+                    value={editValue}
+                    onChange={(e) => {
+                      setEditValue(e.target.value);
+                      setJsonError(null);
+                    }}
+                    rows={10}
+                    className="font-mono text-sm"
+                    data-testid="textarea-setting-value"
+                  />
+                  {jsonError && (
+                    <p className="text-sm text-destructive">{jsonError}</p>
+                  )}
+                </div>
               ) : (
                 <Input
                   id="value"
@@ -237,14 +309,17 @@ export default function AdminGlobalSettingsReal() {
           <DialogFooter>
             <Button 
               variant="outline" 
-              onClick={() => setEditDialogOpen(false)}
+              onClick={() => {
+                setEditDialogOpen(false);
+                setJsonError(null);
+              }}
               data-testid="button-cancel-edit"
             >
               Cancel
             </Button>
             <Button 
               onClick={handleSave}
-              disabled={updateSettingMutation.isPending}
+              disabled={updateSettingMutation.isPending || !!jsonError}
               data-testid="button-save-setting"
             >
               {updateSettingMutation.isPending ? "Saving..." : "Save Changes"}
