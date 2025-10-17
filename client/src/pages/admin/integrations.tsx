@@ -43,6 +43,7 @@ interface Integration {
   is_active: boolean;
   is_configured: boolean;
   config_fields: Record<string, string>;
+  credentials: Record<string, string>;
   documentation_url: string | null;
   created_at: string;
 }
@@ -120,7 +121,8 @@ export default function AdminIntegrations() {
 
   const handleConfigure = (integration: Integration) => {
     setSelectedIntegration(integration);
-    setConfigData({});
+    // Pre-fill with existing credentials if available
+    setConfigData(integration.credentials || {});
   };
 
   const handleSaveConfig = () => {
