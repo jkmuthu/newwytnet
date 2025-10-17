@@ -2,10 +2,103 @@ import { Router } from "express";
 import { adminAuthMiddleware } from "../customAuth";
 import { aiService } from "../services/aiService";
 import { db } from "../db";
-import { platformModules, apps, platformHubs } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { platformModules, apps, platformHubs, wytaiUsage, users } from "@shared/schema";
+import { eq, and, gte, sql } from "drizzle-orm";
 
 const router = Router();
+
+// Rate limits configuration
+const RATE_LIMITS = {
+  daily: 100,   // 100 requests per day
+  monthly: 2000 // 2000 requests per month
+};
+
+// Check if user has exceeded rate limits
+async function checkRateLimits(userId: string): Promise<{ allowed: boolean; message?: string; stats?: any }> {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  // Get daily usage count
+  const dailyUsage = await db.select({
+    count: sql<number>`cast(count(*) as int)`,
+  })
+    .from(wytaiUsage)
+    .where(and(
+      eq(wytaiUsage.userId, userId),
+      gte(wytaiUsage.createdAt, today)
+    ));
+
+  // Get monthly usage count
+  const monthlyUsage = await db.select({
+    count: sql<number>`cast(count(*) as int)`,
+  })
+    .from(wytaiUsage)
+    .where(and(
+      eq(wytaiUsage.userId, userId),
+      gte(wytaiUsage.createdAt, thisMonth)
+    ));
+
+  const dailyCount = dailyUsage[0]?.count || 0;
+  const monthlyCount = monthlyUsage[0]?.count || 0;
+
+  const stats = {
+    daily: { used: dailyCount, limit: RATE_LIMITS.daily, remaining: RATE_LIMITS.daily - dailyCount },
+    monthly: { used: monthlyCount, limit: RATE_LIMITS.monthly, remaining: RATE_LIMITS.monthly - monthlyCount },
+  };
+
+  if (dailyCount >= RATE_LIMITS.daily) {
+    return {
+      allowed: false,
+      message: `Daily limit of ${RATE_LIMITS.daily} requests exceeded. Try again tomorrow.`,
+      stats,
+    };
+  }
+
+  if (monthlyCount >= RATE_LIMITS.monthly) {
+    return {
+      allowed: false,
+      message: `Monthly limit of ${RATE_LIMITS.monthly} requests exceeded. Limit resets next month.`,
+      stats,
+    };
+  }
+
+  return { allowed: true, stats };
+}
+
+// Track usage in database
+async function trackUsage(userId: string, model: string, provider: string, usage: any, ipAddress?: string) {
+  try {
+    await db.insert(wytaiUsage).values({
+      userId,
+      model,
+      provider,
+      promptTokens: usage?.prompt_tokens || 0,
+      completionTokens: usage?.completion_tokens || 0,
+      totalTokens: usage?.total_tokens || 0,
+      requestData: {},
+      responseData: { usage },
+      ipAddress,
+    });
+  } catch (error) {
+    console.error("Failed to track WytAI usage:", error);
+  }
+}
+
+// Check if user has access to WytAI (Super Admin or Admin only)
+async function checkWytAIAccess(userId: string): Promise<boolean> {
+  const user = await db.select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  
+  if (!user || user.length === 0) return false;
+  
+  const userRole = user[0].role;
+  const isSuperAdmin = user[0].isSuperAdmin;
+  
+  return isSuperAdmin || userRole === 'super_admin' || userRole === 'admin';
+}
 
 // System prompt for WytAI Agent with Engine context
 const getEngineContextPrompt = (engineData: any) => `You are WytAI Agent, an intelligent assistant built into the WytNet Engine Admin Panel. You help administrators improve and manage their platform.
@@ -42,13 +135,38 @@ const getEngineContextPrompt = (engineData: any) => `You are WytAI Agent, an int
 router.post("/admin/wytai/chat", adminAuthMiddleware, async (req, res) => {
   try {
     const { messages, model } = req.body;
+    const userId = (req as any).principal?.userId || (req as any).user?.id;
+    const ipAddress = req.ip || req.socket.remoteAddress;
+
+    if (!userId) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
 
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: "Messages array is required" });
     }
 
+    // Check if user has access to WytAI (Super Admin or Admin only)
+    const hasAccess = await checkWytAIAccess(userId);
+    if (!hasAccess) {
+      return res.status(403).json({ 
+        error: "Access denied. WytAI is only available for Super Admins and Admins.",
+        code: "ACCESS_DENIED"
+      });
+    }
+
+    // Check rate limits
+    const rateLimitCheck = await checkRateLimits(userId);
+    if (!rateLimitCheck.allowed) {
+      return res.status(429).json({ 
+        error: rateLimitCheck.message,
+        stats: rateLimitCheck.stats,
+        code: "RATE_LIMIT_EXCEEDED"
+      });
+    }
+
     if (!aiService.isReady()) {
-      return res.status(503).json({ error: "AI service is not available" });
+      return res.status(503).json({ error: "AI service is not available. Please contact the administrator to configure API keys." });
     }
 
     // Fetch engine context data
@@ -83,11 +201,17 @@ router.post("/admin/wytai/chat", adminAuthMiddleware, async (req, res) => {
 
     const aiMessage = response.choices[0]?.message?.content || "Sorry, I couldn't generate a response.";
 
+    // Track usage in database
+    const provider = model?.includes('gpt') ? 'openai' : model?.includes('claude') ? 'claude' : 'gemini';
+    await trackUsage(userId, response.model || model || "gpt-4o", provider, response.usage, ipAddress);
+
+    // Return response with usage stats
     res.json({
       success: true,
       message: aiMessage,
       model: response.model,
       usage: response.usage,
+      stats: rateLimitCheck.stats, // Include usage stats in response
     });
   } catch (error: any) {
     console.error("WytAI chat error:", error);

@@ -928,6 +928,25 @@ export const auditLogs = pgTable("audit_logs", {
   index("idx_audit_logs_created_at").on(table.createdAt),
 ]);
 
+// WytAI Usage Tracking
+export const wytaiUsage = pgTable("wytai_usage", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  model: varchar("model", { length: 100 }).notNull(),
+  provider: varchar("provider", { length: 50 }).notNull(),
+  promptTokens: integer("prompt_tokens").notNull().default(0),
+  completionTokens: integer("completion_tokens").notNull().default(0),
+  totalTokens: integer("total_tokens").notNull().default(0),
+  requestData: jsonb("request_data").default({}),
+  responseData: jsonb("response_data").default({}),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_wytai_usage_user_id").on(table.userId),
+  index("idx_wytai_usage_created_at").on(table.createdAt),
+  index("idx_wytai_usage_provider").on(table.provider),
+]);
+
 // SEO Settings
 export const seoSettings = pgTable("seo_settings", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1250,6 +1269,7 @@ export type Hub = typeof hubs.$inferSelect;
 export type Plan = typeof plans.$inferSelect;
 export type Media = typeof media.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
+export type WytaiUsage = typeof wytaiUsage.$inferSelect;
 export type SeoSetting = typeof seoSettings.$inferSelect;
 
 // Insert schemas
@@ -1275,6 +1295,7 @@ export const insertSubscriptionSchema = createInsertSchema(subscriptions);
 
 export const insertMediaSchema = createInsertSchema(media);
 export const insertAuditLogSchema = createInsertSchema(auditLogs);
+export const insertWytaiUsageSchema = createInsertSchema(wytaiUsage);
 export const insertSeoSettingSchema = createInsertSchema(seoSettings);
 
 // User Profile schemas
@@ -1335,6 +1356,7 @@ export const selectHubSchema = createSelectSchema(hubs);
 export const selectPlanSchema = createSelectSchema(plans);
 export const selectMediaSchema = createSelectSchema(media);
 export const selectAuditLogSchema = createSelectSchema(auditLogs);
+export const selectWytaiUsageSchema = createSelectSchema(wytaiUsage);
 export const selectSeoSettingSchema = createSelectSchema(seoSettings);
 
 
@@ -1351,6 +1373,7 @@ export type InsertHub = z.infer<typeof insertHubSchema>;
 export type InsertPlan = z.infer<typeof insertPlanSchema>;
 export type InsertMedia = z.infer<typeof insertMediaSchema>;
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type InsertWytaiUsage = z.infer<typeof insertWytaiUsageSchema>;
 export type InsertSeoSetting = z.infer<typeof insertSeoSettingSchema>;
 
 // WytAi Trademark types
