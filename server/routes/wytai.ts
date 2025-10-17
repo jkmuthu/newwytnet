@@ -66,7 +66,7 @@ async function checkRateLimits(userId: string): Promise<{ allowed: boolean; mess
   return { allowed: true, stats };
 }
 
-// Track usage in database
+// Track usage in database and return fresh stats
 async function trackUsage(userId: string, model: string, provider: string, usage: any, ipAddress?: string) {
   try {
     await db.insert(wytaiUsage).values({
@@ -80,8 +80,13 @@ async function trackUsage(userId: string, model: string, provider: string, usage
       responseData: { usage },
       ipAddress,
     });
+
+    // Return fresh stats after tracking
+    const rateLimitCheck = await checkRateLimits(userId);
+    return rateLimitCheck.stats;
   } catch (error) {
     console.error("Failed to track WytAI usage:", error);
+    return null;
   }
 }
 
@@ -201,17 +206,17 @@ router.post("/admin/wytai/chat", adminAuthMiddleware, async (req, res) => {
 
     const aiMessage = response.choices[0]?.message?.content || "Sorry, I couldn't generate a response.";
 
-    // Track usage in database
+    // Track usage in database and get fresh stats
     const provider = model?.includes('gpt') ? 'openai' : model?.includes('claude') ? 'claude' : 'gemini';
-    await trackUsage(userId, response.model || model || "gpt-4o", provider, response.usage, ipAddress);
+    const freshStats = await trackUsage(userId, response.model || model || "gpt-4o", provider, response.usage, ipAddress);
 
-    // Return response with usage stats
+    // Return response with fresh usage stats
     res.json({
       success: true,
       message: aiMessage,
       model: response.model,
       usage: response.usage,
-      stats: rateLimitCheck.stats, // Include usage stats in response
+      stats: freshStats || rateLimitCheck.stats, // Include fresh usage stats in response
     });
   } catch (error: any) {
     console.error("WytAI chat error:", error);
@@ -226,13 +231,38 @@ router.post("/admin/wytai/chat", adminAuthMiddleware, async (req, res) => {
 router.post("/admin/wytai/chat/stream", adminAuthMiddleware, async (req, res) => {
   try {
     const { messages, model } = req.body;
+    const userId = (req as any).principal?.userId || (req as any).user?.id;
+    const ipAddress = req.ip || req.socket.remoteAddress;
+
+    if (!userId) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
 
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: "Messages array is required" });
     }
 
+    // Check if user has access to WytAI (Super Admin or Admin only)
+    const hasAccess = await checkWytAIAccess(userId);
+    if (!hasAccess) {
+      return res.status(403).json({ 
+        error: "Access denied. WytAI is only available for Super Admins and Admins.",
+        code: "ACCESS_DENIED"
+      });
+    }
+
+    // Check rate limits
+    const rateLimitCheck = await checkRateLimits(userId);
+    if (!rateLimitCheck.allowed) {
+      return res.status(429).json({ 
+        error: rateLimitCheck.message,
+        stats: rateLimitCheck.stats,
+        code: "RATE_LIMIT_EXCEEDED"
+      });
+    }
+
     if (!aiService.isReady()) {
-      return res.status(503).json({ error: "AI service is not available" });
+      return res.status(503).json({ error: "AI service is not available. Please contact the administrator to configure API keys." });
     }
 
     // Fetch engine context data
@@ -273,7 +303,11 @@ router.post("/admin/wytai/chat/stream", adminAuthMiddleware, async (req, res) =>
         res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
       }
 
-      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+      // Track usage after streaming completes (token counts not available for streaming)
+      const provider = model?.includes('gpt') ? 'openai' : model?.includes('claude') ? 'claude' : 'gemini';
+      const freshStats = await trackUsage(userId, model || "gpt-4o", provider, { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }, ipAddress);
+
+      res.write(`data: ${JSON.stringify({ done: true, stats: freshStats || rateLimitCheck.stats })}\n\n`);
       res.end();
     } catch (streamError: any) {
       res.write(`data: ${JSON.stringify({ error: streamError.message })}\n\n`);
