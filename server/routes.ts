@@ -478,6 +478,29 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Reorder endpoint must come BEFORE :id route to avoid matching "reorder" as an id
+  app.patch('/api/admin/navigation-menus/reorder', async (req, res) => {
+    try {
+      const principal = req.session.wytpassPrincipal;
+      if (!principal || !principal.isSuperAdmin) {
+        return res.status(403).json({ error: 'Super Admin access required' });
+      }
+
+      const { menus } = req.body; // Array of { id, order }
+
+      for (const menu of menus) {
+        await db.update(navigationMenus)
+          .set({ order: menu.order, updatedAt: new Date() })
+          .where(eq(navigationMenus.id, menu.id));
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error reordering navigation menus:', error);
+      res.status(500).json({ error: 'Failed to reorder navigation menus' });
+    }
+  });
+
   app.patch('/api/admin/navigation-menus/:id', async (req, res) => {
     try {
       const principal = req.session.wytpassPrincipal;
@@ -517,28 +540,6 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error: any) {
       console.error('Error deleting navigation menu:', error);
       res.status(500).json({ error: 'Failed to delete navigation menu' });
-    }
-  });
-
-  app.patch('/api/admin/navigation-menus/reorder', async (req, res) => {
-    try {
-      const principal = req.session.wytpassPrincipal;
-      if (!principal || !principal.isSuperAdmin) {
-        return res.status(403).json({ error: 'Super Admin access required' });
-      }
-
-      const { menus } = req.body; // Array of { id, order }
-
-      for (const menu of menus) {
-        await db.update(navigationMenus)
-          .set({ order: menu.order, updatedAt: new Date() })
-          .where(eq(navigationMenus.id, menu.id));
-      }
-
-      res.json({ success: true });
-    } catch (error: any) {
-      console.error('Error reordering navigation menus:', error);
-      res.status(500).json({ error: 'Failed to reorder navigation menus' });
     }
   });
 
