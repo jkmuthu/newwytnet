@@ -7,6 +7,7 @@ import { Plus, Save, Eye } from "lucide-react";
 import MenuTreePanel from "./menu-tree-panel";
 import PageBuilderPanel from "./page-builder-panel";
 import PropertiesPanel from "./properties-panel";
+import CreatePageDialog from "./create-page-dialog";
 
 interface NavigationMenu {
   id: string;
@@ -42,6 +43,7 @@ export default function PagesMenuCMS() {
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null);
   const [pageBlocks, setPageBlocks] = useState<Block[]>([]);
   const [menus, setMenus] = useState<NavigationMenu[]>([]);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -63,13 +65,18 @@ export default function PagesMenuCMS() {
     }
   }, [fetchedMenus]);
 
-  // Update selected page and blocks when page data changes
+  // Update selected page and blocks when page data changes or menu selection changes
   useEffect(() => {
     if (page) {
       setSelectedPage(page);
       setPageBlocks(page.content || []);
+    } else if (selectedMenu && !selectedMenu.pageId) {
+      // Clear state when selecting a menu without a page
+      setSelectedPage(null);
+      setPageBlocks([]);
+      setSelectedBlock(null);
     }
-  }, [page]);
+  }, [page, selectedMenu]);
 
   // Create page + menu mutation
   const createPageMenuMutation = useMutation({
@@ -196,13 +203,15 @@ export default function PagesMenuCMS() {
   };
 
   const handleCreatePage = () => {
-    const title = prompt("Enter page title:");
-    if (!title) return;
+    setIsCreateDialogOpen(true);
+  };
 
-    const route = prompt("Enter page route (e.g., /about):");
-    if (!route) return;
-
-    createPageMenuMutation.mutate({ title, route });
+  const handleCreatePageSubmit = (data: { title: string; route: string }) => {
+    createPageMenuMutation.mutate(data, {
+      onSuccess: () => {
+        setIsCreateDialogOpen(false);
+      },
+    });
   };
 
   const handleSave = () => {
@@ -288,6 +297,14 @@ export default function PagesMenuCMS() {
           onBlockUpdate={handleBlockUpdate}
         />
       </div>
+
+      {/* Create Page Dialog */}
+      <CreatePageDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onSubmit={handleCreatePageSubmit}
+        isLoading={createPageMenuMutation.isPending}
+      />
     </div>
   );
 }

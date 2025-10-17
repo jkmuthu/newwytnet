@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,16 +77,73 @@ export default function PropertiesPanel({ block, onBlockUpdate }: PropertiesPane
     if (Array.isArray(value)) {
       return (
         <div key={key} className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {key.charAt(0).toUpperCase() + key.slice(1)}
-          </Label>
-          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              {value.length} items
-            </p>
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {key.charAt(0).toUpperCase() + key.slice(1)}
+            </Label>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                const newItem = typeof value[0] === 'object' 
+                  ? { ...value[0] }
+                  : '';
+                handleContentChange(key, [...value, newItem]);
+              }}
+              data-testid={`button-add-${key}`}
+            >
+              <Plus className="h-3 w-3" />
+            </Button>
+          </div>
+          <div className="space-y-2">
             {value.map((item, index) => (
-              <div key={index} className="mt-2 p-2 bg-white dark:bg-gray-900 rounded text-xs">
-                {typeof item === 'object' ? JSON.stringify(item) : item}
+              <div key={index} className="bg-gray-50 dark:bg-gray-800 p-2 rounded-md space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    Item {index + 1}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      const updated = value.filter((_, i) => i !== index);
+                      handleContentChange(key, updated);
+                    }}
+                    data-testid={`button-remove-${key}-${index}`}
+                  >
+                    <Trash2 className="h-3 w-3 text-red-500" />
+                  </Button>
+                </div>
+                {typeof item === 'object' ? (
+                  Object.entries(item).map(([subKey, subValue]) => (
+                    <div key={subKey}>
+                      <Label className="text-xs text-gray-600 dark:text-gray-400">
+                        {subKey}
+                      </Label>
+                      <Input
+                        value={String(subValue)}
+                        onChange={(e) => {
+                          const updated = [...value];
+                          updated[index] = { ...item, [subKey]: e.target.value };
+                          handleContentChange(key, updated);
+                        }}
+                        className="mt-1 h-8 text-sm"
+                        data-testid={`input-${key}-${index}-${subKey}`}
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <Input
+                    value={String(item)}
+                    onChange={(e) => {
+                      const updated = [...value];
+                      updated[index] = e.target.value;
+                      handleContentChange(key, updated);
+                    }}
+                    className="h-8 text-sm"
+                    data-testid={`input-${key}-${index}`}
+                  />
+                )}
               </div>
             ))}
           </div>
