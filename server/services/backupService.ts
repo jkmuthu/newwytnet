@@ -337,3 +337,76 @@ export async function deleteBackupFile(fullFilePath: string): Promise<void> {
     throw new Error(`Failed to delete backup: ${error.message}`);
   }
 }
+
+// Restore database from backup
+export async function restoreBackup(backupId: string): Promise<void> {
+  const timestamp = Date.now();
+  const tempDir = path.join(process.cwd(), '.restore-temp', timestamp.toString());
+  
+  // Create temp directory
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+
+  try {
+    // 1. Get backup record from database
+    const backup = await db.query.backups.findFirst({
+      where: (backups, { eq }) => eq(backups.id, backupId),
+    });
+
+    if (!backup) {
+      throw new Error('Backup not found');
+    }
+
+    if (backup.status !== 'completed') {
+      throw new Error('Cannot restore incomplete backup');
+    }
+
+    if (!backup.filePath) {
+      throw new Error('Backup file path not found');
+    }
+
+    // 2. Download backup file from object storage
+    const downloadPath = path.join(tempDir, backup.filename);
+    await downloadBackup(backup.filePath, downloadPath);
+    console.log('✓ Backup downloaded');
+
+    // 3. Extract backup archive
+    const extractDir = path.join(tempDir, 'extracted');
+    fs.mkdirSync(extractDir, { recursive: true });
+    
+    const AdmZip = require('adm-zip');
+    const zip = new AdmZip(downloadPath);
+    zip.extractAllTo(extractDir, true);
+    console.log('✓ Backup extracted');
+
+    // 4. Restore database from SQL file
+    const sqlPath = path.join(extractDir, 'database.sql');
+    if (!fs.existsSync(sqlPath)) {
+      throw new Error('Database SQL file not found in backup');
+    }
+
+    const dbUrl = process.env.DATABASE_URL;
+    if (!dbUrl) {
+      throw new Error('DATABASE_URL not configured');
+    }
+
+    // Drop all tables and restore from backup
+    const restoreCommand = `psql "${dbUrl}" < "${sqlPath}"`;
+    await execAsync(restoreCommand);
+    console.log('✓ Database restored');
+
+    // 5. Cleanup temp files
+    fs.rmSync(tempDir, { recursive: true, force: true });
+    console.log('✓ Temporary files cleaned up');
+
+  } catch (error: any) {
+    // Cleanup on error
+    if (fs.existsSync(tempDir)) {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+    
+    console.error('Backup restore error:', error);
+    throw new Error(`Failed to restore backup: ${error.message}`);
+  }
+}

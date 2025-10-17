@@ -673,6 +673,25 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  app.post('/api/admin/backup/restore/:id', async (req, res) => {
+    try {
+      const principal = req.session.wytpassPrincipal;
+      if (!principal || !principal.isSuperAdmin) {
+        return res.status(403).json({ error: 'Super Admin access required' });
+      }
+
+      const { id } = req.params;
+      const { restoreBackup } = await import('./services/backupService');
+      
+      await restoreBackup(id);
+      
+      res.json({ success: true, message: 'Backup restored successfully' });
+    } catch (error: any) {
+      console.error('Error restoring backup:', error);
+      res.status(500).json({ error: error.message || 'Failed to restore backup' });
+    }
+  });
+
   // Audit Logs API
   app.get('/api/admin/audit-logs', adminAuthMiddleware, async (req: any, res) => {
     try {

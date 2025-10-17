@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { HardDrive, Download, Trash2, Plus, Loader2, Database, FileArchive, Key } from "lucide-react";
+import { HardDrive, Download, Trash2, Plus, Loader2, Database, FileArchive, Key, RotateCcw, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Backup } from "@shared/schema";
@@ -29,6 +30,8 @@ import type { Backup } from "@shared/schema";
 export default function AdminBackups() {
   const { toast } = useToast();
   const [deleteBackupId, setDeleteBackupId] = useState<string | null>(null);
+  const [restoreBackupId, setRestoreBackupId] = useState<string | null>(null);
+  const [restoreConfirmed, setRestoreConfirmed] = useState(false);
 
   // Fetch all backups
   const { data: backups = [], isLoading } = useQuery<Backup[]>({
@@ -78,6 +81,28 @@ export default function AdminBackups() {
     },
   });
 
+  // Restore backup mutation
+  const restoreBackupMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest(`/api/admin/backup/restore/${id}`, "POST", {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "Backup Restored",
+        description: "System has been restored from backup successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/backup/list"] });
+      setRestoreBackupId(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Restore Failed",
+        description: error.message || "Failed to restore backup",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleDownload = (backup: Backup) => {
     // Download via direct link
     window.location.href = `/api/admin/backup/download/${backup.id}`;
@@ -91,10 +116,26 @@ export default function AdminBackups() {
     setDeleteBackupId(id);
   };
 
+  const handleRestore = (id: string) => {
+    setRestoreBackupId(id);
+    setRestoreConfirmed(false);
+  };
+
   const confirmDelete = () => {
     if (deleteBackupId) {
       deleteBackupMutation.mutate(deleteBackupId);
     }
+  };
+
+  const confirmRestore = () => {
+    if (restoreBackupId && restoreConfirmed) {
+      restoreBackupMutation.mutate(restoreBackupId);
+    }
+  };
+
+  const closeRestoreDialog = () => {
+    setRestoreBackupId(null);
+    setRestoreConfirmed(false);
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -261,6 +302,15 @@ export default function AdminBackups() {
                             <Download className="h-4 w-4" />
                           </Button>
                           <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleRestore(backup.id)}
+                            disabled={backup.status !== 'completed'}
+                            data-testid={`button-restore-${backup.id}`}
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
+                          <Button
                             variant="destructive"
                             size="sm"
                             onClick={() => handleDelete(backup.id)}
@@ -296,6 +346,74 @@ export default function AdminBackups() {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Restore Confirmation Dialog */}
+      <AlertDialog open={!!restoreBackupId} onOpenChange={(open) => !open && closeRestoreDialog()}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
+              <AlertTriangle className="h-5 w-5" />
+              Critical: Restore Backup
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md p-3">
+                <p className="font-semibold text-amber-800 dark:text-amber-400 mb-2">
+                  ⚠️ This is a destructive operation that will:
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-sm">
+                  <li>Replace the entire database with the backup version</li>
+                  <li>Permanently overwrite all current data</li>
+                  <li>Disconnect all active user sessions immediately</li>
+                  <li>Cause system downtime during the restore process</li>
+                  <li>Cannot be undone once started</li>
+                </ul>
+              </div>
+              
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+                <p className="font-semibold text-red-800 dark:text-red-400 mb-1">
+                  🛑 Before proceeding:
+                </p>
+                <p className="text-sm text-red-700 dark:text-red-300">
+                  Ensure you have created a current backup of the live system. Any data created after the selected backup will be permanently lost.
+                </p>
+              </div>
+
+              <div className="flex items-start space-x-2 pt-2">
+                <Checkbox
+                  id="restore-confirm"
+                  checked={restoreConfirmed}
+                  onCheckedChange={(checked) => setRestoreConfirmed(checked === true)}
+                  data-testid="checkbox-restore-confirm"
+                />
+                <label
+                  htmlFor="restore-confirm"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  I understand this will overwrite all current data and disconnect all users. I have backed up the current system.
+                </label>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={closeRestoreDialog}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRestore}
+              disabled={!restoreConfirmed || restoreBackupMutation.isPending}
+              className="bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50"
+              data-testid="button-confirm-restore"
+            >
+              {restoreBackupMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Restoring System...
+                </>
+              ) : (
+                "Restore Backup"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
