@@ -3802,6 +3802,29 @@ export const platformIntegrations = pgTable("platform_integrations", {
   index("idx_integrations_category").on(table.category),
 ]);
 
+// ========================================
+// GLOBAL PLATFORM SETTINGS
+// ========================================
+
+export const platformSettings = pgTable("platform_settings", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key", { length: 255 }).notNull().unique(),
+  value: text("value"),
+  type: varchar("type", { length: 50 }).notNull().default('string'), // 'string', 'number', 'boolean', 'json'
+  category: varchar("category", { length: 100 }).notNull(), // 'general', 'email', 'payment', 'security', 'api'
+  label: varchar("label", { length: 255 }),
+  description: text("description"),
+  isPublic: boolean("is_public").default(false),
+  isEditable: boolean("is_editable").default(true),
+  validationRules: jsonb("validation_rules").default({}),
+  updatedBy: varchar("updated_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_platform_settings_key").on(table.key),
+  index("idx_platform_settings_category").on(table.category),
+]);
+
 // Schema exports for Roles & Permissions
 export const insertRoleSchema = createInsertSchema(roles).omit({ id: true, createdAt: true, updatedAt: true });
 export const selectRoleSchema = createSelectSchema(roles);

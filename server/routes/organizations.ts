@@ -120,7 +120,7 @@ router.post("/admin/organizations", adminAuthMiddleware, requirePermission('orga
         phone,
         location,
         ownerId,
-        tenantId: req.user?.tenantId,
+        tenantId: (req.user as any)?.tenantId || null,
         status: 'active',
       })
       .returning();

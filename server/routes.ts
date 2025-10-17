@@ -157,6 +157,7 @@ import themesRouter from "./routes/themes";
 import supportRouter from "./routes/support";
 import integrationsRouter from "./routes/integrations";
 import organizationsRouter from "./routes/organizations";
+import platformSettingsRouter from "./routes/platform-settings";
 
 // Trademark analysis functions now imported from services/trademarkAnalysis.ts
 
@@ -218,6 +219,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   // Register Organizations Router
   app.use('/api', organizationsRouter);
+  
+  // Register Platform Settings Router
+  app.use('/api', platformSettingsRouter);
 
   // Auth routes - unified endpoint for both authentication systems
   app.get('/api/auth/user', async (req: any, res) => {

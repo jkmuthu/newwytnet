@@ -184,6 +184,14 @@ app.use((req, res, next) => {
     console.error('Platform integrations seeding failed:', error);
   }
 
+  // Seed platform settings
+  try {
+    const { seedPlatformSettings } = await import('./services/platformSettingsSeedingService');
+    await seedPlatformSettings();
+  } catch (error) {
+    console.error('Platform settings seeding failed:', error);
+  }
+
   // Setup Hub Routing Middleware (Multi-domain routing)
   try {
     console.log('🌐 Setting up Hub Routing Middleware...');

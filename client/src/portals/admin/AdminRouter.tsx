@@ -33,7 +33,7 @@ import AdminPlansPrices from "@/pages/admin/plans-prices";
 import AdminHelpSupport from "@/pages/admin/help-support";
 import AdminBillingPage from "@/pages/admin/billing";
 import AdminTransactions from "@/pages/admin/transactions";
-import AdminGlobalSettings from "@/pages/admin/global-settings";
+import AdminGlobalSettingsReal from "@/pages/admin/global-settings-real";
 import AdminRolesPermissions from "@/pages/admin/roles-permissions";
 import AdminPlatformHubs from "@/pages/admin/platform-hubs";
 import AdminAdminUsers from "@/pages/admin/admin-users";
@@ -103,7 +103,7 @@ export default function AdminRouter() {
           <Route path="/engine/integrations" component={AdminIntegrations} />
           <Route path="/engine/geo-regulatory" component={AdminGeoRegulatory} />
           <Route path="/engine/seo-settings" component={AdminSeoSettings} />
-          <Route path="/engine/global-settings" component={AdminGlobalSettings} />
+          <Route path="/engine/global-settings" component={AdminGlobalSettingsReal} />
           <Route path="/engine/roles-permissions" component={AdminRolesPermissions} />
           <Route path="/engine/admin-users" component={AdminAdminUsers} />
           <Route path="/engine/backups" component={AdminBackups} />
