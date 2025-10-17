@@ -119,6 +119,52 @@ export async function seedDefaultEngineRoles() {
       isSystem: true,
       allPermissions: false,
     },
+    {
+      name: "Developer",
+      description: "Access to modules, apps, themes, and integrations for development",
+      displayId: "RL00004",
+      scope: "engine" as const,
+      isSystem: true,
+      allPermissions: false,
+      permissionResources: ["modules", "apps", "themes", "integrations"],
+    },
+    {
+      name: "Data Manager",
+      description: "Access to datasets, entities, and media management",
+      displayId: "RL00005",
+      scope: "engine" as const,
+      isSystem: true,
+      allPermissions: false,
+      permissionResources: ["datasets", "entities", "media"],
+    },
+    {
+      name: "Finance Manager",
+      description: "Access to finance, billing, pricing, and analytics",
+      displayId: "RL00006",
+      scope: "engine" as const,
+      isSystem: true,
+      allPermissions: false,
+      permissionResources: ["pricing", "analytics"],
+      viewOnlyResources: ["users", "organizations"],
+    },
+    {
+      name: "Hub Manager",
+      description: "Access to platform hubs and CMS management",
+      displayId: "RL00007",
+      scope: "engine" as const,
+      isSystem: true,
+      allPermissions: false,
+      permissionResources: ["hubs", "cms"],
+    },
+    {
+      name: "Analyst",
+      description: "View-only access to analytics and reporting across all resources",
+      displayId: "RL00008",
+      scope: "engine" as const,
+      isSystem: true,
+      allPermissions: false,
+      viewOnly: true,
+    },
   ];
   
   for (const roleData of defaultRoles) {
@@ -192,6 +238,114 @@ export async function seedDefaultEngineRoles() {
       
       // Assign view permissions to Viewer
       if (roleData.name === "Viewer") {
+        const viewPermissions = await db
+          .select()
+          .from(permissions)
+          .where(
+            and(
+              eq(permissions.scope, "engine"),
+              eq(permissions.action, "view")
+            )
+          );
+        
+        for (const perm of viewPermissions) {
+          const existingRP = await db
+            .select()
+            .from(rolePermissions)
+            .where(
+              and(
+                eq(rolePermissions.roleId, roleId),
+                eq(rolePermissions.permissionId, perm.id)
+              )
+            )
+            .limit(1);
+          
+          if (existingRP.length === 0) {
+            await db.insert(rolePermissions).values({
+              roleId,
+              permissionId: perm.id,
+            });
+          }
+        }
+        
+        console.log(`    ✓ Assigned ${viewPermissions.length} view permissions to ${roleData.name}`);
+      }
+      
+      // Assign resource-specific permissions to custom roles
+      if (roleData.permissionResources) {
+        const resourcePerms = await db
+          .select()
+          .from(permissions)
+          .where(eq(permissions.scope, "engine"));
+        
+        const filteredPerms = resourcePerms.filter(p => 
+          roleData.permissionResources?.includes(p.resource)
+        );
+        
+        for (const perm of filteredPerms) {
+          const existingRP = await db
+            .select()
+            .from(rolePermissions)
+            .where(
+              and(
+                eq(rolePermissions.roleId, roleId),
+                eq(rolePermissions.permissionId, perm.id)
+              )
+            )
+            .limit(1);
+          
+          if (existingRP.length === 0) {
+            await db.insert(rolePermissions).values({
+              roleId,
+              permissionId: perm.id,
+            });
+          }
+        }
+        
+        console.log(`    ✓ Assigned ${filteredPerms.length} permissions to ${roleData.name}`);
+      }
+      
+      // Assign view-only permissions for specific resources
+      if (roleData.viewOnlyResources) {
+        const resourcePerms = await db
+          .select()
+          .from(permissions)
+          .where(
+            and(
+              eq(permissions.scope, "engine"),
+              eq(permissions.action, "view")
+            )
+          );
+        
+        const filteredPerms = resourcePerms.filter(p => 
+          roleData.viewOnlyResources?.includes(p.resource)
+        );
+        
+        for (const perm of filteredPerms) {
+          const existingRP = await db
+            .select()
+            .from(rolePermissions)
+            .where(
+              and(
+                eq(rolePermissions.roleId, roleId),
+                eq(rolePermissions.permissionId, perm.id)
+              )
+            )
+            .limit(1);
+          
+          if (existingRP.length === 0) {
+            await db.insert(rolePermissions).values({
+              roleId,
+              permissionId: perm.id,
+            });
+          }
+        }
+        
+        console.log(`    ✓ Assigned ${filteredPerms.length} view-only permissions to ${roleData.name}`);
+      }
+      
+      // Assign all view permissions to Analyst
+      if (roleData.viewOnly && roleData.name === "Analyst") {
         const viewPermissions = await db
           .select()
           .from(permissions)

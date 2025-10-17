@@ -12,7 +12,6 @@ import AdminUsers from "@/pages/admin/users-improved";
 import AdminTenants from "@/pages/admin/tenants";
 import AdminModules from "@/pages/admin/modules";
 import AdminApps from "@/pages/admin/apps";
-import AdminHubs from "@/pages/admin/hubs";
 import AdminCMS from "@/pages/admin/cms";
 import AdminSystemOverview from "@/pages/admin/system-overview";
 import AdminSystemSecurity from "@/pages/admin/system-security";
@@ -210,7 +209,6 @@ export default function AdminRouter() {
           <Route path="/engine/app-builder" component={AdminAppBuilder} />
           <Route path="/engine/modules" component={AdminModules} />
           <Route path="/engine/apps" component={AdminApps} />
-          <Route path="/engine/hubs" component={AdminHubs} />
           <Route path="/engine/cms" component={AdminCMS} />
           <Route path="/engine/themes" component={AdminThemes} />
 

@@ -103,12 +103,6 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
         active: location === "/engine/apps"
       },
       { 
-        label: "Hubs", 
-        icon: Network, 
-        href: "/engine/hubs", 
-        active: location === "/engine/hubs"
-      },
-      { 
         label: "CMS", 
         icon: FileText, 
         href: "/engine/cms", 
