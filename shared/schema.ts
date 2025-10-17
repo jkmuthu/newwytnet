@@ -259,6 +259,7 @@ export const navigationMenus = pgTable("navigation_menus", {
   order: integer("order").notNull().default(0),
   scope: varchar("scope", { length: 50 }).notNull().default('engine'), // 'engine' or 'hub'
   parentId: uuid("parent_id"), // For nested menus
+  pageId: uuid("page_id").references(() => pages.id), // Link to CMS page
   isActive: boolean("is_active").default(true),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
