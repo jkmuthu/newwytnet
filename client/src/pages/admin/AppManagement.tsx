@@ -54,52 +54,12 @@ export default function AppManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Mock data for now - will be replaced with real API calls
-  const mockApps: ExtendedApp[] = [
-    {
-      id: '1',
-      name: 'QR Generator',
-      slug: 'qr-generator',
-      description: 'Generate QR codes for URLs, text, and more',
-      category: 'utilities',
-      icon: 'QrCode',
-      isActive: true,
-      createdAt: '2025-09-28',
-      pricing: [
-        { id: '1', appId: '1', pricingType: 'free', price: '0.00', currency: 'INR', usageLimit: 5, isActive: true },
-        { id: '2', appId: '1', pricingType: 'pay_per_use', price: '2.00', currency: 'INR', usageLimit: 1, isActive: true }
-      ]
-    },
-    {
-      id: '2',
-      name: 'AI Directory',
-      slug: 'ai-directory',
-      description: 'Curated collection of AI tools and services',
-      category: 'ai-tools',
-      icon: 'Bot',
-      isActive: true,
-      createdAt: '2025-09-28',
-      pricing: [
-        { id: '3', appId: '2', pricingType: 'free', price: '0.00', currency: 'INR', usageLimit: null, isActive: true }
-      ]
-    },
-    {
-      id: '3',
-      name: 'DISC Assessment',
-      slug: 'disc-assessment',
-      description: 'Professional personality assessment',
-      category: 'assessment',
-      icon: 'Activity',
-      isActive: true,
-      createdAt: '2025-09-28',
-      pricing: [
-        { id: '4', appId: '3', pricingType: 'one_time', price: '299.00', currency: 'INR', usageLimit: null, isActive: true }
-      ]
-    }
-  ];
+  // Fetch real apps from database
+  const { data: appsData, isLoading } = useQuery({
+    queryKey: ['/api/admin/apps'],
+  });
 
-  const apps = mockApps;
-  const isLoading = false;
+  const apps = (appsData as ExtendedApp[]) || [];
 
   const formatPrice = (price: string, currency: string) => {
     const symbol = currency === 'INR' ? '₹' : '$';
@@ -117,11 +77,11 @@ export default function AppManagement() {
     }
   };
 
-  const mockStats = {
+  const stats = {
     totalApps: apps.length,
     activeApps: apps.filter(t => t.isActive).length,
-    totalSubscribers: 156,
-    totalRevenue: 45678,
+    totalSubscribers: apps.reduce((sum, app) => sum + (app.subscriberCount || 0), 0),
+    totalRevenue: apps.reduce((sum, app) => sum + (app.totalRevenue || 0), 0),
   };
 
   return (
@@ -148,7 +108,7 @@ export default function AppManagement() {
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Total Apps</p>
-                <p className="text-2xl font-bold">{mockStats.totalApps}</p>
+                <p className="text-2xl font-bold">{stats.totalApps}</p>
               </div>
             </div>
           </CardContent>
@@ -162,7 +122,7 @@ export default function AppManagement() {
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Active Apps</p>
-                <p className="text-2xl font-bold">{mockStats.activeApps}</p>
+                <p className="text-2xl font-bold">{stats.activeApps}</p>
               </div>
             </div>
           </CardContent>
@@ -176,7 +136,7 @@ export default function AppManagement() {
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Subscribers</p>
-                <p className="text-2xl font-bold">{mockStats.totalSubscribers}</p>
+                <p className="text-2xl font-bold">{stats.totalSubscribers}</p>
               </div>
             </div>
           </CardContent>
@@ -190,7 +150,7 @@ export default function AppManagement() {
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Revenue</p>
-                <p className="text-2xl font-bold">₹{mockStats.totalRevenue.toLocaleString()}</p>
+                <p className="text-2xl font-bold">₹{stats.totalRevenue.toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
