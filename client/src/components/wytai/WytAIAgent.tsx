@@ -7,6 +7,13 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -26,6 +33,7 @@ export default function WytAIAgent() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [activeTab, setActiveTab] = useState<"chat" | "settings">("chat");
+  const [selectedModel, setSelectedModel] = useState("gpt-4o");
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -193,7 +201,7 @@ export default function WytAIAgent() {
         messages: messages
           .concat(userMessage)
           .map((m) => ({ role: m.role, content: m.content })),
-        model: "gpt-4o",
+        model: selectedModel,
       });
 
       const data = await response.json();
@@ -283,7 +291,7 @@ export default function WytAIAgent() {
           <div>
             <h3 className="font-semibold">WytAI Agent</h3>
             <Badge variant="secondary" className="text-xs mt-0.5 bg-white/20 text-white border-0">
-              GPT-4 • Tamil & English
+              {selectedModel.includes('gpt') ? 'OpenAI' : selectedModel.includes('claude') ? 'Claude' : 'Gemini'} • Tamil & English
             </Badge>
           </div>
         </div>
@@ -499,6 +507,39 @@ export default function WytAIAgent() {
             <TabsContent value="settings" className="flex-1 m-0 overflow-auto">
               <ScrollArea className="h-full">
                 <div className="p-6 space-y-6">
+                  {/* Model Selector */}
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      <Sparkles className="h-4 w-4" />
+                      AI Model தேர்வு
+                    </h4>
+                    <Select value={selectedModel} onValueChange={setSelectedModel}>
+                      <SelectTrigger className="w-full" data-testid="select-model">
+                        <SelectValue placeholder="Select AI Model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gpt-4o" data-testid="option-gpt-4o">
+                          GPT-4o (OpenAI) - Fast & Powerful
+                        </SelectItem>
+                        <SelectItem value="gpt-4o-mini" data-testid="option-gpt-4o-mini">
+                          GPT-4o Mini (OpenAI) - Faster & Cheaper
+                        </SelectItem>
+                        <SelectItem value="claude-3-5-sonnet-20241022" data-testid="option-claude">
+                          Claude 3.5 Sonnet (Anthropic) - Best Reasoning
+                        </SelectItem>
+                        <SelectItem value="gemini-2.0-flash-exp" data-testid="option-gemini">
+                          Gemini 2.0 Flash (Google) - Latest & Fast
+                        </SelectItem>
+                        <SelectItem value="gemini-1.5-pro" data-testid="option-gemini-pro">
+                          Gemini 1.5 Pro (Google) - Large Context
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Choose the AI model that best fits your needs
+                    </p>
+                  </div>
+
                   {/* About */}
                   <div>
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
@@ -506,7 +547,7 @@ export default function WytAIAgent() {
                       WytAI Agent பற்றி
                     </h4>
                     <p className="text-sm text-muted-foreground">
-                      WytAI Agent என்பது GPT-4 சக்தியுடன் இயங்கும் ஒரு அறிவார்ந்த உதவியாளர். இது தமிழ் மற்றும் ஆங்கிலத்தில் உங்களுடன் உரையாட முடியும்.
+                      WytAI Agent என்பது பல AI மாடல்களுடன் இயங்கும் ஒரு அறிவார்ந்த உதவியாளர். இது OpenAI, Claude, மற்றும் Gemini சக்தியுடன் தமிழ் மற்றும் ஆங்கிலத்தில் உங்களுடன் உரையாட முடியும்.
                     </p>
                   </div>
 
