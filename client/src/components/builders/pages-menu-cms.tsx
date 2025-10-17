@@ -81,7 +81,7 @@ export default function PagesMenuCMS() {
         path: data.route,
         content: [],
         status: 'draft',
-      })) as Page;
+      })) as unknown as Page;
 
       // Then create the menu item linked to the page
       const menu = (await apiRequest('/api/admin/navigation-menus', 'POST', {
@@ -89,7 +89,7 @@ export default function PagesMenuCMS() {
         route: data.route,
         pageId: page.id,
         scope: 'engine',
-      })) as NavigationMenu;
+      })) as unknown as NavigationMenu;
 
       return { page, menu };
     },
@@ -161,8 +161,38 @@ export default function PagesMenuCMS() {
     }
   };
 
+  // Reorder menus mutation
+  const reorderMenusMutation = useMutation({
+    mutationFn: async (reorderedMenus: NavigationMenu[]) => {
+      const updates = reorderedMenus.map((menu, index) => ({
+        id: menu.id,
+        order: index,
+      }));
+      
+      return await apiRequest('/api/admin/navigation-menus/reorder', 'PATCH', {
+        menus: updates,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Menu Order Saved",
+        description: "Navigation menu order has been updated",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/navigation-menus'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save menu order",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleMenusReorder = (reorderedMenus: NavigationMenu[]) => {
     setMenus(reorderedMenus);
+    // Auto-save the new order
+    reorderMenusMutation.mutate(reorderedMenus);
   };
 
   const handleCreatePage = () => {
@@ -186,47 +216,46 @@ export default function PagesMenuCMS() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-gray-800 border-b dark:border-gray-700">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Pages & Menus
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Manage navigation menus and page content
-          </p>
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
+      {/* Action Bar */}
+      <div className="flex items-center justify-between px-6 py-3 bg-white dark:bg-gray-800 border-b dark:border-gray-700">
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          {selectedPage ? (
+            <span>Editing: <strong className="text-gray-900 dark:text-white">{selectedPage.title}</strong></span>
+          ) : (
+            <span>Select a menu item to edit its page, or create a new page</span>
+          )}
         </div>
         <div className="flex gap-2">
           <Button
             onClick={handleCreatePage}
-            variant="default"
+            variant="outline"
+            size="sm"
             data-testid="button-create-page"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Create Page
+            New Page
           </Button>
-          {selectedPage && (
-            <>
-              <Button
-                onClick={handlePreview}
-                variant="outline"
-                data-testid="button-preview"
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                Preview
-              </Button>
-              <Button
-                onClick={handleSave}
-                variant="default"
-                disabled={savePageMutation.isPending}
-                data-testid="button-save"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {savePageMutation.isPending ? "Saving..." : "Save"}
-              </Button>
-            </>
-          )}
+          <Button
+            onClick={handlePreview}
+            variant="outline"
+            size="sm"
+            disabled={!selectedPage}
+            data-testid="button-preview"
+          >
+            <Eye className="h-4 w-4 mr-2" />
+            Preview
+          </Button>
+          <Button
+            onClick={handleSave}
+            variant="default"
+            size="sm"
+            disabled={!selectedPage || savePageMutation.isPending}
+            data-testid="button-save"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {savePageMutation.isPending ? "Saving..." : "Save Changes"}
+          </Button>
         </div>
       </div>
 

@@ -144,7 +144,7 @@ export default function PropertiesPanel({ block, onBlockUpdate }: PropertiesPane
         {!isCollapsed && (
           <div className="p-4 flex items-center justify-center h-64">
             <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-              Select a block to edit its properties
+              Add content blocks to your page, then select one to edit its properties here
             </p>
           </div>
         )}
