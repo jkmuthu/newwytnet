@@ -1891,10 +1891,17 @@ export const approvals = pgTable("approvals", {
 
 export const backups = pgTable("backups", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
-  tenantId: uuid("tenant_id").notNull().references(() => tenants.id),
-  snapshotJson: jsonb("snapshot_json").notNull(),
+  displayId: varchar("display_id", { length: 50 }).notNull().unique(),
+  filename: varchar("filename", { length: 255 }).notNull(),
+  filePath: varchar("file_path", { length: 500 }),
+  fileSize: integer("file_size").notNull(),
+  backupType: varchar("backup_type", { length: 50 }).notNull().$type<'full' | 'database' | 'files' | 'credentials'>().default('full'),
+  status: varchar("status", { length: 50 }).notNull().$type<'pending' | 'in_progress' | 'completed' | 'failed'>().default('pending'),
+  metadata: jsonb("metadata").default({}),
+  errorMessage: text("error_message"),
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
 });
 
 // API Integration service provider enum
@@ -1970,10 +1977,6 @@ export const approvalsRelations = relations(approvals, ({ one }) => ({
 }));
 
 export const backupsRelations = relations(backups, ({ one }) => ({
-  tenant: one(tenants, {
-    fields: [backups.tenantId],
-    references: [tenants.id],
-  }),
   createdBy: one(users, {
     fields: [backups.createdBy],
     references: [users.id],
