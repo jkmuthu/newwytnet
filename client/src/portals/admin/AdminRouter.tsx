@@ -45,6 +45,7 @@ import AdminPlatformRegistry from "@/pages/admin/platform-registry";
 import AdminGeoRegulatory from "@/pages/admin/geo-regulatory";
 import AdminProfile from "@/pages/admin/profile";
 import AdminSettings from "@/pages/admin/settings";
+import AdminAccount from "@/pages/admin/account";
 import AdminSearch from "@/pages/admin/search";
 import AdminNotifications from "@/pages/admin/notifications";
 
@@ -191,6 +192,7 @@ export default function AdminRouter() {
           {/* Admin Profile & Settings */}
           <Route path="/engine/profile" component={AdminProfile} />
           <Route path="/engine/settings" component={AdminSettings} />
+          <Route path="/engine/account" component={AdminAccount} />
           <Route path="/engine/search" component={AdminSearch} />
           <Route path="/engine/notifications" component={AdminNotifications} />
           <Route path="/engine/help" component={AdminHelpSupport} />

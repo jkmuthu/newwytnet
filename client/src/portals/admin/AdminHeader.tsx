@@ -229,22 +229,10 @@ export default function AdminHeader({
                   </>
                 )}
 
-                <Link href="/engine/profile">
-                  <DropdownMenuItem className="cursor-pointer" data-testid="admin-menu-profile">
+                <Link href="/engine/account">
+                  <DropdownMenuItem className="cursor-pointer" data-testid="admin-menu-account">
                     <User className="mr-2 h-4 w-4" />
-                    <span>Admin Profile</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/engine/settings">
-                  <DropdownMenuItem className="cursor-pointer" data-testid="admin-menu-settings">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Admin Settings</span>
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/engine/security">
-                  <DropdownMenuItem className="cursor-pointer" data-testid="admin-menu-security">
-                    <Shield className="mr-2 h-4 w-4" />
-                    <span>Security</span>
+                    <span>My Account</span>
                   </DropdownMenuItem>
                 </Link>
                 <DropdownMenuSeparator />
