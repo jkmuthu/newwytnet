@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import { X, Send, Mic, MicOff, Sparkles, Minimize2, Maximize2, Settings, Paperclip, Trash2, MessageSquare, Info, Download } from "lucide-react";
+import { X, Send, Mic, MicOff, Sparkles, Minimize2, Maximize2, Settings, Paperclip, Trash2, MessageSquare, Info, Download, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -21,6 +23,7 @@ import {
 } from "@/components/ui/tooltip";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { WorkflowEngine, workflows, type WorkflowState, type WorkflowStep } from "@/lib/workflows";
 
 interface Message {
   role: "user" | "assistant";
@@ -47,9 +50,15 @@ export default function WytAIAgent() {
   const [recognition, setRecognition] = useState<any>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [usageStats, setUsageStats] = useState<any>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [workflowState, setWorkflowState] = useState<WorkflowState | null>(null);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<string | null>(null);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const currentUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const workflowEngineRef = useRef<WorkflowEngine>(new WorkflowEngine());
   const { toast } = useToast();
 
   // Initialize Speech Recognition
@@ -106,6 +115,13 @@ export default function WytAIAgent() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
+  // Cleanup TTS on unmount
+  useEffect(() => {
+    return () => {
+      stopSpeech();
+    };
+  }, []);
+
   // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
@@ -161,14 +177,180 @@ export default function WytAIAgent() {
       },
     ]);
     setAttachments([]);
+    workflowEngineRef.current.resetWorkflow();
+    setWorkflowState(null);
     toast({
       title: "Chat cleared",
       description: "Conversation history has been reset",
     });
   };
 
+  const startWorkflow = (workflowId: string) => {
+    const state = workflowEngineRef.current.startWorkflow(workflowId);
+    setWorkflowState(state);
+    
+    const currentStep = workflowEngineRef.current.getCurrentStep();
+    if (currentStep) {
+      const workflowInfo = workflows[workflowId];
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `${workflowInfo.icon} **${workflowInfo.name}** தொடங்கியது!\n\n${currentStep.icon} **${currentStep.title}**\n${currentStep.prompt}`,
+          timestamp: new Date(),
+        },
+      ]);
+    }
+
+    // Switch to chat tab
+    setActiveTab("chat");
+  };
+
+  const handleWorkflowResponse = (response: string) => {
+    const result = workflowEngineRef.current.processResponse(response);
+    
+    if (result.error) {
+      toast({
+        title: "சரிபார்ப்பு பிழை",
+        description: result.error,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Update workflow state
+    const newState = workflowEngineRef.current.getState();
+    setWorkflowState(newState);
+
+    if (result.isComplete) {
+      // Workflow completed
+      const context = newState?.context;
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `✅ **வெற்றிகரமாக உருவாக்கப்பட்டது!**\n\n**உருவாக்கப்பட்டவை:**\n- ${context.type === 'module' ? '📦 Module' : context.type === 'app' ? '📱 App' : '🌐 Hub'}: ${context.name}\n- விவரம்: ${context.description}\n\n**அடுத்து என்ன செய்யலாம்:**\n→ Test செய்யலாம்\n→ மேலும் features சேர்க்கலாம்\n→ Hub-இல் deploy செய்யலாம்`,
+          timestamp: new Date(),
+        },
+      ]);
+      workflowEngineRef.current.resetWorkflow();
+      setWorkflowState(null);
+    } else if (result.nextStep) {
+      // Show next step
+      if (result.nextStep.id === 'ai-analysis') {
+        // Trigger AI analysis
+        handleAIAnalysis();
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `${result.nextStep?.icon} **${result.nextStep?.title}**\n${result.nextStep?.prompt}`,
+            timestamp: new Date(),
+          },
+        ]);
+      }
+    }
+  };
+
+  const handleAIAnalysis = async () => {
+    const context = workflowEngineRef.current.getState()?.context;
+    
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content: `🤖 **AI பகுப்பாய்வு செய்கிறது...**\n\nஉங்கள் ${context.type} "${context.name}" -க்கு தேவையானவற்றை பகுப்பாய்வு செய்கிறேன்...`,
+        timestamp: new Date(),
+      },
+    ]);
+
+    setIsLoading(true);
+
+    try {
+      const response = await apiRequest("/api/admin/wytai/chat", "POST", {
+        messages: [
+          {
+            role: "user",
+            content: `Analyze requirements for creating a ${context.type} named "${context.name}" with description: "${context.description}". List all required entities, models, APIs, and database tables needed.`
+          }
+        ],
+        model: selectedModel,
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.message) {
+        const requirements = data.message;
+        
+        // Store requirements in context
+        if (workflowEngineRef.current.getState()) {
+          workflowEngineRef.current.getState()!.context.requirements = requirements;
+        }
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: `📋 **தேவைகள் பட்டியல்:**\n\n${requirements}\n\n✅ இவை எல்லாம் தயாரிக்கவா?`,
+            timestamp: new Date(),
+          },
+        ]);
+
+        // Move to next step
+        const result = workflowEngineRef.current.processResponse('analysis-complete');
+        setWorkflowState(workflowEngineRef.current.getState());
+      }
+    } catch (error: any) {
+      toast({
+        title: "AI பகுப்பாய்வு தோல்வி",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const sendMessage = async () => {
     if ((!input.trim() && attachments.length === 0) || isLoading) return;
+
+    // Check if workflow is active
+    if (workflowState?.isActive) {
+      const currentStep = workflowEngineRef.current.getCurrentStep();
+      
+      // Add user message
+      const userMessage: Message = {
+        role: "user",
+        content: input.trim(),
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMessage]);
+      setInput("");
+      
+      // Handle workflow response
+      if (currentStep?.type === 'choice' && currentStep.options) {
+        // For choice steps, validate that response matches one of the options
+        const selectedOption = currentStep.options.find(opt => 
+          opt.value.toLowerCase() === input.trim().toLowerCase() || 
+          opt.label.toLowerCase().includes(input.trim().toLowerCase())
+        );
+        
+        if (selectedOption) {
+          handleWorkflowResponse(selectedOption.value);
+        } else {
+          toast({
+            title: "தவறான தேர்வு",
+            description: "தயவுசெய்து கொடுக்கப்பட்ட விருப்பங்களில் ஒன்றை தேர்ந்தெடுக்கவும்",
+            variant: "destructive",
+          });
+        }
+      } else {
+        // For input steps, just pass the response
+        handleWorkflowResponse(input.trim());
+      }
+      return;
+    }
 
     // Build attachment metadata
     const attachmentData = attachments.map(file => ({
@@ -254,21 +436,43 @@ export default function WytAIAgent() {
     }
   };
 
-  const speakText = (text: string) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'ta-IN'; // Tamil language
-      utterance.rate = 0.9;
-      
-      // Try to find Tamil voice
-      const voices = speechSynthesis.getVoices();
-      const tamilVoice = voices.find(voice => voice.lang.startsWith('ta'));
-      if (tamilVoice) {
-        utterance.voice = tamilVoice;
-      }
-      
-      speechSynthesis.speak(utterance);
+  const stopSpeech = () => {
+    if ('speechSynthesis' in window && speechSynthesis.speaking) {
+      speechSynthesis.cancel();
+      setIsSpeaking(false);
+      currentUtteranceRef.current = null;
     }
+  };
+
+  const speakText = (text: string) => {
+    if (!ttsEnabled || !('speechSynthesis' in window)) return;
+    
+    // Cancel any ongoing speech
+    stopSpeech();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ta-IN'; // Tamil language
+    utterance.rate = 0.9;
+    
+    // Try to find Tamil voice
+    const voices = speechSynthesis.getVoices();
+    const tamilVoice = voices.find(voice => voice.lang.startsWith('ta'));
+    if (tamilVoice) {
+      utterance.voice = tamilVoice;
+    }
+    
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      currentUtteranceRef.current = null;
+    };
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      currentUtteranceRef.current = null;
+    };
+    
+    currentUtteranceRef.current = utterance;
+    speechSynthesis.speak(utterance);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -361,9 +565,9 @@ export default function WytAIAgent() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="chat" className="flex-1 flex flex-col m-0">
-              {/* Messages */}
-              <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+            <TabsContent value="chat" className="flex-1 flex flex-col m-0 overflow-hidden">
+              {/* Messages - Scrollable Area */}
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4" ref={scrollRef}>
                 <div className="space-y-4">
                   {messages.map((message, index) => (
                     <div
@@ -433,11 +637,39 @@ export default function WytAIAgent() {
                     </div>
                   )}
                 </div>
-              </ScrollArea>
 
-              {/* Attachments Preview */}
+                {/* Workflow Choice Buttons */}
+                {workflowState?.isActive && !isLoading && (() => {
+                  const currentStep = workflowEngineRef.current.getCurrentStep();
+                  if (currentStep?.type === 'choice' && currentStep.options) {
+                    return (
+                      <div className="px-4 pb-3 flex flex-wrap gap-2">
+                        {currentStep.options.map((option) => (
+                          <Button
+                            key={option.value}
+                            onClick={() => {
+                              setInput(option.label);
+                              // Auto-send after a brief delay to show the input
+                              setTimeout(() => sendMessage(), 100);
+                            }}
+                            variant="outline"
+                            className="text-sm h-auto py-2 px-3"
+                            data-testid={`button-choice-${option.value}`}
+                          >
+                            {option.icon && <span className="mr-2">{option.icon}</span>}
+                            {option.label}
+                          </Button>
+                        ))}
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+
+              {/* Attachments Preview - Sticky above input */}
               {attachments.length > 0 && (
-                <div className="px-4 pb-2 flex gap-2 flex-wrap">
+                <div className="px-3 sm:px-4 pb-2 flex gap-2 flex-wrap border-t bg-gray-50 dark:bg-gray-900/50 pt-2">
                   {attachments.map((file, index) => (
                     <div key={index} className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded px-2 py-1 text-xs">
                       <Paperclip className="h-3 w-3" />
@@ -453,8 +685,8 @@ export default function WytAIAgent() {
                 </div>
               )}
 
-              {/* Input */}
-              <div className="p-4 border-t bg-gray-50 dark:bg-gray-900/50">
+              {/* Input - Sticky at bottom */}
+              <div className="p-3 sm:p-4 border-t bg-gray-50 dark:bg-gray-900/50 pb-safe">
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <Textarea
@@ -462,7 +694,7 @@ export default function WytAIAgent() {
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder="Type in Tamil or English... (Shift+Enter for new line)"
-                      className="resize-none min-h-[60px]"
+                      className="resize-none min-h-[60px] text-sm sm:text-base"
                       rows={2}
                       disabled={isLoading}
                       data-testid="textarea-message"
@@ -505,9 +737,23 @@ export default function WytAIAgent() {
                   </div>
                 </div>
                 <div className="flex items-center justify-between mt-2">
-                  <p className="text-xs text-muted-foreground">
-                    🎤 Voice • 📎 Attachments • ⌨️ Ctrl+K
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">
+                      🎤 Voice • 📎 Attachments • ⌨️ Ctrl+K
+                    </p>
+                    {isSpeaking && (
+                      <Button
+                        onClick={stopSpeech}
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-xs text-orange-600 hover:text-orange-700"
+                        data-testid="button-stop-speech"
+                      >
+                        <VolumeX className="h-3 w-3 mr-1 animate-pulse" />
+                        Stop
+                      </Button>
+                    )}
+                  </div>
                   <Button
                     onClick={clearChat}
                     variant="ghost"
@@ -530,9 +776,8 @@ export default function WytAIAgent() {
               />
             </TabsContent>
 
-            <TabsContent value="settings" className="flex-1 m-0 overflow-auto">
-              <ScrollArea className="h-full">
-                <div className="p-6 space-y-6">
+            <TabsContent value="settings" className="flex-1 m-0 overflow-y-auto">
+              <div className="p-4 sm:p-6 space-y-6 pb-safe">
                   {/* Model Selector */}
                   <div>
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
@@ -564,6 +809,75 @@ export default function WytAIAgent() {
                     <p className="text-xs text-muted-foreground mt-2">
                       Choose the AI model that best fits your needs
                     </p>
+                  </div>
+
+                  {/* TTS Toggle */}
+                  <div className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="tts-toggle" className="text-sm font-semibold flex items-center gap-2">
+                          {ttsEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                          Text-to-Speech
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          AI பதில்களை தமிழில் குரலில் கேட்கலாம்
+                        </p>
+                      </div>
+                      <Switch
+                        id="tts-toggle"
+                        checked={ttsEnabled}
+                        onCheckedChange={setTtsEnabled}
+                        data-testid="switch-tts"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Workflow Selector */}
+                  <div className="border rounded-lg p-4 space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                        🚀 Guided Workflows
+                      </h4>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Step-by-step வாக Module, App, Hub உருவாக்கவும்
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {Object.values(workflows).map((workflow) => (
+                        <Button
+                          key={workflow.id}
+                          onClick={() => startWorkflow(workflow.id)}
+                          disabled={workflowState?.isActive}
+                          className="w-full justify-start text-left h-auto py-3"
+                          variant={selectedWorkflow === workflow.id ? "default" : "outline"}
+                          data-testid={`button-workflow-${workflow.id}`}
+                        >
+                          <div className="flex items-start gap-3 w-full">
+                            <span className="text-2xl">{workflow.icon}</span>
+                            <div className="flex-1">
+                              <div className="font-semibold text-sm">{workflow.name}</div>
+                              <div className="text-xs opacity-80 mt-0.5">{workflow.description}</div>
+                            </div>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+
+                    {workflowState?.isActive && (
+                      <div className="bg-blue-50 dark:bg-blue-950/20 rounded p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-semibold">Workflow Progress</span>
+                          <span className="text-xs">{workflowEngineRef.current.getProgress().percentage}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${workflowEngineRef.current.getProgress().percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Usage Stats */}
@@ -729,7 +1043,6 @@ export default function WytAIAgent() {
                     </p>
                   </div>
                 </div>
-              </ScrollArea>
             </TabsContent>
           </Tabs>
         </>
