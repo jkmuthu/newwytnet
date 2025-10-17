@@ -15,6 +15,8 @@ import AdminApps from "@/pages/admin/apps";
 import AdminHubs from "@/pages/admin/hubs";
 import AdminCMS from "@/pages/admin/cms";
 import AdminSystemOverview from "@/pages/admin/system-overview";
+import AdminSystemSecurity from "@/pages/admin/system-security";
+import AdminFinance from "@/pages/admin/finance";
 import AdminSeoSettings from "@/pages/admin/seo-settings";
 import AppManagement from "@/pages/admin/AppManagement";
 import AdminWytPoints from "@/pages/admin/wytpoints";
@@ -215,12 +217,14 @@ export default function AdminRouter() {
           {/* Operations Routes */}
           <Route path="/engine/plans-prices" component={AdminPlansPrices} />
           <Route path="/engine/help-support" component={AdminHelpSupport} />
+          <Route path="/engine/finance" component={AdminFinance} />
           <Route path="/engine/billing" component={AdminBillingPage} />
           <Route path="/engine/transactions" component={AdminTransactions} />
           <Route path="/engine/analytics" component={AdminAnalytics} />
 
           {/* System & Config Routes */}
           <Route path="/engine/platform-registry" component={AdminPlatformRegistry} />
+          <Route path="/engine/system-security" component={AdminSystemSecurity} />
           <Route path="/engine/platform-hubs" component={AdminPlatformHubs} />
           <Route path="/engine/integrations" component={AdminIntegrations} />
           <Route path="/engine/geo-regulatory" component={AdminGeoRegulatory} />

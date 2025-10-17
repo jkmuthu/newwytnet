@@ -160,6 +160,14 @@ app.use((req, res, next) => {
     console.error('Permissions seeding failed:', error);
   }
 
+  // Seed navigation menus
+  try {
+    const { seedNavigationMenus } = await import('./services/navigationMenusSeedingService');
+    await seedNavigationMenus();
+  } catch (error) {
+    console.error('Navigation menus seeding failed:', error);
+  }
+
   // Setup Hub Routing Middleware (Multi-domain routing)
   try {
     console.log('🌐 Setting up Hub Routing Middleware...');

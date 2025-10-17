@@ -18,7 +18,8 @@ import {
   BarChart3,
   Search,
   Bell,
-  Home
+  Home,
+  CreditCard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
@@ -141,25 +142,20 @@ export default function AdminMobileLayout({ children }: AdminMobileLayoutProps) 
       items: [
         { icon: Package, label: 'Plans & Prices', href: '/engine/plans-prices' },
         { icon: Package, label: 'Help & Support', href: '/engine/help-support' },
-        { icon: Package, label: 'Billing', href: '/engine/billing' },
-        { icon: Package, label: 'Transactions', href: '/engine/transactions' },
+        { icon: CreditCard, label: 'Finance', href: '/engine/finance' },
         { icon: BarChart3, label: 'Analytics', href: '/engine/analytics' },
       ]
     },
     {
       section: "System & Config",
       items: [
+        { icon: Shield, label: 'System & Security', href: '/engine/system-security' },
         { icon: Package, label: 'Integrations', href: '/engine/integrations' },
-        { icon: Settings, label: 'SEO Settings', href: '/engine/seo-settings' },
         { icon: Settings, label: 'Global Settings', href: '/engine/global-settings' },
         { icon: Building, label: 'Platform Hubs', href: '/engine/platform-hubs' },
         { icon: Shield, label: 'Roles & Permissions', href: '/engine/roles-permissions' },
         { icon: Users, label: 'Admin Users', href: '/engine/admin-users' },
         { icon: Package, label: 'Backups', href: '/engine/backups' },
-        { icon: Package, label: 'System Logs', href: '/engine/system-logs' },
-        { icon: Package, label: 'System Monitor', href: '/engine/system-monitor' },
-        { icon: Package, label: 'System Status', href: '/engine/system-status' },
-        { icon: Shield, label: 'Security', href: '/engine/security' },
       ]
     }
   ];

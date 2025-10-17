@@ -133,16 +133,10 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
         active: location === "/engine/help-support"
       },
       { 
-        label: "Billing", 
+        label: "Finance", 
         icon: CreditCard, 
-        href: "/engine/billing", 
-        active: location === "/engine/billing"
-      },
-      { 
-        label: "Transactions", 
-        icon: List, 
-        href: "/engine/transactions", 
-        active: location === "/engine/transactions"
+        href: "/engine/finance", 
+        active: location === "/engine/finance"
       },
       { 
         label: "Analytics", 
@@ -158,10 +152,10 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
         superAdminOnly: true
       },
       { 
-        label: "System Overview", 
-        icon: Settings, 
-        href: "/engine/system-overview", 
-        active: location === "/engine/system-overview",
+        label: "System & Security", 
+        icon: Shield, 
+        href: "/engine/system-security", 
+        active: location === "/engine/system-security",
         superAdminOnly: true
       },
       { 
@@ -169,13 +163,6 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
         icon: Plug, 
         href: "/engine/integrations", 
         active: location === "/engine/integrations",
-        superAdminOnly: true
-      },
-      { 
-        label: "SEO Settings", 
-        icon: Globe, 
-        href: "/engine/seo-settings", 
-        active: location === "/engine/seo-settings",
         superAdminOnly: true
       },
       { 
@@ -211,34 +198,6 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
         icon: Database, 
         href: "/engine/backups", 
         active: location === "/engine/backups",
-        superAdminOnly: true
-      },
-      { 
-        label: "System Logs", 
-        icon: List, 
-        href: "/engine/system-logs", 
-        active: location === "/engine/system-logs",
-        superAdminOnly: true
-      },
-      { 
-        label: "System Monitor", 
-        icon: Eye, 
-        href: "/engine/system-monitor", 
-        active: location === "/engine/system-monitor",
-        superAdminOnly: true
-      },
-      { 
-        label: "System Status", 
-        icon: Server, 
-        href: "/engine/system-status", 
-        active: location === "/engine/system-status",
-        superAdminOnly: true
-      },
-      { 
-        label: "Security", 
-        icon: Shield, 
-        href: "/engine/security", 
-        active: location === "/engine/security",
         superAdminOnly: true
       },
     ];
@@ -307,11 +266,6 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
                       {item.label}
                     </span>
                   )}
-                  {!collapsed && item.superAdminOnly && (
-                    <Badge variant="secondary" className="ml-auto text-xs px-1 py-0 h-4 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                      SA
-                    </Badge>
-                  )}
                 </Button>
               </Link>
             ))}
@@ -320,7 +274,7 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
               <Button
                 variant="ghost"
                 className="w-full justify-start h-9 px-3"
-                data-testid="admin-nav-dev-documentation"
+                data-testid="admin-nav-dev-doc"
               >
                 <FileText className={cn(
                   "h-4 w-4 flex-shrink-0",
@@ -329,7 +283,7 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
                 )} />
                 {!collapsed && (
                   <span className="truncate text-sm">
-                    Dev Documentation
+                    Dev Doc
                   </span>
                 )}
               </Button>
