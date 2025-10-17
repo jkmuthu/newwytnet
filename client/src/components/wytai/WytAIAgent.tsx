@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { X, Send, Mic, MicOff, Sparkles, Minimize2, Maximize2, Settings, Paperclip, Trash2, MessageSquare, Info, Download, Volume2, VolumeX } from "lucide-react";
+import { X, Send, Mic, MicOff, Sparkles, Minimize2, Maximize2, Settings, Paperclip, Trash2, MessageSquare, Info, Download, Volume2, VolumeX, Plus, History, Edit2, MoreVertical, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -21,7 +21,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { WorkflowEngine, workflows, type WorkflowState, type WorkflowStep } from "@/lib/workflows";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
@@ -31,6 +39,16 @@ interface Message {
   content: string;
   timestamp: Date;
   attachments?: { name: string; type: string; url: string; size: number }[];
+}
+
+interface Conversation {
+  id: string;
+  displayId: string;
+  title: string;
+  model: string;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function WytAIAgent() {
@@ -57,11 +75,72 @@ export default function WytAIAgent() {
   const [workflowState, setWorkflowState] = useState<WorkflowState | null>(null);
   const [selectedWorkflow, setSelectedWorkflow] = useState<string | null>(null);
   
+  // Chat History State
+  const [showHistory, setShowHistory] = useState(!isMobile); // Show by default on desktop
+  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
+  const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const currentUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const workflowEngineRef = useRef<WorkflowEngine>(new WorkflowEngine());
-  const { toast } = useToast();
+  const { toast} = useToast();
+
+  // Fetch conversations
+  const { data: conversationsData, isLoading: conversationsLoading } = useQuery<{success: boolean; conversations: Conversation[]}>({
+    queryKey: ["/api/admin/wytai/conversations"],
+    enabled: isOpen, // Only fetch when WytAI is open
+  });
+  const conversations = conversationsData?.conversations || [];
+
+  // Create new conversation mutation
+  const createConversationMutation = useMutation({
+    mutationFn: async (data: { title?: string; model?: string }) => {
+      return apiRequest("/api/admin/wytai/conversations", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/wytai/conversations"] });
+    },
+  });
+
+  // Update conversation mutation (rename, archive)
+  const updateConversationMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: { title?: string; model?: string; isArchived?: boolean } }) => {
+      return apiRequest(`/api/admin/wytai/conversations/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/wytai/conversations"] });
+      setEditingConversationId(null);
+    },
+  });
+
+  // Delete conversation mutation
+  const deleteConversationMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest(`/api/admin/wytai/conversations/${id}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: (_data, deletedId) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/wytai/conversations"] });
+      if (activeConversation && activeConversation.id === deletedId) {
+        setActiveConversation(null);
+        // Reset to default welcome message
+        setMessages([{
+          role: "assistant",
+          content: "வணக்கம்! நான் WytAI Agent. உங்கள் Engine-ஐ மேம்படுத்த உதவுவதற்காக இங்கு இருக்கிறேன். எப்படி உதவலாம்?",
+          timestamp: new Date(),
+        }]);
+      }
+    },
+  });
 
   // Initialize Speech Recognition
   useEffect(() => {
@@ -185,6 +264,103 @@ export default function WytAIAgent() {
       title: "Chat cleared",
       description: "Conversation history has been reset",
     });
+  };
+
+  // Conversation Management Functions
+  const handleNewChat = async () => {
+    try {
+      const response: any = await createConversationMutation.mutateAsync({
+        title: "New Conversation",
+        model: selectedModel,
+      });
+      const newConversation = response.conversation;
+      setActiveConversation(newConversation);
+      // Reset messages to welcome
+      setMessages([{
+        role: "assistant",
+        content: "வணக்கம்! நான் WytAI Agent. உங்கள் Engine-ஐ மேம்படுத்த உதவுவதற்காக இங்கு இருக்கிறேன். எப்படி உதவலாம்?",
+        timestamp: new Date(),
+      }]);
+      setAttachments([]);
+      workflowEngineRef.current.resetWorkflow();
+      setWorkflowState(null);
+      toast({
+        title: "New conversation created",
+        description: "Started a fresh chat",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to create conversation",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSwitchConversation = async (conversation: Conversation) => {
+    setActiveConversation(conversation);
+    // TODO: Load messages from backend when message persistence is implemented
+    // For now, just reset to welcome message
+    setMessages([{
+      role: "assistant",
+      content: "வணக்கம்! நான் WytAI Agent. உங்கள் Engine-ஐ மேம்படுத்த உதவுவதற்காக இங்கு இருக்கிறேன். எப்படி உதவலாம்?",
+      timestamp: new Date(),
+    }]);
+    setAttachments([]);
+    setSelectedModel(conversation.model);
+  };
+
+  const handleStartEditing = (conversation: Conversation) => {
+    setEditingConversationId(conversation.id);
+    setEditingTitle(conversation.title);
+  };
+
+  const handleSaveTitle = async (conversationId: string) => {
+    if (!editingTitle.trim()) {
+      toast({
+        title: "Title required",
+        description: "Conversation title cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      await updateConversationMutation.mutateAsync({
+        id: conversationId,
+        data: { title: editingTitle.trim() },
+      });
+      toast({
+        title: "Conversation renamed",
+        description: "Title updated successfully",
+      });
+      // Update active conversation if it's the one being edited
+      if (activeConversation?.id === conversationId) {
+        setActiveConversation({ ...activeConversation, title: editingTitle.trim() });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Failed to rename",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteConversation = async (conversationId: string) => {
+    try {
+      await deleteConversationMutation.mutateAsync(conversationId);
+      toast({
+        title: "Conversation deleted",
+        description: "Chat history removed",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to delete",
+        description: error.message || "Something went wrong",
+        variant: "destructive",
+      });
+    }
   };
 
   const startWorkflow = (workflowId: string) => {
@@ -514,56 +690,201 @@ export default function WytAIAgent() {
           ? 'inset-0 rounded-none' 
           : isMinimized 
             ? 'bottom-6 right-6 w-80' 
-            : 'bottom-6 right-6 w-[420px]'
+            : showHistory 
+              ? 'bottom-6 right-6 w-[750px]' 
+              : 'bottom-6 right-6 w-[420px]'
       } ${
         isMobile 
           ? 'h-screen' 
           : isMinimized ? 'h-16' : 'h-[650px] max-h-[900px]'
-      } shadow-2xl z-50 flex flex-col transition-all duration-300`}
+      } shadow-2xl z-50 flex transition-all duration-300 overflow-hidden`}
       data-testid="card-wytai-agent"
     >
-      {/* Header */}
-      <div className={`flex items-center justify-between p-3 sm:p-4 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white ${isMobile ? '' : 'rounded-t-lg'}`}>
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
-          <div>
-            <h3 className="font-semibold text-sm sm:text-base">WytAI Agent</h3>
-            <Badge variant="secondary" className="text-[10px] sm:text-xs mt-0.5 bg-white/20 text-white border-0">
-              {selectedModel.includes('gpt') ? 'OpenAI' : selectedModel.includes('claude') ? 'Claude' : 'Gemini'} • Tamil & English
-            </Badge>
-          </div>
-        </div>
-        <div className="flex items-center gap-1">
-          {!isMobile && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsMinimized(!isMinimized)}
-              className="h-8 w-8 p-0 hover:bg-white/20 text-white"
-              data-testid="button-minimize"
-            >
-              {isMinimized ? (
-                <Maximize2 className="h-4 w-4" />
-              ) : (
-                <Minimize2 className="h-4 w-4" />
-              )}
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsOpen(false)}
-            className="h-8 w-8 p-0 hover:bg-white/20 text-white"
-            data-testid="button-close-wytai"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
       {!isMinimized && (
         <>
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "chat" | "settings")} className="flex-1 flex flex-col">
+          {/* Chat History Sidebar */}
+          {showHistory && !isMobile && (
+            <div className="w-[300px] border-r bg-gray-50 dark:bg-gray-900 flex flex-col">
+              {/* Sidebar Header */}
+              <div className="p-3 border-b bg-white dark:bg-gray-800">
+                <Button
+                  onClick={handleNewChat}
+                  className="w-full gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                  size="sm"
+                  data-testid="button-new-chat"
+                >
+                  <Plus className="h-4 w-4" />
+                  New Chat
+                </Button>
+              </div>
+
+              {/* Conversations List */}
+              <ScrollArea className="flex-1 p-2">
+                {conversationsLoading ? (
+                  <div className="space-y-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-16 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+                    ))}
+                  </div>
+                ) : conversations.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                    <History className="h-8 w-8 text-gray-400 mb-2" />
+                    <p className="text-sm text-muted-foreground">No conversations yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">Start a new chat to begin</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {conversations.map((conversation) => (
+                      <div
+                        key={conversation.id}
+                        className={`group relative p-2 rounded-lg cursor-pointer transition-colors ${
+                          activeConversation?.id === conversation.id
+                            ? 'bg-purple-100 dark:bg-purple-900/30'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
+                        onClick={() => handleSwitchConversation(conversation)}
+                        data-testid={`conversation-${conversation.id}`}
+                      >
+                        {editingConversationId === conversation.id ? (
+                          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            <Input
+                              value={editingTitle}
+                              onChange={(e) => setEditingTitle(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleSaveTitle(conversation.id);
+                                } else if (e.key === 'Escape') {
+                                  setEditingConversationId(null);
+                                }
+                              }}
+                              className="h-7 text-xs"
+                              autoFocus
+                              data-testid="input-rename-conversation"
+                            />
+                            <Button
+                              onClick={() => handleSaveTitle(conversation.id)}
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 w-7 p-0"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">{conversation.title}</p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {conversation.model} • {new Date(conversation.updatedAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+                                    data-testid={`button-conversation-menu-${conversation.id}`}
+                                  >
+                                    <MoreVertical className="h-3 w-3" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleStartEditing(conversation);
+                                    }}
+                                    data-testid="menuitem-rename"
+                                  >
+                                    <Edit2 className="h-3 w-3 mr-2" />
+                                    Rename
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteConversation(conversation.id);
+                                    }}
+                                    className="text-red-600"
+                                    data-testid="menuitem-delete"
+                                  >
+                                    <Trash2 className="h-3 w-3 mr-2" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
+          )}
+
+          {/* Main Chat Area */}
+          <div className="flex-1 flex flex-col min-w-0">
+            {/* Header */}
+            <div className={`flex items-center justify-between p-3 sm:p-4 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white ${isMobile || showHistory ? '' : 'rounded-t-lg'}`}>
+              <div className="flex items-center gap-2">
+                {!isMobile && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowHistory(!showHistory)}
+                    className="h-8 w-8 p-0 hover:bg-white/20 text-white mr-1"
+                    data-testid="button-toggle-history"
+                  >
+                    {showHistory ? (
+                      <ChevronLeft className="h-4 w-4" />
+                    ) : (
+                      <History className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
+                <div>
+                  <h3 className="font-semibold text-sm sm:text-base">
+                    {activeConversation ? activeConversation.title : 'WytAI Agent'}
+                  </h3>
+                  <Badge variant="secondary" className="text-[10px] sm:text-xs mt-0.5 bg-white/20 text-white border-0">
+                    {selectedModel.includes('gpt') ? 'OpenAI' : selectedModel.includes('claude') ? 'Claude' : 'Gemini'} • Tamil & English
+                  </Badge>
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                {!isMobile && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsMinimized(!isMinimized)}
+                    className="h-8 w-8 p-0 hover:bg-white/20 text-white"
+                    data-testid="button-minimize"
+                  >
+                    {isMinimized ? (
+                      <Maximize2 className="h-4 w-4" />
+                    ) : (
+                      <Minimize2 className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsOpen(false)}
+                  className="h-8 w-8 p-0 hover:bg-white/20 text-white"
+                  data-testid="button-close-wytai"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Tabs - Chat and Settings */}
+            <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "chat" | "settings")} className="flex-1 flex flex-col">
             <TabsList className="grid w-full grid-cols-2 rounded-none border-b">
               <TabsTrigger value="chat" className="gap-2" data-testid="tab-chat">
                 <MessageSquare className="h-4 w-4" />
@@ -1055,6 +1376,7 @@ export default function WytAIAgent() {
                 </div>
             </TabsContent>
           </Tabs>
+          </div>
         </>
       )}
     </Card>
