@@ -194,6 +194,13 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
         active: location === "/engine/backups",
         superAdminOnly: true
       },
+      { 
+        label: "Audit Logs", 
+        icon: Eye, 
+        href: "/engine/audit-logs", 
+        active: location === "/engine/audit-logs",
+        superAdminOnly: true
+      },
     ];
 
     // Filter items based on admin role

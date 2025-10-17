@@ -673,6 +673,84 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Audit Logs API
+  app.get('/api/admin/audit-logs', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { auditLogService } = await import('./services/auditLogService');
+      
+      const {
+        userId,
+        action,
+        resource,
+        startDate,
+        endDate,
+        search,
+        limit = 50,
+        offset = 0,
+      } = req.query;
+
+      const filters = {
+        userId: userId as string | undefined,
+        action: action as string | undefined,
+        resource: resource as string | undefined,
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+        search: search as string | undefined,
+        limit: parseInt(limit as string),
+        offset: parseInt(offset as string),
+      };
+
+      const [logs, totalCount] = await Promise.all([
+        auditLogService.getLogs(filters),
+        auditLogService.getLogsCount(filters),
+      ]);
+
+      res.json({
+        logs,
+        total: totalCount,
+        limit: filters.limit,
+        offset: filters.offset,
+      });
+    } catch (error: any) {
+      console.error('Error fetching audit logs:', error);
+      res.status(500).json({ error: 'Failed to fetch audit logs' });
+    }
+  });
+
+  app.get('/api/admin/audit-logs/stats', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { auditLogService } = await import('./services/auditLogService');
+      
+      const { startDate, endDate } = req.query;
+
+      const filters = {
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+      };
+
+      const stats = await auditLogService.getStats(filters);
+      res.json(stats);
+    } catch (error: any) {
+      console.error('Error fetching audit log stats:', error);
+      res.status(500).json({ error: 'Failed to fetch audit log stats' });
+    }
+  });
+
+  app.get('/api/admin/audit-logs/user/:userId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { auditLogService } = await import('./services/auditLogService');
+      
+      const { userId } = req.params;
+      const { limit = 10 } = req.query;
+
+      const activity = await auditLogService.getUserRecentActivity(userId, parseInt(limit as string));
+      res.json(activity);
+    } catch (error: any) {
+      console.error('Error fetching user activity:', error);
+      res.status(500).json({ error: 'Failed to fetch user activity' });
+    }
+  });
+
   // Admin Pages CRUD - For Engine Admin Panel
   app.get('/api/admin/pages', async (req, res) => {
     try {
