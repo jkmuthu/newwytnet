@@ -24,6 +24,7 @@ import {
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { WorkflowEngine, workflows, type WorkflowState, type WorkflowStep } from "@/lib/workflows";
+import { useDeviceDetection } from "@/hooks/useDeviceDetection";
 
 interface Message {
   role: "user" | "assistant";
@@ -33,6 +34,7 @@ interface Message {
 }
 
 export default function WytAIAgent() {
+  const { isMobile } = useDeviceDetection();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [activeTab, setActiveTab] = useState<"chat" | "settings">("chat");
@@ -489,15 +491,17 @@ export default function WytAIAgent() {
           <TooltipTrigger asChild>
             <Button
               onClick={() => setIsOpen(true)}
-              className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 z-50"
+              className={`fixed ${isMobile ? 'bottom-4 right-4 h-12 w-12' : 'bottom-6 right-6 h-14 w-14'} rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 z-50`}
               data-testid="button-open-wytai"
             >
-              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+              <Sparkles className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} text-white`} />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="left" className="hidden sm:block">
-            <p>Press <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs">Ctrl+K</kbd> to open WytAI</p>
-          </TooltipContent>
+          {!isMobile && (
+            <TooltipContent side="left">
+              <p>Press <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs">Ctrl+K</kbd> to open WytAI</p>
+            </TooltipContent>
+          )}
         </Tooltip>
       </TooltipProvider>
     );
@@ -506,16 +510,20 @@ export default function WytAIAgent() {
   return (
     <Card
       className={`fixed ${
-        isMinimized 
-          ? 'bottom-4 right-4 w-64 sm:w-80 sm:bottom-6 sm:right-6' 
-          : 'inset-4 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-[420px]'
+        isMobile 
+          ? 'inset-0 rounded-none' 
+          : isMinimized 
+            ? 'bottom-6 right-6 w-80' 
+            : 'bottom-6 right-6 w-[420px]'
       } ${
-        isMinimized ? 'h-16' : 'h-[calc(100vh-2rem)] sm:h-[650px] max-h-[900px]'
+        isMobile 
+          ? 'h-screen' 
+          : isMinimized ? 'h-16' : 'h-[650px] max-h-[900px]'
       } shadow-2xl z-50 flex flex-col transition-all duration-300`}
       data-testid="card-wytai-agent"
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-3 sm:p-4 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-lg">
+      <div className={`flex items-center justify-between p-3 sm:p-4 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white ${isMobile ? '' : 'rounded-t-lg'}`}>
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
           <div>
@@ -526,19 +534,21 @@ export default function WytAIAgent() {
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsMinimized(!isMinimized)}
-            className="h-8 w-8 p-0 hover:bg-white/20 text-white"
-            data-testid="button-minimize"
-          >
-            {isMinimized ? (
-              <Maximize2 className="h-4 w-4" />
-            ) : (
-              <Minimize2 className="h-4 w-4" />
-            )}
-          </Button>
+          {!isMobile && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsMinimized(!isMinimized)}
+              className="h-8 w-8 p-0 hover:bg-white/20 text-white"
+              data-testid="button-minimize"
+            >
+              {isMinimized ? (
+                <Maximize2 className="h-4 w-4" />
+              ) : (
+                <Minimize2 className="h-4 w-4" />
+              )}
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -776,8 +786,8 @@ export default function WytAIAgent() {
               />
             </TabsContent>
 
-            <TabsContent value="settings" className="flex-1 m-0 overflow-y-auto">
-              <div className="p-4 sm:p-6 space-y-6 pb-safe">
+            <TabsContent value="settings" className="flex-1 m-0 overflow-hidden flex flex-col">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 pb-safe">
                   {/* Model Selector */}
                   <div>
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
