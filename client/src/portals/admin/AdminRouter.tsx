@@ -43,7 +43,6 @@ import AdminSystemLogs from "@/pages/admin/system-logs";
 import AdminSystemMonitor from "@/pages/admin/system-monitor";
 import AdminSystemStatus from "@/pages/admin/system-status";
 import AdminSecurity from "@/pages/admin/security";
-import AdminPlatformRegistry from "@/pages/admin/platform-registry";
 import AdminGeoRegulatory from "@/pages/admin/geo-regulatory";
 import AdminProfile from "@/pages/admin/profile";
 import AdminSettings from "@/pages/admin/settings";
@@ -222,7 +221,6 @@ export default function AdminRouter() {
           <Route path="/engine/analytics" component={AdminAnalytics} />
 
           {/* System & Config Routes */}
-          <Route path="/engine/platform-registry" component={AdminPlatformRegistry} />
           <Route path="/engine/system-security" component={AdminSystemSecurity} />
           <Route path="/engine/platform-hubs" component={AdminPlatformHubs} />
           <Route path="/engine/integrations" component={AdminIntegrations} />

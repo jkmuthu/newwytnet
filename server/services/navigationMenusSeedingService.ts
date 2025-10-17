@@ -18,14 +18,13 @@ const DEFAULT_ENGINE_MENUS = [
   { title: "Help & Support", route: "/engine/help-support", order: 12 },
   { title: "Finance", route: "/engine/finance", order: 13 },
   { title: "Analytics", route: "/engine/analytics", order: 14 },
-  { title: "Platform Registry", route: "/engine/platform-registry", order: 15 },
-  { title: "System & Security", route: "/engine/system-security", order: 16 },
-  { title: "Integrations", route: "/engine/integrations", order: 17 },
-  { title: "Global Settings", route: "/engine/global-settings", order: 18 },
-  { title: "Platform Hubs", route: "/engine/platform-hubs", order: 19 },
-  { title: "Roles & Permissions", route: "/engine/roles-permissions", order: 20 },
-  { title: "Admin Users", route: "/engine/admin-users", order: 21 },
-  { title: "Backups", route: "/engine/backups", order: 22 },
+  { title: "System & Security", route: "/engine/system-security", order: 15 },
+  { title: "Integrations", route: "/engine/integrations", order: 16 },
+  { title: "Global Settings", route: "/engine/global-settings", order: 17 },
+  { title: "Platform Hubs", route: "/engine/platform-hubs", order: 18 },
+  { title: "Roles & Permissions", route: "/engine/roles-permissions", order: 19 },
+  { title: "Admin Users", route: "/engine/admin-users", order: 20 },
+  { title: "Backups", route: "/engine/backups", order: 21 },
 ];
 
 export async function seedNavigationMenus() {

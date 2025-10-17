@@ -139,13 +139,6 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
         active: location === "/engine/analytics"
       },
       { 
-        label: "Platform Registry", 
-        icon: Server, 
-        href: "/engine/platform-registry", 
-        active: location === "/engine/platform-registry",
-        superAdminOnly: true
-      },
-      { 
         label: "System & Security", 
         icon: Shield, 
         href: "/engine/system-security", 
