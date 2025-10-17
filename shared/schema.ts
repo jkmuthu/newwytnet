@@ -3656,6 +3656,57 @@ export const platformHubAdminsRelations = relations(platformHubAdmins, ({ one })
   }),
 }));
 
+// Platform Themes table
+export const platformThemes = pgTable("platform_themes", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  type: varchar("type", { length: 50 }).notNull().default('custom'), // 'system', 'custom', 'imported'
+  isActive: boolean("is_active").default(true),
+  isDefault: boolean("is_default").default(false),
+  
+  // Color scheme
+  primaryColor: varchar("primary_color", { length: 50 }).default('#0066FF'),
+  secondaryColor: varchar("secondary_color", { length: 50 }).default('#FF6B00'),
+  accentColor: varchar("accent_color", { length: 50 }).default('#00D4FF'),
+  backgroundColor: varchar("background_color", { length: 50 }).default('#FFFFFF'),
+  textColor: varchar("text_color", { length: 50 }).default('#000000'),
+  
+  // Typography
+  fontFamily: varchar("font_family", { length: 100 }).default('Inter'),
+  headingFont: varchar("heading_font", { length: 100 }),
+  bodyFont: varchar("body_font", { length: 100 }),
+  
+  // Theme mode
+  mode: varchar("mode", { length: 20 }).default('light'), // 'light', 'dark', 'auto'
+  
+  // Advanced settings stored as JSON
+  colorScheme: jsonb("color_scheme").default({}), // {success, error, warning, info, etc.}
+  spacing: jsonb("spacing").default({}), // {xs, sm, md, lg, xl}
+  borderRadius: jsonb("border_radius").default({}), // {sm, md, lg, full}
+  shadows: jsonb("shadows").default({}), // {sm, md, lg, xl}
+  customCSS: text("custom_css"),
+  
+  // Usage tracking
+  usageCount: integer("usage_count").default(0),
+  tenantId: uuid("tenant_id").references(() => tenants.id),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_themes_display_id").on(table.displayId),
+  index("idx_themes_slug").on(table.slug),
+]);
+
+export const platformThemesRelations = relations(platformThemes, ({ one }) => ({
+  tenant: one(tenants, {
+    fields: [platformThemes.tenantId],
+    references: [tenants.id],
+  }),
+}));
+
 // Schema exports for Roles & Permissions
 export const insertRoleSchema = createInsertSchema(roles).omit({ id: true, createdAt: true, updatedAt: true });
 export const selectRoleSchema = createSelectSchema(roles);
@@ -3687,3 +3738,11 @@ export type PlatformHub = typeof platformHubs.$inferSelect;
 export type InsertPlatformHub = z.infer<typeof insertPlatformHubSchema>;
 export type PlatformHubAdmin = typeof platformHubAdmins.$inferSelect;
 export type InsertPlatformHubAdmin = z.infer<typeof insertPlatformHubAdminSchema>;
+
+// Schema exports for Platform Themes
+export const insertPlatformThemeSchema = createInsertSchema(platformThemes).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectPlatformThemeSchema = createSelectSchema(platformThemes);
+
+// Type exports for Platform Themes
+export type PlatformTheme = typeof platformThemes.$inferSelect;
+export type InsertPlatformTheme = z.infer<typeof insertPlatformThemeSchema>;

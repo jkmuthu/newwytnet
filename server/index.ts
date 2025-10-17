@@ -168,6 +168,22 @@ app.use((req, res, next) => {
     console.error('Navigation menus seeding failed:', error);
   }
 
+  // Seed platform themes
+  try {
+    const { seedPlatformThemes } = await import('./services/themesSeedingService');
+    await seedPlatformThemes();
+  } catch (error) {
+    console.error('Platform themes seeding failed:', error);
+  }
+
+  // Seed platform integrations
+  try {
+    const { seedPlatformIntegrations } = await import('./services/integrationsSeedingService');
+    await seedPlatformIntegrations();
+  } catch (error) {
+    console.error('Platform integrations seeding failed:', error);
+  }
+
   // Setup Hub Routing Middleware (Multi-domain routing)
   try {
     console.log('🌐 Setting up Hub Routing Middleware...');

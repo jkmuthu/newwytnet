@@ -49,49 +49,7 @@ import AdminSettings from "@/pages/admin/settings";
 import AdminAccount from "@/pages/admin/account";
 import AdminSearch from "@/pages/admin/search";
 import AdminNotifications from "@/pages/admin/notifications";
-
-// Keep AdminIntegrations, AdminLogs, and AdminAI as inline components for now
-function AdminIntegrations() {
-  const integrations = [
-    { name: 'Google OAuth', status: 'active', lastSync: '2 hours ago', icon: '🔐' },
-    { name: 'Razorpay Payment', status: 'active', lastSync: '5 minutes ago', icon: '💳' },
-    { name: 'MSG91 Email/SMS', status: 'active', lastSync: '1 hour ago', icon: '📧' },
-    { name: 'Meilisearch', status: 'degraded', lastSync: '3 days ago', icon: '🔍' },
-    { name: 'WhatsApp Business', status: 'inactive', lastSync: 'Never', icon: '💬' },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">🔌 API Integrations</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">Manage third-party service integrations</p>
-      </div>
-
-      <div className="grid gap-4">
-        {integrations.map((integration) => (
-          <Card key={integration.name}>
-            <CardContent className="flex items-center justify-between py-4">
-              <div className="flex items-center gap-4">
-                <span className="text-3xl">{integration.icon}</span>
-                <div>
-                  <h3 className="font-semibold">{integration.name}</h3>
-                  <p className="text-sm text-gray-500">Last sync: {integration.lastSync}</p>
-                </div>
-              </div>
-              <Badge className={
-                integration.status === 'active' ? 'bg-green-100 text-green-800' :
-                integration.status === 'degraded' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-gray-100 text-gray-800'
-              }>
-                {integration.status}
-              </Badge>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
+import AdminIntegrations from "@/pages/admin/integrations";
 
 // System Logs viewer (keep as inline for now)
 function AdminLogs() {

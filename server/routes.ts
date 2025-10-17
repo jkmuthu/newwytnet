@@ -153,6 +153,9 @@ import { aiService } from "./services/aiService";
 import rolesRouter from "./routes/roles";
 import platformHubsRouter from "./routes/platform-hubs";
 import wytaiRouter from "./routes/wytai";
+import themesRouter from "./routes/themes";
+import supportRouter from "./routes/support";
+import integrationsRouter from "./routes/integrations";
 
 // Trademark analysis functions now imported from services/trademarkAnalysis.ts
 
@@ -202,6 +205,15 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   // Register WytAI Agent Router
   app.use('/api', wytaiRouter);
+  
+  // Register Themes Management Router
+  app.use('/api', themesRouter);
+  
+  // Register Support & Knowledge Base Router
+  app.use('/api', supportRouter);
+  
+  // Register Integrations Management Router
+  app.use('/api', integrationsRouter);
 
   // Auth routes - unified endpoint for both authentication systems
   app.get('/api/auth/user', async (req: any, res) => {
