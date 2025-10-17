@@ -76,7 +76,7 @@ router.post("/admin/wytai/chat", adminAuthMiddleware, async (req, res) => {
 
     // Get AI response
     const response = await aiService.chat(fullMessages, {
-      model: model || "gpt-4",
+      model: model || "gpt-4o",
       temperature: 0.7,
       maxTokens: 2000,
     });
@@ -142,7 +142,7 @@ router.post("/admin/wytai/chat/stream", adminAuthMiddleware, async (req, res) =>
     // Stream AI response
     try {
       for await (const chunk of aiService.chatStream(fullMessages, {
-        model: model || "gpt-4",
+        model: model || "gpt-4o",
         temperature: 0.7,
         maxTokens: 2000,
       })) {

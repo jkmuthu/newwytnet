@@ -193,7 +193,7 @@ export default function WytAIAgent() {
         messages: messages
           .concat(userMessage)
           .map((m) => ({ role: m.role, content: m.content })),
-        model: "gpt-4",
+        model: "gpt-4o",
       });
 
       const data = await response.json();
