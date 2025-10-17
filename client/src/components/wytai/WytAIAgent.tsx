@@ -864,6 +864,16 @@ export default function WytAIAgent() {
                 </div>
               </div>
               <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setActiveTab("settings")}
+                  className="h-8 w-8 p-0 hover:bg-white/20 text-white"
+                  data-testid="button-settings-quick"
+                  title="Settings"
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
                 {!isMobile && (
                   <Button
                     variant="ghost"
@@ -1032,10 +1042,9 @@ export default function WytAIAgent() {
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder="Type in Tamil or English... (Shift+Enter for new line)"
+                      placeholder={isLoading ? "AI is typing... You can prepare your next message" : "Type in Tamil or English... (Shift+Enter for new line)"}
                       className="resize-none min-h-[60px] text-sm sm:text-base"
                       rows={2}
-                      disabled={isLoading}
                       data-testid="textarea-message"
                     />
                   </div>
@@ -1045,7 +1054,6 @@ export default function WytAIAgent() {
                       size="sm"
                       variant="outline"
                       className="h-[28px]"
-                      disabled={isLoading}
                       data-testid="button-attach"
                     >
                       <Paperclip className="h-4 w-4" />
@@ -1055,7 +1063,6 @@ export default function WytAIAgent() {
                       size="sm"
                       variant={isListening ? "destructive" : "outline"}
                       className="h-[28px]"
-                      disabled={isLoading}
                       data-testid="button-voice"
                     >
                       {isListening ? (
@@ -1067,11 +1074,15 @@ export default function WytAIAgent() {
                     <Button
                       onClick={sendMessage}
                       size="sm"
-                      disabled={(!input.trim() && attachments.length === 0) || isLoading}
-                      className="h-[28px] bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                      disabled={!input.trim() && attachments.length === 0}
+                      className={`h-[28px] ${isLoading ? 'opacity-50' : ''} bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700`}
                       data-testid="button-send"
                     >
-                      <Send className="h-4 w-4" />
+                      {isLoading ? (
+                        <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 </div>
