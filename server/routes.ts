@@ -38,6 +38,7 @@ import { razorpayService } from "./services/razorpayService";
 import path from "path";
 import multer from "multer";
 import { promises as fs } from "fs";
+import * as fsSync from "fs";
 import { fileTypeFromBuffer } from "file-type";
 // Main WytPass OAuth authentication (Google, Email OTP, Email/Password) is in wytpass-auth.ts
 import * as socialAuthService from "./services/socialAuth";
@@ -50,6 +51,9 @@ import {
   insertHubSchema,
   navigationMenus,
   insertNavigationMenuSchema,
+  pages,
+  blocks,
+  backups,
   platformModules,
   insertPlatformModuleSchema,
   type PlatformModule,
@@ -540,6 +544,132 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error: any) {
       console.error('Error deleting navigation menu:', error);
       res.status(500).json({ error: 'Failed to delete navigation menu' });
+    }
+  });
+
+  // Backup System - For Engine Admin Panel
+  app.post('/api/admin/backup/create', async (req, res) => {
+    try {
+      const principal = req.session.wytpassPrincipal;
+      if (!principal || !principal.isSuperAdmin) {
+        return res.status(403).json({ error: 'Super Admin access required' });
+      }
+
+      const { createFullBackup, ensureBackupSequence } = await import('./services/backupService');
+      
+      // Ensure backup sequence exists
+      await ensureBackupSequence();
+      
+      // Create backup
+      const backupId = await createFullBackup(principal.id);
+      
+      // Get the created backup
+      const [backup] = await db.select()
+        .from(backups)
+        .where(eq(backups.id, backupId));
+
+      res.json(backup);
+    } catch (error: any) {
+      console.error('Error creating backup:', error);
+      res.status(500).json({ error: error.message || 'Failed to create backup' });
+    }
+  });
+
+  app.get('/api/admin/backup/list', async (req, res) => {
+    try {
+      const principal = req.session.wytpassPrincipal;
+      if (!principal || !principal.isSuperAdmin) {
+        return res.status(403).json({ error: 'Super Admin access required' });
+      }
+
+      const allBackups = await db.select()
+        .from(backups)
+        .orderBy(backups.createdAt);
+
+      res.json(allBackups);
+    } catch (error: any) {
+      console.error('Error fetching backups:', error);
+      res.status(500).json({ error: 'Failed to fetch backups' });
+    }
+  });
+
+  app.get('/api/admin/backup/download/:id', async (req, res) => {
+    try {
+      const principal = req.session.wytpassPrincipal;
+      if (!principal || !principal.isSuperAdmin) {
+        return res.status(403).json({ error: 'Super Admin access required' });
+      }
+
+      const { id } = req.params;
+      const [backup] = await db.select()
+        .from(backups)
+        .where(eq(backups.id, id));
+
+      if (!backup) {
+        return res.status(404).json({ error: 'Backup not found' });
+      }
+
+      if (!backup.filePath) {
+        return res.status(404).json({ error: 'Backup file not available' });
+      }
+
+      // Download from object storage to temp location
+      const { downloadBackup } = await import('./services/backupService');
+      const tempPath = path.join(process.cwd(), '.backup-temp', 'download', backup.filename);
+      const tempDir = path.dirname(tempPath);
+      
+      if (!fsSync.existsSync(tempDir)) {
+        fsSync.mkdirSync(tempDir, { recursive: true });
+      }
+
+      await downloadBackup(backup.filePath, tempPath);
+
+      // Send file to client
+      res.download(tempPath, backup.filename, (err) => {
+        // Cleanup temp file after download
+        if (fsSync.existsSync(tempPath)) {
+          fsSync.unlinkSync(tempPath);
+        }
+        if (err) {
+          console.error('Download error:', err);
+        }
+      });
+    } catch (error: any) {
+      console.error('Error downloading backup:', error);
+      res.status(500).json({ error: error.message || 'Failed to download backup' });
+    }
+  });
+
+  app.delete('/api/admin/backup/:id', async (req, res) => {
+    try {
+      const principal = req.session.wytpassPrincipal;
+      if (!principal || !principal.isSuperAdmin) {
+        return res.status(403).json({ error: 'Super Admin access required' });
+      }
+
+      const { id } = req.params;
+      const [backup] = await db.select()
+        .from(backups)
+        .where(eq(backups.id, id));
+
+      if (!backup) {
+        return res.status(404).json({ error: 'Backup not found' });
+      }
+
+      // Delete from object storage
+      if (backup.filePath) {
+        const { deleteBackupFile } = await import('./services/backupService');
+        await deleteBackupFile(backup.filePath);
+      }
+
+      // Delete from database
+      await db.delete(backups)
+        .where(eq(backups.id, id));
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting backup:', error);
+      res.status(500).json({ error: error.message || 'Failed to delete backup' });
     }
   });
 
