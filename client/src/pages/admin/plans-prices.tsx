@@ -326,18 +326,6 @@ function AppTableRow({
     }
   });
 
-  // Toggle promo card status
-  const togglePromoMutation = useMutation({
-    mutationFn: (isPromo: boolean) => 
-      apiRequest(`/api/admin/apps/${app.id}`, 'PATCH', { 
-        metadata: { ...app.metadata, isPromoCard: isPromo } 
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/pricing/apps'] });
-      toast({ title: "Success", description: "Promo card status updated" });
-    }
-  });
-
   const formatPrice = (price: string, currency: string) => {
     const symbol = currency === 'INR' ? '₹' : '$';
     return `${symbol}${parseFloat(price).toFixed(0)}`;
@@ -395,16 +383,6 @@ function AppTableRow({
             />
             <label className="text-xs text-muted-foreground cursor-pointer">
               Active
-            </label>
-          </div>
-          <div className="flex items-center gap-1 mr-2">
-            <Checkbox
-              checked={app.metadata?.isPromoCard || false}
-              onCheckedChange={(checked) => togglePromoMutation.mutate(!!checked)}
-              data-testid={`checkbox-promo-${app.id}`}
-            />
-            <label className="text-xs text-muted-foreground cursor-pointer">
-              Promo Card
             </label>
           </div>
           <Button
