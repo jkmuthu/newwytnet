@@ -9509,8 +9509,8 @@ When suggesting improvements, format your response with suggestions in a structu
       }
 
       const { currentPassword, newPassword } = req.body;
-      if (!currentPassword || !newPassword) {
-        return res.status(400).json({ error: 'Current and new passwords are required' });
+      if (!newPassword) {
+        return res.status(400).json({ error: 'New password is required' });
       }
 
       if (newPassword.length < 6) {
@@ -9522,18 +9522,26 @@ When suggesting improvements, format your response with suggestions in a structu
         .from(users)
         .where(eq(users.id, principal.id));
 
-      if (!user || !user.passwordHash) {
-        return res.status(400).json({ error: 'No password set for this account' });
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
       }
 
-      // Verify current password
-      const bcrypt = await import('bcryptjs');
-      const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
-      if (!isValid) {
-        return res.status(400).json({ error: 'Current password is incorrect' });
+      // If user has a password, verify current password
+      if (user.passwordHash) {
+        if (!currentPassword) {
+          return res.status(400).json({ error: 'Current password is required' });
+        }
+
+        const bcrypt = await import('bcryptjs');
+        const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+        if (!isValid) {
+          return res.status(400).json({ error: 'Current password is incorrect' });
+        }
       }
+      // If user doesn't have a password (OAuth users), allow setting one without current password
 
       // Hash new password
+      const bcrypt = await import('bcryptjs');
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
       // Update password
