@@ -429,6 +429,117 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Navigation Menus CRUD - For Engine Admin Panel
+  app.get('/api/admin/navigation-menus', async (req, res) => {
+    try {
+      const principal = req.session.wytpassPrincipal;
+      if (!principal || !principal.isSuperAdmin) {
+        return res.status(403).json({ error: 'Super Admin access required' });
+      }
+
+      const menus = await db.select()
+        .from(navigationMenus)
+        .where(eq(navigationMenus.scope, 'engine'))
+        .orderBy(navigationMenus.order);
+
+      res.json(menus);
+    } catch (error: any) {
+      console.error('Error fetching navigation menus:', error);
+      res.status(500).json({ error: 'Failed to fetch navigation menus' });
+    }
+  });
+
+  app.post('/api/admin/navigation-menus', async (req, res) => {
+    try {
+      const principal = req.session.wytpassPrincipal;
+      if (!principal || !principal.isSuperAdmin) {
+        return res.status(403).json({ error: 'Super Admin access required' });
+      }
+
+      const validatedData = insertNavigationMenuSchema.parse({
+        ...req.body,
+        createdBy: principal.id,
+        scope: 'engine',
+      });
+
+      const [menu] = await db.insert(navigationMenus)
+        .values(validatedData)
+        .returning();
+
+      res.json(menu);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Validation error', details: error.errors });
+      }
+      console.error('Error creating navigation menu:', error);
+      res.status(500).json({ error: 'Failed to create navigation menu' });
+    }
+  });
+
+  app.patch('/api/admin/navigation-menus/:id', async (req, res) => {
+    try {
+      const principal = req.session.wytpassPrincipal;
+      if (!principal || !principal.isSuperAdmin) {
+        return res.status(403).json({ error: 'Super Admin access required' });
+      }
+
+      const { id } = req.params;
+      const [menu] = await db.update(navigationMenus)
+        .set({ ...req.body, updatedAt: new Date() })
+        .where(eq(navigationMenus.id, id))
+        .returning();
+
+      if (!menu) {
+        return res.status(404).json({ error: 'Menu not found' });
+      }
+
+      res.json(menu);
+    } catch (error: any) {
+      console.error('Error updating navigation menu:', error);
+      res.status(500).json({ error: 'Failed to update navigation menu' });
+    }
+  });
+
+  app.delete('/api/admin/navigation-menus/:id', async (req, res) => {
+    try {
+      const principal = req.session.wytpassPrincipal;
+      if (!principal || !principal.isSuperAdmin) {
+        return res.status(403).json({ error: 'Super Admin access required' });
+      }
+
+      const { id } = req.params;
+      await db.delete(navigationMenus)
+        .where(eq(navigationMenus.id, id));
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting navigation menu:', error);
+      res.status(500).json({ error: 'Failed to delete navigation menu' });
+    }
+  });
+
+  app.patch('/api/admin/navigation-menus/reorder', async (req, res) => {
+    try {
+      const principal = req.session.wytpassPrincipal;
+      if (!principal || !principal.isSuperAdmin) {
+        return res.status(403).json({ error: 'Super Admin access required' });
+      }
+
+      const { menus } = req.body; // Array of { id, order }
+
+      for (const menu of menus) {
+        await db.update(navigationMenus)
+          .set({ order: menu.order, updatedAt: new Date() })
+          .where(eq(navigationMenus.id, menu.id));
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error reordering navigation menus:', error);
+      res.status(500).json({ error: 'Failed to reorder navigation menus' });
+    }
+  });
+
   // Apps CRUD
   app.get('/api/apps', isAuthenticated, async (req: any, res) => {
     try {

@@ -250,6 +250,21 @@ export const blocks = pgTable("blocks", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Navigation Menus - For Engine Admin Panel
+export const navigationMenus = pgTable("navigation_menus", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title", { length: 255 }).notNull(),
+  route: varchar("route", { length: 500 }).notNull(),
+  icon: varchar("icon", { length: 100 }),
+  order: integer("order").notNull().default(0),
+  scope: varchar("scope", { length: 50 }).notNull().default('engine'), // 'engine' or 'hub'
+  parentId: uuid("parent_id"), // For nested menus
+  isActive: boolean("is_active").default(true),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Apps
 export const apps = pgTable("apps", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1243,6 +1258,10 @@ export const insertMembershipSchema = createInsertSchema(memberships);
 export const insertModelSchema = createInsertSchema(models);
 export const insertPageSchema = createInsertSchema(pages);
 export const insertBlockSchema = createInsertSchema(blocks);
+export const insertNavigationMenuSchema = createInsertSchema(navigationMenus).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectNavigationMenuSchema = navigationMenus;
+export type InsertNavigationMenu = z.infer<typeof insertNavigationMenuSchema>;
+export type SelectNavigationMenu = typeof navigationMenus.$inferSelect;
 export const insertAppSchema = createInsertSchema(apps);
 export const insertAppInstallSchema = createInsertSchema(appInstalls);
 export const insertHubSchema = createInsertSchema(hubs);
