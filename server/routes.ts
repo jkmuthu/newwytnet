@@ -48,6 +48,8 @@ import {
   insertPageSchema, 
   insertAppSchema, 
   insertHubSchema,
+  navigationMenus,
+  insertNavigationMenuSchema,
   platformModules,
   insertPlatformModuleSchema,
   type PlatformModule,

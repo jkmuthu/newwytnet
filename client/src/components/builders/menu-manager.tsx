@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -115,12 +115,15 @@ export default function MenuManager() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { isLoading } = useQuery({
+  const { data: fetchedMenus, isLoading } = useQuery<NavigationMenu[]>({
     queryKey: ['/api/admin/navigation-menus'],
-    onSuccess: (data: NavigationMenu[]) => {
-      setMenus(data);
-    },
   });
+
+  useEffect(() => {
+    if (fetchedMenus) {
+      setMenus(fetchedMenus);
+    }
+  }, [fetchedMenus]);
 
   const createMenuMutation = useMutation({
     mutationFn: async (menuData: { title: string; route: string }) => {
