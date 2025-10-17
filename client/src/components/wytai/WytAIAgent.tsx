@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { X, Send, Mic, MicOff, Sparkles, Minimize2, Maximize2, Settings, Paperclip, Trash2, MessageSquare, Info, Download, Volume2, VolumeX, Plus, History, Edit2, MoreVertical, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Send, Mic, MicOff, Sparkles, Minimize2, Maximize2, Settings, Paperclip, Trash2, MessageSquare, Info, Download, Plus, History, Edit2, MoreVertical, ChevronLeft, ChevronRight, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -70,8 +70,6 @@ export default function WytAIAgent() {
   const [recognition, setRecognition] = useState<any>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [usageStats, setUsageStats] = useState<any>(null);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [ttsEnabled, setTtsEnabled] = useState(true);
   const [workflowState, setWorkflowState] = useState<WorkflowState | null>(null);
   const [selectedWorkflow, setSelectedWorkflow] = useState<string | null>(null);
   
@@ -83,7 +81,6 @@ export default function WytAIAgent() {
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const currentUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const workflowEngineRef = useRef<WorkflowEngine>(new WorkflowEngine());
   const { toast} = useToast();
 
@@ -196,12 +193,6 @@ export default function WytAIAgent() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  // Cleanup TTS on unmount
-  useEffect(() => {
-    return () => {
-      stopSpeech();
-    };
-  }, []);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -579,9 +570,6 @@ export default function WytAIAgent() {
         if (data.stats) {
           setUsageStats(data.stats);
         }
-
-        // Speak the response in Tamil if available
-        speakText(data.message);
       } else {
         // Handle specific error codes
         if (data.code === "ACCESS_DENIED") {
@@ -614,44 +602,6 @@ export default function WytAIAgent() {
     }
   };
 
-  const stopSpeech = () => {
-    if ('speechSynthesis' in window && speechSynthesis.speaking) {
-      speechSynthesis.cancel();
-      setIsSpeaking(false);
-      currentUtteranceRef.current = null;
-    }
-  };
-
-  const speakText = (text: string) => {
-    if (!ttsEnabled || !('speechSynthesis' in window)) return;
-    
-    // Cancel any ongoing speech
-    stopSpeech();
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'ta-IN'; // Tamil language
-    utterance.rate = 0.9;
-    
-    // Try to find Tamil voice
-    const voices = speechSynthesis.getVoices();
-    const tamilVoice = voices.find(voice => voice.lang.startsWith('ta'));
-    if (tamilVoice) {
-      utterance.voice = tamilVoice;
-    }
-    
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      currentUtteranceRef.current = null;
-    };
-    utterance.onerror = () => {
-      setIsSpeaking(false);
-      currentUtteranceRef.current = null;
-    };
-    
-    currentUtteranceRef.current = utterance;
-    speechSynthesis.speak(utterance);
-  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -1068,23 +1018,9 @@ export default function WytAIAgent() {
                   </div>
                 </div>
                 <div className="flex items-center justify-between mt-2">
-                  <div className="flex items-center gap-2">
-                    <p className="text-[10px] sm:text-xs text-muted-foreground">
-                      🎤 Voice • 📎 Attachments • ⌨️ Ctrl+K
-                    </p>
-                    {isSpeaking && (
-                      <Button
-                        onClick={stopSpeech}
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 text-xs text-orange-600 hover:text-orange-700"
-                        data-testid="button-stop-speech"
-                      >
-                        <VolumeX className="h-3 w-3 mr-1 animate-pulse" />
-                        Stop
-                      </Button>
-                    )}
-                  </div>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">
+                    🎤 Voice • 📎 Attachments • ⌨️ Ctrl+K
+                  </p>
                   <Button
                     onClick={clearChat}
                     variant="ghost"
@@ -1140,27 +1076,6 @@ export default function WytAIAgent() {
                     <p className="text-xs text-muted-foreground mt-2">
                       Choose the AI model that best fits your needs
                     </p>
-                  </div>
-
-                  {/* TTS Toggle */}
-                  <div className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label htmlFor="tts-toggle" className="text-sm font-semibold flex items-center gap-2">
-                          {ttsEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-                          Text-to-Speech
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                          AI பதில்களை தமிழில் குரலில் கேட்கலாம்
-                        </p>
-                      </div>
-                      <Switch
-                        id="tts-toggle"
-                        checked={ttsEnabled}
-                        onCheckedChange={setTtsEnabled}
-                        data-testid="switch-tts"
-                      />
-                    </div>
                   </div>
 
                   {/* Workflow Selector */}
