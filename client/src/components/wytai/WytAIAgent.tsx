@@ -285,13 +285,13 @@ export default function WytAIAgent() {
           <TooltipTrigger asChild>
             <Button
               onClick={() => setIsOpen(true)}
-              className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 z-50"
+              className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 z-50"
               data-testid="button-open-wytai"
             >
-              <Sparkles className="h-6 w-6 text-white" />
+              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="left">
+          <TooltipContent side="left" className="hidden sm:block">
             <p>Press <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs">Ctrl+K</kbd> to open WytAI</p>
           </TooltipContent>
         </Tooltip>
@@ -302,19 +302,21 @@ export default function WytAIAgent() {
   return (
     <Card
       className={`fixed ${
-        isMinimized ? 'bottom-6 right-6 w-80' : 'bottom-6 right-6 w-[420px]'
+        isMinimized 
+          ? 'bottom-4 right-4 w-64 sm:w-80 sm:bottom-6 sm:right-6' 
+          : 'inset-4 sm:inset-auto sm:bottom-6 sm:right-6 sm:w-[420px]'
       } ${
-        isMinimized ? 'h-16' : 'h-[650px]'
+        isMinimized ? 'h-16' : 'h-[calc(100vh-2rem)] sm:h-[650px] max-h-[900px]'
       } shadow-2xl z-50 flex flex-col transition-all duration-300`}
       data-testid="card-wytai-agent"
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-lg">
+      <div className="flex items-center justify-between p-3 sm:p-4 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-lg">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5" />
+          <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
           <div>
-            <h3 className="font-semibold">WytAI Agent</h3>
-            <Badge variant="secondary" className="text-xs mt-0.5 bg-white/20 text-white border-0">
+            <h3 className="font-semibold text-sm sm:text-base">WytAI Agent</h3>
+            <Badge variant="secondary" className="text-[10px] sm:text-xs mt-0.5 bg-white/20 text-white border-0">
               {selectedModel.includes('gpt') ? 'OpenAI' : selectedModel.includes('claude') ? 'Claude' : 'Gemini'} • Tamil & English
             </Badge>
           </div>
