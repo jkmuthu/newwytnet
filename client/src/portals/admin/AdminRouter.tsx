@@ -50,89 +50,8 @@ import AdminAccount from "@/pages/admin/account";
 import AdminSearch from "@/pages/admin/search";
 import AdminNotifications from "@/pages/admin/notifications";
 import AdminIntegrations from "@/pages/admin/integrations";
-
-// System Logs viewer (keep as inline for now)
-function AdminLogs() {
-  const logs = [
-    { time: '14:32:15', level: 'info', message: 'User login successful', module: 'Auth' },
-    { time: '14:30:42', level: 'warn', message: 'High API usage detected', module: 'Platform' },
-    { time: '14:28:11', level: 'error', message: 'Payment gateway timeout', module: 'Razorpay' },
-    { time: '14:25:33', level: 'info', message: 'Database backup completed', module: 'System' },
-  ];
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">📋 System Logs</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">Centralized system and audit logs</p>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {logs.map((log, i) => (
-              <div key={i} className="flex items-center gap-4 p-2 border-b last:border-0">
-                <span className="text-sm text-gray-500">{log.time}</span>
-                <Badge className={
-                  log.level === 'error' ? 'bg-red-100 text-red-800' :
-                  log.level === 'warn' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-blue-100 text-blue-800'
-                }>{log.level}</Badge>
-                <span className="text-sm flex-1">{log.message}</span>
-                <span className="text-xs text-gray-500">{log.module}</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// Keep AdminAI as inline for now
-function AdminAI() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">🤖 AI Management</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">Manage AI features and integrations</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>AI Models</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {['GPT-4', 'DALL-E', 'Whisper', 'Embeddings'].map((model) => (
-              <div key={model} className="flex items-center justify-between">
-                <span className="text-sm">{model}</span>
-                <Badge className="bg-green-100 text-green-800">Active</Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>AI Features</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {['Smart Search', 'Content Generation', 'Chat Assistant', 'Image Analysis'].map((feature) => (
-              <div key={feature} className="flex items-center justify-between">
-                <span className="text-sm">{feature}</span>
-                <Badge className="bg-green-100 text-green-800">Enabled</Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
+import AdminSystemLogsReal from "@/pages/admin/system-logs-real";
+import AdminAIManagement from "@/pages/admin/ai-management";
 
 /**
  * AdminRouter (now EngineRouter) - Handles all Engine admin routes
@@ -197,8 +116,8 @@ export default function AdminRouter() {
           {/* Legacy/Other Routes */}
           <Route path="/engine/wytpoints" component={AdminWytPoints} />
           <Route path="/engine/system-overview" component={AdminSystemOverview} />
-          <Route path="/engine/logs" component={AdminLogs} />
-          <Route path="/engine/ai" component={AdminAI} />
+          <Route path="/engine/logs" component={AdminSystemLogsReal} />
+          <Route path="/engine/ai" component={AdminAIManagement} />
 
           {/* 404 fallback for engine routes */}
           <Route>
