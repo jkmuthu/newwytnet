@@ -33,7 +33,7 @@ interface User {
 }
 
 export default function AdminUsersImproved() {
-  const [userStatusFilter, setUserStatusFilter] = useState<'active' | 'banned' | 'trash'>('active');
+  const [userStatusFilter, setUserStatusFilter] = useState<'active' | 'admins' | 'banned' | 'trash'>('active');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isUserDetailOpen, setIsUserDetailOpen] = useState(false);
   const { toast } = useToast();
@@ -51,11 +51,27 @@ export default function AdminUsersImproved() {
     queryKey: ['/api/admin/users'],
   });
 
-  // Filter users by status (mock filtering for now)
+  // Filter users by tab selection
   const filteredUsers = usersData?.users?.filter(user => {
     const userStatus = user.status || 'active'; // Default to active if no status
-    return userStatus === userStatusFilter;
+    
+    if (userStatusFilter === 'active') {
+      // Show only regular active users (not super admins)
+      return userStatus === 'active' && !user.isSuperAdmin;
+    } else if (userStatusFilter === 'admins') {
+      // Show only active super admins
+      return userStatus === 'active' && user.isSuperAdmin;
+    } else {
+      // For banned and trash tabs, show all users regardless of admin status
+      return userStatus === userStatusFilter;
+    }
   }) || [];
+  
+  // Calculate counts for each tab
+  const activeUsersCount = usersData?.users?.filter(u => (!u.status || u.status === 'active') && !u.isSuperAdmin).length || 0;
+  const activeAdminsCount = usersData?.users?.filter(u => (!u.status || u.status === 'active') && u.isSuperAdmin).length || 0;
+  const bannedCount = usersData?.users?.filter(u => u.status === 'banned').length || 0;
+  const trashCount = usersData?.users?.filter(u => u.status === 'trash').length || 0;
 
   const getUserInitials = (name: string) => {
     if (!name) return 'U';
@@ -114,13 +130,16 @@ export default function AdminUsersImproved() {
           <Tabs value={userStatusFilter} onValueChange={(value) => setUserStatusFilter(value as any)} className="w-full">
             <TabsList>
               <TabsTrigger value="active" data-testid="tab-users-active">
-                Active ({usersData?.users?.filter(u => !u.status || u.status === 'active').length || 0})
+                Active Users ({activeUsersCount})
+              </TabsTrigger>
+              <TabsTrigger value="admins" data-testid="tab-users-admins">
+                Active Engine Admins ({activeAdminsCount})
               </TabsTrigger>
               <TabsTrigger value="banned" data-testid="tab-users-banned">
-                Banned (0)
+                Banned ({bannedCount})
               </TabsTrigger>
               <TabsTrigger value="trash" data-testid="tab-users-trash">
-                Trash (0)
+                Trash ({trashCount})
               </TabsTrigger>
             </TabsList>
           </Tabs>
