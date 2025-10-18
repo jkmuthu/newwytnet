@@ -46,10 +46,10 @@ export default function Pricing() {
       icon: Star,
       features: [
         "Access to all free WytApps",
-        "Basic WytHub exploration",
         "WytPass authentication",
         "Community support",
         "Mobile & desktop access",
+        "Basic features & tools",
         "No credit card required"
       ],
       cta: "Get Started Free",
@@ -66,7 +66,7 @@ export default function Pricing() {
       features: [
         "Everything in Free, plus:",
         "Activate up to 10 modules",
-        "WytHub subscriptions",
+        "Premium WytApps access",
         "Priority support",
         "Advanced analytics",
         "Custom app installations",

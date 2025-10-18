@@ -1,4 +1,4 @@
-import { Bot, Home, QrCode, Briefcase, Activity, Network } from "lucide-react";
+import { Bot, Home, QrCode, Briefcase, Activity } from "lucide-react";
 
 export const bottomNavItems = [
   { 
@@ -9,40 +9,35 @@ export const bottomNavItems = [
     activeRoutes: ['/']
   },
   { 
-    icon: Network, 
-    label: 'WytHubs', 
-    href: '/hubs', 
-    badge: 'LIVE',
-    activeRoutes: ['/hubs', '/hub', '/ai-directory']
-  },
-  { 
-    icon: QrCode, 
-    label: 'Apps', 
-    href: '/qr-generator', 
-    badge: 'LIVE',
-    activeRoutes: ['/qr-generator', '/assessment']
-  },
-  { 
     icon: Briefcase, 
     label: 'WytApps', 
     href: '/wytapps', 
     badge: null,
-    activeRoutes: ['/wytapps']
+    activeRoutes: ['/wytapps', '/qr-generator', '/assessment', '/ai-directory']
+  },
+  { 
+    icon: QrCode, 
+    label: 'Features', 
+    href: '/features', 
+    badge: null,
+    activeRoutes: ['/features']
+  },
+  { 
+    icon: Activity, 
+    label: 'Pricing', 
+    href: '/pricing', 
+    badge: null,
+    activeRoutes: ['/pricing']
   }
 ];
 
 export const sidebarNavItems = [
-  { icon: Network, label: 'WytHubs', href: '/hubs' },
-];
-
-// WytHubs submenu items
-export const wytHubsItems = [
-  { icon: Network, label: 'All Hubs', href: '/hubs' },
-  { icon: Bot, label: 'AI Directory', href: '/ai-directory' },
+  { icon: Briefcase, label: 'WytApps', href: '/wytapps' },
 ];
 
 // WytApps submenu items  
 export const wytAppsItems = [
   { icon: QrCode, label: 'QR Generator', href: '/qr-generator' },
   { icon: Activity, label: 'DISC Assessment', href: '/assessment' },
+  { icon: Bot, label: 'AI Directory', href: '/ai-directory' },
 ];

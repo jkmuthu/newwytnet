@@ -35,16 +35,16 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
       active: location === "/wytapps"
     },
     {
-      href: "/hubs",
-      icon: Network,
-      label: "WytHubs",
-      active: location.startsWith("/hubs") || location.startsWith("/hub/")
+      href: "/features",
+      icon: Activity,
+      label: "Features",
+      active: location === "/features"
     },
     {
-      href: "/ai-directory", 
-      icon: Bot,
-      label: "AI Directory",
-      active: location === "/ai-directory"
+      href: "/pricing", 
+      icon: Smartphone,
+      label: "Pricing",
+      active: location === "/pricing"
     }
   ];
 

@@ -320,7 +320,7 @@ export default function Home() {
         </CardContent>
       </Card>
 
-      {/* Explore AI Directory from WytHubs */}
+      {/* Explore AI Directory WytApp */}
       <Card className="bg-gradient-to-br from-blue-500 to-cyan-600 border-0 shadow-xl hover:scale-105 transition-all rounded-2xl overflow-hidden cursor-pointer" onClick={() => navigate('/ai-directory')}>
         <CardContent className="p-6">
           <div className="flex items-start gap-3 mb-4">
@@ -328,7 +328,7 @@ export default function Home() {
               <BarChart3 className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-white mb-1">Explore Ai Directory from WytHubs</h3>
+              <h3 className="text-lg font-bold text-white mb-1">Explore AI Directory WytApp</h3>
               <p className="text-sm text-white/90">Discover AI tools and resources</p>
             </div>
           </div>
@@ -337,7 +337,7 @@ export default function Home() {
             className="w-full bg-white/90 hover:bg-white text-blue-600 font-bold shadow-lg rounded-xl"
             data-testid="button-ai-directory"
           >
-            Browse All Apps
+            Browse AI Directory
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         </CardContent>

@@ -18,7 +18,6 @@ import MyPosts from "./pages/my-posts";
 import MyWallet from "./pages/my-wallet";
 import MyPoints from "./pages/my-points";
 import MyWytAppsPage from "./pages/my-wytapps";
-import MyWytHubs from "./pages/my-wythubs";
 import WytAppWorkspace from "./pages/wytapp-workspace";
 import MyAccount from "./pages/my-account";
 import MyProfile from "./pages/my-profile";
@@ -1638,8 +1637,6 @@ function MyPanelCircle() {
   );
 }
 
-const MyPanelWytHubs = MyWytHubs;
-
 function MyPanelWytGames() {
   return (
     <div className="p-6">
@@ -1704,7 +1701,6 @@ export default function PanelRouter() {
       <Route path="/mypanel/points" component={MyPoints} />
       <Route path="/mypanel/wytapps/:slug" component={WytAppWorkspace} />
       <Route path="/mypanel/wytapps" component={MyPanelWytApps} />
-      <Route path="/mypanel/wythubs" component={MyPanelWytHubs} />
       <Route path="/mypanel/wytgames" component={MyPanelWytGames} />
       <Route path="/mypanel/profile" component={MyProfile} />
       <Route path="/mypanel/account" component={MyAccount} />

@@ -92,12 +92,6 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               badge: installedAppsCount > 0 ? { content: appsCountBadge, tone: 'default' as const } : undefined
             },
             { 
-              label: "My WytHubs", 
-              icon: Building, 
-              href: "/mypanel/wythubs", 
-              active: location === "/mypanel/wythubs" 
-            },
-            { 
               label: "My WytGames", 
               icon: Calendar, 
               href: "/mypanel/wytgames", 
