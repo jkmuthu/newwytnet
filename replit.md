@@ -1,6 +1,6 @@
 # Overview
 
-WytNet is built on "Engine," a white-label, multi-tenant SaaS infrastructure providing low-code tools for application building, content management, and cross-tenant hub creation. The platform offers CRUD builders, a CMS, app composition, hub aggregation, and the WytID Universal Identity & Validation system. WytNet.com serves as the first Hub built on the Engine, demonstrating the "first user of our own tools" philosophy. The platform includes white-label authentication, role-based access control, comprehensive multi-tenancy with Row Level Security, and a blockchain-anchored identity system, aiming to be a robust and scalable SaaS solution.
+WytNet is a white-label, multi-tenant SaaS platform built on "Engine," providing low-code tools for application building, content management, and cross-tenant hub creation. It offers CRUD builders, a CMS, app composition, hub aggregation, and the WytID Universal Identity & Validation system. WytNet.com serves as the initial hub, showcasing the platform's capabilities. The system features white-label authentication, role-based access control, comprehensive multi-tenancy with Row Level Security, and blockchain-anchored identity, designed for scalability and robustness.
 
 # User Preferences
 
@@ -10,77 +10,70 @@ Focus: Fully white-label multi-tenant SaaS platform with identity validation.
 # System Architecture
 
 ## Frontend Architecture
-The frontend uses React 18, TypeScript, Vite, Tailwind CSS, and shadcn/ui components. Wouter handles routing, and TanStack Query manages server state. It supports component-based builders for modules, CMS, apps, and hubs.
+The frontend is built with React 18, TypeScript, Vite, Tailwind CSS, and shadcn/ui. Wouter manages routing, and TanStack Query handles server state. It supports component-based builders for modules, CMS, applications, and hubs.
 
 ## Backend Architecture
-The backend is an Express.js application with TypeScript, providing RESTful APIs for authentication, dashboard, and CRUD operations. Authentication uses WytPass OAuth (Google, Email OTP, Email/Password) with session-based authentication. Role-based access control and tenant isolation are enforced at the database level.
+The backend is an Express.js application with TypeScript, providing RESTful APIs. Authentication uses WytPass OAuth (Google, Email OTP, Email/Password) with session-based authentication. Role-based access control and tenant isolation are enforced at the database level.
 
 ## Data Storage Architecture
-PostgreSQL is the primary database, using Drizzle ORM. Multi-tenancy is implemented via `tenant_id` columns and Row Level Security. Core tables manage tenants, users, models, content, applications, and hubs, with junction tables handling complex entity relationships.
-
-### Global Display ID System
-The platform uses a unified Display ID system providing human-readable, globally unique identifiers across all entities. Format: 2-letter prefix + zero-padded number (e.g., UR0000001, OR00001). All Display IDs are generated using PostgreSQL sequences for concurrency safety and uniqueness. Key prefixes: UR (Users), OR (Organizations), TN (Tenants), EN (Entities), MD (Modules), AP (Apps), HB (Hubs), ME (Media), WI (WytID), ND (Needs), OF (Offers), AS (Assessments), TM (Trademarks).
+PostgreSQL is the primary database, utilizing Drizzle ORM. Multi-tenancy is achieved through `tenant_id` columns and Row Level Security. A Global Display ID system provides human-readable, globally unique identifiers for all entities (e.g., UR0000001, OR00001).
 
 ## Modular Architecture
-The system is organized into self-contained packages (`kernel`, `builder`, `cms`, `appkit`, `hubkit`) within a monorepo. It features a context-based module system (WordPress-style) where modules are self-contained, context-aware components (Platform, Hub, App, Game) with dependency management and API exposure. This includes Engine-level (core infrastructure) and Hub-level modules (feature modules) and an auto-seeding system for module definitions.
+The system is organized into self-contained packages (`kernel`, `builder`, `cms`, `appkit`, `hubkit`) within a monorepo. It features a context-based module system (Platform, Hub, App, Game contexts) with dependency management and API exposure.
 
 ## Security Architecture
-Security includes PostgreSQL Row Level Security, session-based authentication with httpOnly cookies, role-based access control, CSRF protection, and Zod schema validation. A two-tier admin authentication system provides isolated sessions for Super Admins (Engine Portal) and Hub Admins (Hub Admin Portal), separate from regular user authentication, enabling triple session support.
-
-### Multi-Context Panel Switcher
-The platform supports seamless role/panel switching without re-authentication, similar to Google's account switcher. Users with multiple roles (e.g., Engine Admin, Hub Admin, Regular User) can switch between contexts from a unified dropdown menu. Each session type uses separate PostgreSQL session tables (`sessions`, `admin_sessions`, `hub_admin_sessions`) and distinct cookies (`connect.sid`, `admin.sid`, `hubadmin.sid`), allowing multiple active sessions simultaneously. The `/api/auth/contexts` endpoint intelligently detects all available panels based on user access rights - checking both active sessions and database records to show all panels a user has access to, even if they don't have an active session in that context. The switcher displays active contexts with visual highlighting and allows instant switching between panels. Sessions persist for 7 days until explicit logout.
+Security measures include PostgreSQL Row Level Security, session-based authentication with httpOnly cookies, role-based access control, CSRF protection, and Zod schema validation. A two-tier admin authentication system provides isolated sessions for Super Admins and Hub Admins, supporting triple session management and a multi-context panel switcher for seamless role transitions.
 
 ## UI/UX Decisions
-The platform features modern UI elements like animated gradient backgrounds, glassmorphism cards, micro animations, and responsive designs. UTM tracking is standardized for external links.
-
-### Mobile-First Responsive Design (October 2025)
-Complete mobile optimization across all admin portals and components. Engine Admin Portal features dedicated `AdminMobileLayout` component with sheet-based sidebar navigation, mobile-optimized header, and bottom navigation tabs. WytAI Agent fully responsive with mobile-first approach: floating button positioned at `bottom-4 right-4` (48px × 48px) on mobile vs `bottom-6 right-6` (56px × 56px) on desktop, chat modal fullscreen on mobile (`inset-4`, `h-[calc(100vh-2rem)]`) vs fixed dimensions on desktop (`w-[420px]`, `h-[650px]`), scaled typography and spacing (`text-sm`, `p-3` on mobile vs `text-base`, `p-4` on desktop), and touch-friendly target sizes. All responsive breakpoints use Tailwind's `sm:` (640px+) prefix for desktop-specific styles.
+The platform incorporates modern UI elements like animated gradient backgrounds, glassmorphism cards, micro animations, and responsive designs. It features a mobile-first responsive design across all admin portals and the WytAI Agent, with dedicated mobile layouts and optimized components. The public portal navigation structure has been updated for desktop, tablet, and mobile views, emphasizing "WytApps" over "WytHubs."
 
 ## Key Features & Implementations
-- **AI App Builder**: An admin-only, OpenAI-powered tool for natural language app creation.
-- **White-label API Proxy Gateway**: A unified API gateway that proxies third-party services under WytNet branding, handling request/response transformation, credential management, and error handling.
-- **Enhanced Module & App Management System**: Includes comprehensive version control (version numbers, history, changelogs), edit history tracking, custom route management with redirects, and context-based access control (`restrictedTo` fields for Engine-Only, Hub-Only, App-Only, Game-Only access).
-- **AI-Assisted Module & App Improvement Workflow**: Integrates GPT-4 powered AI assistance into management interfaces for conversational support, quick actions (e.g., "Suggest Title," "Draft Changelog"), and one-click application of AI recommendations.
-- **White-Label Multi-Domain Hub System** (October 2025): Comprehensive platform hub management with multi-domain routing (custom domains, subdomains, path-based), SEO configuration, branding customization, domain verification, and hub-level RBAC. Supports WytNet.com as primary hub (PH0000001) with verified custom domain. Includes hub routing middleware for automatic domain detection and context propagation.
-- **Granular Roles & Permissions Management System** (October 2025): Complete engine-level RBAC with 64 fine-grained permissions across 16 resource sections (Users, Organizations, Entities, DataSets, Media, Modules, Apps, Hubs, CMS, Themes, Integrations, Pricing, Help & Support, Analytics, Roles & Permissions, System & Security). Features table-based permission matrix UI with CRUD checkboxes (View, Create, Edit, Delete), idempotent seeding service, 8 default roles (Super Admin, Admin, Viewer, Developer, Data Manager, Finance Manager, Hub Manager, Analyst), and protected API routes with `requirePermission` middleware. Role-specific permissions: Developer (modules/apps/themes/integrations CRUD), Data Manager (datasets/entities/media CRUD), Finance Manager (pricing/analytics CRUD + view-only users/orgs), Hub Manager (hubs/cms CRUD), Analyst (view-only all resources). Permissions identified by resource-action pairs (e.g., 'roles-permissions:view').
-- **WytAI Agent** (October 2025): Intelligent AI assistant embedded in Engine Admin portal for conversational platform management. Floating chat widget (bottom-right, collapsible, mobile-responsive) with voice input/output supporting Tamil and English as default. Multi-provider AI support with 5 model options: GPT-4o, GPT-4o Mini (OpenAI), Claude 3.5 Sonnet (Anthropic), Gemini 2.0 Flash, and Gemini 1.5 Pro (Google). Role-based access control restricts usage to Super Admins and Admins only. Comprehensive rate limiting with daily limit of 100 requests and monthly limit of 2000 requests per user, tracked in `wytai_usage` database table. Backend APIs at `/api/admin/wytai/chat` and `/api/admin/wytai/chat/stream` protected by adminAuthMiddleware with identical security checks (authentication, role verification, rate limiting, usage tracking). Features comprehensive settings page with model selector, real-time usage stats display (daily/monthly breakdown), Tamil documentation (capabilities, limitations, usage guidelines), keyboard shortcuts (Ctrl+K toggle, Esc close), attachment support (client-side preview with file metadata sent to GPT), Web Speech API integration for hands-free Tamil voice commands (ta-IN language), and Text-to-Speech for Tamil responses. Error handling for ACCESS_DENIED and RATE_LIMIT_EXCEEDED with user-friendly toast notifications. Leverages Engine context awareness (modules, apps, hubs) to provide actionable suggestions for improving existing features. Usage tracking logs all API calls with model, provider, token counts, and IP address for security compliance. Clear separation of responsibilities: WytAI for frontend/UI improvements, Replit Agent for backend/infrastructure changes.
-- **Audit Logs System** (October 2025): Comprehensive audit logging infrastructure tracking all administrative actions across the Engine admin portal. Features auditLogService with filtering, pagination, search, and user activity tracking. Admin UI at `/engine/audit-logs` provides real-time monitoring with stats cards (total events, active users, top actions), advanced filtering (action type, resource, date range, search), and detailed activity timeline with timestamps, IP addresses, and user agents. API endpoints protected by adminAuthMiddleware: `/api/admin/audit-logs` (paginated logs), `/api/admin/audit-logs/stats` (activity statistics), `/api/admin/audit-logs/user/:userId` (user-specific activity). Database schema stores tenantId, userId, action, resource, resourceId, details (JSONB), ipAddress, userAgent, and timestamps with indexed queries for performance. Super Admin-only access for security compliance and regulatory requirements.
-- **Global Platform Settings System** (October 2025): Comprehensive configuration management system for platform-wide settings. Features `platform_settings` table with key-value pattern supporting string/number/boolean/json types, category-based organization (general, email, payment, security, api), and public/editable flags. API routes at `/api/admin/settings` with full Zod validation, type-safe value parsing, read-only setting protection (403 if not isEditable), and key uniqueness enforcement. Frontend UI at `/engine/global-settings` provides category-based tabbed interface with type-aware inputs (Switch for boolean, Textarea for JSON, Input for string/number), JSON validation with error messages, and real-time updates. Idempotent seeding service creates 13 default settings covering all categories. Protected by `system-security` permission checks.
-- **Organizations Management API** (October 2025): Full CRUD API for managing organizations across the platform. Enhanced schema with industry, employees, website, email, phone, location fields for complete business profiles. API endpoints at `/api/admin/organizations` with adminAuthMiddleware + permission checks. Integrated into Tenants page replacing mock data, enabling real organization management.
-- **Mock Data Cleanup** (October 2025): Comprehensive cleanup of all mock/dummy data across Engine admin portal. Replaced inline mock components (AdminLogs, AdminAI) with real database-backed pages (system-logs-real.tsx using audit_logs, ai-management.tsx using platform_integrations). Connected AppManagement page to real `/api/admin/apps` endpoint. Created Engine admin media API at `/api/admin/media` with view/delete permissions and stats endpoint (note: frontend UI wiring for Media page pending completion). All critical admin features now connected to real database: Dashboard, Users, Organizations/Tenants, Entities, Modules, Hubs, Integrations, Themes, Global Settings, Roles & Permissions, Audit Logs, WytAI, WytPoints, Datasets, SEO, Help & Support, App Management, Geo-Regulatory, Backups.
-- **Progressive Web App (PWA) Support** (October 2025): Full PWA implementation with service worker (`sw.js`), manifest.json, and icon set (72px-512px) for offline functionality and installable app experience. Service worker implements cache-first strategy for static assets, network-first for API calls, and fallback offline pages. Includes background sync for assessment submissions, RealBro data, and WytDuty updates. Push notification support with custom actions. PWA assets properly configured in `client/public/` directory for Vite serving in both development and production. App manifest includes shortcuts to key features (DISC Assessment, RealBro, WytDuty, Dashboard) and comprehensive metadata for app stores.
+- **AI App Builder**: An OpenAI-powered tool for natural language app creation (admin-only).
+- **White-label API Proxy Gateway**: Unifies third-party service integration under WytNet branding.
+- **Enhanced Module & App Management System**: Includes version control, edit history, custom route management, and context-based access control.
+- **AI-Assisted Module & App Improvement Workflow**: Integrates GPT-4 for conversational support and recommendations.
+- **White-Label Multi-Domain Hub System**: Manages platform hubs with multi-domain routing, SEO, branding, and hub-level RBAC.
+- **Granular Roles & Permissions Management System**: Engine-level RBAC with 64 fine-grained permissions across 16 resource sections, 8 default roles, and protected API routes.
+- **WytAI Agent**: An intelligent AI assistant embedded in the Engine Admin portal, offering conversational platform management via a floating chat widget. It supports multiple AI models (GPT-4o, Claude 3.5 Sonnet, Gemini 2.0), voice input/output in Tamil and English, rate limiting, and comprehensive usage tracking.
+- **Audit Logs System**: Tracks all administrative actions with filtering, pagination, search, and detailed activity timelines accessible via an admin UI.
+- **Global Platform Settings System**: A comprehensive configuration management system for platform-wide settings stored in a key-value `platform_settings` table, managed via API and a dedicated frontend UI.
+- **Organizations Management API**: Full CRUD API for managing organizations with enhanced schema, integrated into the Tenants page.
+- **Mock Data Cleanup**: Replaced all mock data with real database-backed implementations across critical admin features.
+- **Progressive Web App (PWA) Support**: Full PWA implementation including service worker, manifest, icons, offline functionality, background sync, and push notifications.
 
 # External Dependencies
 
 ## Database Integration
 - **Neon Database**: Serverless PostgreSQL.
-- **Drizzle ORM**: Type-safe ORM for PostgreSQL.
+- **Drizzle ORM**: Type-safe ORM.
 
 ## Authentication Services
-- **WytPass OAuth**: Custom multi-method authentication system.
-- **Google OAuth**: Social login integration.
+- **WytPass OAuth**: Custom multi-method authentication.
+- **Google OAuth**: Social login.
 - **MSG91 Email OTP**: Passwordless email authentication.
-- **connect-pg-simple**: PostgreSQL-backed session management.
+- **connect-pg-simple**: PostgreSQL session management.
 
 ## UI and Styling Framework
 - **shadcn/ui**: React component library.
-- **Tailwind CSS**: Utility-first CSS framework.
+- **Tailwind CSS**: Utility-first CSS.
 - **Radix UI**: Accessible component primitives.
 
 ## State Management and API Integration
-- **TanStack Query**: Server state management and caching.
-- **React Hook Form**: Form handling with Zod validation.
-- **Wouter**: Lightweight client-side routing.
+- **TanStack Query**: Server state management.
+- **React Hook Form**: Form handling with Zod.
+- **Wouter**: Client-side routing.
 
 ## Development and Build Tools
-- **Vite**: Fast build tool and development server.
+- **Vite**: Build tool and dev server.
 - **TypeScript**: Type-safe language.
-- **ESBuild**: Fast JavaScript bundler.
+- **ESBuild**: JavaScript bundler.
 
 ## AI and Machine Learning
-- **OpenAI API**: GPT-4 integration for AI App Builder.
+- **OpenAI API**: GPT-4 integration.
+- **Anthropic API**: Claude 3.5 Sonnet integration.
+- **Google AI Studio API**: Gemini 2.0 Flash and 1.5 Pro integration.
 
 ## Runtime and Deployment
 - **Node.js**: JavaScript runtime.
 - **Express.js**: Web application framework.
-- **ws library**: WebSocket support for real-time capabilities.
+- **ws library**: WebSocket support.
