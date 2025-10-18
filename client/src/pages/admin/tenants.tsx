@@ -146,7 +146,7 @@ export default function AdminTenants() {
 
           {/* Trash View for deleted organizations */}
           {orgStatusFilter === 'trash' ? (
-            <TrashView<Organization>
+            <TrashView
               items={trashOrgsData?.tenants || []}
               isLoading={isLoadingTrash}
               entityType="Organization"

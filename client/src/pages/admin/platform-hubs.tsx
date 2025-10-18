@@ -49,6 +49,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TrashView } from "@/components/shared/TrashView";
 
 interface PlatformHub {
   id: string;
@@ -69,6 +70,9 @@ interface PlatformHub {
   admins?: HubAdmin[];
   adminCount?: number;
   createdAt: string;
+  deletedAt: string | null;
+  deletedBy: string | null;
+  deleteReason: string | null;
 }
 
 interface HubAdmin {
@@ -103,10 +107,48 @@ export default function AdminPlatformHubs() {
   const [selectedHub, setSelectedHub] = useState<PlatformHub | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [createHubOpen, setCreateHubOpen] = useState(false);
+  const [hubStatusFilter, setHubStatusFilter] = useState<'active' | 'trash'>('active');
 
   // Fetch platform hubs
   const { data: hubsData, isLoading: hubsLoading } = useQuery<{ success: boolean; hubs: PlatformHub[] }>({
     queryKey: ["/api/admin/platform-hubs"],
+  });
+
+  // Trash management queries and mutations
+  const { data: trashHubsData, isLoading: isLoadingTrash } = useQuery<{
+    success: boolean;
+    hubs: PlatformHub[];
+    count: number;
+  }>({
+    queryKey: ['/api/admin/trash/hubs'],
+  });
+
+  const restoreHubMutation = useMutation({
+    mutationFn: async (hubId: string) => {
+      return await apiRequest('POST', `/api/admin/trash/hubs/${hubId}/restore`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/trash/hubs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/platform-hubs'] });
+      toast({ title: "Success", description: "Hub restored successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Failed to restore hub", variant: "destructive" });
+    }
+  });
+
+  const permanentlyDeleteHubMutation = useMutation({
+    mutationFn: async (hubId: string) => {
+      return await apiRequest('DELETE', `/api/admin/trash/hubs/${hubId}/permanent`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/trash/hubs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/platform-hubs'] });
+      toast({ title: "Success", description: "Hub permanently deleted" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Failed to delete hub", variant: "destructive" });
+    }
   });
 
   // Fetch all users (for admin assignment)
@@ -219,31 +261,72 @@ export default function AdminPlatformHubs() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>All Hubs ({hubs.length})</CardTitle>
-              <CardDescription>View and manage hub settings and administrators</CardDescription>
+              <CardTitle>
+                {hubStatusFilter === 'trash' ? 'Trash' : 'All Hubs'} 
+                ({hubStatusFilter === 'trash' ? (trashHubsData?.count || 0) : hubs.length})
+              </CardTitle>
+              <CardDescription>
+                {hubStatusFilter === 'trash' 
+                  ? 'Deleted hubs - will be permanently removed after 90 days'
+                  : 'View and manage hub settings and administrators'
+                }
+              </CardDescription>
             </div>
-            <div className="relative w-64">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search hubs..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-                data-testid="input-search-hubs"
-              />
-            </div>
+            {hubStatusFilter === 'active' && (
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search hubs..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                  data-testid="input-search-hubs"
+                />
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent>
-          {hubsLoading ? (
-            <div className="text-center py-8">Loading hubs...</div>
-          ) : filteredHubs.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No hubs found</p>
-            </div>
+          {/* Status Filter Tabs */}
+          <Tabs value={hubStatusFilter} onValueChange={(value) => setHubStatusFilter(value as any)} className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="active" data-testid="tab-hubs-active">
+                Active ({hubs.length})
+              </TabsTrigger>
+              <TabsTrigger value="trash" data-testid="tab-hubs-trash">
+                Trash ({trashHubsData?.count || 0})
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {/* Trash View for deleted hubs */}
+          {hubStatusFilter === 'trash' ? (
+            <TrashView
+              items={trashHubsData?.hubs || []}
+              isLoading={isLoadingTrash}
+              entityType="Hub"
+              onRestore={async (id: string) => { await restoreHubMutation.mutateAsync(id); }}
+              onPermanentDelete={async (id: string) => { await permanentlyDeleteHubMutation.mutateAsync(id); }}
+              renderItemName={(hub: PlatformHub) => hub.name}
+              renderItemDetails={(hub: PlatformHub) => (
+                <div className="text-sm text-muted-foreground">
+                  {hub.displayId && <span className="font-mono">{hub.displayId}</span>}
+                  {hub.slug && <span className="ml-2">• /{hub.slug}</span>}
+                  {hub.subdomain && <span className="ml-2">• {hub.subdomain}.wytnet.com</span>}
+                </div>
+              )}
+            />
           ) : (
-            <Table>
+            <>
+              {hubsLoading ? (
+                <div className="text-center py-8">Loading hubs...</div>
+              ) : filteredHubs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>No hubs found</p>
+                </div>
+              ) : (
+                <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Display ID</TableHead>
@@ -325,7 +408,9 @@ export default function AdminPlatformHubs() {
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
+                </Table>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
