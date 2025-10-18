@@ -65,12 +65,18 @@ export default function UniversalAuthHeader() {
   // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      // Try all logout endpoints
-      await Promise.allSettled([
-        fetch('/api/logout', { method: 'POST', credentials: 'include' }),
-        fetch('/api/admin/logout', { method: 'POST', credentials: 'include' }),
-        fetch('/api/hub-admin/logout', { method: 'POST', credentials: 'include' })
+      // Try all logout endpoints - one will succeed based on active session
+      const results = await Promise.allSettled([
+        fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }),
+        fetch('/api/auth/admin/logout', { method: 'POST', credentials: 'include' }),
+        fetch('/api/hub-admin/session', { method: 'DELETE', credentials: 'include' })
       ]);
+      
+      // Check if at least one logout succeeded
+      const anySucceeded = results.some(result => result.status === 'fulfilled' && result.value.ok);
+      if (!anySucceeded) {
+        throw new Error('All logout attempts failed');
+      }
     },
     onSuccess: () => {
       queryClient.clear();
@@ -78,6 +84,16 @@ export default function UniversalAuthHeader() {
       toast({
         title: "Logged out successfully",
         description: "See you soon!",
+      });
+    },
+    onError: () => {
+      // Even if logout API fails, clear client state and redirect
+      queryClient.clear();
+      setLocation('/');
+      toast({
+        title: "Session cleared",
+        description: "You have been logged out locally",
+        variant: "default",
       });
     },
   });
