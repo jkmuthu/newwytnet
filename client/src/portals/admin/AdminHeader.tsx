@@ -1,12 +1,15 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Menu, User, Settings, LogOut, Shield, Activity, HelpCircle, Bell, Search, Home, Layers } from "lucide-react";
+import { Menu, User, Settings, LogOut, Shield, Activity, HelpCircle, Bell, Search, Home, Layers, Moon, Sun } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import ContextAwareLogo from "@/components/shared/ContextAwareLogo";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 interface AdminHeaderProps {
   onToggleSidebar: () => void;
@@ -25,9 +28,28 @@ export default function AdminHeader({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [location, setLocation] = useLocation();
+  const [isDark, setIsDark] = useState(false);
+
+  // Initialize theme from localStorage
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const shouldBeDark = savedTheme === 'dark' || (!savedTheme && systemPrefersDark);
+    
+    setIsDark(shouldBeDark);
+    document.documentElement.classList.toggle('dark', shouldBeDark);
+  }, []);
+
+  // Toggle theme function
+  const toggleTheme = () => {
+    const newTheme = !isDark;
+    setIsDark(newTheme);
+    document.documentElement.classList.toggle('dark', newTheme);
+    localStorage.setItem('theme', newTheme ? 'dark' : 'light');
+  };
 
   // Fetch available contexts/panels
-  const { data: contextsData } = useQuery({
+  const { data: contextsData } = useQuery<{ contexts: any[]; count: number }>({
     queryKey: ['/api/auth/contexts'],
     refetchInterval: 30000, // Refresh every 30 seconds
   });
@@ -83,27 +105,37 @@ export default function AdminHeader({
     <header className="sticky top-0 z-40 w-full border-b border-red-200 dark:border-red-800 bg-white dark:bg-gray-900 shadow-sm">
       <div className="px-6">
         <div className="flex h-16 items-center justify-between">
-          {/* Left section - Admin branding */}
-          <div className="flex items-center space-x-4">
+          {/* Left section - Theme Toggle + Sidebar Toggle + Logo */}
+          <div className="flex items-center space-x-3">
+            {/* Theme Toggle */}
+            <Button
+              onClick={toggleTheme}
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 p-0"
+              data-testid="button-theme-toggle"
+              aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+            >
+              {isDark ? (
+                <Sun className="h-5 w-5 text-yellow-500" />
+              ) : (
+                <Moon className="h-5 w-5 text-slate-600" />
+              )}
+            </Button>
+
+            {/* Sidebar Toggle (Mobile) */}
             <Button
               variant="ghost"
               size="sm"
               onClick={onToggleSidebar}
-              className="lg:hidden"
+              className="lg:hidden h-9 w-9 p-0"
               data-testid="toggle-admin-sidebar"
             >
               <Menu className="h-5 w-5" />
             </Button>
 
-            <div className="flex items-center space-x-3">
-              <Link href="/engine" className="flex items-center">
-                <img 
-                  src="/wytnet-logo.png" 
-                  alt="WytNet" 
-                  className="h-8 w-auto"
-                />
-              </Link>
-            </div>
+            {/* Logo */}
+            <ContextAwareLogo context="engine" className="h-8 w-auto" href="/engine" />
           </div>
 
           {/* Center section - System status indicator */}
@@ -116,36 +148,15 @@ export default function AdminHeader({
             </div>
           </div>
 
-          {/* Right section - Admin actions + Profile */}
-          <div className="flex items-center space-x-3">
-            {/* Quick Actions */}
+          {/* Right section - Notifications + User Menu */}
+          <div className="flex items-center space-x-2">
+            {/* Notification Bell */}
+            <NotificationBell />
+
+            {/* Quick Actions (kept minimal) */}
             <Link href="/">
-              <Button variant="ghost" size="sm" data-testid="admin-home">
+              <Button variant="ghost" size="sm" className="h-9 w-9 p-0" data-testid="admin-home">
                 <Home className="h-5 w-5" />
-              </Button>
-            </Link>
-
-            <Link href="/engine/search">
-              <Button variant="ghost" size="sm" data-testid="admin-search">
-                <Search className="h-5 w-5" />
-              </Button>
-            </Link>
-
-            <Link href="/engine/notifications">
-              <Button variant="ghost" size="sm" data-testid="admin-notifications">
-                <Bell className="h-5 w-5" />
-              </Button>
-            </Link>
-
-            <Link href="/engine/system-status">
-              <Button variant="ghost" size="sm" data-testid="admin-system-monitor">
-                <Activity className="h-5 w-5" />
-              </Button>
-            </Link>
-
-            <Link href="/engine/help">
-              <Button variant="ghost" size="sm" data-testid="admin-help">
-                <HelpCircle className="h-5 w-5" />
               </Button>
             </Link>
 
