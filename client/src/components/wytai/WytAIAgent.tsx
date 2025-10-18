@@ -655,34 +655,40 @@ export default function WytAIAgent() {
     }
   };
 
-  if (!isOpen) {
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={() => setIsOpen(true)}
-              className={`fixed ${isMobile ? 'bottom-4 right-4 h-12 w-12' : 'bottom-6 right-6 h-14 w-14'} rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 z-50`}
-              data-testid="button-open-wytai"
-            >
-              <Sparkles className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} text-white`} />
-            </Button>
-          </TooltipTrigger>
-          {!isMobile && (
-            <TooltipContent side="left">
-              <p>Press <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs">Ctrl+K</kbd> to open WytAI</p>
-            </TooltipContent>
-          )}
-        </Tooltip>
-      </TooltipProvider>
-    );
-  }
-
   // Group conversations by date for hamburger menu
   const groupedConversations = groupConversationsByDate(conversations);
 
   return (
-    <Card
+    <>
+      {/* Floating Button - Always visible when chat is closed */}
+      {!isOpen && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsOpen(true);
+                }}
+                className={`fixed ${isMobile ? 'bottom-4 right-4 h-12 w-12' : 'bottom-6 right-6 h-14 w-14'} rounded-full shadow-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 z-50`}
+                data-testid="button-open-wytai"
+              >
+                <Sparkles className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} text-white`} />
+              </Button>
+            </TooltipTrigger>
+            {!isMobile && (
+              <TooltipContent side="left">
+                <p>Press <kbd className="px-1.5 py-0.5 bg-white/20 rounded text-xs">Ctrl+K</kbd> to open WytAI</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
+      )}
+
+      {/* Chat Window - Visible when open */}
+      {isOpen && (
+        <Card
       className={`fixed ${
         isMobile 
           ? 'inset-0 rounded-none' 
@@ -1364,5 +1370,7 @@ export default function WytAIAgent() {
         </>
       )}
     </Card>
+      )}
+    </>
   );
 }
