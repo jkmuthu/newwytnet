@@ -106,13 +106,20 @@ async function checkWytAIAccess(userId: string): Promise<boolean> {
 }
 
 // System prompt for WytAI Agent with Engine context
-const getEngineContextPrompt = (engineData: any) => `You are WytAI Agent, an intelligent assistant built into the WytNet Engine Admin Panel. You help administrators improve and manage their platform.
+const getEngineContextPrompt = (engineData: any, mode: 'free' | 'guided' = 'free', pageContext?: { path: string; pageName: string }) => {
+  const basePrompt = `You are WytAI Agent, an intelligent assistant built into the WytNet Engine Admin Panel. You help administrators improve and manage their platform.
+
+**Current Mode:** ${mode === 'guided' ? 'GUIDED MODE - Ask structured questions to understand user needs systematically' : 'FREE CHAT - Open conversation, respond to user queries naturally'}
+
+**Page Context:** ${pageContext ? `User is currently on "${pageContext.pageName}" (${pageContext.path})` : 'Unknown page'}
+${pageContext ? `- Provide page-specific suggestions and help related to ${pageContext.pageName}\n- Understand the user is working on this specific admin section` : ''}
 
 **Your Capabilities:**
 - Suggest improvements to modules, apps, and hubs
 - Generate code snippets for React components and Express APIs
 - Help with UI/UX enhancements
 - Provide guidance on WytNet architecture
+- Answer questions about the current page and its features
 
 **Engine Context:**
 - **Modules**: ${engineData.modulesCount} modules available (${engineData.modules.slice(0, 5).map((m: any) => m.name).join(', ')}${engineData.modules.length > 5 ? '...' : ''})
@@ -136,10 +143,23 @@ const getEngineContextPrompt = (engineData: any) => `You are WytAI Agent, an int
 3. Do NOT suggest backend/database schema changes
 4. Provide code snippets when helpful`;
 
+  if (mode === 'guided') {
+    return basePrompt + `\n\n**GUIDED MODE INSTRUCTIONS:**
+- Start by asking ONE clear question to understand what the user wants to achieve
+- Wait for their answer before asking the next question
+- Ask follow-up questions based on their responses
+- Keep questions simple and focused
+- After gathering enough information, provide comprehensive guidance
+- Example flow: "What would you like to improve?" → "Which specific aspect?" → "What's your goal?" → [Provide solution]`;
+  }
+
+  return basePrompt;
+};
+
 // POST /api/admin/wytai/chat - Chat with WytAI Agent
 router.post("/admin/wytai/chat", adminAuthMiddleware, async (req, res) => {
   try {
-    const { messages, model } = req.body;
+    const { messages, model, mode, pageContext } = req.body;
     const userId = (req as any).principal?.userId || (req as any).user?.id;
     const ipAddress = req.ip || req.socket.remoteAddress;
 
@@ -155,7 +175,7 @@ router.post("/admin/wytai/chat", adminAuthMiddleware, async (req, res) => {
     const hasAccess = await checkWytAIAccess(userId);
     if (!hasAccess) {
       return res.status(403).json({ 
-        error: "Access denied. WytAI is only available for Super Admins and Admins.",
+        error: "Access denied. WytAI Agent is only available for Super Admins.",
         code: "ACCESS_DENIED"
       });
     }
@@ -191,7 +211,7 @@ router.post("/admin/wytai/chat", adminAuthMiddleware, async (req, res) => {
     };
 
     // Prepare messages with system context
-    const systemPrompt = getEngineContextPrompt(engineData);
+    const systemPrompt = getEngineContextPrompt(engineData, mode || 'free', pageContext);
     const fullMessages = [
       { role: "system" as const, content: systemPrompt },
       ...messages,
@@ -230,7 +250,7 @@ router.post("/admin/wytai/chat", adminAuthMiddleware, async (req, res) => {
 // POST /api/admin/wytai/chat/stream - Streaming chat with WytAI Agent
 router.post("/admin/wytai/chat/stream", adminAuthMiddleware, async (req, res) => {
   try {
-    const { messages, model } = req.body;
+    const { messages, model, mode, pageContext } = req.body;
     const userId = (req as any).principal?.userId || (req as any).user?.id;
     const ipAddress = req.ip || req.socket.remoteAddress;
 
@@ -246,7 +266,7 @@ router.post("/admin/wytai/chat/stream", adminAuthMiddleware, async (req, res) =>
     const hasAccess = await checkWytAIAccess(userId);
     if (!hasAccess) {
       return res.status(403).json({ 
-        error: "Access denied. WytAI is only available for Super Admins and Admins.",
+        error: "Access denied. WytAI Agent is only available for Super Admins.",
         code: "ACCESS_DENIED"
       });
     }
@@ -282,7 +302,7 @@ router.post("/admin/wytai/chat/stream", adminAuthMiddleware, async (req, res) =>
     };
 
     // Prepare messages with system context
-    const systemPrompt = getEngineContextPrompt(engineData);
+    const systemPrompt = getEngineContextPrompt(engineData, mode || 'free', pageContext);
     const fullMessages = [
       { role: "system" as const, content: systemPrompt },
       ...messages,
