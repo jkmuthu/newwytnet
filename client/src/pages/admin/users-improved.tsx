@@ -273,8 +273,9 @@ export default function AdminUsersImproved() {
           </DialogHeader>
 
           <Tabs defaultValue="overview" className="mt-4">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="roles" data-testid="tab-access-roles">Access Roles</TabsTrigger>
               <TabsTrigger value="activity">Activity</TabsTrigger>
               <TabsTrigger value="analysis">Analysis</TabsTrigger>
               <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -345,6 +346,86 @@ export default function AdminUsersImproved() {
                     </div>
                     <Progress value={selectedUser?.profileCompletionPercentage || 0} className="h-3" />
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="roles" className="space-y-4 mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Access Roles & Permissions
+                  </CardTitle>
+                  <CardDescription>
+                    Panel access levels for this user across WytNet platform
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* WytNet User Role */}
+                  <div className="flex items-center justify-between p-4 border rounded-lg" data-testid="role-wytnet-user">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                        <UsersIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">WytNet User</h3>
+                        <p className="text-sm text-muted-foreground">Access to public portal and personal dashboard</p>
+                      </div>
+                    </div>
+                    <Badge variant="default" className="bg-green-600">
+                      Active
+                    </Badge>
+                  </div>
+
+                  {/* Hub Admin Role */}
+                  <div className="flex items-center justify-between p-4 border rounded-lg" data-testid="role-hub-admin">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                        <Shield className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">WytNet Hub Admin</h3>
+                        <p className="text-sm text-muted-foreground">Manage hub content, settings, and users</p>
+                      </div>
+                    </div>
+                    <Badge variant={selectedUser?.role === 'hub_admin' || selectedUser?.role === 'admin' ? "default" : "secondary"} 
+                           className={selectedUser?.role === 'hub_admin' || selectedUser?.role === 'admin' ? "bg-green-600" : ""}>
+                      {selectedUser?.role === 'hub_admin' || selectedUser?.role === 'admin' ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+
+                  {/* Engine Super Admin Role */}
+                  <div className="flex items-center justify-between p-4 border rounded-lg" data-testid="role-engine-admin">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
+                        <Shield className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-medium">WytEngine Super Admin</h3>
+                        <p className="text-sm text-muted-foreground">Full platform access and control</p>
+                      </div>
+                    </div>
+                    <Badge variant={selectedUser?.isSuperAdmin ? "default" : "secondary"}
+                           className={selectedUser?.isSuperAdmin ? "bg-green-600" : ""}>
+                      {selectedUser?.isSuperAdmin ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+
+                  {/* Additional Info */}
+                  {selectedUser?.isSuperAdmin && (
+                    <div className="p-4 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <Shield className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                        <div>
+                          <h4 className="font-medium text-yellow-900 dark:text-yellow-100">Super Admin Access</h4>
+                          <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                            This user has unrestricted access to all platform features including Engine Admin panel, Hub management, user controls, and system settings.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

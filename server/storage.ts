@@ -82,6 +82,27 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  
+  // Trash management operations
+  getDeletedUsers(): Promise<User[]>;
+  softDeleteUser(id: string, deletedBy: string, reason?: string): Promise<User | undefined>;
+  restoreUser(id: string, restoredBy: string): Promise<User | undefined>;
+  permanentlyDeleteUser(id: string, deletedBy: string): Promise<boolean>;
+  
+  getDeletedTenants(): Promise<Tenant[]>;
+  softDeleteTenant(id: string, deletedBy: string, reason?: string): Promise<Tenant | undefined>;
+  restoreTenant(id: string, restoredBy: string): Promise<Tenant | undefined>;
+  permanentlyDeleteTenant(id: string, deletedBy: string): Promise<boolean>;
+  
+  getDeletedHubs(): Promise<Hub[]>;
+  softDeleteHub(id: string, deletedBy: string, reason?: string): Promise<Hub | undefined>;
+  restoreHub(id: string, restoredBy: string): Promise<Hub | undefined>;
+  permanentlyDeleteHub(id: string, deletedBy: string): Promise<boolean>;
+  
+  getDeletedApps(): Promise<App[]>;
+  softDeleteApp(id: string, deletedBy: string, reason?: string): Promise<App | undefined>;
+  restoreApp(id: string, restoredBy: string): Promise<App | undefined>;
+  permanentlyDeleteApp(id: string, deletedBy: string): Promise<boolean>;
 
   // Dashboard and analytics
   getDashboardStats(tenantId: string): Promise<{
@@ -243,16 +264,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    // Check if user already exists
-    const existingUser = await this.getUser(userData.id!);
+    // Check if user already exists (including soft-deleted users)
+    const [existingUser] = await db.select().from(users).where(eq(users.id, userData.id!));
+    
     if (existingUser) {
+      // If user was soft-deleted, restore them by clearing deletion fields
+      const updateData: any = {
+        ...userData,
+        updatedAt: new Date(),
+      };
+      
+      if (existingUser.deletedAt) {
+        // Restore soft-deleted user
+        updateData.deletedAt = null;
+        updateData.deletedBy = null;
+        updateData.deleteReason = null;
+      }
+      
       // Update existing user
       const [user] = await db
         .update(users)
-        .set({
-          ...userData,
-          updatedAt: new Date(),
-        })
+        .set(updateData)
         .where(eq(users.id, userData.id!))
         .returning();
       return user;
@@ -1309,6 +1341,294 @@ export class DatabaseStorage implements IStorage {
           eq(userRoles.roleId, roleId)
         )
       );
+  }
+  
+  // Trash Management - Users
+  async getDeletedUsers(): Promise<User[]> {
+    return await db.select().from(users).where(isNotNull(users.deletedAt)).orderBy(desc(users.deletedAt));
+  }
+  
+  async softDeleteUser(id: string, deletedBy: string, reason?: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({
+        deletedAt: new Date(),
+        deletedBy,
+        deleteReason: reason || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning();
+    
+    if (user) {
+      await this.logActivity({
+        userId: deletedBy,
+        action: 'user_soft_deleted',
+        resource: 'user',
+        resourceId: id,
+        details: { reason },
+      });
+    }
+    
+    return user;
+  }
+  
+  async restoreUser(id: string, restoredBy: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({
+        deletedAt: null,
+        deletedBy: null,
+        deleteReason: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning();
+    
+    if (user) {
+      await this.logActivity({
+        userId: restoredBy,
+        action: 'user_restored',
+        resource: 'user',
+        resourceId: id,
+        details: { restoredBy },
+      });
+    }
+    
+    return user;
+  }
+  
+  async permanentlyDeleteUser(id: string, deletedBy: string): Promise<boolean> {
+    const result = await db.delete(users).where(eq(users.id, id));
+    const success = (result.rowCount ?? 0) > 0;
+    
+    if (success) {
+      await this.logActivity({
+        userId: deletedBy,
+        action: 'user_permanently_deleted',
+        resource: 'user',
+        resourceId: id,
+        details: { deletedBy },
+      });
+    }
+    
+    return success;
+  }
+  
+  // Trash Management - Tenants
+  async getDeletedTenants(): Promise<Tenant[]> {
+    return await db.select().from(tenants).where(isNotNull(tenants.deletedAt)).orderBy(desc(tenants.deletedAt));
+  }
+  
+  async softDeleteTenant(id: string, deletedBy: string, reason?: string): Promise<Tenant | undefined> {
+    const [tenant] = await db
+      .update(tenants)
+      .set({
+        deletedAt: new Date(),
+        deletedBy,
+        deleteReason: reason || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(tenants.id, id))
+      .returning();
+    
+    if (tenant) {
+      await this.logActivity({
+        userId: deletedBy,
+        action: 'tenant_soft_deleted',
+        resource: 'tenant',
+        resourceId: id,
+        details: { reason },
+      });
+    }
+    
+    return tenant;
+  }
+  
+  async restoreTenant(id: string, restoredBy: string): Promise<Tenant | undefined> {
+    const [tenant] = await db
+      .update(tenants)
+      .set({
+        deletedAt: null,
+        deletedBy: null,
+        deleteReason: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(tenants.id, id))
+      .returning();
+    
+    if (tenant) {
+      await this.logActivity({
+        userId: restoredBy,
+        action: 'tenant_restored',
+        resource: 'tenant',
+        resourceId: id,
+        details: { restoredBy },
+      });
+    }
+    
+    return tenant;
+  }
+  
+  async permanentlyDeleteTenant(id: string, deletedBy: string): Promise<boolean> {
+    const result = await db.delete(tenants).where(eq(tenants.id, id));
+    const success = (result.rowCount ?? 0) > 0;
+    
+    if (success) {
+      await this.logActivity({
+        userId: deletedBy,
+        action: 'tenant_permanently_deleted',
+        resource: 'tenant',
+        resourceId: id,
+        details: { deletedBy },
+      });
+    }
+    
+    return success;
+  }
+  
+  // Trash Management - Hubs
+  async getDeletedHubs(): Promise<Hub[]> {
+    return await db.select().from(hubs).where(isNotNull(hubs.deletedAt)).orderBy(desc(hubs.deletedAt));
+  }
+  
+  async softDeleteHub(id: string, deletedBy: string, reason?: string): Promise<Hub | undefined> {
+    const [hub] = await db
+      .update(hubs)
+      .set({
+        deletedAt: new Date(),
+        deletedBy,
+        deleteReason: reason || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(hubs.id, id))
+      .returning();
+    
+    if (hub) {
+      await this.logActivity({
+        userId: deletedBy,
+        action: 'hub_soft_deleted',
+        resource: 'hub',
+        resourceId: id,
+        details: { reason },
+      });
+    }
+    
+    return hub;
+  }
+  
+  async restoreHub(id: string, restoredBy: string): Promise<Hub | undefined> {
+    const [hub] = await db
+      .update(hubs)
+      .set({
+        deletedAt: null,
+        deletedBy: null,
+        deleteReason: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(hubs.id, id))
+      .returning();
+    
+    if (hub) {
+      await this.logActivity({
+        userId: restoredBy,
+        action: 'hub_restored',
+        resource: 'hub',
+        resourceId: id,
+        details: { restoredBy },
+      });
+    }
+    
+    return hub;
+  }
+  
+  async permanentlyDeleteHub(id: string, deletedBy: string): Promise<boolean> {
+    const result = await db.delete(hubs).where(eq(hubs.id, id));
+    const success = (result.rowCount ?? 0) > 0;
+    
+    if (success) {
+      await this.logActivity({
+        userId: deletedBy,
+        action: 'hub_permanently_deleted',
+        resource: 'hub',
+        resourceId: id,
+        details: { deletedBy },
+      });
+    }
+    
+    return success;
+  }
+  
+  // Trash Management - Apps
+  async getDeletedApps(): Promise<App[]> {
+    return await db.select().from(apps).where(isNotNull(apps.deletedAt)).orderBy(desc(apps.deletedAt));
+  }
+  
+  async softDeleteApp(id: string, deletedBy: string, reason?: string): Promise<App | undefined> {
+    const [app] = await db
+      .update(apps)
+      .set({
+        deletedAt: new Date(),
+        deletedBy,
+        deleteReason: reason || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(apps.id, id))
+      .returning();
+    
+    if (app) {
+      await this.logActivity({
+        userId: deletedBy,
+        action: 'app_soft_deleted',
+        resource: 'app',
+        resourceId: id,
+        details: { reason },
+      });
+    }
+    
+    return app;
+  }
+  
+  async restoreApp(id: string, restoredBy: string): Promise<App | undefined> {
+    const [app] = await db
+      .update(apps)
+      .set({
+        deletedAt: null,
+        deletedBy: null,
+        deleteReason: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(apps.id, id))
+      .returning();
+    
+    if (app) {
+      await this.logActivity({
+        userId: restoredBy,
+        action: 'app_restored',
+        resource: 'app',
+        resourceId: id,
+        details: { restoredBy },
+      });
+    }
+    
+    return app;
+  }
+  
+  async permanentlyDeleteApp(id: string, deletedBy: string): Promise<boolean> {
+    const result = await db.delete(apps).where(eq(apps.id, id));
+    const success = (result.rowCount ?? 0) > 0;
+    
+    if (success) {
+      await this.logActivity({
+        userId: deletedBy,
+        action: 'app_permanently_deleted',
+        resource: 'app',
+        resourceId: id,
+        details: { deletedBy },
+      });
+    }
+    
+    return success;
   }
 }
 
