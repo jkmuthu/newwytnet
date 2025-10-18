@@ -124,7 +124,11 @@ import {
   appEditHistory,
   media,
   insertMediaSchema,
-  type InsertMedia
+  type InsertMedia,
+  platformHubs,
+  platformHubAdmins,
+  adminUsers,
+  roles
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -254,7 +258,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Multi-Context Detection API - WytPass Unified (shows all authorized panels)
+  // Multi-Context Detection API - Enhanced Universal Panel Detection
   app.get('/api/auth/contexts', async (req: any, res) => {
     try {
       const contexts: Array<{
@@ -262,14 +266,21 @@ export async function registerRoutes(app: Express): Promise<void> {
         name: string;
         path: string;
         icon: string;
+        hubKey?: string;
         user: any;
         active: boolean;
       }> = [];
 
-      // Get WytPass principal (if authenticated)
+      // Try all authentication sources
       const principal = req.session.wytpassPrincipal;
+      const adminUser = req.session.adminUser;
+      const hubAdminUser = req.session.hubAdminUser;
+      const regularUser = req.user;
       
-      if (!principal) {
+      // Determine primary user ID (WytNet user ID is the base for all contexts)
+      const userId = principal?.id || adminUser?.id || hubAdminUser?.userId || regularUser?.id;
+      
+      if (!userId) {
         // No authentication - return empty contexts
         return res.json({ contexts: [], count: 0 });
       }
@@ -277,50 +288,111 @@ export async function registerRoutes(app: Express): Promise<void> {
       // Get current route to determine active panel
       const currentPath = req.headers.referer || '';
       
-      // Build contexts from WytPass principal panels
-      if (principal.panels.engine) {
+      // 1. Check Engine Admin Access (admin_users table)
+      const engineAdminRecord = await db
+        .select()
+        .from(adminUsers)
+        .where(eq(adminUsers.userId, userId))
+        .limit(1);
+      
+      if (engineAdminRecord.length > 0 && engineAdminRecord[0].isActive) {
+        // Get role details
+        const roleRecord = await db
+          .select()
+          .from(roles)
+          .where(eq(roles.id, engineAdminRecord[0].roleId))
+          .limit(1);
+        
+        // Get user details from database if not in session
+        let userName = principal?.name || adminUser?.name;
+        let userEmail = principal?.email || adminUser?.email;
+        
+        if (!userName || !userEmail) {
+          const userRecord = await db
+            .select()
+            .from(users)
+            .where(eq(users.id, userId))
+            .limit(1);
+          if (userRecord.length > 0) {
+            userName = userRecord[0].name || userName;
+            userEmail = userRecord[0].email || userEmail;
+          }
+        }
+        
         contexts.push({
           type: 'engine_admin',
-          name: 'Engine Portal',
+          name: 'WytEngine',
           path: '/engine/dashboard',
           icon: 'Shield',
           user: {
-            name: principal.name,
-            email: principal.email,
-            role: 'Super Admin'
+            name: userName || 'Admin',
+            email: userEmail || '',
+            role: roleRecord[0]?.name || 'Admin'
           },
           active: currentPath.includes('/engine')
         });
       }
 
-      if (principal.panels.hubAdmin) {
+      // 2. Check Hub Admin Access (platform_hub_admins table)
+      const hubAdminRecords = await db
+        .select({
+          hubId: platformHubAdmins.hubId,
+          hubName: platformHubs.name,
+          hubSlug: platformHubs.slug,
+          hubStatus: platformHubs.status,
+        })
+        .from(platformHubAdmins)
+        .innerJoin(platformHubs, eq(platformHubAdmins.hubId, platformHubs.id))
+        .where(
+          and(
+            eq(platformHubAdmins.userId, userId),
+            eq(platformHubAdmins.isActive, true),
+            eq(platformHubs.status, 'active')
+          )
+        );
+      
+      for (const hubAdmin of hubAdminRecords) {
         contexts.push({
           type: 'hub_admin',
-          name: 'Hub Admin',
-          path: '/admin/dashboard',
+          name: hubAdmin.hubName,
+          path: `/${hubAdmin.hubSlug}/admin/dashboard`,
           icon: 'Settings',
+          hubKey: hubAdmin.hubSlug,
           user: {
-            name: principal.name,
-            email: principal.email,
+            name: principal?.name || hubAdminUser?.name,
+            email: principal?.email || hubAdminUser?.email,
             role: 'Hub Admin'
           },
-          active: currentPath.includes('/admin') && !currentPath.includes('/engine')
+          active: currentPath.includes(`/${hubAdmin.hubSlug}/admin`)
         });
       }
 
-      if (principal.panels.user) {
-        contexts.push({
-          type: 'user',
-          name: 'WytNet Hub',
-          path: '/dashboard',
-          icon: 'User',
-          user: {
-            name: principal.name,
-            email: principal.email,
-            role: principal.roles.includes('user') ? 'User' : 'Admin'
-          },
-          active: !currentPath.includes('/engine') && !currentPath.includes('/admin')
-        });
+      // 3. Check Regular User Access (all users have access to WytNet by default)
+      // Primary hub is always WytNet for all users
+      const wytnetHub = await db
+        .select()
+        .from(platformHubs)
+        .where(eq(platformHubs.slug, 'wytnet'))
+        .limit(1);
+      
+      if (wytnetHub.length > 0 && wytnetHub[0].status === 'active') {
+        // Only add if not already added as hub admin
+        const alreadyAddedAsAdmin = contexts.some(c => c.hubKey === 'wytnet' && c.type === 'hub_admin');
+        if (!alreadyAddedAsAdmin) {
+          contexts.push({
+            type: 'user',
+            name: 'WytNet',
+            path: '/dashboard',
+            icon: 'Home',
+            hubKey: 'wytnet',
+            user: {
+              name: principal?.name || regularUser?.name,
+              email: principal?.email || regularUser?.email,
+              role: 'User'
+            },
+            active: currentPath.includes('/dashboard') && !currentPath.includes('/admin') && !currentPath.includes('/engine')
+          });
+        }
       }
 
       res.json({
