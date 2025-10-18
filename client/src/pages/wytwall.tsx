@@ -187,7 +187,7 @@ export default function WytWall() {
               data-testid="button-post-need"
             >
               <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Post Need</span>
+              <span className="hidden sm:inline">Add Post</span>
               <span className="sm:hidden">Post</span>
             </Button>
           </div>
