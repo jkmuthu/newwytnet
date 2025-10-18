@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Lock, BookOpen, CheckCircle, Clock, AlertCircle, Code, Database, Shield, Filter, Search, ExternalLink, MessageSquare, ArrowUpDown, Edit, Save, Download, Play, FileText, Settings, Users, Calendar, TrendingUp, Activity, Zap, GitBranch, TestTube, Bug, ChevronRight, Plus, Trash2, Eye, EyeOff, Link as LinkIcon, Timer, Target, Sparkles } from "lucide-react";
+import { Lock, BookOpen, CheckCircle, Clock, AlertCircle, Code, Database, Shield, Filter, Search, ExternalLink, MessageSquare, ArrowUpDown, Edit, Save, Download, Play, FileText, Settings, Users, Calendar, TrendingUp, Activity, Zap, GitBranch, TestTube, Bug, ChevronRight, Plus, Trash2, Eye, EyeOff, Link as LinkIcon, Timer, Target, Sparkles, Layers, Globe, Boxes, Package } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type StatusType = "tested-live" | "tested-preview" | "completed" | "in-error" | "priority-1" | "priority-2" | "priority-3" | "in-progress" | "planned" | "blocked" | "testing" | "review";
@@ -75,7 +75,8 @@ export default function DevDocumentation() {
   const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
   const [editDialog, setEditDialog] = useState(false);
   const [testDialog, setTestDialog] = useState(false);
-  const [activeTab, setActiveTab] = useState("features");
+  const [activeTab, setActiveTab] = useState("overview");
+  const [activeDocSection, setActiveDocSection] = useState("platform-concepts");
   const [isDownloading, setIsDownloading] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "kanban" | "timeline">("table");
   const [showArchived, setShowArchived] = useState(false);
@@ -145,7 +146,6 @@ export default function DevDocumentation() {
         const data = await response.json();
         
         if (data.authenticated && data.admin) {
-          // Admin is logged in, bypass password
           setIsAuthenticated(true);
           setAdminBypass(true);
           toast({
@@ -369,7 +369,8 @@ export default function DevDocumentation() {
       const tabName = activeTab === 'features' ? 'Feature Tracker' : 
                      activeTab === 'changelog' ? 'Change Logs' : 
                      activeTab === 'testing' ? 'Test Cases' :
-                     activeTab === 'api' ? 'API Reference' : 'Standards';
+                     activeTab === 'api' ? 'API Reference' : 
+                     activeTab === 'overview' ? 'Platform Overview' : 'Documentation';
       
       printWindow.document.write(`
         <!DOCTYPE html>
@@ -451,7 +452,6 @@ export default function DevDocumentation() {
       title: "Tests Running",
       description: "Executing all test cases...",
     });
-    // Simulate test execution
     setTimeout(() => {
       toast({
         title: "Tests Completed",
@@ -461,6 +461,19 @@ export default function DevDocumentation() {
   };
 
   const changeLogs: ChangeLog[] = [
+    {
+      date: "2025-01-15",
+      version: "v1.11.0",
+      changes: [
+        "Added comprehensive platform documentation with Tamil concepts",
+        "Structured documentation into Platform Concepts, Architecture, and Technical Stack sections",
+        "Enhanced Entity-Module-App-Hub relationship documentation",
+        "Added purpose and use-case documentation for all platform components",
+        "Improved navigation with section-based organization"
+      ],
+      author: "Development Team",
+      type: "feature"
+    },
     {
       date: "2025-01-15",
       version: "v1.10.0",
@@ -485,28 +498,6 @@ export default function DevDocumentation() {
       ],
       author: "Development Team",
       type: "feature"
-    },
-    {
-      date: "2025-01-13",
-      version: "v1.8.0",
-      changes: [
-        "Added interactive testing suite",
-        "Implemented API documentation viewer",
-        "Enhanced task management with dependencies",
-        "Added Kanban and Timeline views"
-      ],
-      author: "Development Team",
-      type: "feature"
-    },
-    {
-      date: "2025-01-13",
-      version: "v1.7.0",
-      changes: [
-        "Enhanced documentation with advanced tracking system",
-        "Added spreadsheet-like feature management interface"
-      ],
-      author: "Development Team",
-      type: "improvement"
     }
   ];
 
@@ -640,58 +631,107 @@ export default function DevDocumentation() {
           
           <nav className="p-4 space-y-1">
             <Button
-              variant={activeTab === "features" ? "secondary" : "ghost"}
+              variant={activeTab === "overview" ? "secondary" : "ghost"}
               className="w-full justify-start"
-              onClick={() => setActiveTab("features")}
+              onClick={() => setActiveTab("overview")}
             >
-              <Target className="h-4 w-4 mr-2" />
-              Task Management
+              <BookOpen className="h-4 w-4 mr-2" />
+              Platform Overview
             </Button>
-            
-            <Button
-              variant={activeTab === "testing" ? "secondary" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setActiveTab("testing")}
-            >
-              <TestTube className="h-4 w-4 mr-2" />
-              Testing Suite
-            </Button>
-            
-            <Button
-              variant={activeTab === "api" ? "secondary" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setActiveTab("api")}
-            >
-              <Code className="h-4 w-4 mr-2" />
-              API Reference
-            </Button>
-            
-            <Button
-              variant={activeTab === "changelog" ? "secondary" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setActiveTab("changelog")}
-            >
-              <GitBranch className="h-4 w-4 mr-2" />
-              Version History
-            </Button>
-            
-            <Button
-              variant={activeTab === "standards" ? "secondary" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setActiveTab("standards")}
-            >
-              <Shield className="h-4 w-4 mr-2" />
-              Standards & Best Practices
-            </Button>
-            
-            <Button
-              variant={activeTab === "analytics" ? "secondary" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setActiveTab("analytics")}
-            >
-              <TrendingUp className="h-4 w-4 mr-2" />
-              Project Analytics
-            </Button>
+
+            <div className="pt-2">
+              <div className="text-xs font-semibold text-muted-foreground px-2 mb-2">DOCUMENTATION</div>
+              <Button
+                variant={activeDocSection === "platform-concepts" ? "secondary" : "ghost"}
+                className="w-full justify-start text-sm"
+                onClick={() => {
+                  setActiveTab("overview");
+                  setActiveDocSection("platform-concepts");
+                }}
+              >
+                <Layers className="h-4 w-4 mr-2" />
+                Platform Concepts
+              </Button>
+              <Button
+                variant={activeDocSection === "architecture" ? "secondary" : "ghost"}
+                className="w-full justify-start text-sm"
+                onClick={() => {
+                  setActiveTab("overview");
+                  setActiveDocSection("architecture");
+                }}
+              >
+                <Boxes className="h-4 w-4 mr-2" />
+                Architecture
+              </Button>
+              <Button
+                variant={activeDocSection === "technical-stack" ? "secondary" : "ghost"}
+                className="w-full justify-start text-sm"
+                onClick={() => {
+                  setActiveTab("overview");
+                  setActiveDocSection("technical-stack");
+                }}
+              >
+                <Code className="h-4 w-4 mr-2" />
+                Technical Stack
+              </Button>
+            </div>
+
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
+              <div className="text-xs font-semibold text-muted-foreground px-2 mb-2">DEVELOPMENT</div>
+              <Button
+                variant={activeTab === "features" ? "secondary" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab("features")}
+              >
+                <Target className="h-4 w-4 mr-2" />
+                Task Management
+              </Button>
+              
+              <Button
+                variant={activeTab === "testing" ? "secondary" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab("testing")}
+              >
+                <TestTube className="h-4 w-4 mr-2" />
+                Testing Suite
+              </Button>
+              
+              <Button
+                variant={activeTab === "api" ? "secondary" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab("api")}
+              >
+                <Code className="h-4 w-4 mr-2" />
+                API Reference
+              </Button>
+              
+              <Button
+                variant={activeTab === "changelog" ? "secondary" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab("changelog")}
+              >
+                <GitBranch className="h-4 w-4 mr-2" />
+                Version History
+              </Button>
+              
+              <Button
+                variant={activeTab === "standards" ? "secondary" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab("standards")}
+              >
+                <Shield className="h-4 w-4 mr-2" />
+                Standards
+              </Button>
+              
+              <Button
+                variant={activeTab === "analytics" ? "secondary" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab("analytics")}
+              >
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Analytics
+              </Button>
+            </div>
           </nav>
           
           <div className="p-4 border-t border-gray-200 dark:border-gray-800 mt-auto">
@@ -702,7 +742,7 @@ export default function DevDocumentation() {
               </div>
               <div className="flex items-center gap-2">
                 <Users className="h-3 w-3" />
-                <span>Version: v1.9.0</span>
+                <span>Version: v1.11.0</span>
               </div>
             </div>
           </div>
@@ -710,581 +750,865 @@ export default function DevDocumentation() {
         
         {/* Main Content Area */}
         <div className="flex-1 lg:ml-64">
-      <section className="py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-3">
-                <Sparkles className="h-8 w-8 text-blue-600" />
-                DevDoc Portal
-              </h1>
-              <p className="text-gray-600 dark:text-gray-300">
-                Enterprise Development Command Center
-              </p>
-              {adminBypass && (
-                <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Authenticated via Admin Session
-                </Badge>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline"
-                onClick={handleDownloadPDF}
-                disabled={isDownloading}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                {isDownloading ? "Generating..." : "Export"}
-              </Button>
-              <Button 
-                variant={isEditMode ? "default" : "outline"} 
-                onClick={() => setIsEditMode(!isEditMode)}
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                {isEditMode ? "Editing" : "Edit"}
-              </Button>
-              <Button variant="outline" onClick={() => setIsAuthenticated(false)}>
-                <Lock className="h-4 w-4 mr-2" />
-                Lock
-              </Button>
-            </div>
-          </div>
+          <section className="py-12 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-3">
+                    <Sparkles className="h-8 w-8 text-blue-600" />
+                    DevDoc Portal
+                  </h1>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    Enterprise Development Command Center
+                  </p>
+                  {adminBypass && (
+                    <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Authenticated via Admin Session
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline"
+                    onClick={handleDownloadPDF}
+                    disabled={isDownloading}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    {isDownloading ? "Generating..." : "Export"}
+                  </Button>
+                  <Button 
+                    variant={isEditMode ? "default" : "outline"} 
+                    onClick={() => setIsEditMode(!isEditMode)}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    {isEditMode ? "Editing" : "Edit"}
+                  </Button>
+                  <Button variant="outline" onClick={() => setIsAuthenticated(false)}>
+                    <Lock className="h-4 w-4 mr-2" />
+                    Lock
+                  </Button>
+                </div>
+              </div>
 
-          <Tabs defaultValue="features" className="space-y-6" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid grid-cols-6 w-full">
-              <TabsTrigger value="features">
-                <Target className="h-4 w-4 mr-2" />
-                Tasks
-              </TabsTrigger>
-              <TabsTrigger value="testing">
-                <TestTube className="h-4 w-4 mr-2" />
-                Testing
-              </TabsTrigger>
-              <TabsTrigger value="api">
-                <Code className="h-4 w-4 mr-2" />
-                API Docs
-              </TabsTrigger>
-              <TabsTrigger value="changelog">
-                <GitBranch className="h-4 w-4 mr-2" />
-                Changelog
-              </TabsTrigger>
-              <TabsTrigger value="standards">
-                <Shield className="h-4 w-4 mr-2" />
-                Standards
-              </TabsTrigger>
-              <TabsTrigger value="analytics">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Analytics
-              </TabsTrigger>
-            </TabsList>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                <TabsContent value="overview" className="space-y-6">
+                  <div ref={contentRef}>
+                    {activeDocSection === "platform-concepts" && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Layers className="h-5 w-5 text-blue-600" />
+                            Platform Concepts
+                          </CardTitle>
+                          <CardDescription>Understanding Entity, Module, App & Hub architecture</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                          <div>
+                            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                              <Package className="h-5 w-5 text-purple-600" />
+                              About Entity, Module, App & Hub
+                            </h3>
+                            <div className="prose dark:prose-invert max-w-none">
+                              <p className="text-muted-foreground mb-4">
+                                <strong>Tamil:</strong> பல "Entity" என்ற பாகங்கள் அடங்கியது "Module", சில பல "Module" கள் அடங்கியது "App", 
+                                இந்த "App" என்பது "WytNet.com" உள்ளாகவே "User" களால் "Add" செய்து பயன்படுத்தக் கூடியது.
+                              </p>
+                              
+                              <div className="grid md:grid-cols-4 gap-4 mb-6">
+                                <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
+                                  <CardContent className="p-4">
+                                    <h4 className="font-semibold mb-2">1️⃣ Entity</h4>
+                                    <p className="text-sm text-muted-foreground">Basic building block. Multiple entities form a Module.</p>
+                                    <Badge className="mt-2" variant="outline">Foundational Layer</Badge>
+                                  </CardContent>
+                                </Card>
 
-            <TabsContent value="features" className="space-y-4">
-              <div ref={contentRef}>
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <Activity className="h-5 w-5" />
-                      Task Management
-                    </CardTitle>
-                    <div className="flex gap-2">
-                      <Select value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)}>
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="table">Table</SelectItem>
-                          <SelectItem value="kanban">Kanban</SelectItem>
-                          <SelectItem value="timeline">Timeline</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {isEditMode && (
-                        <Button onClick={addNewFeature} size="sm">
-                          <Plus className="h-4 w-4 mr-2" />
-                          New Task
-                        </Button>
-                      )}
+                                <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950 dark:to-purple-900">
+                                  <CardContent className="p-4">
+                                    <h4 className="font-semibold mb-2">2️⃣ Module</h4>
+                                    <p className="text-sm text-muted-foreground">Collection of entities with specific functionality.</p>
+                                    <Badge className="mt-2" variant="outline">Functional Layer</Badge>
+                                  </CardContent>
+                                </Card>
+
+                                <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900">
+                                  <CardContent className="p-4">
+                                    <h4 className="font-semibold mb-2">3️⃣ App</h4>
+                                    <p className="text-sm text-muted-foreground">Multiple modules combined. Users can add and use within WytNet.com.</p>
+                                    <Badge className="mt-2" variant="outline">Application Layer</Badge>
+                                  </CardContent>
+                                </Card>
+
+                                <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900">
+                                  <CardContent className="p-4">
+                                    <h4 className="font-semibold mb-2">4️⃣ Hub</h4>
+                                    <p className="text-sm text-muted-foreground">Standalone web/mobile portal with multiple modules.</p>
+                                    <Badge className="mt-2" variant="outline">Platform Layer</Badge>
+                                  </CardContent>
+                                </Card>
+                              </div>
+
+                              <div className="border-l-4 border-orange-500 pl-4 py-2 bg-orange-50 dark:bg-orange-950 rounded">
+                                <h4 className="font-semibold mb-2">🌐 Hub - Standalone Portal</h4>
+                                <p className="text-sm mb-2">
+                                  <strong>Tamil:</strong> "Hub" என்பது தன்னிச்சையாக செயல்படக்கூடிய "Web Portal" அல்லது "Mobile App" ஆகும். 
+                                  இது "WytPass Auth" பயன்படுத்தி செயல்படும். இதில் பல்வேறு "Module" கள் வைத்து கட்டமைக்கப்படும்.
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  A Hub is an independent web portal or mobile app that operates autonomously. 
+                                  It uses WytPass Authentication and is built by composing various modules.
+                                </p>
+                              </div>
+
+                              <div className="mt-6">
+                                <h4 className="font-semibold mb-3">Two Types of Hub Creation:</h4>
+                                <div className="grid md:grid-cols-2 gap-4">
+                                  <div className="border rounded-lg p-4">
+                                    <h5 className="font-medium mb-2">1. App Evolution to Hub</h5>
+                                    <p className="text-sm text-muted-foreground">
+                                      When an App gains significant user adoption and demand, it can be promoted to become a standalone Hub.
+                                    </p>
+                                  </div>
+                                  <div className="border rounded-lg p-4">
+                                    <h5 className="font-medium mb-2">2. Custom Hub Creation</h5>
+                                    <p className="text-sm text-muted-foreground">
+                                      Developers, companies, and organizations can create their own Hubs tailored to their specific needs.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="border-t pt-6">
+                            <h3 className="text-xl font-semibold mb-4">Purpose & Benefits</h3>
+                            <div className="grid md:grid-cols-2 gap-4">
+                              <Card>
+                                <CardContent className="p-4">
+                                  <h4 className="font-semibold mb-2">🎯 Platform Purpose</h4>
+                                  <ul className="text-sm space-y-1 text-muted-foreground">
+                                    <li>• Modular architecture for scalability</li>
+                                    <li>• Reusable components across applications</li>
+                                    <li>• Flexible composition of features</li>
+                                    <li>• Multi-tenant SaaS infrastructure</li>
+                                  </ul>
+                                </CardContent>
+                              </Card>
+                              <Card>
+                                <CardContent className="p-4">
+                                  <h4 className="font-semibold mb-2">⚡ Key Features</h4>
+                                  <ul className="text-sm space-y-1 text-muted-foreground">
+                                    <li>• White-label customization</li>
+                                    <li>• WytPass unified authentication</li>
+                                    <li>• Cross-hub data portability</li>
+                                    <li>• Blockchain-anchored identity</li>
+                                  </ul>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {activeDocSection === "architecture" && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Boxes className="h-5 w-5 text-purple-600" />
+                            System Architecture
+                          </CardTitle>
+                          <CardDescription>Platform structure and component relationships</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                          <div>
+                            <h3 className="text-lg font-semibold mb-4">Architecture Layers</h3>
+                            <div className="space-y-4">
+                              <div className="border-l-4 border-blue-500 pl-4">
+                                <h4 className="font-medium">Frontend Layer</h4>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  React 18 + TypeScript + Vite + Tailwind CSS + shadcn/ui
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  Component-based architecture with Wouter routing and TanStack Query for state management
+                                </p>
+                              </div>
+
+                              <div className="border-l-4 border-purple-500 pl-4">
+                                <h4 className="font-medium">Backend Layer</h4>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  Express.js + TypeScript + PostgreSQL + Drizzle ORM
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  RESTful APIs with session-based authentication and row-level security
+                                </p>
+                              </div>
+
+                              <div className="border-l-4 border-green-500 pl-4">
+                                <h4 className="font-medium">Platform Layer</h4>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  Module System + Entity Graph + Hub Routing
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  47+ modules, 31+ entity types, multi-tenant isolation
+                                </p>
+                              </div>
+
+                              <div className="border-l-4 border-orange-500 pl-4">
+                                <h4 className="font-medium">Identity Layer</h4>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  WytPass + WytID + Blockchain Anchoring
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  Universal identity system with cross-hub authentication
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="border-t pt-6">
+                            <h3 className="text-lg font-semibold mb-4">Portal Architecture</h3>
+                            <div className="grid md:grid-cols-3 gap-4">
+                              <Card>
+                                <CardContent className="p-4">
+                                  <h4 className="font-semibold mb-2">🌐 Public Portal</h4>
+                                  <p className="text-sm text-muted-foreground mb-2">
+                                    Landing pages, WytWall marketplace, public features
+                                  </p>
+                                  <Badge variant="outline">No authentication required</Badge>
+                                </CardContent>
+                              </Card>
+
+                              <Card>
+                                <CardContent className="p-4">
+                                  <h4 className="font-semibold mb-2">👤 User Panel</h4>
+                                  <p className="text-sm text-muted-foreground mb-2">
+                                    My Apps, My Profile, Wallet, WytPoints
+                                  </p>
+                                  <Badge variant="outline">User authentication</Badge>
+                                </CardContent>
+                              </Card>
+
+                              <Card>
+                                <CardContent className="p-4">
+                                  <h4 className="font-semibold mb-2">⚙️ Admin Portals</h4>
+                                  <p className="text-sm text-muted-foreground mb-2">
+                                    Engine Admin (Platform) + Hub Admin (Content)
+                                  </p>
+                                  <Badge variant="outline">Admin authentication</Badge>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {activeDocSection === "technical-stack" && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Code className="h-5 w-5 text-green-600" />
+                            Technical Stack
+                          </CardTitle>
+                          <CardDescription>Technologies, frameworks, and infrastructure</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                          <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                              <h3 className="font-semibold mb-3">Server Technologies</h3>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                                  <span>Runtime</span>
+                                  <Badge variant="outline">Node.js</Badge>
+                                </div>
+                                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                                  <span>Framework</span>
+                                  <Badge variant="outline">Express.js</Badge>
+                                </div>
+                                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                                  <span>Language</span>
+                                  <Badge variant="outline">TypeScript</Badge>
+                                </div>
+                                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                                  <span>Database</span>
+                                  <Badge variant="outline">PostgreSQL (Neon)</Badge>
+                                </div>
+                                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                                  <span>ORM</span>
+                                  <Badge variant="outline">Drizzle</Badge>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div>
+                              <h3 className="font-semibold mb-3">Client Technologies</h3>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                                  <span>Framework</span>
+                                  <Badge variant="outline">React 18</Badge>
+                                </div>
+                                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                                  <span>Language</span>
+                                  <Badge variant="outline">TypeScript</Badge>
+                                </div>
+                                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                                  <span>Build Tool</span>
+                                  <Badge variant="outline">Vite</Badge>
+                                </div>
+                                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                                  <span>Styling</span>
+                                  <Badge variant="outline">Tailwind CSS</Badge>
+                                </div>
+                                <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                                  <span>UI Components</span>
+                                  <Badge variant="outline">shadcn/ui</Badge>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="border-t pt-6">
+                            <h3 className="font-semibold mb-3">Key Integrations</h3>
+                            <div className="grid md:grid-cols-3 gap-3">
+                              <div className="p-3 border rounded-lg">
+                                <h4 className="font-medium text-sm mb-1">Payment Gateway</h4>
+                                <p className="text-xs text-muted-foreground">Razorpay, Stripe</p>
+                              </div>
+                              <div className="p-3 border rounded-lg">
+                                <h4 className="font-medium text-sm mb-1">Communication</h4>
+                                <p className="text-xs text-muted-foreground">MSG91, Twilio, SendGrid</p>
+                              </div>
+                              <div className="p-3 border rounded-lg">
+                                <h4 className="font-medium text-sm mb-1">Storage</h4>
+                                <p className="text-xs text-muted-foreground">AWS S3, Cloudinary, GCS</p>
+                              </div>
+                              <div className="p-3 border rounded-lg">
+                                <h4 className="font-medium text-sm mb-1">AI Services</h4>
+                                <p className="text-xs text-muted-foreground">OpenAI, Claude, Gemini</p>
+                              </div>
+                              <div className="p-3 border rounded-lg">
+                                <h4 className="font-medium text-sm mb-1">Analytics</h4>
+                                <p className="text-xs text-muted-foreground">Google Analytics, Mixpanel</p>
+                              </div>
+                              <div className="p-3 border rounded-lg">
+                                <h4 className="font-medium text-sm mb-1">Maps</h4>
+                                <p className="text-xs text-muted-foreground">Google Maps, Mappls</p>
+                              </div>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="features" className="space-y-4">
+                  <div ref={contentRef}>
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="flex items-center gap-2">
+                            <Activity className="h-5 w-5" />
+                            Task Management
+                          </CardTitle>
+                          <div className="flex gap-2">
+                            <Select value={viewMode} onValueChange={(v) => setViewMode(v as typeof viewMode)}>
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="table">Table</SelectItem>
+                                <SelectItem value="kanban">Kanban</SelectItem>
+                                <SelectItem value="timeline">Timeline</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {isEditMode && (
+                              <Button onClick={addNewFeature} size="sm">
+                                <Plus className="h-4 w-4 mr-2" />
+                                New Task
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col md:flex-row gap-4 mt-4">
+                          <div className="flex-1">
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input
+                                placeholder="Search by title, description, or ID..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10"
+                              />
+                            </div>
+                          </div>
+                          <Select value={filterArea} onValueChange={(v) => setFilterArea(v as typeof filterArea)}>
+                            <SelectTrigger className="w-full md:w-48">
+                              <SelectValue placeholder="Area" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Areas</SelectItem>
+                              <SelectItem value="public">Public</SelectItem>
+                              <SelectItem value="user-panel">User Panel</SelectItem>
+                              <SelectItem value="admin-panel">Admin</SelectItem>
+                              <SelectItem value="api">API</SelectItem>
+                              <SelectItem value="core">Core</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as typeof filterStatus)}>
+                            <SelectTrigger className="w-full md:w-48">
+                              <SelectValue placeholder="Status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Status</SelectItem>
+                              <SelectItem value="planned">Planned</SelectItem>
+                              <SelectItem value="in-progress">In Progress</SelectItem>
+                              <SelectItem value="testing">Testing</SelectItem>
+                              <SelectItem value="review">Review</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                              <SelectItem value="blocked">Blocked</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {viewMode === "kanban" ? (
+                          renderKanbanView()
+                        ) : (
+                          <div className="rounded-md border overflow-x-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="w-24">ID</TableHead>
+                                  <TableHead>
+                                    <Button variant="ghost" size="sm" onClick={() => setSortField("title")}>
+                                      Task <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                  </TableHead>
+                                  <TableHead>Area</TableHead>
+                                  <TableHead>
+                                    <Button variant="ghost" size="sm" onClick={() => setSortField("status")}>
+                                      Status <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                  </TableHead>
+                                  <TableHead>
+                                    <Button variant="ghost" size="sm" onClick={() => setSortField("priority")}>
+                                      Priority <ArrowUpDown className="ml-2 h-4 w-4" />
+                                    </Button>
+                                  </TableHead>
+                                  <TableHead>Updated</TableHead>
+                                  <TableHead>Actions</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {filteredFeatures.map((feature) => (
+                                  <TableRow key={feature.id}>
+                                    <TableCell className="font-mono text-xs">{feature.id}</TableCell>
+                                    <TableCell>
+                                      <div>
+                                        <div className="font-medium">{feature.title}</div>
+                                        <div className="text-sm text-muted-foreground">{feature.description}</div>
+                                        {feature.comments && (
+                                          <div className="flex items-start gap-1 mt-1 text-xs text-amber-600">
+                                            <MessageSquare className="h-3 w-3 mt-0.5" />
+                                            <span>{feature.comments}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>{getAreaBadge(feature.area)}</TableCell>
+                                    <TableCell>
+                                      {isEditMode ? (
+                                        <Select 
+                                          value={feature.status} 
+                                          onValueChange={(value) => updateFeatureStatus(feature.id, value as StatusType)}
+                                        >
+                                          <SelectTrigger className="w-32">
+                                            <SelectValue />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="planned">Planned</SelectItem>
+                                            <SelectItem value="in-progress">In Progress</SelectItem>
+                                            <SelectItem value="testing">Testing</SelectItem>
+                                            <SelectItem value="review">Review</SelectItem>
+                                            <SelectItem value="completed">Completed</SelectItem>
+                                            <SelectItem value="blocked">Blocked</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      ) : (
+                                        getStatusBadge(feature.status)
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge variant="outline">P{feature.priority || 3}</Badge>
+                                    </TableCell>
+                                    <TableCell className="text-sm text-muted-foreground">{feature.lastUpdated}</TableCell>
+                                    <TableCell>
+                                      <div className="flex gap-1">
+                                        {feature.testReportUrl && (
+                                          <Button variant="ghost" size="sm" asChild>
+                                            <a href={feature.testReportUrl} target="_blank" rel="noopener noreferrer">
+                                              <ExternalLink className="h-4 w-4" />
+                                            </a>
+                                          </Button>
+                                        )}
+                                        <Button variant="ghost" size="sm" onClick={() => handleEditFeature(feature)}>
+                                          <Edit className="h-4 w-4" />
+                                        </Button>
+                                        {isEditMode && (
+                                          <Button variant="ghost" size="sm" onClick={() => deleteFeature(feature.id)}>
+                                            <Trash2 className="h-4 w-4 text-red-500" />
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <div className="grid md:grid-cols-4 gap-4">
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="text-2xl font-bold text-green-600">{features.filter(f => f.status === "completed").length}</div>
+                          <div className="text-sm text-muted-foreground">Completed</div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="text-2xl font-bold text-purple-600">{features.filter(f => f.status === "in-progress").length}</div>
+                          <div className="text-sm text-muted-foreground">In Progress</div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="text-2xl font-bold text-orange-600">{features.filter(f => f.status === "blocked").length}</div>
+                          <div className="text-sm text-muted-foreground">Blocked</div>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="pt-6">
+                          <div className="text-2xl font-bold text-blue-600">{features.filter(f => f.status === "testing").length}</div>
+                          <div className="text-sm text-muted-foreground">Testing</div>
+                        </CardContent>
+                      </Card>
                     </div>
                   </div>
-                  <div className="flex flex-col md:flex-row gap-4 mt-4">
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Search by title, description, or ID..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10"
+                </TabsContent>
+
+                <TabsContent value="testing" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2">
+                          <TestTube className="h-5 w-5" />
+                          Test Suite
+                        </CardTitle>
+                        <Button onClick={runAllTests}>
+                          <Play className="h-4 w-4 mr-2" />
+                          Run All Tests
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-center py-12 text-muted-foreground">
+                        <TestTube className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Test cases will be displayed here</p>
+                        <p className="text-sm mt-2">Add test cases to track quality assurance</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="api" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Code className="h-5 w-5" />
+                        API Reference
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {apiEndpoints.map((endpoint, idx) => (
+                          <div key={idx} className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-3">
+                                <Badge variant={endpoint.method === "GET" ? "outline" : "default"}>
+                                  {endpoint.method}
+                                </Badge>
+                                <code className="text-sm">{endpoint.path}</code>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {endpoint.authentication && <Shield className="h-4 w-4 text-orange-500" />}
+                                <Badge variant="outline">{endpoint.status}</Badge>
+                              </div>
+                            </div>
+                            <p className="text-sm text-muted-foreground">{endpoint.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="changelog" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <GitBranch className="h-5 w-5" />
+                        Version History
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {changeLogs.map((log, index) => (
+                        <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <Badge variant="outline">{log.version}</Badge>
+                              <span className="text-sm text-muted-foreground ml-2">{log.date}</span>
+                            </div>
+                            <Badge>{log.type}</Badge>
+                          </div>
+                          <ul className="space-y-1">
+                            {log.changes.map((change, i) => (
+                              <li key={i} className="text-sm flex items-start gap-2">
+                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                                <span>{change}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="standards" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Shield className="h-5 w-5" />
+                        Development Standards
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div>
+                        <h3 className="font-semibold mb-3">Code Quality Standards</h3>
+                        <ul className="space-y-2 text-sm">
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            TypeScript strict mode enabled
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            ESLint + Prettier configuration
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            Component testing with Vitest
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            Accessibility (WCAG 2.1 AA)
+                          </li>
+                        </ul>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="analytics" className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5" />
+                        Project Analytics
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid md:grid-cols-3 gap-4">
+                        <div className="text-center p-6 border rounded-lg">
+                          <div className="text-3xl font-bold text-blue-600">{features.length}</div>
+                          <div className="text-sm text-muted-foreground mt-2">Total Tasks</div>
+                        </div>
+                        <div className="text-center p-6 border rounded-lg">
+                          <div className="text-3xl font-bold text-green-600">
+                            {Math.round((features.filter(f => f.status === "completed").length / features.length) * 100)}%
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-2">Completion Rate</div>
+                        </div>
+                        <div className="text-center p-6 border rounded-lg">
+                          <div className="text-3xl font-bold text-purple-600">
+                            {features.reduce((acc, f) => acc + (f.actualHours || 0), 0)}h
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-2">Hours Logged</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+
+              {/* Edit Feature Dialog */}
+              <Dialog open={editDialog} onOpenChange={setEditDialog}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Edit Task</DialogTitle>
+                    <DialogDescription>
+                      Update task details, status, and metadata
+                    </DialogDescription>
+                  </DialogHeader>
+                  {editingFeature && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">Task ID</label>
+                          <Input value={editingFeature.id} disabled className="mt-1" />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Priority</label>
+                          <Select 
+                            value={editingFeature.priority?.toString()} 
+                            onValueChange={(v) => setEditingFeature({...editingFeature, priority: parseInt(v)})}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">P1 - Critical</SelectItem>
+                              <SelectItem value="2">P2 - High</SelectItem>
+                              <SelectItem value="3">P3 - Medium</SelectItem>
+                              <SelectItem value="4">P4 - Low</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Title</label>
+                        <Input 
+                          value={editingFeature.title} 
+                          onChange={(e) => setEditingFeature({...editingFeature, title: e.target.value})}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Description</label>
+                        <Textarea 
+                          value={editingFeature.description} 
+                          onChange={(e) => setEditingFeature({...editingFeature, description: e.target.value})}
+                          className="mt-1"
+                          rows={3}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">Area</label>
+                          <Select 
+                            value={editingFeature.area} 
+                            onValueChange={(v) => setEditingFeature({...editingFeature, area: v as AreaType})}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="public">Public</SelectItem>
+                              <SelectItem value="user-panel">User Panel</SelectItem>
+                              <SelectItem value="admin-panel">Admin Panel</SelectItem>
+                              <SelectItem value="api">API</SelectItem>
+                              <SelectItem value="core">Core</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Status</label>
+                          <Select 
+                            value={editingFeature.status} 
+                            onValueChange={(v) => setEditingFeature({...editingFeature, status: v as StatusType})}
+                          >
+                            <SelectTrigger className="mt-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="planned">Planned</SelectItem>
+                              <SelectItem value="in-progress">In Progress</SelectItem>
+                              <SelectItem value="testing">Testing</SelectItem>
+                              <SelectItem value="review">Review</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                              <SelectItem value="blocked">Blocked</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">Estimated Hours</label>
+                          <Input 
+                            type="number"
+                            value={editingFeature.estimatedHours || ''} 
+                            onChange={(e) => setEditingFeature({...editingFeature, estimatedHours: parseInt(e.target.value) || 0})}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Actual Hours</label>
+                          <Input 
+                            type="number"
+                            value={editingFeature.actualHours || ''} 
+                            onChange={(e) => setEditingFeature({...editingFeature, actualHours: parseInt(e.target.value) || 0})}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Test URL</label>
+                        <Input 
+                          value={editingFeature.testReportUrl || ''} 
+                          onChange={(e) => setEditingFeature({...editingFeature, testReportUrl: e.target.value})}
+                          placeholder="/path or URL"
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Comments</label>
+                        <Textarea 
+                          value={editingFeature.comments || ''} 
+                          onChange={(e) => setEditingFeature({...editingFeature, comments: e.target.value})}
+                          placeholder="Notes, blockers, updates..."
+                          className="mt-1"
+                          rows={2}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Assignee</label>
+                        <Input 
+                          value={editingFeature.assignee || ''} 
+                          onChange={(e) => setEditingFeature({...editingFeature, assignee: e.target.value})}
+                          placeholder="Developer or team name"
+                          className="mt-1"
                         />
                       </div>
                     </div>
-                    <Select value={filterArea} onValueChange={(v) => setFilterArea(v as typeof filterArea)}>
-                      <SelectTrigger className="w-full md:w-48">
-                        <SelectValue placeholder="Area" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Areas</SelectItem>
-                        <SelectItem value="public">Public</SelectItem>
-                        <SelectItem value="user-panel">User Panel</SelectItem>
-                        <SelectItem value="admin-panel">Admin</SelectItem>
-                        <SelectItem value="api">API</SelectItem>
-                        <SelectItem value="core">Core</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as typeof filterStatus)}>
-                      <SelectTrigger className="w-full md:w-48">
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="planned">Planned</SelectItem>
-                        <SelectItem value="in-progress">In Progress</SelectItem>
-                        <SelectItem value="testing">Testing</SelectItem>
-                        <SelectItem value="review">Review</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="blocked">Blocked</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {viewMode === "kanban" ? (
-                    renderKanbanView()
-                  ) : (
-                    <div className="rounded-md border overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-24">ID</TableHead>
-                            <TableHead>
-                              <Button variant="ghost" size="sm" onClick={() => setSortField("title")}>
-                                Task <ArrowUpDown className="ml-2 h-4 w-4" />
-                              </Button>
-                            </TableHead>
-                            <TableHead>Area</TableHead>
-                            <TableHead>
-                              <Button variant="ghost" size="sm" onClick={() => setSortField("status")}>
-                                Status <ArrowUpDown className="ml-2 h-4 w-4" />
-                              </Button>
-                            </TableHead>
-                            <TableHead>
-                              <Button variant="ghost" size="sm" onClick={() => setSortField("priority")}>
-                                Priority <ArrowUpDown className="ml-2 h-4 w-4" />
-                              </Button>
-                            </TableHead>
-                            <TableHead>Updated</TableHead>
-                            <TableHead>Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredFeatures.map((feature) => (
-                            <TableRow key={feature.id}>
-                              <TableCell className="font-mono text-xs">{feature.id}</TableCell>
-                              <TableCell>
-                                <div>
-                                  <div className="font-medium">{feature.title}</div>
-                                  <div className="text-sm text-muted-foreground">{feature.description}</div>
-                                  {feature.comments && (
-                                    <div className="flex items-start gap-1 mt-1 text-xs text-amber-600">
-                                      <MessageSquare className="h-3 w-3 mt-0.5" />
-                                      <span>{feature.comments}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>{getAreaBadge(feature.area)}</TableCell>
-                              <TableCell>
-                                {isEditMode ? (
-                                  <Select 
-                                    value={feature.status} 
-                                    onValueChange={(value) => updateFeatureStatus(feature.id, value as StatusType)}
-                                  >
-                                    <SelectTrigger className="w-32">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="planned">Planned</SelectItem>
-                                      <SelectItem value="in-progress">In Progress</SelectItem>
-                                      <SelectItem value="testing">Testing</SelectItem>
-                                      <SelectItem value="review">Review</SelectItem>
-                                      <SelectItem value="completed">Completed</SelectItem>
-                                      <SelectItem value="blocked">Blocked</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  getStatusBadge(feature.status)
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline">P{feature.priority || 3}</Badge>
-                              </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">{feature.lastUpdated}</TableCell>
-                              <TableCell>
-                                <div className="flex gap-1">
-                                  {feature.testReportUrl && (
-                                    <Button variant="ghost" size="sm" asChild>
-                                      <a href={feature.testReportUrl} target="_blank" rel="noopener noreferrer">
-                                        <ExternalLink className="h-4 w-4" />
-                                      </a>
-                                    </Button>
-                                  )}
-                                  <Button variant="ghost" size="sm" onClick={() => handleEditFeature(feature)}>
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  {isEditMode && (
-                                    <Button variant="ghost" size="sm" onClick={() => deleteFeature(feature.id)}>
-                                      <Trash2 className="h-4 w-4 text-red-500" />
-                                    </Button>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
                   )}
-                </CardContent>
-              </Card>
-
-              {/* Analytics Cards */}
-              <div className="grid md:grid-cols-4 gap-4">
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold text-green-600">{features.filter(f => f.status === "completed").length}</div>
-                    <div className="text-sm text-muted-foreground">Completed</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold text-purple-600">{features.filter(f => f.status === "in-progress").length}</div>
-                    <div className="text-sm text-muted-foreground">In Progress</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold text-orange-600">{features.filter(f => f.status === "blocked").length}</div>
-                    <div className="text-sm text-muted-foreground">Blocked</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="text-2xl font-bold text-blue-600">{features.filter(f => f.status === "testing").length}</div>
-                    <div className="text-sm text-muted-foreground">Testing</div>
-                  </CardContent>
-                </Card>
-              </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="testing" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <TestTube className="h-5 w-5" />
-                      Test Suite
-                    </CardTitle>
-                    <Button onClick={runAllTests}>
-                      <Play className="h-4 w-4 mr-2" />
-                      Run All Tests
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setEditDialog(false)}>
+                      Cancel
                     </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12 text-muted-foreground">
-                    <TestTube className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Test cases will be displayed here</p>
-                    <p className="text-sm mt-2">Add test cases to track quality assurance</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="api" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Code className="h-5 w-5" />
-                    API Reference
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {apiEndpoints.map((endpoint, idx) => (
-                      <div key={idx} className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-3">
-                            <Badge variant={endpoint.method === "GET" ? "outline" : "default"}>
-                              {endpoint.method}
-                            </Badge>
-                            <code className="text-sm">{endpoint.path}</code>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {endpoint.authentication && <Shield className="h-4 w-4 text-orange-500" />}
-                            <Badge variant="outline">{endpoint.status}</Badge>
-                          </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{endpoint.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="changelog" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <GitBranch className="h-5 w-5" />
-                    Version History
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {changeLogs.map((log, index) => (
-                    <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <Badge variant="outline">{log.version}</Badge>
-                          <span className="text-sm text-muted-foreground ml-2">{log.date}</span>
-                        </div>
-                        <Badge>{log.type}</Badge>
-                      </div>
-                      <ul className="space-y-1">
-                        {log.changes.map((change, i) => (
-                          <li key={i} className="text-sm flex items-start gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                            <span>{change}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="standards" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Shield className="h-5 w-5" />
-                    Development Standards
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <h3 className="font-semibold mb-3">Code Quality Standards</h3>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        TypeScript strict mode enabled
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        ESLint + Prettier configuration
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        Component testing with Vitest
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                        Accessibility (WCAG 2.1 AA)
-                      </li>
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="analytics" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Project Analytics
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div className="text-center p-6 border rounded-lg">
-                      <div className="text-3xl font-bold text-blue-600">{features.length}</div>
-                      <div className="text-sm text-muted-foreground mt-2">Total Tasks</div>
-                    </div>
-                    <div className="text-center p-6 border rounded-lg">
-                      <div className="text-3xl font-bold text-green-600">
-                        {Math.round((features.filter(f => f.status === "completed").length / features.length) * 100)}%
-                      </div>
-                      <div className="text-sm text-muted-foreground mt-2">Completion Rate</div>
-                    </div>
-                    <div className="text-center p-6 border rounded-lg">
-                      <div className="text-3xl font-bold text-purple-600">
-                        {features.reduce((acc, f) => acc + (f.actualHours || 0), 0)}h
-                      </div>
-                      <div className="text-sm text-muted-foreground mt-2">Hours Logged</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-
-          {/* Edit Feature Dialog */}
-          <Dialog open={editDialog} onOpenChange={setEditDialog}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Edit Task</DialogTitle>
-                <DialogDescription>
-                  Update task details, status, and metadata
-                </DialogDescription>
-              </DialogHeader>
-              {editingFeature && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Task ID</label>
-                      <Input value={editingFeature.id} disabled className="mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Priority</label>
-                      <Select 
-                        value={editingFeature.priority?.toString()} 
-                        onValueChange={(v) => setEditingFeature({...editingFeature, priority: parseInt(v)})}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">P1 - Critical</SelectItem>
-                          <SelectItem value="2">P2 - High</SelectItem>
-                          <SelectItem value="3">P3 - Medium</SelectItem>
-                          <SelectItem value="4">P4 - Low</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Title</label>
-                    <Input 
-                      value={editingFeature.title} 
-                      onChange={(e) => setEditingFeature({...editingFeature, title: e.target.value})}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Description</label>
-                    <Textarea 
-                      value={editingFeature.description} 
-                      onChange={(e) => setEditingFeature({...editingFeature, description: e.target.value})}
-                      className="mt-1"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Area</label>
-                      <Select 
-                        value={editingFeature.area} 
-                        onValueChange={(v) => setEditingFeature({...editingFeature, area: v as AreaType})}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="public">Public</SelectItem>
-                          <SelectItem value="user-panel">User Panel</SelectItem>
-                          <SelectItem value="admin-panel">Admin Panel</SelectItem>
-                          <SelectItem value="api">API</SelectItem>
-                          <SelectItem value="core">Core</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Status</label>
-                      <Select 
-                        value={editingFeature.status} 
-                        onValueChange={(v) => setEditingFeature({...editingFeature, status: v as StatusType})}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="planned">Planned</SelectItem>
-                          <SelectItem value="in-progress">In Progress</SelectItem>
-                          <SelectItem value="testing">Testing</SelectItem>
-                          <SelectItem value="review">Review</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                          <SelectItem value="blocked">Blocked</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Estimated Hours</label>
-                      <Input 
-                        type="number"
-                        value={editingFeature.estimatedHours || ''} 
-                        onChange={(e) => setEditingFeature({...editingFeature, estimatedHours: parseInt(e.target.value) || 0})}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Actual Hours</label>
-                      <Input 
-                        type="number"
-                        value={editingFeature.actualHours || ''} 
-                        onChange={(e) => setEditingFeature({...editingFeature, actualHours: parseInt(e.target.value) || 0})}
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Test URL</label>
-                    <Input 
-                      value={editingFeature.testReportUrl || ''} 
-                      onChange={(e) => setEditingFeature({...editingFeature, testReportUrl: e.target.value})}
-                      placeholder="/path or URL"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Comments</label>
-                    <Textarea 
-                      value={editingFeature.comments || ''} 
-                      onChange={(e) => setEditingFeature({...editingFeature, comments: e.target.value})}
-                      placeholder="Notes, blockers, updates..."
-                      className="mt-1"
-                      rows={2}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Assignee</label>
-                    <Input 
-                      value={editingFeature.assignee || ''} 
-                      onChange={(e) => setEditingFeature({...editingFeature, assignee: e.target.value})}
-                      placeholder="Developer or team name"
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-              )}
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setEditDialog(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleSaveEdit}>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Changes
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </section>
+                    <Button onClick={handleSaveEdit}>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Changes
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </section>
         </div>
       </div>
     </div>
