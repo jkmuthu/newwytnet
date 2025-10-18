@@ -6966,6 +6966,181 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // Get list of engine roles (Super Admin only)
+  app.get('/api/admin/roles/list', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const user = req.user;
+
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Super Admin required'
+        });
+      }
+
+      const engineRoles = await db.select({
+        id: roles.id,
+        displayId: roles.displayId,
+        name: roles.name,
+        description: roles.description,
+        scope: roles.scope,
+      })
+        .from(roles)
+        .where(eq(roles.scope, 'engine'))
+        .orderBy(roles.name);
+
+      res.json({
+        success: true,
+        roles: engineRoles
+      });
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch roles'
+      });
+    }
+  });
+
+  // Create user (Super Admin only)
+  app.post('/api/admin/users/create', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const user = req.user;
+
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Super Admin required'
+        });
+      }
+
+      const { fullName, email, whatsappNumber, password, roleId } = req.body;
+
+      // Validation
+      if (!fullName || !email || !password) {
+        return res.status(400).json({
+          success: false,
+          error: 'Full name, email, and password are required'
+        });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid email format'
+        });
+      }
+
+      // Validate password strength (minimum 8 characters)
+      if (password.length < 8) {
+        return res.status(400).json({
+          success: false,
+          error: 'Password must be at least 8 characters long'
+        });
+      }
+
+      // Check if email already exists
+      const [existingUser] = await db.select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          error: 'Email already exists'
+        });
+      }
+
+      // Get role details if roleId provided
+      let selectedRole = null;
+      let isSuperAdmin = false;
+      if (roleId) {
+        [selectedRole] = await db.select()
+          .from(roles)
+          .where(eq(roles.id, roleId))
+          .limit(1);
+
+        // Auto-cascade: Super Admin gets all privileges
+        if (selectedRole?.name === 'Super Admin') {
+          isSuperAdmin = true;
+        }
+      }
+
+      // Hash password
+      const bcrypt = await import('bcryptjs');
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      // Split full name
+      const nameParts = fullName.trim().split(' ');
+      const firstName = nameParts[0];
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Generate user ID (format: usr_timestamp_random)
+      const userId = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+      // Create user
+      const [newUser] = await db.insert(users).values({
+        id: userId,
+        email,
+        firstName,
+        lastName,
+        name: fullName,
+        whatsappNumber: whatsappNumber || null,
+        passwordHash,
+        role: selectedRole?.name === 'Super Admin' ? 'super_admin' : 
+              selectedRole?.name === 'Admin' ? 'admin' : 'user',
+        isSuperAdmin,
+        isVerified: true, // Admin-created users are pre-verified
+        authMethods: ['password'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }).returning();
+
+      // Assign role in userRoles table if roleId provided
+      if (roleId) {
+        await db.insert(userRoles).values({
+          userId: newUser.id,
+          roleId,
+          assignedBy: user.id,
+          createdAt: new Date(),
+        });
+      }
+
+      // Log the action in audit logs
+      await logActivity(
+        db,
+        user.id,
+        'user',
+        'create',
+        newUser.id,
+        { email, role: selectedRole?.name || 'User' },
+        req
+      );
+
+      res.json({
+        success: true,
+        message: 'User created successfully',
+        user: {
+          id: newUser.id,
+          displayId: newUser.displayId,
+          email: newUser.email,
+          name: newUser.name,
+          role: newUser.role,
+          isSuperAdmin: newUser.isSuperAdmin,
+        }
+      });
+    } catch (error: any) {
+      console.error('Error creating user:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to create user'
+      });
+    }
+  });
+
   // Super Admin tenant management
   app.get('/api/admin/tenants', adminAuthMiddleware, async (req: any, res) => {
     try {

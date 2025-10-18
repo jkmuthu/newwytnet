@@ -8,7 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users as UsersIcon, Eye, Ban, Trash2, Shield, Clock, Mail, Phone, Calendar, Activity, BarChart3 } from "lucide-react";
+import { Users as UsersIcon, Eye, Ban, Trash2, Shield, Clock, Mail, Phone, Calendar, Activity, BarChart3, Plus } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -37,6 +40,15 @@ export default function AdminUsersImproved() {
   const [userStatusFilter, setUserStatusFilter] = useState<'active' | 'admins' | 'banned' | 'trash'>('active');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isUserDetailOpen, setIsUserDetailOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    whatsappNumber: '',
+    password: '',
+    confirmPassword: '',
+    roleId: '',
+  });
   const { toast } = useToast();
 
   const { data: usersData, isLoading } = useQuery<{
@@ -50,6 +62,20 @@ export default function AdminUsersImproved() {
     };
   }>({
     queryKey: ['/api/admin/users'],
+  });
+
+  // Fetch available roles for dropdown
+  const { data: rolesData } = useQuery<{
+    success: boolean;
+    roles: Array<{
+      id: string;
+      displayId: string;
+      name: string;
+      description: string;
+      scope: string;
+    }>;
+  }>({
+    queryKey: ['/api/admin/roles/list'],
   });
 
   // Trash management queries and mutations
@@ -86,6 +112,29 @@ export default function AdminUsersImproved() {
     },
     onError: (error: Error) => {
       toast({ title: "Error", description: error.message || "Failed to delete user", variant: "destructive" });
+    }
+  });
+
+  // Create user mutation
+  const createUserMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      return await apiRequest('POST', '/api/admin/users/create', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({ title: "Success", description: "User created successfully" });
+      setIsCreateDialogOpen(false);
+      setFormData({
+        fullName: '',
+        email: '',
+        whatsappNumber: '',
+        password: '',
+        confirmPassword: '',
+        roleId: '',
+      });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Failed to create user", variant: "destructive" });
     }
   });
 
@@ -143,6 +192,31 @@ export default function AdminUsersImproved() {
     }
   });
 
+  const handleCreateUser = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validation
+    if (formData.password !== formData.confirmPassword) {
+      toast({ 
+        title: "Error", 
+        description: "Passwords do not match", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      toast({ 
+        title: "Error", 
+        description: "Password must be at least 8 characters long", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    createUserMutation.mutate(formData);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -152,16 +226,28 @@ export default function AdminUsersImproved() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UsersIcon className="h-5 w-5" />
-            All Users
-            {usersData?.pagination && (
-              <Badge variant="secondary" className="ml-2">
-                {usersData.pagination.total} total
-              </Badge>
-            )}
-          </CardTitle>
-          <CardDescription>View and manage all registered users</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <UsersIcon className="h-5 w-5" />
+                All Users
+                {usersData?.pagination && (
+                  <Badge variant="secondary" className="ml-2">
+                    {usersData.pagination.total} total
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription>View and manage all registered users</CardDescription>
+            </div>
+            <Button 
+              onClick={() => setIsCreateDialogOpen(true)} 
+              className="gap-2"
+              data-testid="button-add-user"
+            >
+              <Plus className="h-4 w-4" />
+              Add User
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Status Filter Tabs */}
@@ -533,6 +619,119 @@ export default function AdminUsersImproved() {
               </Card>
             </TabsContent>
           </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create User Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-md" data-testid="dialog-create-user">
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+            <DialogDescription>
+              Create a new user account with specified role
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateUser} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Full Name *</Label>
+              <Input
+                id="fullName"
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                placeholder="Enter full name"
+                required
+                data-testid="input-fullName"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="Enter email address"
+                required
+                data-testid="input-email"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="whatsappNumber">WhatsApp Number (Optional)</Label>
+              <Input
+                id="whatsappNumber"
+                value={formData.whatsappNumber}
+                onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value })}
+                placeholder="+91 9876543210"
+                data-testid="input-whatsappNumber"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="roleId">Role *</Label>
+              <Select 
+                value={formData.roleId} 
+                onValueChange={(value) => setFormData({ ...formData, roleId: value })}
+                required
+              >
+                <SelectTrigger data-testid="select-role">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {rolesData?.roles?.map((role) => (
+                    <SelectItem key={role.id} value={role.id}>
+                      {role.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="password">Password *</Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder="Minimum 8 characters"
+                required
+                data-testid="input-password"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password *</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                placeholder="Re-enter password"
+                required
+                data-testid="input-confirmPassword"
+              />
+            </div>
+            
+            <div className="flex gap-2 justify-end pt-4">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setIsCreateDialogOpen(false)}
+                data-testid="button-cancel"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={createUserMutation.isPending}
+                data-testid="button-submit"
+              >
+                {createUserMutation.isPending ? 'Creating...' : 'Create User'}
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
