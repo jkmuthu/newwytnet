@@ -801,8 +801,10 @@ export async function getPrincipal(req: AuthenticatedRequest): Promise<Principal
   // Check 1: Engine Admin Session
   const adminUser = (req.session as any)?.adminUser;
   if (adminUser) {
+    console.log('[getPrincipal] Found engine admin session:', adminUser.id);
     const user = await storage.getUser(adminUser.id);
     if (user) {
+      console.log('[getPrincipal] Returning engine admin principal');
       return {
         id: user.id,
         tenantId: user.tenantId || '',
@@ -822,8 +824,10 @@ export async function getPrincipal(req: AuthenticatedRequest): Promise<Principal
   // Check 2: Hub Admin Session
   const hubAdminUser = (req.session as any)?.hubAdminUser;
   if (hubAdminUser) {
+    console.log('[getPrincipal] Found hub admin session:', hubAdminUser.userId);
     const user = await storage.getUser(hubAdminUser.userId);
     if (user) {
+      console.log('[getPrincipal] Returning hub admin principal');
       return {
         id: user.id,
         tenantId: user.tenantId || '',
@@ -843,9 +847,11 @@ export async function getPrincipal(req: AuthenticatedRequest): Promise<Principal
   // Check 3: Regular User Session (WytPass)
   const sessionUser = req.session?.user;
   if (sessionUser) {
+    console.log('[getPrincipal] Found regular user session:', sessionUser.id);
     // All users are now in the unified users table
     const user = await storage.getUser(sessionUser.id);
     if (user) {
+      console.log('[getPrincipal] Returning regular user principal');
       return {
         id: user.id,
         tenantId: user.tenantId || '',
@@ -864,9 +870,11 @@ export async function getPrincipal(req: AuthenticatedRequest): Promise<Principal
 
   // Return existing user from middleware if available
   if (req.user) {
+    console.log('[getPrincipal] Returning req.user from middleware');
     return req.user;
   }
 
+  console.log('[getPrincipal] No principal found in any session');
   return null;
 }
 
