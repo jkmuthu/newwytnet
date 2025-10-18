@@ -798,7 +798,28 @@ export const isAuthenticatedUnified: RequestHandler = async (req, res, next) => 
 
 // Unified Principal resolver for all three authentication systems  
 export async function getPrincipal(req: AuthenticatedRequest): Promise<Principal | null> {
-  // Check 1: Engine Admin Session
+  // Check 0: WytPass Principal (New unified system)
+  const wytpassPrincipal = (req.session as any)?.wytpassPrincipal;
+  if (wytpassPrincipal) {
+    const user = await storage.getUser(wytpassPrincipal.id);
+    if (user) {
+      return {
+        id: user.id,
+        tenantId: user.tenantId || '',
+        role: (user as any).role || wytpassPrincipal.role || 'user',
+        isSuperAdmin: wytpassPrincipal.isSuperAdmin || false,
+        email: user.email || undefined,
+        firstName: user.firstName || undefined,
+        lastName: user.lastName || undefined,
+        name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}`.trim() : user.firstName || undefined,
+        mobileNumber: user.mobileNumber || undefined,
+        profileImageUrl: user.profileImageUrl || undefined,
+        provider: wytpassPrincipal.loginType || 'unified'
+      };
+    }
+  }
+
+  // Check 1: Engine Admin Session (Legacy)
   const adminUser = (req.session as any)?.adminUser;
   if (adminUser) {
     const user = await storage.getUser(adminUser.id);
