@@ -38,10 +38,17 @@ export const tenants = pgTable("tenants", {
   subdomain: varchar("subdomain", { length: 100 }).unique(),
   status: varchar("status", { length: 20 }).notNull().default('active'),
   settings: jsonb("settings").default({}),
+  
+  // Soft delete support for trash/recovery system
+  deletedAt: timestamp("deleted_at"),
+  deletedBy: varchar("deleted_by"),
+  deleteReason: text("delete_reason"),
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_tenants_display_id").on(table.displayId),
+  index("idx_tenants_deleted_at").on(table.deletedAt),
 ]);
 
 // Enums - must be defined before they are used
@@ -80,10 +87,16 @@ export const users = pgTable("users", {
   profileComplete: boolean("profile_complete").default(false),
   lastLoginAt: timestamp("last_login_at"),
   
+  // Soft delete support for trash/recovery system
+  deletedAt: timestamp("deleted_at"),
+  deletedBy: varchar("deleted_by"),
+  deleteReason: text("delete_reason"),
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_users_display_id").on(table.displayId),
+  index("idx_users_deleted_at").on(table.deletedAt),
 ]);
 
 
@@ -231,6 +244,12 @@ export const pages = pgTable("pages", {
   status: varchar("status", { length: 20 }).notNull().default('draft'),
   publishedAt: timestamp("published_at"),
   themeRef: varchar("theme_ref", { length: 100 }),
+  
+  // Soft delete support for trash/recovery system
+  deletedAt: timestamp("deleted_at"),
+  deletedBy: varchar("deleted_by"),
+  deleteReason: text("delete_reason"),
+  
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -245,6 +264,12 @@ export const blocks = pgTable("blocks", {
   content: jsonb("content").notNull(),
   settings: jsonb("settings").default({}),
   isGlobal: boolean("is_global").default(false),
+  
+  // Soft delete support for trash/recovery system
+  deletedAt: timestamp("deleted_at"),
+  deletedBy: varchar("deleted_by"),
+  deleteReason: text("delete_reason"),
+  
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -293,6 +318,11 @@ export const apps = pgTable("apps", {
   // Access Restrictions - Granular control
   restrictedTo: jsonb("restricted_to").default([]), // ['engine-only', 'hub-only', 'specific-tenant']
   
+  // Soft delete support for trash/recovery system
+  deletedAt: timestamp("deleted_at"),
+  deletedBy: varchar("deleted_by"),
+  deleteReason: text("delete_reason"),
+  
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -323,11 +353,18 @@ export const hubs = pgTable("hubs", {
   moderationSettings: jsonb("moderation_settings").default({}),
   revenueModel: jsonb("revenue_model").default({}),
   status: varchar("status", { length: 20 }).notNull().default('draft'),
+  
+  // Soft delete support for trash/recovery system
+  deletedAt: timestamp("deleted_at"),
+  deletedBy: varchar("deleted_by"),
+  deleteReason: text("delete_reason"),
+  
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_hubs_display_id").on(table.displayId),
+  index("idx_hubs_deleted_at").on(table.deletedAt),
 ]);
 
 // Platform Modules - Context-Aware Plugins (like WordPress plugins)
@@ -381,6 +418,11 @@ export const platformModules = pgTable("platform_modules", {
   installs: integer("installs").default(0),
   creator: varchar("creator", { length: 255 }),
   order: integer("order").default(0),
+  
+  // Soft delete support for trash/recovery system
+  deletedAt: timestamp("deleted_at"),
+  deletedBy: varchar("deleted_by"),
+  deleteReason: text("delete_reason"),
   
   tenantId: uuid("tenant_id").references(() => tenants.id),
   createdBy: varchar("created_by").references(() => users.id),
@@ -3825,7 +3867,7 @@ export const knowledgeBaseArticles = pgTable("knowledge_base_articles", {
   category: varchar("category", { length: 100 }),
   tags: jsonb("tags").default([]),
   isPublished: boolean("is_published").default(false),
-  views: integer("views").default(0),
+  viewsCount: integer("views_count").default(0),
   helpful: integer("helpful").default(0),
   authorId: varchar("author_id").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
