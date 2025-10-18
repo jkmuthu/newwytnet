@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Menu, Home, Bot, Activity, QrCode, Grid3x3, Network, Smartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Footer from "@/components/layout/footer";
+import UniversalAuthHeader from "@/components/universal/UniversalAuthHeader";
 
 interface PublicMobileLayoutProps {
   children: ReactNode;
@@ -79,20 +80,10 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
               />
             </Link>
 
-            {/* Right side - Login/Join + Menu */}
+            {/* Right side - Universal Auth + Menu */}
             <div className="flex items-center gap-2">
-              {/* Access Buttons */}
-              <div className="flex items-center gap-1">
-                <Link href="/login">
-                  <Button 
-                    size="sm"
-                    className="text-xs px-3 py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-                    data-testid="mobile-login-button"
-                  >
-                    Login
-                  </Button>
-                </Link>
-              </div>
+              {/* Universal Authentication */}
+              <UniversalAuthHeader />
               
               {/* Hamburger Menu */}
               <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>

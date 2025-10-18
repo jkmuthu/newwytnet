@@ -127,7 +127,7 @@ import {
   type InsertMedia,
   platformHubs,
   platformHubAdmins,
-  adminUsers,
+  userRoles,
   roles
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
@@ -288,14 +288,14 @@ export async function registerRoutes(app: Express): Promise<void> {
       // Get current route to determine active panel
       const currentPath = req.headers.referer || '';
       
-      // 1. Check Engine Admin Access (admin_users table)
+      // 1. Check Engine Admin Access (user_roles table)
       const engineAdminRecord = await db
         .select()
-        .from(adminUsers)
-        .where(eq(adminUsers.userId, userId))
+        .from(userRoles)
+        .where(eq(userRoles.userId, userId))
         .limit(1);
       
-      if (engineAdminRecord.length > 0 && engineAdminRecord[0].isActive) {
+      if (engineAdminRecord.length > 0) {
         // Get role details
         const roleRecord = await db
           .select()
