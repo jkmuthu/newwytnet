@@ -78,8 +78,9 @@ export default function FiltersPanel({
   return (
     <>
       <CardHeader className="pb-4">
-        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white">
-          Filters
+        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+          <MapPin className="h-5 w-5 mr-2" />
+          Location
         </CardTitle>
       </CardHeader>
       
@@ -87,6 +88,96 @@ export default function FiltersPanel({
       
       <CardContent className="pt-4 space-y-4">
         
+        {/* Location Filter - Now at top */}
+        <div className="space-y-2">
+          {selectedLocation ? (
+            <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  {selectedLocation}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearLocation}
+                className="h-6 w-6 p-0 hover:bg-blue-100 dark:hover:bg-blue-800"
+                data-testid="button-clear-location"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <Popover open={showCityDropdown} onOpenChange={setShowCityDropdown}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className="w-full justify-start text-left font-normal"
+                  data-testid="button-select-location"
+                >
+                  <MapPin className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                  Select location...
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[280px] p-0" align="start">
+                <Command>
+                  <CommandInput 
+                    placeholder="Search cities..." 
+                    value={locationSearch}
+                    onValueChange={setLocationSearch}
+                    data-testid="input-location-search"
+                  />
+                  <CommandList>
+                    <CommandEmpty>
+                      {citiesLoading ? "Loading cities..." : "No city found."}
+                    </CommandEmpty>
+                    <CommandGroup>
+                      {/* Nearby option first */}
+                      <CommandItem
+                        value="nearby"
+                        onSelect={() => handleCitySelect("Nearby")}
+                        data-testid="location-option-nearby"
+                      >
+                        <MapPin className="mr-2 h-4 w-4 text-blue-600" />
+                        <span className="font-medium">Nearby</span>
+                        <span className="ml-auto text-xs text-gray-500">
+                          Use my location
+                        </span>
+                      </CommandItem>
+                      
+                      {/* City options */}
+                      {filteredCities.map((city: any) => {
+                        const cityName = city.label || city.name;
+                        const cityState = city.metadata?.state || city.state;
+                        return (
+                          <CommandItem
+                            key={city.code || cityName}
+                            value={cityName}
+                            onSelect={() => handleCitySelect(cityName)}
+                            data-testid={`location-option-${cityName.toLowerCase().replace(/\s+/g, '-')}`}
+                          >
+                            <MapPin className="mr-2 h-4 w-4" />
+                            <span>{cityName}</span>
+                            {cityState && (
+                              <span className="ml-auto text-xs text-gray-500">
+                                {cityState}
+                              </span>
+                            )}
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          )}
+        </div>
+
+        <Separator className="dark:bg-gray-700" />
+
         {/* Category Filters - Collapsible */}
         <Collapsible open={categoriesOpen} onOpenChange={setCategoriesOpen}>
           <CollapsibleTrigger className="flex items-center justify-between w-full group">
@@ -130,95 +221,6 @@ export default function FiltersPanel({
             </div>
           </CollapsibleContent>
         </Collapsible>
-
-        <Separator className="dark:bg-gray-700" />
-
-        {/* Location Filter - Collapsible */}
-        <Collapsible open={locationOpen} onOpenChange={setLocationOpen}>
-          <CollapsibleTrigger className="flex items-center justify-between w-full group">
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center">
-              <MapPin className="h-4 w-4 mr-2" />
-              Location
-            </h3>
-            <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${locationOpen ? 'rotate-180' : ''}`} />
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-3 space-y-2">
-            {selectedLocation ? (
-              <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                  <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                    {selectedLocation}
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleClearLocation}
-                  className="h-6 w-6 p-0 hover:bg-blue-100 dark:hover:bg-blue-800"
-                  data-testid="button-clear-location"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <Popover open={showCityDropdown} onOpenChange={setShowCityDropdown}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    className="w-full justify-start text-left font-normal"
-                    data-testid="button-select-location"
-                  >
-                    <MapPin className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-                    Select city...
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[280px] p-0" align="start">
-                  <Command>
-                    <CommandInput 
-                      placeholder="Search cities..." 
-                      value={locationSearch}
-                      onValueChange={setLocationSearch}
-                      data-testid="input-location-search"
-                    />
-                    <CommandList>
-                      <CommandEmpty>
-                        {citiesLoading ? "Loading cities..." : "No city found."}
-                      </CommandEmpty>
-                      <CommandGroup>
-                        {filteredCities.map((city: any) => {
-                          const cityName = city.label || city.name;
-                          const cityState = city.metadata?.state || city.state;
-                          return (
-                            <CommandItem
-                              key={city.code || cityName}
-                              value={cityName}
-                              onSelect={() => handleCitySelect(cityName)}
-                              data-testid={`location-option-${cityName.toLowerCase().replace(/\s+/g, '-')}`}
-                            >
-                              <MapPin className="mr-2 h-4 w-4" />
-                              <span>{cityName}</span>
-                              {cityState && (
-                                <span className="ml-auto text-xs text-gray-500">
-                                  {cityState}
-                                </span>
-                              )}
-                            </CommandItem>
-                          );
-                        })}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            )}
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              Filter posts by city (powered by WytData)
-            </p>
-          </CollapsibleContent>
-        </Collapsible>
-
 
       </CardContent>
     </>
