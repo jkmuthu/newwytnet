@@ -64,6 +64,31 @@ router.get("/admin/roles", adminAuthMiddleware, requirePermission('roles-permiss
   }
 });
 
+// GET /api/admin/roles/list - Get simplified list of engine roles (for dropdowns)
+router.get("/admin/roles/list", adminAuthMiddleware, async (req, res) => {
+  try {
+    const engineRoles = await db
+      .select({
+        id: roles.id,
+        displayId: roles.displayId,
+        name: roles.name,
+        description: roles.description,
+        scope: roles.scope,
+      })
+      .from(roles)
+      .where(eq(roles.scope, 'engine'))
+      .orderBy(roles.name);
+
+    res.json({
+      success: true,
+      roles: engineRoles
+    });
+  } catch (error) {
+    console.error("Error fetching roles list:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch roles" });
+  }
+});
+
 // GET /api/admin/roles/:id - Get role by ID
 router.get("/admin/roles/:id", adminAuthMiddleware, requirePermission('roles-permissions', 'view'), async (req, res) => {
   try {

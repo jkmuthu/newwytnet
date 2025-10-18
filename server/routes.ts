@@ -6966,42 +6966,6 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Get list of engine roles (Super Admin only)
-  app.get('/api/admin/roles/list', adminAuthMiddleware, async (req: any, res) => {
-    try {
-      const user = req.user;
-
-      if (!user?.isSuperAdmin) {
-        return res.status(403).json({
-          success: false,
-          error: 'Access denied: Super Admin required'
-        });
-      }
-
-      const engineRoles = await db.select({
-        id: roles.id,
-        displayId: roles.displayId,
-        name: roles.name,
-        description: roles.description,
-        scope: roles.scope,
-      })
-        .from(roles)
-        .where(eq(roles.scope, 'engine'))
-        .orderBy(roles.name);
-
-      res.json({
-        success: true,
-        roles: engineRoles
-      });
-    } catch (error) {
-      console.error('Error fetching roles:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch roles'
-      });
-    }
-  });
-
   // Create user (Super Admin only)
   app.post('/api/admin/users/create', adminAuthMiddleware, async (req: any, res) => {
     try {
