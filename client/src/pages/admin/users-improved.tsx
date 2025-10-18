@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,10 +8,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Users as UsersIcon, Eye, Ban, Trash2, Shield, Clock, Mail, Phone, Calendar, Activity, BarChart3, Plus } from "lucide-react";
+import { Users as UsersIcon, Eye, Ban, Trash2, Shield, Clock, Mail, Phone, Calendar, Activity, BarChart3, Plus, Settings as SettingsIcon, Check, X } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -36,8 +38,225 @@ interface User {
   status?: 'active' | 'banned' | 'trash';
 }
 
+interface AuthSettings {
+  email_validation_required: boolean;
+  password_min_length: number;
+  password_require_uppercase: boolean;
+  password_require_numbers: boolean;
+  password_require_special_chars: boolean;
+  enabled_auth_providers: string[];
+  allow_hub_override_auth: boolean;
+}
+
+function SettingsContent() {
+  const { toast } = useToast();
+  const [settings, setSettings] = useState<AuthSettings>({
+    email_validation_required: false,
+    password_min_length: 8,
+    password_require_uppercase: false,
+    password_require_numbers: false,
+    password_require_special_chars: false,
+    enabled_auth_providers: [],
+    allow_hub_override_auth: false,
+  });
+
+  const { data: authSettings, isLoading } = useQuery<{ success: boolean; settings: AuthSettings }>({
+    queryKey: ['/api/admin/settings/authentication'],
+  });
+
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (data: Partial<AuthSettings>) => {
+      return await apiRequest('PUT', '/api/admin/settings/authentication', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/settings/authentication'] });
+      toast({ title: "Success", description: "Authentication settings updated successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Failed to update settings", variant: "destructive" });
+    }
+  });
+
+  // Update local state when data is fetched (using useEffect to avoid render-time state updates)
+  useEffect(() => {
+    if (authSettings?.settings) {
+      setSettings(authSettings.settings);
+    }
+  }, [authSettings]);
+
+  const handleToggleProvider = (provider: string) => {
+    const currentProviders = settings.enabled_auth_providers || [];
+    const newProviders = currentProviders.includes(provider)
+      ? currentProviders.filter(p => p !== provider)
+      : [...currentProviders, provider];
+    
+    setSettings({ ...settings, enabled_auth_providers: newProviders });
+  };
+
+  const handleSave = () => {
+    updateSettingsMutation.mutate(settings);
+  };
+
+  if (isLoading) {
+    return <div className="text-center py-8 text-muted-foreground">Loading settings...</div>;
+  }
+
+  // OAuth provider configuration status (based on available secrets)
+  const oauthSecrets: Record<string, boolean> = {
+    'GOOGLE_CLIENT_ID': true,     // Available in environment
+    'FACEBOOK_APP_ID': false,      // Missing (in missing_secrets)
+    'LINKEDIN_CLIENT_ID': true,    // Available in environment
+  };
+
+  const authProviders = [
+    { id: 'google', label: 'Google OAuth', secretKey: 'GOOGLE_CLIENT_ID', isConfigured: oauthSecrets['GOOGLE_CLIENT_ID'] },
+    { id: 'facebook', label: 'Facebook OAuth', secretKey: 'FACEBOOK_APP_ID', isConfigured: oauthSecrets['FACEBOOK_APP_ID'] },
+    { id: 'linkedin', label: 'LinkedIn OAuth', secretKey: 'LINKEDIN_CLIENT_ID', isConfigured: oauthSecrets['LINKEDIN_CLIENT_ID'] },
+    { id: 'email_password', label: 'Email + Password', secretKey: null, isConfigured: true },
+    { id: 'email_otp', label: 'Email OTP', secretKey: null, isConfigured: true },
+    { id: 'whatsapp_otp', label: 'WhatsApp OTP', secretKey: null, isConfigured: true },
+    { id: 'sms_otp', label: 'SMS OTP', secretKey: null, isConfigured: true },
+  ];
+
+  return (
+    <div className="space-y-6 py-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <SettingsIcon className="h-5 w-5" />
+            Authentication & Security Settings
+          </h3>
+          <p className="text-sm text-muted-foreground">Configure user authentication and security requirements</p>
+        </div>
+        <Button onClick={handleSave} disabled={updateSettingsMutation.isPending} data-testid="button-save-settings">
+          {updateSettingsMutation.isPending ? 'Saving...' : 'Save Changes'}
+        </Button>
+      </div>
+
+      {/* Email Validation */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Email Validation</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="email-validation">Require Email Verification</Label>
+              <p className="text-sm text-muted-foreground">Users must verify their email before logging in</p>
+            </div>
+            <Switch
+              id="email-validation"
+              checked={settings.email_validation_required}
+              onCheckedChange={(checked) => setSettings({ ...settings, email_validation_required: checked })}
+              data-testid="switch-email-validation"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Password Strength */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Password Strength Requirements</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="password-length">Minimum Password Length</Label>
+            <Input
+              id="password-length"
+              type="number"
+              min="6"
+              max="128"
+              value={settings.password_min_length}
+              onChange={(e) => setSettings({ ...settings, password_min_length: parseInt(e.target.value) || 8 })}
+              data-testid="input-password-length"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password-uppercase">Require Uppercase Letters</Label>
+            <Switch
+              id="password-uppercase"
+              checked={settings.password_require_uppercase}
+              onCheckedChange={(checked) => setSettings({ ...settings, password_require_uppercase: checked })}
+              data-testid="switch-password-uppercase"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password-numbers">Require Numbers</Label>
+            <Switch
+              id="password-numbers"
+              checked={settings.password_require_numbers}
+              onCheckedChange={(checked) => setSettings({ ...settings, password_require_numbers: checked })}
+              data-testid="switch-password-numbers"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password-special">Require Special Characters</Label>
+            <Switch
+              id="password-special"
+              checked={settings.password_require_special_chars}
+              onCheckedChange={(checked) => setSettings({ ...settings, password_require_special_chars: checked })}
+              data-testid="switch-password-special"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Authentication Providers */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Enabled Authentication Methods</CardTitle>
+          <CardDescription>Select which login methods are available to users</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {authProviders.map((provider) => (
+            <div key={provider.id} className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id={`provider-${provider.id}`}
+                  checked={settings.enabled_auth_providers?.includes(provider.id)}
+                  onCheckedChange={() => handleToggleProvider(provider.id)}
+                  data-testid={`checkbox-provider-${provider.id}`}
+                />
+                <Label htmlFor={`provider-${provider.id}`} className="cursor-pointer">{provider.label}</Label>
+              </div>
+              {provider.secretKey && (
+                <Badge variant={provider.isConfigured ? "default" : "secondary"} className="text-xs">
+                  {provider.isConfigured ? <Check className="h-3 w-3 mr-1" /> : <X className="h-3 w-3 mr-1" />}
+                  {provider.isConfigured ? "Configured" : "Not Configured"}
+                </Badge>
+              )}
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Hub Override */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Hub-Level Customization</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="hub-override">Allow Hub Admins to Override Settings</Label>
+              <p className="text-sm text-muted-foreground">Hub administrators can customize authentication settings for their hub</p>
+            </div>
+            <Switch
+              id="hub-override"
+              checked={settings.allow_hub_override_auth}
+              onCheckedChange={(checked) => setSettings({ ...settings, allow_hub_override_auth: checked })}
+              data-testid="switch-hub-override"
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function AdminUsersImproved() {
-  const [userStatusFilter, setUserStatusFilter] = useState<'active' | 'admins' | 'banned' | 'trash'>('active');
+  const [userStatusFilter, setUserStatusFilter] = useState<'active' | 'admins' | 'banned' | 'trash' | 'settings'>('active');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isUserDetailOpen, setIsUserDetailOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -265,11 +484,16 @@ export default function AdminUsersImproved() {
               <TabsTrigger value="trash" data-testid="tab-users-trash">
                 Trash ({trashCount})
               </TabsTrigger>
+              <TabsTrigger value="settings" data-testid="tab-users-settings">
+                Settings
+              </TabsTrigger>
             </TabsList>
           </Tabs>
 
-          {/* Users Table or Trash View */}
-          {userStatusFilter === 'trash' ? (
+          {/* Settings Tab Content */}
+          {userStatusFilter === 'settings' ? (
+            <SettingsContent />
+          ) : userStatusFilter === 'trash' ? (
             <TrashView
               items={trashUsersData?.users || []}
               entityType="users"
