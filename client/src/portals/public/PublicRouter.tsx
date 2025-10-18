@@ -65,7 +65,7 @@ export default function PublicRouter() {
       <Route path="/contact" component={Contact} />
       <Route path="/help" component={Help} />
 
-      {/* WytHubs */}
+      {/* WytLife - Lifestyle & Community */}
       <Route path="/wytlife" component={WytLife} />
       <Route path="/status" component={Status} />
 

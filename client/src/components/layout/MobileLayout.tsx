@@ -25,8 +25,14 @@ export default function MobileLayout({ children, isMobile }: MobileLayoutProps) 
     {
       href: "/",
       icon: Home,
-      label: "Home",
+      label: "WytWall",
       active: location === "/"
+    },
+    {
+      href: "/wytapps",
+      icon: Briefcase,
+      label: "WytApps",
+      active: location === "/wytapps"
     },
     {
       href: "/wytlife", 
@@ -35,16 +41,10 @@ export default function MobileLayout({ children, isMobile }: MobileLayoutProps) 
       active: location === "/wytlife"
     },
     {
-      href: "/qr-generator",
-      icon: Wrench,
-      label: "Apps",
-      active: location === "/qr-generator" || location === "/assessment"
-    },
-    {
-      href: "/wytapps",
-      icon: Briefcase,
-      label: "WytApps",
-      active: location === "/wytapps"
+      href: "/ai-directory",
+      icon: Bot,
+      label: "AI Directory",
+      active: location === "/ai-directory" || location === "/qr-generator" || location === "/assessment"
     }
   ];
 

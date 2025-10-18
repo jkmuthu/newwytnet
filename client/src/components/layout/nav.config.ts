@@ -3,7 +3,7 @@ import { Bot, Home, QrCode, Briefcase, Activity } from "lucide-react";
 export const bottomNavItems = [
   { 
     icon: Home, 
-    label: 'Home', 
+    label: 'WytWall', 
     href: '/', 
     badge: null,
     activeRoutes: ['/']
@@ -13,21 +13,21 @@ export const bottomNavItems = [
     label: 'WytApps', 
     href: '/wytapps', 
     badge: null,
-    activeRoutes: ['/wytapps', '/qr-generator', '/assessment', '/ai-directory']
-  },
-  { 
-    icon: QrCode, 
-    label: 'Features', 
-    href: '/features', 
-    badge: null,
-    activeRoutes: ['/features']
+    activeRoutes: ['/wytapps']
   },
   { 
     icon: Activity, 
-    label: 'Pricing', 
-    href: '/pricing', 
+    label: 'WytLife', 
+    href: '/wytlife', 
     badge: null,
-    activeRoutes: ['/pricing']
+    activeRoutes: ['/wytlife']
+  },
+  { 
+    icon: Bot, 
+    label: 'AI Directory', 
+    href: '/ai-directory', 
+    badge: null,
+    activeRoutes: ['/ai-directory', '/qr-generator', '/assessment']
   }
 ];
 

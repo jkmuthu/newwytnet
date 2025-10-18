@@ -25,7 +25,7 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
     {
       href: "/",
       icon: Home,
-      label: "Home",
+      label: "WytWall",
       active: location === "/"
     },
     {
@@ -35,16 +35,16 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
       active: location === "/wytapps"
     },
     {
-      href: "/features",
+      href: "/wytlife",
       icon: Activity,
-      label: "Features",
-      active: location === "/features"
+      label: "WytLife",
+      active: location === "/wytlife"
     },
     {
-      href: "/pricing", 
-      icon: Smartphone,
-      label: "Pricing",
-      active: location === "/pricing"
+      href: "/ai-directory", 
+      icon: Bot,
+      label: "AI Directory",
+      active: location === "/ai-directory" || location === "/qr-generator" || location === "/assessment"
     }
   ];
 
