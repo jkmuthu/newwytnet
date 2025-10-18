@@ -487,6 +487,21 @@ export default function WytAIAgent() {
     setIsLoading(true);
 
     try {
+      // Detect current page context
+      const pageContext = {
+        path: location,
+        pageName: location.includes('/admin/users') ? 'User Management' :
+                  location.includes('/admin/modules') ? 'Module Library' :
+                  location.includes('/admin/apps') ? 'Apps Management' :
+                  location.includes('/admin/hubs') ? 'Hubs Management' :
+                  location.includes('/admin/tenants') ? 'Tenants & Organizations' :
+                  location.includes('/admin/global-settings') ? 'Global Settings' :
+                  location.includes('/admin/themes') ? 'Themes' :
+                  location.includes('/admin/analytics') ? 'Analytics' :
+                  location.includes('/admin/system') ? 'System & Security' :
+                  location.includes('/admin') ? 'Engine Admin Panel' : 'Unknown Page',
+      };
+
       const response = await apiRequest("/api/admin/wytai/chat", "POST", {
         messages: [
           {
@@ -495,6 +510,8 @@ export default function WytAIAgent() {
           }
         ],
         model: selectedModel,
+        mode: chatMode,
+        pageContext,
       });
 
       const data = await response.json();
