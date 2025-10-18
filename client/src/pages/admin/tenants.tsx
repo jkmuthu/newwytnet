@@ -10,7 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Building, Eye, Users, Settings, Activity, Calendar, Globe, Mail, Phone, MapPin } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { TrashView } from "@/components/shared/TrashView";
 
 interface Organization {
   id: string;
@@ -27,6 +28,9 @@ interface Organization {
   phone?: string;
   location?: string;
   teamMembers?: number;
+  deletedAt: string | null;
+  deletedBy: string | null;
+  deleteReason: string | null;
 }
 
 
@@ -38,6 +42,43 @@ export default function AdminTenants() {
 
   const { data: orgsData, isLoading } = useQuery({
     queryKey: ['/api/admin/organizations'],
+  });
+
+  // Trash management queries and mutations
+  const { data: trashOrgsData, isLoading: isLoadingTrash } = useQuery<{
+    success: boolean;
+    tenants: Organization[];
+    count: number;
+  }>({
+    queryKey: ['/api/admin/trash/tenants'],
+  });
+
+  const restoreOrgMutation = useMutation({
+    mutationFn: async (orgId: string) => {
+      return await apiRequest('POST', `/api/admin/trash/tenants/${orgId}/restore`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/trash/tenants'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/organizations'] });
+      toast({ title: "Success", description: "Organization restored successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Failed to restore organization", variant: "destructive" });
+    }
+  });
+
+  const permanentlyDeleteOrgMutation = useMutation({
+    mutationFn: async (orgId: string) => {
+      return await apiRequest('DELETE', `/api/admin/trash/tenants/${orgId}/permanent`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/trash/tenants'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/organizations'] });
+      toast({ title: "Success", description: "Organization permanently deleted" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Failed to delete organization", variant: "destructive" });
+    }
   });
 
   const organizations = ((orgsData as any)?.organizations || []) as Organization[];
@@ -98,76 +139,96 @@ export default function AdminTenants() {
                 Inactive ({organizations.filter(o => o.status === 'inactive').length})
               </TabsTrigger>
               <TabsTrigger value="trash" data-testid="tab-orgs-trash">
-                Trash ({organizations.filter(o => o.status === 'trash').length})
+                Trash ({trashOrgsData?.count || 0})
               </TabsTrigger>
             </TabsList>
           </Tabs>
 
-          {/* Organizations Table */}
-          {filteredOrgs.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No {orgStatusFilter} organizations found
-            </div>
+          {/* Trash View for deleted organizations */}
+          {orgStatusFilter === 'trash' ? (
+            <TrashView<Organization>
+              items={trashOrgsData?.tenants || []}
+              isLoading={isLoadingTrash}
+              entityType="Organization"
+              onRestore={async (id: string) => { await restoreOrgMutation.mutateAsync(id); }}
+              onPermanentDelete={async (id: string) => { await permanentlyDeleteOrgMutation.mutateAsync(id); }}
+              renderItemName={(org: Organization) => org.name}
+              renderItemDetails={(org: Organization) => (
+                <div className="text-sm text-muted-foreground">
+                  {org.displayId && <span className="font-mono">{org.displayId}</span>}
+                  {org.industry && <span className="ml-2">• {org.industry}</span>}
+                </div>
+              )}
+            />
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Organization</TableHead>
-                    <TableHead>Industry</TableHead>
-                    <TableHead>Employees</TableHead>
-                    <TableHead>Team Members</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredOrgs.map((org) => (
-                    <TableRow key={org.id} data-testid={`row-org-${org.id}`}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarFallback className="bg-purple-600 text-white">
-                              {getOrgInitials(org.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">{org.name}</div>
-                            <div className="text-sm text-muted-foreground font-mono">{org.displayId}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{org.industry}</Badge>
-                      </TableCell>
-                      <TableCell>{org.employees} employees</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                          <span>{org.teamMembers}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(org.status)}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {format(new Date(org.createdAt), 'MMM dd, yyyy')}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewOrg(org)}
-                          data-testid={`button-view-org-${org.id}`}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            <>
+              {/* Organizations Table */}
+              {filteredOrgs.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No {orgStatusFilter} organizations found
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Organization</TableHead>
+                        <TableHead>Industry</TableHead>
+                        <TableHead>Employees</TableHead>
+                        <TableHead>Team Members</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredOrgs.map((org) => (
+                        <TableRow key={org.id} data-testid={`row-org-${org.id}`}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-10 w-10">
+                                <AvatarFallback className="bg-purple-600 text-white">
+                                  {getOrgInitials(org.name)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-medium">{org.name}</div>
+                                <div className="text-sm text-muted-foreground font-mono">{org.displayId}</div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{org.industry}</Badge>
+                          </TableCell>
+                          <TableCell>{org.employees} employees</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Users className="h-4 w-4 text-muted-foreground" />
+                              <span>{org.teamMembers}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{getStatusBadge(org.status)}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {format(new Date(org.createdAt), 'MMM dd, yyyy')}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewOrg(org)}
+                              data-testid={`button-view-org-${org.id}`}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
