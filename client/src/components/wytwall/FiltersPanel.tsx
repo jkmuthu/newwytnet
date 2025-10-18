@@ -77,16 +77,7 @@ export default function FiltersPanel({
 
   return (
     <>
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
-          <MapPin className="h-5 w-5 mr-2" />
-          Location
-        </CardTitle>
-      </CardHeader>
-      
-      <Separator className="dark:bg-gray-700" />
-      
-      <CardContent className="pt-4 space-y-4">
+      <CardContent className="pt-6 space-y-4">
         
         {/* Location Filter - Now at top */}
         <div className="space-y-2">
