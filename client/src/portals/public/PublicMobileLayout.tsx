@@ -1,8 +1,6 @@
-import { useState, ReactNode } from "react";
+import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Home, Bot, Activity, QrCode, Grid3x3, Network, Smartphone } from "lucide-react";
+import { Home, Bot, Activity, QrCode, Grid3x3, Smartphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Footer from "@/components/layout/footer";
 import UniversalAuthHeader from "@/components/universal/UniversalAuthHeader";
@@ -18,7 +16,6 @@ interface PublicMobileLayoutProps {
  */
 export default function PublicMobileLayout({ children, showFooter = true }: PublicMobileLayoutProps) {
   const [location] = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Bottom navigation items for mobile
   const bottomNavItems = [
@@ -80,56 +77,17 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
               />
             </Link>
 
-            {/* Right side - Universal Auth + Menu */}
+            {/* Right side - Universal Auth only */}
             <div className="flex items-center gap-2">
-              {/* Universal Authentication */}
-              <UniversalAuthHeader />
-              
-              {/* Hamburger Menu */}
-              <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-                <SheetTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-gray-700 dark:text-gray-200"
-                    data-testid="mobile-menu-trigger"
-                  >
-                    <Menu className="h-6 w-6" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-80">
-                  <SheetHeader>
-                    <SheetTitle className="flex items-center gap-2">
-                      <img 
-                        src="/wytnet-logo.png" 
-                        alt="WytNet" 
-                        className="h-6 w-auto"
-                      />
-                    </SheetTitle>
-                  </SheetHeader>
-                  <nav className="mt-6 space-y-1">
-                    {sidebarItems.map((item) => (
-                      <Link 
-                        key={item.href}
-                        href={item.href} 
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200" 
-                        onClick={() => setSidebarOpen(false)}
-                        data-testid={`sidebar-${item.label.toLowerCase().replace(/ /g, '-')}`}
-                      >
-                        <item.icon className="h-5 w-5" />
-                        <span>{item.label}</span>
-                      </Link>
-                    ))}
-                  </nav>
-                </SheetContent>
-              </Sheet>
+              {/* Universal Authentication with integrated menu */}
+              <UniversalAuthHeader sidebarItems={sidebarItems} />
             </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className={cn("flex-1", shouldShowBottomNav() ? "pb-20" : "")}>
+      <main className={cn("flex-1 overflow-y-auto", shouldShowBottomNav() ? "pb-16" : "pb-4")}>
         {children}
       </main>
 

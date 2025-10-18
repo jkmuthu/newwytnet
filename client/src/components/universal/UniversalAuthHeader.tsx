@@ -45,7 +45,15 @@ interface ContextsResponse {
   count: number;
 }
 
-export default function UniversalAuthHeader() {
+interface UniversalAuthHeaderProps {
+  sidebarItems?: Array<{
+    icon: any;
+    label: string;
+    href: string;
+  }>;
+}
+
+export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuthHeaderProps = {}) {
   const { isMobile } = useDeviceDetection();
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
@@ -131,8 +139,69 @@ export default function UniversalAuthHeader() {
     setIsMenuOpen(false);
   };
 
-  // Not authenticated - show Login/Join button
+  // Not authenticated - show Login/Join button OR navigation menu on mobile
   if (!hasAuth) {
+    // Mobile: Show hamburger with navigation even if not logged in
+    if (isMobile && sidebarItems.length > 0) {
+      return (
+        <div className="flex items-center gap-2">
+          <Link href="/login">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              data-testid="button-login"
+            >
+              Login
+            </Button>
+          </Link>
+          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+            <SheetTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                data-testid="button-mobile-menu"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[280px] p-0">
+              <div className="flex flex-col h-full">
+                {/* Logo Header */}
+                <div className="p-4 border-b">
+                  <img 
+                    src="/wytnet-logo.png" 
+                    alt="WytNet" 
+                    className="h-8 w-auto"
+                  />
+                </div>
+
+                {/* Navigation Items */}
+                <div className="flex-1 overflow-y-auto p-2">
+                  <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Navigation
+                  </p>
+                  <div className="space-y-1">
+                    {sidebarItems.map((item, idx) => (
+                      <Link
+                        key={idx}
+                        href={item.href}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      );
+    }
+
+    // Desktop: Just show login button
     return (
       <div className="flex items-center gap-2">
         <Link href="/login">
@@ -189,34 +258,61 @@ export default function UniversalAuthHeader() {
               </div>
             </div>
 
-            {/* Panel Switcher */}
+            {/* Scrollable Content Area */}
             <div className="flex-1 overflow-y-auto p-2">
-              <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Switch Panel
-              </p>
-              <div className="space-y-1">
-                {contexts.map((context, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handlePanelSwitch(context.path)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                      context.active
-                        ? 'bg-purple-50 dark:bg-purple-950/30 text-purple-900 dark:text-purple-100'
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                    data-testid={`button-switch-${context.hubKey || context.type}`}
-                  >
-                    {getIcon(context.icon, context.active)}
-                    <div className="flex-1 text-left">
-                      <p className="font-medium">{context.name}</p>
-                      <p className="text-xs text-muted-foreground">{context.user.role}</p>
-                    </div>
-                    {context.active && (
-                      <CheckCircle2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                    )}
-                  </button>
-                ))}
-              </div>
+              {/* Navigation Items (if provided) */}
+              {sidebarItems.length > 0 && (
+                <>
+                  <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Navigation
+                  </p>
+                  <div className="space-y-1 mb-4">
+                    {sidebarItems.map((item, idx) => (
+                      <Link
+                        key={idx}
+                        href={item.href}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* Panel Switcher (only if authenticated with multiple contexts) */}
+              {contexts.length > 0 && (
+                <>
+                  <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Switch Panel
+                  </p>
+                  <div className="space-y-1">
+                    {contexts.map((context, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handlePanelSwitch(context.path)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                          context.active
+                            ? 'bg-purple-50 dark:bg-purple-950/30 text-purple-900 dark:text-purple-100'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
+                        data-testid={`button-switch-${context.hubKey || context.type}`}
+                      >
+                        {getIcon(context.icon, context.active)}
+                        <div className="flex-1 text-left">
+                          <p className="font-medium">{context.name}</p>
+                          <p className="text-xs text-muted-foreground">{context.user.role}</p>
+                        </div>
+                        {context.active && (
+                          <CheckCircle2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Logout */}
