@@ -54,11 +54,6 @@ export default function MyAccountPage() {
     queryKey: ['/api/auth/user'],
   });
 
-  // Redirect to login if not authenticated
-  if (!userLoading && !user) {
-    return <Redirect to="/login" />;
-  }
-
   // Profile form - use defaultValues instead of values to prevent reset on every render
   const profileForm = useForm({
     resolver: zodResolver(profileSchema),
@@ -68,17 +63,6 @@ export default function MyAccountPage() {
       profileImageUrl: "",
     },
   });
-
-  // Update form values when user data loads
-  useEffect(() => {
-    if (user) {
-      profileForm.reset({
-        name: user.name || "",
-        email: user.email || "",
-        profileImageUrl: user.profileImageUrl || "",
-      });
-    }
-  }, [user, profileForm]);
 
   // Password form
   const passwordForm = useForm({
@@ -99,6 +83,17 @@ export default function MyAccountPage() {
       theme: "system" as const,
     },
   });
+
+  // Update form values when user data loads
+  useEffect(() => {
+    if (user) {
+      profileForm.reset({
+        name: user.name || "",
+        email: user.email || "",
+        profileImageUrl: user.profileImageUrl || "",
+      });
+    }
+  }, [user, profileForm]);
 
   // Update profile mutation
   const profileMutation = useMutation({
@@ -164,12 +159,18 @@ export default function MyAccountPage() {
     },
   });
 
+  // Show loading state
   if (userLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
+  }
+
+  // Redirect to login if not authenticated (after all hooks)
+  if (!user) {
+    return <Redirect to="/login" />;
   }
 
   return (
