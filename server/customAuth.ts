@@ -727,9 +727,51 @@ export const hubAdminAuthMiddleware: RequestHandler = async (req, res, next) => 
   }
 };
 
-// Enhanced authentication middleware that supports unified user auth
+// Enhanced authentication middleware that supports all three auth types (regular user, engine admin, hub admin)
 export const isAuthenticatedUnified: RequestHandler = async (req, res, next) => {
-  // Try to get authenticated user from session
+  // Check 1: Engine Admin Session
+  const adminUser = (req.session as any)?.adminUser;
+  if (adminUser) {
+    try {
+      const user = await storage.getUser(adminUser.id);
+      if (user) {
+        (req as AuthenticatedRequest).user = { 
+          id: user.id,
+          tenantId: user.tenantId || '',
+          email: user.email || undefined,
+          isSuperAdmin: true,
+          provider: 'engine_admin',
+          claims: { sub: user.id }
+        };
+        return next();
+      }
+    } catch (error) {
+      console.error("Engine admin auth error:", error);
+    }
+  }
+
+  // Check 2: Hub Admin Session
+  const hubAdminUser = (req.session as any)?.hubAdminUser;
+  if (hubAdminUser) {
+    try {
+      const user = await storage.getUser(hubAdminUser.userId);
+      if (user) {
+        (req as AuthenticatedRequest).user = { 
+          id: user.id,
+          tenantId: user.tenantId || '',
+          email: user.email || undefined,
+          isSuperAdmin: false,
+          provider: 'hub_admin',
+          claims: { sub: user.id }
+        };
+        return next();
+      }
+    } catch (error) {
+      console.error("Hub admin auth error:", error);
+    }
+  }
+
+  // Check 3: Regular User Session
   const sessionUser = req.session?.user;
   if (sessionUser) {
     try {
@@ -739,14 +781,14 @@ export const isAuthenticatedUnified: RequestHandler = async (req, res, next) => 
           id: customUser.id,
           tenantId: customUser.tenantId || '',
           email: customUser.email || undefined,
-          isSuperAdmin: false, // Custom auth users are not super admin
-          provider: 'legacy',
+          isSuperAdmin: false,
+          provider: 'unified',
           claims: { sub: customUser.id }
         };
         return next();
       }
     } catch (error) {
-      console.error("Custom auth error:", error);
+      console.error("Regular user auth error:", error);
     }
   }
   
@@ -754,9 +796,51 @@ export const isAuthenticatedUnified: RequestHandler = async (req, res, next) => 
   return res.status(401).json({ message: "Unauthorized" });
 };
 
-// Unified Principal resolver for both authentication systems  
+// Unified Principal resolver for all three authentication systems  
 export async function getPrincipal(req: AuthenticatedRequest): Promise<Principal | null> {
-  // First, try to resolve from custom auth session
+  // Check 1: Engine Admin Session
+  const adminUser = (req.session as any)?.adminUser;
+  if (adminUser) {
+    const user = await storage.getUser(adminUser.id);
+    if (user) {
+      return {
+        id: user.id,
+        tenantId: user.tenantId || '',
+        role: (user as any).role || 'super_admin',
+        isSuperAdmin: true,
+        email: user.email || undefined,
+        firstName: user.firstName || undefined,
+        lastName: user.lastName || undefined,
+        name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}`.trim() : user.firstName || undefined,
+        mobileNumber: user.mobileNumber || undefined,
+        profileImageUrl: user.profileImageUrl || undefined,
+        provider: 'engine_admin'
+      };
+    }
+  }
+
+  // Check 2: Hub Admin Session
+  const hubAdminUser = (req.session as any)?.hubAdminUser;
+  if (hubAdminUser) {
+    const user = await storage.getUser(hubAdminUser.userId);
+    if (user) {
+      return {
+        id: user.id,
+        tenantId: user.tenantId || '',
+        role: (user as any).role || 'hub_admin',
+        isSuperAdmin: false,
+        email: user.email || undefined,
+        firstName: user.firstName || undefined,
+        lastName: user.lastName || undefined,
+        name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}`.trim() : user.firstName || undefined,
+        mobileNumber: user.mobileNumber || undefined,
+        profileImageUrl: user.profileImageUrl || undefined,
+        provider: 'hub_admin'
+      };
+    }
+  }
+
+  // Check 3: Regular User Session (WytPass)
   const sessionUser = req.session?.user;
   if (sessionUser) {
     // All users are now in the unified users table
@@ -770,7 +854,8 @@ export async function getPrincipal(req: AuthenticatedRequest): Promise<Principal
         email: user.email || undefined,
         firstName: user.firstName || undefined,
         lastName: user.lastName || undefined,
-        name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}`.trim() : undefined,
+        name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}`.trim() : user.firstName || undefined,
+        mobileNumber: user.mobileNumber || undefined,
         profileImageUrl: user.profileImageUrl || undefined,
         provider: 'unified'
       };
