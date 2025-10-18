@@ -8,6 +8,28 @@ import { z } from "zod";
 
 const router = Router();
 
+// GET /api/platform-settings/public - Get public platform settings (no auth required)
+router.get("/public", async (req, res) => {
+  try {
+    const settings = await db
+      .select()
+      .from(platformSettings)
+      .where(eq(platformSettings.isPublic, true))
+      .orderBy(platformSettings.category, platformSettings.key);
+
+    // Parse values based on type
+    const parsedSettings = settings.map(setting => ({
+      ...setting,
+      parsedValue: setting.value ? parseSettingValue(setting.value, setting.type) : null,
+    }));
+
+    res.json({ success: true, settings: parsedSettings });
+  } catch (error) {
+    console.error("Error fetching public platform settings:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch settings" });
+  }
+});
+
 // Helper function to parse value based on type
 function parseSettingValue(value: string, type: string): any {
   switch (type) {

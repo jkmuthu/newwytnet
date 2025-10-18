@@ -128,7 +128,11 @@ import {
   platformHubs,
   platformHubAdmins,
   userRoles,
-  roles
+  roles,
+  notifications,
+  insertNotificationSchema,
+  type Notification,
+  type InsertNotification
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -12214,5 +12218,179 @@ CONSTRAINTS:
 
   // ========================================
   // END HUB ADMIN MEDIA LIBRARY APIs
+  // ========================================
+
+  // ========================================
+  // NOTIFICATIONS APIs
+  // ========================================
+
+  // GET /api/notifications - Get user's notifications
+  app.get('/api/notifications', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const principal = getPrincipal(req);
+      
+      if (!principal) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Authentication required' 
+        });
+      }
+
+      const userId = principal.id;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      // Fetch notifications
+      const userNotifications = await db.select()
+        .from(notifications)
+        .where(eq(notifications.userId, userId))
+        .orderBy(desc(notifications.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      // Get total count
+      const [{ count }] = await db.select({ count: sql<number>`count(*)` })
+        .from(notifications)
+        .where(eq(notifications.userId, userId));
+
+      res.json({
+        success: true,
+        notifications: userNotifications,
+        pagination: {
+          total: Number(count),
+          limit,
+          offset,
+          hasMore: offset + limit < Number(count),
+        },
+      });
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch notifications' 
+      });
+    }
+  });
+
+  // GET /api/notifications/unread-count - Get count of unread notifications
+  app.get('/api/notifications/unread-count', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const principal = getPrincipal(req);
+      
+      if (!principal) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Authentication required' 
+        });
+      }
+
+      const userId = principal.id;
+
+      const [{ count }] = await db.select({ count: sql<number>`count(*)` })
+        .from(notifications)
+        .where(and(
+          eq(notifications.userId, userId),
+          eq(notifications.isRead, false)
+        )!);
+
+      res.json({
+        success: true,
+        unreadCount: Number(count),
+      });
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to fetch unread count' 
+      });
+    }
+  });
+
+  // POST /api/notifications/:id/mark-read - Mark notification as read
+  app.post('/api/notifications/:id/mark-read', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const principal = getPrincipal(req);
+      
+      if (!principal) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Authentication required' 
+        });
+      }
+
+      const userId = principal.id;
+      const { id } = req.params;
+
+      // Verify notification belongs to user
+      const [notification] = await db.select()
+        .from(notifications)
+        .where(and(
+          eq(notifications.id, id),
+          eq(notifications.userId, userId)
+        )!)
+        .limit(1);
+
+      if (!notification) {
+        return res.status(404).json({ 
+          success: false, 
+          error: 'Notification not found' 
+        });
+      }
+
+      // Mark as read
+      await db.update(notifications)
+        .set({ isRead: true })
+        .where(eq(notifications.id, id));
+
+      res.json({
+        success: true,
+        message: 'Notification marked as read',
+      });
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to mark notification as read' 
+      });
+    }
+  });
+
+  // POST /api/notifications/mark-all-read - Mark all notifications as read
+  app.post('/api/notifications/mark-all-read', isAuthenticatedUnified, async (req: any, res) => {
+    try {
+      const principal = getPrincipal(req);
+      
+      if (!principal) {
+        return res.status(401).json({ 
+          success: false, 
+          error: 'Authentication required' 
+        });
+      }
+
+      const userId = principal.id;
+
+      // Mark all as read
+      await db.update(notifications)
+        .set({ isRead: true })
+        .where(and(
+          eq(notifications.userId, userId),
+          eq(notifications.isRead, false)
+        )!);
+
+      res.json({
+        success: true,
+        message: 'All notifications marked as read',
+      });
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to mark all notifications as read' 
+      });
+    }
+  });
+
+  // ========================================
+  // END NOTIFICATIONS APIs
   // ========================================
 }

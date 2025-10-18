@@ -142,6 +142,38 @@ const defaultSettings = [
     isPublic: true,
     isEditable: false,
   },
+  
+  // Logo & Branding Settings
+  {
+    key: "engine_logo_url",
+    value: "/wytnet-logo.png",
+    type: "string",
+    category: "general",
+    label: "Engine Admin Logo URL",
+    description: "Logo displayed in the Engine Admin panel (WytEngine)",
+    isPublic: true,
+    isEditable: true,
+  },
+  {
+    key: "hub_logo_url",
+    value: "/wytnet-logo.png",
+    type: "string",
+    category: "general",
+    label: "Hub Admin Logo URL",
+    description: "Logo displayed in the Hub Admin panel",
+    isPublic: true,
+    isEditable: true,
+  },
+  {
+    key: "public_logo_url",
+    value: "/wytnet-logo.png",
+    type: "string",
+    category: "general",
+    label: "Public Portal Logo URL",
+    description: "Logo displayed on the public-facing portal (WytNet)",
+    isPublic: true,
+    isEditable: true,
+  },
 ];
 
 export async function seedPlatformSettings() {
