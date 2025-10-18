@@ -73,7 +73,7 @@ import {
   type InsertRole,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, asc, like, count, sql } from "drizzle-orm";
+import { eq, and, desc, asc, like, count, sql, isNull, isNotNull } from "drizzle-orm";
 import { DSLValidator, CodeGenerator } from "@packages/builder/index";
 
 // Interface for storage operations
@@ -223,12 +223,22 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // User operations (IMPORTANT - mandatory for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
+    const [user] = await db.select().from(users).where(
+      and(
+        eq(users.id, id),
+        isNull(users.deletedAt) // Exclude soft-deleted users
+      )
+    );
     return user;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
+    const [user] = await db.select().from(users).where(
+      and(
+        eq(users.email, email),
+        isNull(users.deletedAt) // Exclude soft-deleted users
+      )
+    );
     return user;
   }
 
@@ -301,10 +311,20 @@ export class DatabaseStorage implements IStorage {
     hubsTrend: { value: number; isPositive: boolean };
     revenueTrend: { value: number; isPositive: boolean };
   }> {
-    // Get counts
-    const [tenantCount] = await db.select({ count: count() }).from(tenants);
-    const [appCount] = await db.select({ count: count() }).from(apps).where(eq(apps.status, 'published'));
-    const [hubCount] = await db.select({ count: count() }).from(hubs).where(eq(hubs.status, 'active'));
+    // Get counts (exclude soft-deleted records)
+    const [tenantCount] = await db.select({ count: count() }).from(tenants).where(isNull(tenants.deletedAt));
+    const [appCount] = await db.select({ count: count() }).from(apps).where(
+      and(
+        eq(apps.status, 'published'),
+        isNull(apps.deletedAt)
+      )
+    );
+    const [hubCount] = await db.select({ count: count() }).from(hubs).where(
+      and(
+        eq(hubs.status, 'active'),
+        isNull(hubs.deletedAt)
+      )
+    );
     
     // Mock revenue calculation - in real app would come from billing/payment data
     const revenue = "24.5L";
@@ -323,12 +343,22 @@ export class DatabaseStorage implements IStorage {
 
   // Tenant operations
   async getTenant(id: string): Promise<Tenant | undefined> {
-    const [tenant] = await db.select().from(tenants).where(eq(tenants.id, id));
+    const [tenant] = await db.select().from(tenants).where(
+      and(
+        eq(tenants.id, id),
+        isNull(tenants.deletedAt) // Exclude soft-deleted tenants
+      )
+    );
     return tenant;
   }
 
   async getTenantBySlug(slug: string): Promise<Tenant | undefined> {
-    const [tenant] = await db.select().from(tenants).where(eq(tenants.slug, slug));
+    const [tenant] = await db.select().from(tenants).where(
+      and(
+        eq(tenants.slug, slug),
+        isNull(tenants.deletedAt) // Exclude soft-deleted tenants
+      )
+    );
     return tenant;
   }
 
@@ -595,17 +625,32 @@ export class DatabaseStorage implements IStorage {
     const query = db.select().from(apps);
     
     if (tenantId) {
-      return await query.where(eq(apps.tenantId, tenantId)).orderBy(desc(apps.createdAt));
+      return await query.where(
+        and(
+          eq(apps.tenantId, tenantId),
+          isNull(apps.deletedAt) // Exclude soft-deleted apps
+        )
+      ).orderBy(desc(apps.createdAt));
     }
     
-    // Return public apps or all apps for super admin
+    // Return public apps or all apps for super admin (exclude soft-deleted)
     return await query
-      .where(eq(apps.isPublic, true))
+      .where(
+        and(
+          eq(apps.isPublic, true),
+          isNull(apps.deletedAt)
+        )
+      )
       .orderBy(desc(apps.createdAt));
   }
 
   async getApp(id: string): Promise<App | undefined> {
-    const [app] = await db.select().from(apps).where(eq(apps.id, id));
+    const [app] = await db.select().from(apps).where(
+      and(
+        eq(apps.id, id),
+        isNull(apps.deletedAt) // Exclude soft-deleted apps
+      )
+    );
     return app;
   }
 
@@ -728,11 +773,16 @@ export class DatabaseStorage implements IStorage {
 
   // Hub operations
   async getAllHubs(): Promise<Hub[]> {
-    return await db.select().from(hubs).orderBy(desc(hubs.createdAt));
+    return await db.select().from(hubs).where(isNull(hubs.deletedAt)).orderBy(desc(hubs.createdAt));
   }
 
   async getHub(id: string): Promise<Hub | undefined> {
-    const [hub] = await db.select().from(hubs).where(eq(hubs.id, id));
+    const [hub] = await db.select().from(hubs).where(
+      and(
+        eq(hubs.id, id),
+        isNull(hubs.deletedAt) // Exclude soft-deleted hubs
+      )
+    );
     return hub;
   }
 
