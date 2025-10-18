@@ -3907,6 +3907,46 @@ export type InsertPlatformSetting = z.infer<typeof insertPlatformSettingSchema>;
 export type SelectPlatformSetting = typeof platformSettings.$inferSelect;
 export type UpdatePlatformSetting = z.infer<typeof updatePlatformSettingSchema>;
 
+// ========================================
+// NOTIFICATIONS SYSTEM
+// ========================================
+
+export const notifications = pgTable("notifications", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  type: varchar("type", { length: 50 }).notNull(), // 'system', 'wytai', 'hub_invite', 'points', 'alert'
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  link: varchar("link", { length: 500 }), // Optional link to navigate to
+  isRead: boolean("is_read").default(false),
+  metadata: jsonb("metadata").default({}), // Additional data related to notification
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_notifications_user").on(table.userId),
+  index("idx_notifications_read").on(table.isRead),
+  index("idx_notifications_created").on(table.createdAt),
+]);
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+}));
+
+export const insertNotificationSchema = createInsertSchema(notifications, {
+  userId: z.string(),
+  type: z.string().min(1).max(50),
+  title: z.string().min(1).max(255),
+  message: z.string().min(1),
+  link: z.string().max(500).optional(),
+  isRead: z.boolean().optional(),
+  metadata: z.record(z.any()).optional(),
+}).omit({ id: true, createdAt: true });
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
 // Schema exports for Roles & Permissions
 export const insertRoleSchema = createInsertSchema(roles).omit({ id: true, createdAt: true, updatedAt: true });
 export const selectRoleSchema = createSelectSchema(roles);
