@@ -40,6 +40,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { WorkflowEngine, workflows, type WorkflowState, type WorkflowStep } from "@/lib/workflows";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
+import { useLocation } from "wouter";
 
 interface Message {
   role: "user" | "assistant";
@@ -47,6 +48,8 @@ interface Message {
   timestamp: Date;
   attachments?: { name: string; type: string; url: string; size: number }[];
 }
+
+type ChatMode = "free" | "guided";
 
 interface Conversation {
   id: string;
@@ -106,10 +109,12 @@ function groupConversationsByDate(conversations: Conversation[]): Record<string,
 
 export default function WytAIAgent() {
   const { isMobile } = useDeviceDetection();
+  const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [activeTab, setActiveTab] = useState<"chat" | "settings">("chat");
   const [selectedModel, setSelectedModel] = useState("gpt-4o");
+  const [chatMode, setChatMode] = useState<ChatMode>("free");
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -594,11 +599,28 @@ export default function WytAIAgent() {
     setIsLoading(true);
 
     try {
+      // Detect current page context
+      const pageContext = {
+        path: location,
+        pageName: location.includes('/admin/users') ? 'User Management' :
+                  location.includes('/admin/modules') ? 'Module Library' :
+                  location.includes('/admin/apps') ? 'Apps Management' :
+                  location.includes('/admin/hubs') ? 'Hubs Management' :
+                  location.includes('/admin/tenants') ? 'Tenants & Organizations' :
+                  location.includes('/admin/global-settings') ? 'Global Settings' :
+                  location.includes('/admin/themes') ? 'Themes' :
+                  location.includes('/admin/analytics') ? 'Analytics' :
+                  location.includes('/admin/system') ? 'System & Security' :
+                  location.includes('/admin') ? 'Engine Admin Panel' : 'Unknown Page',
+      };
+
       const response = await apiRequest("/api/admin/wytai/chat", "POST", {
         messages: messages
           .concat(userMessage)
           .map((m) => ({ role: m.role, content: m.content })),
         model: selectedModel,
+        mode: chatMode,
+        pageContext,
       });
 
       const data = await response.json();
@@ -620,7 +642,7 @@ export default function WytAIAgent() {
         if (data.code === "ACCESS_DENIED") {
           toast({
             title: "Access Denied",
-            description: "WytAI is only available for Super Admins and Admins.",
+            description: "WytAI Agent is only available for Super Admins.",
             variant: "destructive",
           });
         } else if (data.code === "RATE_LIMIT_EXCEEDED") {
@@ -920,26 +942,26 @@ export default function WytAIAgent() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="chat" className="flex-1 flex flex-col m-0 overflow-hidden">
-              {/* Messages - Scrollable Area */}
-              <div className="flex-1 overflow-y-auto p-3 sm:p-4" ref={scrollRef}>
-                <div className="space-y-4">
+            <TabsContent value="chat" className="flex-1 flex flex-col m-0 overflow-hidden min-h-0">
+              {/* Messages - Scrollable Area with fixed height */}
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4 min-h-0" ref={scrollRef}>
+                <div className="space-y-4 pb-4">
                   {messages.map((message, index) => (
                     <div
                       key={index}
                       className={`flex ${
                         message.role === "user" ? "justify-end" : "justify-start"
-                      }`}
+                      } animate-in fade-in slide-in-from-bottom-2 duration-300`}
                       data-testid={`message-${message.role}-${index}`}
                     >
                       <div
-                        className={`max-w-[85%] rounded-lg p-3 ${
+                        className={`max-w-[85%] rounded-2xl p-3 shadow-sm ${
                           message.role === "user"
                             ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
-                            : "bg-gray-100 dark:bg-gray-800 text-foreground"
+                            : "bg-gray-100 dark:bg-gray-800 text-foreground border border-gray-200 dark:border-gray-700"
                         }`}
                       >
-                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
                         {message.attachments && message.attachments.length > 0 && (
                           <div className="mt-2 space-y-2">
                             {message.attachments.map((att, i) => (
@@ -981,12 +1003,15 @@ export default function WytAIAgent() {
                     </div>
                   ))}
                   {isLoading && (
-                    <div className="flex justify-start">
-                      <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
-                        <div className="flex gap-1">
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-100" />
-                          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200" />
+                    <div className="flex justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="flex gap-1">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0ms'}} />
+                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}} />
+                            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}} />
+                          </div>
+                          <span className="text-xs text-muted-foreground">AI is thinking...</span>
                         </div>
                       </div>
                     </div>
@@ -1118,8 +1143,73 @@ export default function WytAIAgent() {
               />
             </TabsContent>
 
-            <TabsContent value="settings" className="flex-1 m-0 overflow-hidden flex flex-col">
+            <TabsContent value="settings" className="flex-1 m-0 overflow-hidden flex flex-col min-h-0">
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 pb-safe">
+                  {/* Page Context Display */}
+                  <div className="border rounded-lg p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      📍 Current Page Context
+                    </h4>
+                    <p className="text-sm text-foreground">
+                      {location.includes('/admin/users') ? '👥 User Management' :
+                       location.includes('/admin/modules') ? '🧩 Module Library' :
+                       location.includes('/admin/apps') ? '📱 Apps Management' :
+                       location.includes('/admin/hubs') ? '🌐 Hubs Management' :
+                       location.includes('/admin/tenants') ? '🏢 Tenants & Organizations' :
+                       location.includes('/admin/global-settings') ? '⚙️ Global Settings' :
+                       location.includes('/admin/themes') ? '🎨 Themes' :
+                       location.includes('/admin/analytics') ? '📊 Analytics' :
+                       location.includes('/admin/system') ? '🔒 System & Security' :
+                       location.includes('/admin') ? '⚡ Engine Admin Panel' : '❓ Unknown Page'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      AI knows you're on this page and can help with page-specific tasks
+                    </p>
+                  </div>
+
+                  {/* Chat Mode Selector */}
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      💬 Chat Mode
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        onClick={() => setChatMode("free")}
+                        variant={chatMode === "free" ? "default" : "outline"}
+                        className={chatMode === "free" ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" : ""}
+                        data-testid="button-mode-free"
+                      >
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Free Chat
+                      </Button>
+                      <Button
+                        onClick={() => setChatMode("guided")}
+                        variant={chatMode === "guided" ? "default" : "outline"}
+                        className={chatMode === "guided" ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700" : ""}
+                        data-testid="button-mode-guided"
+                      >
+                        🎯 Guided Mode
+                      </Button>
+                    </div>
+                    <div className="text-xs text-muted-foreground space-y-1 mt-2">
+                      {chatMode === "free" ? (
+                        <>
+                          <p className="font-semibold">Free Chat Mode:</p>
+                          <p>• Ask anything, chat naturally</p>
+                          <p>• No structured questions</p>
+                          <p>• Flexible conversation flow</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="font-semibold">Guided Mode:</p>
+                          <p>• AI asks structured questions</p>
+                          <p>• You provide answers step-by-step</p>
+                          <p>• Systematic problem-solving</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Model Selector */}
                   <div>
                     <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
@@ -1229,6 +1319,29 @@ export default function WytAIAgent() {
                       </div>
                     </div>
                   )}
+
+                  {/* System Instructions */}
+                  <div className="border rounded-lg p-4 space-y-3 bg-gray-50 dark:bg-gray-900/50">
+                    <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                      📋 System Instructions
+                    </h4>
+                    <div className="text-xs text-muted-foreground space-y-2">
+                      <p><strong>Current Mode:</strong> {chatMode === "free" ? "Free Chat (Open Conversation)" : "Guided Mode (Structured Questions)"}</p>
+                      <p><strong>Role:</strong> WytAI Agent - Intelligent assistant for WytNet Engine Admin Panel</p>
+                      <p><strong>Capabilities:</strong></p>
+                      <ul className="list-disc list-inside space-y-1 ml-2">
+                        <li>Suggest improvements to modules, apps, and hubs</li>
+                        <li>Generate code snippets for React & Express</li>
+                        <li>Help with UI/UX enhancements</li>
+                        <li>Provide WytNet architecture guidance</li>
+                      </ul>
+                      <p><strong>Tech Stack Knowledge:</strong> React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui, Express.js, PostgreSQL, Drizzle ORM</p>
+                      <p><strong>Language Support:</strong> Tamil & English (bilingual)</p>
+                      {chatMode === "guided" && (
+                        <p className="text-purple-600 dark:text-purple-400"><strong>Guided Mode Active:</strong> AI will ask structured questions to understand your needs systematically</p>
+                      )}
+                    </div>
+                  </div>
 
                   {/* About */}
                   <div>

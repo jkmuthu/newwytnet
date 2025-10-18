@@ -90,7 +90,7 @@ async function trackUsage(userId: string, model: string, provider: string, usage
   }
 }
 
-// Check if user has access to WytAI (Super Admin or Admin only)
+// Check if user has access to WytAI (Super Admin only)
 async function checkWytAIAccess(userId: string): Promise<boolean> {
   const user = await db.select()
     .from(users)
@@ -99,10 +99,10 @@ async function checkWytAIAccess(userId: string): Promise<boolean> {
   
   if (!user || user.length === 0) return false;
   
-  const userRole = user[0].role;
   const isSuperAdmin = user[0].isSuperAdmin;
   
-  return isSuperAdmin || userRole === 'super_admin' || userRole === 'admin';
+  // Only Super Admins have access to WytAI
+  return isSuperAdmin === true;
 }
 
 // System prompt for WytAI Agent with Engine context
