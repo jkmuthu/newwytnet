@@ -415,7 +415,7 @@ export default function AdminUsersImproved() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* WytNet User Role */}
+                  {/* WytNet User Role - Always active for all users */}
                   <div className="flex items-center justify-between p-4 border rounded-lg" data-testid="role-wytnet-user">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
@@ -431,39 +431,41 @@ export default function AdminUsersImproved() {
                     </Badge>
                   </div>
 
-                  {/* Hub Admin Role */}
-                  <div className="flex items-center justify-between p-4 border rounded-lg" data-testid="role-hub-admin">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
-                        <Shield className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  {/* Hub Admin Role - Only show if active */}
+                  {(selectedUser?.role === 'hub_admin' || selectedUser?.role === 'admin') && (
+                    <div className="flex items-center justify-between p-4 border rounded-lg" data-testid="role-hub-admin">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                          <Shield className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">WytNet Hub Admin</h3>
+                          <p className="text-sm text-muted-foreground">Manage hub content, settings, and users</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-medium">WytNet Hub Admin</h3>
-                        <p className="text-sm text-muted-foreground">Manage hub content, settings, and users</p>
-                      </div>
+                      <Badge variant="default" className="bg-green-600">
+                        Active
+                      </Badge>
                     </div>
-                    <Badge variant={selectedUser?.role === 'hub_admin' || selectedUser?.role === 'admin' ? "default" : "secondary"} 
-                           className={selectedUser?.role === 'hub_admin' || selectedUser?.role === 'admin' ? "bg-green-600" : ""}>
-                      {selectedUser?.role === 'hub_admin' || selectedUser?.role === 'admin' ? "Active" : "Inactive"}
-                    </Badge>
-                  </div>
+                  )}
 
-                  {/* Engine Super Admin Role */}
-                  <div className="flex items-center justify-between p-4 border rounded-lg" data-testid="role-engine-admin">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
-                        <Shield className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                  {/* Engine Super Admin Role - Only show if active */}
+                  {selectedUser?.isSuperAdmin && (
+                    <div className="flex items-center justify-between p-4 border rounded-lg" data-testid="role-engine-admin">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
+                          <Shield className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">WytEngine Super Admin</h3>
+                          <p className="text-sm text-muted-foreground">Full platform access and control</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-medium">WytEngine Super Admin</h3>
-                        <p className="text-sm text-muted-foreground">Full platform access and control</p>
-                      </div>
+                      <Badge variant="default" className="bg-green-600">
+                        Active
+                      </Badge>
                     </div>
-                    <Badge variant={selectedUser?.isSuperAdmin ? "default" : "secondary"}
-                           className={selectedUser?.isSuperAdmin ? "bg-green-600" : ""}>
-                      {selectedUser?.isSuperAdmin ? "Active" : "Inactive"}
-                    </Badge>
-                  </div>
+                  )}
 
                   {/* Additional Info */}
                   {selectedUser?.isSuperAdmin && (
