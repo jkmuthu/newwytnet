@@ -161,11 +161,11 @@ export default function AdminMobileLayout({ children }: AdminMobileLayoutProps) 
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-      {/* Mobile Admin Header */}
-      <header className="bg-white dark:bg-gray-900 border-b border-red-200 dark:border-red-800 sticky top-0 z-50">
-        <div className="px-4">
-          <div className="flex justify-between items-center h-16">
+    <div className="min-h-screen h-screen flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
+      {/* Mobile Admin Header - Fixed */}
+      <header className="flex-shrink-0 bg-white dark:bg-gray-900 border-b border-red-200 dark:border-red-800 sticky top-0 z-50">
+        <div className="px-3 sm:px-4">
+          <div className="flex justify-between items-center h-14">
             {/* Left - Admin branding */}
             <div className="flex items-center space-x-2">
               <Link href="/">
@@ -291,27 +291,27 @@ export default function AdminMobileLayout({ children }: AdminMobileLayoutProps) 
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 pb-20 p-4">
+      {/* Main Content - Scrollable */}
+      <main className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 pb-20">
         {children}
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-red-200 dark:border-red-800 z-50">
-        <div className="flex items-center justify-around py-2">
+      {/* Bottom Navigation - Fixed */}
+      <nav className="flex-shrink-0 fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-red-200 dark:border-red-800 z-50 safe-area-inset-bottom">
+        <div className="flex items-center justify-around py-1.5 sm:py-2">
           {bottomNavItems.map((item) => (
             <Link key={item.href} href={item.href}>
               <div 
                 className={cn(
-                  "flex flex-col items-center px-3 py-2 rounded-lg transition-colors",
+                  "flex flex-col items-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-colors min-w-[60px]",
                   item.active 
                     ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30" 
                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 )}
                 data-testid={`admin-bottom-nav-${item.label.toLowerCase().replace(' ', '-')}`}
               >
-                <item.icon className="h-5 w-5" />
-                <span className="text-xs mt-1 font-medium">{item.label}</span>
+                <item.icon className="h-5 w-5 sm:h-5 sm:w-5" />
+                <span className="text-[10px] sm:text-xs mt-0.5 sm:mt-1 font-medium truncate max-w-[60px]">{item.label}</span>
               </div>
             </Link>
           ))}

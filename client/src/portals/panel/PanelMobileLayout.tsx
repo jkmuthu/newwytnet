@@ -172,11 +172,11 @@ export default function PanelMobileLayout({
   const bottomNavItems = getBottomNavItems();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+    <div className="min-h-screen h-screen flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
       {/* Mobile Header */}
-      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
-        <div className="px-4">
-          <div className="flex justify-between items-center h-16">
+      <header className="flex-shrink-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
+        <div className="px-3 sm:px-4">
+          <div className="flex justify-between items-center h-14">
             {/* Left - Workspace Switcher */}
             <Select value={currentWorkspace.id} onValueChange={handleWorkspaceChange}>
               <SelectTrigger className="w-40 border-0 shadow-none">
@@ -270,26 +270,26 @@ export default function PanelMobileLayout({
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 pb-20 p-4">
+      <main className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 pb-20">
         {children}
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 z-50">
-        <div className="flex items-center justify-around py-2">
+      <nav className="flex-shrink-0 fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 z-50 safe-area-inset-bottom">
+        <div className="flex items-center justify-around py-1.5 sm:py-2">
           {bottomNavItems.map((item) => (
             <Link key={item.href} href={item.href}>
               <div 
                 className={cn(
-                  "flex flex-col items-center px-3 py-2 rounded-lg transition-colors",
+                  "flex flex-col items-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-colors min-w-[60px]",
                   item.active 
                     ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30" 
                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 )}
                 data-testid={`bottom-nav-${item.label.toLowerCase().replace(' ', '-')}`}
               >
-                <item.icon className="h-5 w-5" />
-                <span className="text-xs mt-1 font-medium">{item.label}</span>
+                <item.icon className="h-5 w-5 sm:h-5 sm:w-5" />
+                <span className="text-[10px] sm:text-xs mt-0.5 sm:mt-1 font-medium truncate max-w-[60px]">{item.label}</span>
               </div>
             </Link>
           ))}
