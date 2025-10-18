@@ -222,4 +222,92 @@ router.post("/admin/settings", adminAuthMiddleware, requirePermission('system-se
   }
 });
 
+// GET /api/admin/settings/authentication - Get all authentication-related settings
+router.get("/admin/settings/authentication", adminAuthMiddleware, async (req, res) => {
+  try {
+    const authKeys = [
+      'email_validation_required',
+      'password_min_length',
+      'password_require_uppercase',
+      'password_require_numbers',
+      'password_require_special_chars',
+      'enabled_auth_providers',
+      'allow_hub_override_auth'
+    ];
+
+    const settings = await db
+      .select()
+      .from(platformSettings)
+      .where(eq(platformSettings.category, 'security'));
+
+    // Filter to only auth-related settings and parse values
+    const authSettings = settings
+      .filter(s => authKeys.includes(s.key))
+      .reduce((acc: any, setting) => {
+        acc[setting.key] = setting.value ? parseSettingValue(setting.value, setting.type) : null;
+        return acc;
+      }, {});
+
+    res.json({ success: true, settings: authSettings });
+  } catch (error) {
+    console.error("Error fetching authentication settings:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch authentication settings" });
+  }
+});
+
+// PUT /api/admin/settings/authentication - Update authentication settings
+router.put("/admin/settings/authentication", adminAuthMiddleware, async (req, res) => {
+  try {
+    const user = (req as any).user;
+    if (!user?.isSuperAdmin) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Access denied: Super Admin required' 
+      });
+    }
+
+    const updates = req.body;
+    const authKeys = [
+      'email_validation_required',
+      'password_min_length',
+      'password_require_uppercase',
+      'password_require_numbers',
+      'password_require_special_chars',
+      'enabled_auth_providers',
+      'allow_hub_override_auth'
+    ];
+
+    // Update each setting
+    for (const [key, value] of Object.entries(updates)) {
+      if (!authKeys.includes(key)) {
+        continue; // Skip non-auth settings
+      }
+
+      const [setting] = await db
+        .select()
+        .from(platformSettings)
+        .where(eq(platformSettings.key, key))
+        .limit(1);
+
+      if (setting && setting.isEditable) {
+        const serializedValue = serializeSettingValue(value, setting.type);
+        
+        await db
+          .update(platformSettings)
+          .set({
+            value: serializedValue,
+            updatedBy: user.id,
+            updatedAt: new Date(),
+          })
+          .where(eq(platformSettings.key, key));
+      }
+    }
+
+    res.json({ success: true, message: "Authentication settings updated successfully" });
+  } catch (error) {
+    console.error("Error updating authentication settings:", error);
+    res.status(500).json({ success: false, error: "Failed to update authentication settings" });
+  }
+});
+
 export default router;
