@@ -95,6 +95,43 @@ export default function AdminApps() {
     queryKey: ['/api/admin/platform-modules'],
   });
 
+  // Trash management queries and mutations
+  const { data: trashAppsData, isLoading: isLoadingTrash } = useQuery<{
+    success: boolean;
+    apps: AppDefinition[];
+    count: number;
+  }>({
+    queryKey: ['/api/admin/trash/apps'],
+  });
+
+  const restoreAppMutation = useMutation({
+    mutationFn: async (appId: string) => {
+      return await apiRequest('POST', `/api/admin/trash/apps/${appId}/restore`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/trash/apps'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/apps'] });
+      toast({ title: "Success", description: "App restored successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Failed to restore app", variant: "destructive" });
+    }
+  });
+
+  const permanentlyDeleteAppMutation = useMutation({
+    mutationFn: async (appId: string) => {
+      return await apiRequest('DELETE', `/api/admin/trash/apps/${appId}/permanent`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/trash/apps'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/apps'] });
+      toast({ title: "Success", description: "App permanently deleted" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Failed to delete app", variant: "destructive" });
+    }
+  });
+
   const apps: AppDefinition[] = (appsData as any)?.apps || [];
   const modules = (modulesData as any)?.modules || [];
 
@@ -164,14 +201,18 @@ export default function AdminApps() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+        <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
           <TabsTrigger value="registry" className="gap-2" data-testid="tab-registry">
             <Layers className="h-4 w-4" />
-            Apps Registry
+            Apps Registry ({apps.length})
           </TabsTrigger>
           <TabsTrigger value="ai-builder" className="gap-2" data-testid="tab-ai-builder">
             <Bot className="h-4 w-4" />
             AI Builder
+          </TabsTrigger>
+          <TabsTrigger value="trash" className="gap-2" data-testid="tab-apps-trash">
+            <Package className="h-4 w-4" />
+            Trash ({trashAppsData?.count || 0})
           </TabsTrigger>
         </TabsList>
 
@@ -540,6 +581,25 @@ export default function AdminApps() {
         {/* AI Builder Tab */}
         <TabsContent value="ai-builder" className="mt-6">
           <AdminAppBuilder />
+        </TabsContent>
+
+        {/* Trash Tab */}
+        <TabsContent value="trash" className="mt-6">
+          <TrashView
+            items={trashAppsData?.apps || []}
+            isLoading={isLoadingTrash}
+            entityType="App"
+            onRestore={async (id: string) => { await restoreAppMutation.mutateAsync(id); }}
+            onPermanentDelete={async (id: string) => { await permanentlyDeleteAppMutation.mutateAsync(id); }}
+            renderItemName={(app: AppDefinition) => app.name}
+            renderItemDetails={(app: AppDefinition) => (
+              <div className="text-sm text-muted-foreground">
+                {app.category && <Badge variant="outline" className="mr-2">{app.category}</Badge>}
+                {app.version && <span className="font-mono">v{app.version}</span>}
+                {app.description && <span className="ml-2 truncate max-w-md">• {app.description}</span>}
+              </div>
+            )}
+          />
         </TabsContent>
       </Tabs>
 
