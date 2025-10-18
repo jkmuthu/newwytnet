@@ -29,10 +29,10 @@ export default function MobileLayout({ children, isMobile }: MobileLayoutProps) 
       active: location === "/"
     },
     {
-      href: "/ai-directory", 
-      icon: Network,
-      label: "WytHubs",
-      active: location === "/ai-directory" || location.startsWith("/hubs")
+      href: "/wytlife", 
+      icon: Activity,
+      label: "WytLife",
+      active: location === "/wytlife"
     },
     {
       href: "/qr-generator",
@@ -50,8 +50,8 @@ export default function MobileLayout({ children, isMobile }: MobileLayoutProps) 
 
   // Sidebar items (grouped by category + install app)
   const sidebarItems = [
-    { icon: Network, label: 'WytHubs', href: '/ai-directory', isCategory: true },
-    { icon: Bot, label: '• AI Directory', href: '/ai-directory', indent: true },
+    { icon: Activity, label: 'WytLife', href: '/wytlife' },
+    { icon: Bot, label: 'AI Directory', href: '/ai-directory' },
     { icon: Wrench, label: 'Apps', href: '/qr-generator', isCategory: true },
     { icon: QrCode, label: '• QR Generator', href: '/qr-generator', indent: true },
     { icon: Activity, label: '• DISC Assessment', href: '/assessment', indent: true },
