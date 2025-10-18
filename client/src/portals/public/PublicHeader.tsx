@@ -4,13 +4,38 @@ import { Button } from "@/components/ui/button";
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from "@/components/ui/navigation-menu";
 import { Moon, Sun } from "lucide-react";
 import UniversalAuthHeader from "@/components/universal/UniversalAuthHeader";
+import ContextAwareLogo from "@/components/shared/ContextAwareLogo";
+import NotificationBell from "@/components/notifications/NotificationBell";
+import { useQuery } from "@tanstack/react-query";
+
+interface Context {
+  type: 'engine_admin' | 'hub_admin' | 'user';
+  name: string;
+  path: string;
+  active: boolean;
+}
+
+interface ContextsResponse {
+  contexts: Context[];
+  count: number;
+}
 
 /**
  * PublicHeader - Navigation header for public pages
  * Features: Marketing navigation, login/signup buttons, enterprise session management
+ * Unified design: Theme toggle (left) | Logo (center) | Nav | Notifications + User menu (right)
  */
 export default function PublicHeader() {
   const [isDark, setIsDark] = useState(false);
+  
+  // Check if user is authenticated
+  const { data: contextsData } = useQuery<ContextsResponse>({
+    queryKey: ["/api/auth/contexts"],
+    retry: false,
+    refetchOnWindowFocus: true,
+  });
+
+  const hasAuth = (contextsData?.contexts?.length || 0) > 0;
 
   // Initialize theme from localStorage or system preference
   useEffect(() => {
@@ -33,15 +58,29 @@ export default function PublicHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:supports-[backdrop-filter]:bg-gray-900/60">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2" data-testid="link-logo">
-            <img 
-              src="/wytnet-logo.png" 
-              alt="WytNet" 
-              className="h-8 w-auto transition-transform hover:scale-105"
-            />
-          </Link>
+        <div className="flex h-16 items-center justify-between gap-4">
+          {/* Left: Theme Toggle */}
+          <div className="flex items-center">
+            <Button
+              onClick={toggleTheme}
+              variant="ghost"
+              size="sm"
+              className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 h-9 w-9 p-0"
+              data-testid="button-theme-toggle"
+              aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+            >
+              {isDark ? (
+                <Sun className="h-5 w-5 text-yellow-500" />
+              ) : (
+                <Moon className="h-5 w-5 text-slate-600" />
+              )}
+            </Button>
+          </div>
+
+          {/* Center: Logo */}
+          <div className="flex items-center flex-shrink-0">
+            <ContextAwareLogo context="public" className="h-8 w-auto" href="/" />
+          </div>
 
           {/* Desktop & Tablet Navigation */}
           <NavigationMenu className="hidden md:flex">
@@ -111,25 +150,10 @@ export default function PublicHeader() {
             </NavigationMenuList>
           </NavigationMenu>
 
-          {/* Right side - Universal Auth + Theme Toggle */}
-          <div className="flex items-center gap-3">
+          {/* Right: Notifications + User Menu */}
+          <div className="flex items-center gap-2">
+            {hasAuth && <NotificationBell />}
             <UniversalAuthHeader />
-            
-            {/* Theme Toggle */}
-            <Button
-              onClick={toggleTheme}
-              variant="ghost"
-              size="sm"
-              className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 h-9 w-9 p-0"
-              data-testid="button-theme-toggle"
-              aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
-            >
-              {isDark ? (
-                <Sun className="h-5 w-5 text-yellow-500" />
-              ) : (
-                <Moon className="h-5 w-5 text-slate-600" />
-              )}
-            </Button>
           </div>
         </div>
       </div>

@@ -24,6 +24,9 @@ import ComingSoon from "@/pages/coming-soon";
 // Import the DevDocumentation component
 import DevDocumentation from "@/pages/dev-documentation";
 
+// Account pages
+import MyAccountPage from "@/pages/account/MyAccountPage";
+
 // Tool pages
 import Assessment from "@/pages/assessment";
 import QRGenerator from "@/pages/qr-generator";
@@ -86,6 +89,10 @@ export default function PublicRouter() {
       <Route path="/login" component={WytPassLoginPage} />
       <Route path="/email-otp-login" component={EmailOTPLoginPage} />
       <Route path="/user-auth-methods" component={UserAuthMethods} />
+
+      {/* Account pages */}
+      <Route path="/account" component={MyAccountPage} />
+      <Route path="/account/:tab" component={MyAccountPage} />
 
       {/* Tool routes */}
       <Route path="/tools" component={AIDirectory} />

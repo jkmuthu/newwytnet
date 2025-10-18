@@ -22,7 +22,8 @@ import {
   ChevronDown, 
   Menu,
   User,
-  CheckCircle2
+  CheckCircle2,
+  UserCircle
 } from "lucide-react";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
 
@@ -315,6 +316,18 @@ export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuth
               )}
             </div>
 
+            {/* My Account */}
+            <div className="p-2 border-t">
+              <Link
+                href="/account"
+                className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <UserCircle className="h-4 w-4" />
+                <span>My Account</span>
+              </Link>
+            </div>
+
             {/* Logout */}
             <div className="p-2 border-t">
               <Button
@@ -392,6 +405,16 @@ export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuth
             )}
           </DropdownMenuItem>
         ))}
+
+        <DropdownMenuSeparator />
+
+        {/* My Account */}
+        <Link href="/account">
+          <DropdownMenuItem className="cursor-pointer" data-testid="menu-item-my-account">
+            <UserCircle className="h-4 w-4 mr-2" />
+            My Account
+          </DropdownMenuItem>
+        </Link>
 
         <DropdownMenuSeparator />
 
