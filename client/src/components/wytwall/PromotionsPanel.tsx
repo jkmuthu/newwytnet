@@ -13,14 +13,7 @@ export default function PromotionsPanel({ isAuthenticated }: PromotionsPanelProp
 
   return (
     <>
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-          <Sparkles className="h-5 w-5" />
-          Quick Links
-        </CardTitle>
-      </CardHeader>
-      
-      <CardContent className="pt-4 space-y-4">
+      <CardContent className="pt-6 space-y-4">
         
         {/* Join and Get WytPass */}
         <Card className="bg-gradient-to-br from-purple-500 to-pink-600 border-0 shadow-lg hover:scale-105 transition-all rounded-xl overflow-hidden">
