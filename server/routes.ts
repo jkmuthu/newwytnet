@@ -10068,7 +10068,14 @@ When suggesting improvements, format your response with suggestions in a structu
   // Change password
   app.patch('/api/account/password', async (req: any, res) => {
     try {
+      console.log('DEBUG: Password change - checking session:', {
+        hasWytpass: !!(req.session as any)?.wytpassPrincipal,
+        hasAdminUser: !!(req.session as any)?.adminUser,
+        hasHubAdmin: !!(req.session as any)?.hubAdminUser,
+        hasUser: !!req.session?.user
+      });
       const principal = await getPrincipal(req);
+      console.log('DEBUG: Password change - principal:', principal ? 'found' : 'null');
       if (!principal) {
         return res.status(401).json({ error: 'Not authenticated' });
       }
