@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Users as UsersIcon, Eye, Ban, Trash2, Shield, Clock, Mail, Phone, Calendar, Activity, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { TrashView } from "@/components/shared/TrashView";
 
 interface User {
   id: string;
@@ -51,6 +52,43 @@ export default function AdminUsersImproved() {
     queryKey: ['/api/admin/users'],
   });
 
+  // Trash management queries and mutations
+  const { data: trashUsersData, isLoading: isLoadingTrash } = useQuery<{
+    success: boolean;
+    users: User[];
+    count: number;
+  }>({
+    queryKey: ['/api/admin/trash/users'],
+  });
+
+  const restoreUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return await apiRequest('POST', `/api/admin/trash/users/${userId}/restore`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/trash/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({ title: "Success", description: "User restored successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Failed to restore user", variant: "destructive" });
+    }
+  });
+
+  const permanentlyDeleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return await apiRequest('DELETE', `/api/admin/trash/users/${userId}/permanent`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/trash/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });
+      toast({ title: "Success", description: "User permanently deleted" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Failed to delete user", variant: "destructive" });
+    }
+  });
+
   // Filter users by tab selection
   const filteredUsers = usersData?.users?.filter(user => {
     const userStatus = user.status || 'active'; // Default to active if no status
@@ -71,7 +109,7 @@ export default function AdminUsersImproved() {
   const activeUsersCount = usersData?.users?.filter(u => (!u.status || u.status === 'active') && !u.isSuperAdmin).length || 0;
   const activeAdminsCount = usersData?.users?.filter(u => (!u.status || u.status === 'active') && u.isSuperAdmin).length || 0;
   const bannedCount = usersData?.users?.filter(u => u.status === 'banned').length || 0;
-  const trashCount = usersData?.users?.filter(u => u.status === 'trash').length || 0;
+  const trashCount = trashUsersData?.count || 0;
 
   const getUserInitials = (name: string) => {
     if (!name) return 'U';
@@ -144,8 +182,23 @@ export default function AdminUsersImproved() {
             </TabsList>
           </Tabs>
 
-          {/* Users Table */}
-          {isLoading ? (
+          {/* Users Table or Trash View */}
+          {userStatusFilter === 'trash' ? (
+            <TrashView
+              items={trashUsersData?.users || []}
+              entityType="users"
+              isLoading={isLoadingTrash}
+              onRestore={(id) => restoreUserMutation.mutateAsync(id)}
+              onPermanentDelete={(id) => permanentlyDeleteUserMutation.mutateAsync(id)}
+              renderItemName={(user) => user.name}
+              renderItemDetails={(user) => (
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm">{user.email}</span>
+                  <span className="text-xs text-muted-foreground">{user.displayId}</span>
+                </div>
+              )}
+            />
+          ) : isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Loading users...</div>
           ) : filteredUsers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
