@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
   Search, Plus, Layers, Package, Bot, Building2, 
   Info, FileText, Route as RouteIcon, Settings, 
@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import AdminAppBuilder from "./app-builder";
 import { AdminDetailWorkspace } from "@/components/admin/AdminDetailWorkspace";
 import { AIAssistantChat } from "@/components/admin/AIAssistantChat";
+import { TrashView } from "@/components/shared/TrashView";
 
 // App interface with new fields
 interface AppDefinition {
@@ -46,6 +47,9 @@ interface AppDefinition {
   isActive?: boolean;
   moduleCount?: number;
   modules?: any[];
+  deletedAt: string | null;
+  deletedBy: string | null;
+  deleteReason: string | null;
 }
 
 // Form schema for creating new app
