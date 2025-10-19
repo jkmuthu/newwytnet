@@ -354,7 +354,7 @@ export default function DevDocumentation() {
           <CardContent className="space-y-6">
             <div className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 dark:bg-blue-950 rounded">
               <p className="text-sm mb-2">
-                <strong>Tamil:</strong> பல "Entity" என்ற பாகங்கள் அடங்கியது "Module", சில பல "Module" கள் அடங்கியது "App", 
+                <strong>Tamil:</strong> பல "Entity" என்ற பாகங்கள் அடங்கியது "Module", சில பல "Module" கள் அடங்கியது "App",
                 இந்த "App" என்பது "WytNet.com" உள்ளாகவே "User" களால் "Add" செய்து பயன்படுத்தக் கூடியது.
               </p>
             </div>
@@ -396,7 +396,7 @@ export default function DevDocumentation() {
             <div className="border-l-4 border-orange-500 pl-4 py-2 bg-orange-50 dark:bg-orange-950 rounded mt-6">
               <h4 className="font-semibold mb-2">🌐 Hub - Standalone Portal</h4>
               <p className="text-sm mb-2">
-                <strong>Tamil:</strong> "Hub" என்பது தன்னிச்சையாக செயல்படக்கூடிய "Web Portal" அல்லது "Mobile App" ஆகும். 
+                <strong>Tamil:</strong> "Hub" என்பது தன்னிச்சையாக செயல்படக்கூடிய "Web Portal" அல்லது "Mobile App" ஆகும்.
                 இது "WytPass Auth" பயன்படுத்தி செயல்படும்.
               </p>
               <p className="text-sm text-muted-foreground">
@@ -601,6 +601,46 @@ export default function DevDocumentation() {
                 <History className="h-4 w-4 mr-2" />
                 Version History
               </Button>
+
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-800">
+                <div className="text-xs font-semibold text-muted-foreground px-2 mb-2">PLANNING</div>
+
+                <Button
+                  variant={activeSection === "planned-features" ? "secondary" : "ghost"}
+                  className="w-full justify-start"
+                  onClick={() => setActiveSection("planned-features")}
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Planned Features
+                </Button>
+
+                <Button
+                  variant={activeSection === "architecture-decisions" ? "secondary" : "ghost"}
+                  className="w-full justify-start"
+                  onClick={() => setActiveSection("architecture-decisions")}
+                >
+                  <GitBranch className="h-4 w-4 mr-2" />
+                  Architecture Decisions
+                </Button>
+
+                <Button
+                  variant={activeSection === "roadmap" ? "secondary" : "ghost"}
+                  className="w-full justify-start"
+                  onClick={() => setActiveSection("roadmap")}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Implementation Roadmap
+                </Button>
+
+                <Button
+                  variant={activeSection === "feature-templates" ? "secondary" : "ghost"}
+                  className="w-full justify-start"
+                  onClick={() => setActiveSection("feature-templates")}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Feature Templates
+                </Button>
+              </div>
             </div>
           </nav>
         </aside>
@@ -968,6 +1008,244 @@ export default function DevDocumentation() {
                           ))}
                         </TabsContent>
                       </Tabs>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Planned Features Section */}
+                {activeSection === "planned-features" && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-blue-600" />
+                        Planned Features & Roadmap
+                      </CardTitle>
+                      <CardDescription>Future development plans and timelines</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="prose dark:prose-invert max-w-none">
+                        <p className="text-muted-foreground mb-6">
+                          This section outlines the planned features, development roadmap, and technical decisions for the WytNet platform.
+                        </p>
+
+                        <h3 className="text-xl font-semibold mb-4">1. Platform Architecture</h3>
+                        <div className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 dark:bg-blue-950 rounded mb-4">
+                          <p className="text-sm"><strong>System Flow Diagrams:</strong> Visual representation of system processes and data flow.</p>
+                        </div>
+                        <div className="border-l-4 border-purple-500 pl-4 py-2 bg-purple-50 dark:bg-purple-950 rounded mb-4">
+                          <p className="text-sm"><strong>Database Schema Plans:</strong> Future database structure and relationships.</p>
+                        </div>
+                        <div className="border-l-4 border-green-500 pl-4 py-2 bg-green-50 dark:bg-green-950 rounded mb-4">
+                          <p className="text-sm"><strong>API Design Documents:</strong> Specifications for new and updated API endpoints.</p>
+                        </div>
+
+                        <h3 className="text-xl font-semibold mt-8 mb-4">2. Feature Specifications</h3>
+                        <div className="border-l-4 border-orange-500 pl-4 py-2 bg-orange-50 dark:bg-orange-950 rounded mb-4">
+                          <p className="text-sm"><strong>User Stories:</strong> Defining features from an end-user perspective.</p>
+                        </div>
+                        <div className="border-l-4 border-red-500 pl-4 py-2 bg-red-50 dark:bg-red-950 rounded mb-4">
+                          <p className="text-sm"><strong>Wireframes/Mockups:</strong> Visual design of user interfaces.</p>
+                        </div>
+                        <div className="border-l-4 border-yellow-500 pl-4 py-2 bg-yellow-50 dark:bg-yellow-950 rounded mb-4">
+                          <p className="text-sm"><strong>Detailed Requirements:</strong> In-depth functional and non-functional requirements.</p>
+                        </div>
+                        <div className="border-l-4 border-indigo-500 pl-4 py-2 bg-indigo-50 dark:bg-indigo-950 rounded mb-4">
+                          <p className="text-sm"><strong>Acceptance Criteria:</strong> Conditions to be met for feature completion.</p>
+                        </div>
+
+                        <h3 className="text-xl font-semibold mt-8 mb-4">3. Implementation Roadmap</h3>
+                        <div className="border-l-4 border-cyan-500 pl-4 py-2 bg-cyan-50 dark:bg-cyan-950 rounded mb-4">
+                          <p className="text-sm"><strong>Sprint Planning:</strong> Organizing development tasks into sprints.</p>
+                        </div>
+                        <div className="border-l-4 border-fuchsia-500 pl-4 py-2 bg-fuchsia-50 dark:bg-fuchsia-950 rounded mb-4">
+                          <p className="text-sm"><strong>Priority Matrix:</strong> Defining task priorities based on impact and effort.</p>
+                        </div>
+                        <div className="border-l-4 border-lime-500 pl-4 py-2 bg-lime-50 dark:bg-lime-950 rounded mb-4">
+                          <p className="text-sm"><strong>Dependencies Map:</strong> Visualizing task dependencies.</p>
+                        </div>
+                        <div className="border-l-4 border-pink-500 pl-4 py-2 bg-pink-50 dark:bg-pink-950 rounded mb-4">
+                          <p className="text-sm"><strong>Timeline Estimates:</strong> Estimated time for feature completion.</p>
+                        </div>
+
+                        <h3 className="text-xl font-semibold mt-8 mb-4">4. Technical Decisions (ADR)</h3>
+                        <div className="border-l-4 border-gray-500 pl-4 py-2 bg-gray-50 dark:bg-gray-950 rounded mb-4">
+                          <p className="text-sm"><strong>Architecture Decisions:</strong> Documenting significant architectural choices.</p>
+                        </div>
+                        <div className="border-l-4 border-teal-500 pl-4 py-2 bg-teal-50 dark:bg-teal-950 rounded mb-4">
+                          <p className="text-sm"><strong>Technology Choices:</strong> Rationale behind technology selections.</p>
+                        </div>
+                        <div className="border-l-4 border-amber-500 pl-4 py-2 bg-amber-50 dark:bg-amber-950 rounded mb-4">
+                          <p className="text-sm"><strong>Design Patterns:</strong> Documenting patterns used in development.</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Architecture Decisions Section */}
+                {activeSection === "architecture-decisions" && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <GitBranch className="h-5 w-5 text-blue-600" />
+                        Architecture Decisions (ADR)
+                      </CardTitle>
+                      <CardDescription>Key architectural decisions and their justifications</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="prose dark:prose-invert max-w-none">
+                        <p className="text-muted-foreground mb-6">
+                          Architecture Decision Records (ADRs) capture significant decisions made during the development of the WytNet platform.
+                        </p>
+
+                        <div className="space-y-4">
+                          <div className="border rounded-lg p-4">
+                            <h4 className="font-semibold mb-2 flex items-center gap-2">
+                              <Terminal className="h-4 w-4 text-gray-500" />
+                              ADR-001: Microservices vs Monolith
+                            </h4>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              <strong>Decision:</strong> Hybrid Approach (Monolith with potential for microservice extraction).
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              <strong>Rationale:</strong> Initial development speed favored a monolith, while future scalability needs are addressed by designing for modularity.
+                            </p>
+                          </div>
+                          <div className="border rounded-lg p-4">
+                            <h4 className="font-semibold mb-2 flex items-center gap-2">
+                              <Database className="h-4 w-4 text-blue-500" />
+                              ADR-002: Database Choice - PostgreSQL
+                            </h4>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              <strong>Decision:</strong> Use PostgreSQL with Neon.
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              <strong>Rationale:</strong> PostgreSQL's robustness, JSONB support, and Neon's serverless capabilities align well with our multi-tenant architecture and scaling needs.
+                            </p>
+                          </div>
+                          <div className="border rounded-lg p-4">
+                            <h4 className="font-semibold mb-2 flex items-center gap-2">
+                              <Code className="h-4 w-4 text-purple-500" />
+                              ADR-003: Backend Framework - Express.js
+                            </h4>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              <strong>Decision:</strong> Use Express.js with TypeScript.
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              <strong>Rationale:</strong> Express.js offers flexibility and a large ecosystem, while TypeScript enhances code quality and maintainability.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Implementation Roadmap Section */}
+                {activeSection === "roadmap" && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Calendar className="h-5 w-5 text-green-600" />
+                        Implementation Roadmap
+                      </CardTitle>
+                      <CardDescription>Phased rollout and key milestones</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="prose dark:prose-invert max-w-none">
+                        <p className="text-muted-foreground mb-6">
+                          This roadmap outlines the planned phases for implementing new features and system improvements.
+                        </p>
+
+                        <div className="space-y-4">
+                          <div className="border rounded-lg p-4">
+                            <h4 className="font-semibold mb-2">Phase 1: Foundation (Q1 2025)</h4>
+                            <ul className="text-sm space-y-1 text-muted-foreground">
+                              <li>• Core Platform Stability</li>
+                              <li>• User Authentication (WytPass)</li>
+                              <li>• Basic Admin Panel</li>
+                            </ul>
+                          </div>
+                          <div className="border rounded-lg p-4">
+                            <h4 className="font-semibold mb-2">Phase 2: Core Features (Q2 2025)</h4>
+                            <ul className="text-sm space-y-1 text-muted-foreground">
+                              <li>• Module System Implementation</li>
+                              <li>• Entity Management</li>
+                              <li>• Basic Analytics Dashboard</li>
+                            </ul>
+                          </div>
+                          <div className="border rounded-lg p-4">
+                            <h4 className="font-semibold mb-2">Phase 3: Expansion (Q3 2025)</h4>
+                            <ul className="text-sm space-y-1 text-muted-foreground">
+                              <li>• App Builder Enhancements</li>
+                              <li>• White-Labeling Capabilities</li>
+                              <li>• Advanced API Integrations</li>
+                            </ul>
+                          </div>
+                          <div className="border rounded-lg p-4">
+                            <h4 className="font-semibold mb-2">Phase 4: Optimization & Scale (Q4 2025+)</h4>
+                            <ul className="text-sm space-y-1 text-muted-foreground">
+                              <li>• Performance Optimization</li>
+                              <li>• Microservice Architecture Exploration</li>
+                              <li>• AI/ML Feature Integration</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Feature Templates Section */}
+                {activeSection === "feature-templates" && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-blue-600" />
+                        Feature Specification Template
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="prose dark:prose-invert max-w-none">
+                        <h3 className="text-xl font-semibold mb-4">Feature Template</h3>
+                        <p className="text-sm text-muted-foreground mb-6">
+                          Use this template to document new features comprehensively.
+                        </p>
+
+                        <div className="border p-4 rounded-lg">
+                          <h4 className="font-bold mb-3">Feature: [Feature Name]</h4>
+
+                          <div className="mb-4">
+                            <h5 className="font-semibold mb-2">1. Overview</h5>
+                            <p className="text-sm text-muted-foreground mb-1"><strong>Purpose:</strong> [Describe the main goal of the feature.]</p>
+                            <p className="text-sm text-muted-foreground mb-1"><strong>User Benefit:</strong> [Explain how this feature benefits the end-user.]</p>
+                            <p className="text-sm text-muted-foreground"><strong>Business Value:</strong> [Describe the value this feature brings to the business.]</p>
+                          </div>
+
+                          <div className="mb-4">
+                            <h5 className="font-semibold mb-2">2. UI/UX Specification</h5>
+                            <p className="text-sm text-muted-foreground mb-1"><strong>Menu Location:</strong> [Where can the user find this feature in the navigation?]</p>
+                            <p className="text-sm text-muted-foreground mb-1"><strong>Page Structure:</strong> [Describe the layout of the page.]</p>
+                            <p className="text-sm text-muted-foreground mb-1"><strong>Sections & Components:</strong> [List key sections and UI components.]</p>
+                            <p className="text-sm text-muted-foreground"><strong>User Flow:</strong> [Describe the steps a user takes to interact with the feature.]</p>
+                          </div>
+
+                          <div className="mb-4">
+                            <h5 className="font-semibold mb-2">3. Technical Specification</h5>
+                            <p className="text-sm text-muted-foreground mb-1"><strong>API Endpoints:</strong> [List relevant API endpoints.]</p>
+                            <p className="text-sm text-muted-foreground mb-1"><strong>Database Schema:</strong> [Describe any new or modified database structures.]</p>
+                            <p className="text-sm text-muted-foreground mb-1"><strong>Dependencies:</strong> [List any internal or external dependencies.]</p>
+                            <p className="text-sm text-muted-foreground"><strong>Permissions Required:</strong> [Specify user roles or permissions needed.]</p>
+                          </div>
+
+                          <div>
+                            <h5 className="font-semibold mb-2">4. Implementation Steps</h5>
+                            <p className="text-sm text-muted-foreground mb-1"><strong>Step-by-step instructions for Agent:</strong> [Provide clear, actionable steps.]</p>
+                            <p className="text-sm text-muted-foreground mb-1"><strong>Code snippets/examples:</strong> [Include relevant code examples if applicable.]</p>
+                            <p className="text-sm text-muted-foreground"><strong>Testing criteria:</strong> [Define how the feature should be tested.]</p>
+                          </div>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
