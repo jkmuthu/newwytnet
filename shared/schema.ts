@@ -63,7 +63,7 @@ export const users = pgTable("users", {
   name: varchar("name", { length: 255 }),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
-  whatsappNumber: varchar("whatsapp_number", { length: 20 }),
+  whatsappNumber: varchar("whatsapp_number", { length: 20 }).unique(),
   profileImageUrl: varchar("profile_image_url"),
   passwordHash: varchar("password_hash", { length: 255 }),
   tenantId: uuid("tenant_id").references(() => tenants.id),
