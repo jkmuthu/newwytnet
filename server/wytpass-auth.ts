@@ -193,7 +193,7 @@ export function setupWytPassAuth(app: Express) {
                   authMethods: ["google"],
                   role: "user",
                   isVerified: true,
-                  whatsappNumber: "", // Required field, will be empty for Google auth
+                  whatsappNumber: null, // NULL instead of empty string for unique constraint
                   lastLoginAt: new Date(),
                 })
                 .returning();
@@ -217,7 +217,17 @@ export function setupWytPassAuth(app: Express) {
                 socialProviders: newUser.socialProviders as string[],
               });
             }
-          } catch (error) {
+          } catch (error: any) {
+            // Handle unique constraint violations
+            if (error.code === '23505') {
+              if (error.constraint === 'users_email_unique') {
+                return done(new Error("Email address is already registered with another account"));
+              }
+              if (error.constraint === 'users_whatsapp_number_unique') {
+                return done(new Error("WhatsApp number is already registered"));
+              }
+              return done(new Error("This information is already registered"));
+            }
             return done(error);
           }
         }
@@ -310,7 +320,7 @@ export function setupWytPassAuth(app: Express) {
                   authMethods: ["linkedin"],
                   role: "user",
                   isVerified: true,
-                  whatsappNumber: "", // Required field, will be empty for LinkedIn auth
+                  whatsappNumber: null, // NULL instead of empty string for unique constraint
                   lastLoginAt: new Date(),
                 })
                 .returning();
@@ -412,7 +422,7 @@ export function setupWytPassAuth(app: Express) {
                   authMethods: ["facebook"],
                   role: "user",
                   isVerified: true,
-                  whatsappNumber: "", // Required field, will be empty for Facebook auth
+                  whatsappNumber: null, // NULL instead of empty string for unique constraint
                   lastLoginAt: new Date(),
                 })
                 .returning();
@@ -490,7 +500,7 @@ export function setupWytPassAuth(app: Express) {
           name,
           email,
           passwordHash,
-          whatsappNumber: whatsappNumber || "",
+          whatsappNumber: whatsappNumber || null, // NULL instead of empty string for unique constraint
           authMethods: ["password"],
           socialProviders: [],
           role: "user",

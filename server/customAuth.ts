@@ -298,9 +298,22 @@ export async function setupAuth(app: Express) {
           tenantId: user.tenantId
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      // Handle unique constraint violations
+      if (error.code === '23505') { // PostgreSQL unique violation
+        if (error.constraint === 'users_email_unique') {
+          return res.status(400).json({ message: "Email address is already registered" });
+        }
+        if (error.constraint === 'users_whatsapp_number_unique') {
+          return res.status(400).json({ message: "WhatsApp number is already registered" });
+        }
+        if (error.constraint === 'users_display_id_unique') {
+          return res.status(400).json({ message: "User ID already exists" });
+        }
+        return res.status(400).json({ message: "This information is already registered" });
       }
       console.error("Registration error:", error);
       res.status(500).json({ message: "Registration failed" });
