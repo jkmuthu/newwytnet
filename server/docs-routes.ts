@@ -6,8 +6,17 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DOC_SITE_PASSWORD = process.env.DOC_SITE_PASSWORD || 'wytnet123';
-const DOC_SITE_API_TOKEN = process.env.DOC_SITE_API_TOKEN || 'replit-agent-token-12345';
+// Security: Mandatory environment variables - no defaults for production safety
+const DOC_SITE_PASSWORD = process.env.DOC_SITE_PASSWORD;
+const DOC_SITE_API_TOKEN = process.env.DOC_SITE_API_TOKEN;
+
+if (!DOC_SITE_PASSWORD) {
+  throw new Error('SECURITY ERROR: DOC_SITE_PASSWORD environment variable is required for DevDoc authentication. Set it in your environment.');
+}
+
+if (!DOC_SITE_API_TOKEN) {
+  throw new Error('SECURITY ERROR: DOC_SITE_API_TOKEN environment variable is required for Replit Agent access. Set it in your environment.');
+}
 
 declare module 'express-session' {
   interface SessionData {

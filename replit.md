@@ -63,8 +63,10 @@ The platform incorporates modern UI elements like animated gradient backgrounds,
 - **Auth Endpoint**: `/devdoc-auth` (POST)
 
 ### Environment Variables
-- `DOC_SITE_PASSWORD`: Password for external developer access (default: `wytnet123`)
-- `DOC_SITE_API_TOKEN`: Bearer token for Replit Agent (default: `replit-agent-token-12345`)
+- `DOC_SITE_PASSWORD`: **REQUIRED** - Password for external developer access (no default for security)
+- `DOC_SITE_API_TOKEN`: **REQUIRED** - Bearer token for Replit Agent (no default for security)
+
+**Security Note**: Both environment variables MUST be set before the server starts. The server will fail to start if they are missing to prevent unauthorized access.
 
 # External Dependencies
 
