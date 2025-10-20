@@ -203,6 +203,16 @@ app.use((req, res, next) => {
     console.log('Continuing without hub routing');
   }
 
+  // Setup Developer Documentation Routes
+  try {
+    console.log('📚 Setting up Developer Documentation...');
+    const { setupDocsRoutes } = await import('./docs-routes');
+    setupDocsRoutes(app);
+  } catch (error) {
+    console.warn('Developer Documentation setup failed:', error);
+    console.log('Continuing without DevDoc routes');
+  }
+
   await registerRoutes(app);
   const server = createServer(app);
 
