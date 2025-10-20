@@ -16,7 +16,7 @@ export default function Footer() {
     { label: "Help Center", href: "/help" },
   ];
 
-  const wytHubsLinks = [
+  const wytLifeLinks = [
     { label: "AI Directory", href: "/ai-directory" },
     { label: "WytLife", href: "/wytlife" },
   ];
@@ -46,10 +46,10 @@ export default function Footer() {
       <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-pink-400/20 rounded-full blur-3xl animate-pulse"></div>
       
       {/* Main footer content */}
-      <div className="relative px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <div className="relative px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         
         {/* Centered Company info */}
-        <div className="mb-12 text-center">
+        <div className="mb-6 text-center">
           <div className="flex justify-center items-center space-x-3 mb-6 animate-fade-in-up">
             <img 
               src="/wytnet-logo.png" 
@@ -106,7 +106,7 @@ export default function Footer() {
         </div>
 
         {/* Gradient divider */}
-        <div className="h-1 w-full max-w-4xl mx-auto mb-12 bg-gradient-to-r from-transparent via-white/50 to-transparent rounded-full"></div>
+        <div className="h-1 w-full max-w-4xl mx-auto mb-6 bg-gradient-to-r from-transparent via-white/50 to-transparent rounded-full"></div>
 
         {/* Links grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-10 max-w-6xl mx-auto">
@@ -132,14 +132,14 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* WytHubs links */}
+          {/* WytLife links */}
           <div className="animate-fade-in-up animation-delay-500">
-            <h3 className="font-bold text-white mb-4 text-base flex items-center gap-2" data-testid="footer-heading-wythubs">
+            <h3 className="font-bold text-white mb-4 text-base flex items-center gap-2" data-testid="footer-heading-wytlife">
               <span className="w-2 h-2 bg-cyan-300 rounded-full animate-ping"></span>
-              WytHubs
+              WytLife
             </h3>
             <ul className="space-y-3">
-              {wytHubsLinks.map((link) => (
+              {wytLifeLinks.map((link) => (
                 <li key={link.label}>
                   <a 
                     href={link.href} 
@@ -234,7 +234,7 @@ export default function Footer() {
         <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/10 via-pink-400/10 to-cyan-400/10"></div>
         
         {/* Bottom footer */}
-        <div className="relative px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        <div className="relative px-4 sm:px-6 lg:px-8 py-3 lg:py-4">
           <div className="flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0">
             <div className="flex items-center space-x-2 text-sm text-white/90 animate-fade-in">
               <span data-testid="copyright-text" className="font-medium">

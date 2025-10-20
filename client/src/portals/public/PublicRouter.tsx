@@ -39,8 +39,6 @@ import WytDuty from "@/pages/wytduty";
 import WytDutyEnhanced from "@/pages/wytduty-enhanced";
 import WytApps from "@/pages/wytapps";
 import AppDetail from "@/pages/app-detail";
-import HubDiscovery from "@/pages/hub-discovery";
-import HubDetail from "@/pages/hub-detail";
 import MobileAppPage from "@/pages/MobileAppPage";
 import SearchPage from "@/pages/search";
 import PaymentsPage from "@/pages/payments";
@@ -107,8 +105,9 @@ export default function PublicRouter() {
       <Route path="/wytduty/enhanced" component={WytDutyEnhanced} />
       <Route path="/wytapps" component={WytApps} />
       <Route path="/app/:id" component={AppDetail} />
-      <Route path="/hubs" component={HubDiscovery} />
-      <Route path="/hub/:slug" component={HubDetail} />
+      {/* Hub routes removed - replaced with WytLife */}
+      {/* <Route path="/hubs" component={HubDiscovery} /> */}
+      {/* <Route path="/hub/:slug" component={HubDetail} /> */}
       <Route path="/mobile-app" component={MobileAppPage} />
       <Route path="/search" component={SearchPage} />
 
