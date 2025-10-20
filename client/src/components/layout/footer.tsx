@@ -16,12 +16,9 @@ export default function Footer() {
     { label: "Help Center", href: "/help" },
   ];
 
-  const wytLifeLinks = [
+  const wytAppsLinks = [
     { label: "AI Directory", href: "/ai-directory" },
     { label: "WytLife", href: "/wytlife" },
-  ];
-
-  const wytAppsLinks = [
     { label: "QR Generator", href: "/qr-generator" },
     { label: "DISC Assessment", href: "/assessment" },
   ];
@@ -109,7 +106,7 @@ export default function Footer() {
         <div className="h-px w-full max-w-4xl mx-auto mb-4 bg-gradient-to-r from-transparent via-white/50 to-transparent rounded-full"></div>
 
         {/* Links grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-6xl mx-auto">
           {/* Company links */}
           <div className="animate-fade-in-up animation-delay-400">
             <h3 className="font-bold text-white mb-2 text-sm sm:text-base flex items-center gap-2" data-testid="footer-heading-company">
@@ -132,30 +129,8 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* WytLife links */}
-          <div className="animate-fade-in-up animation-delay-500">
-            <h3 className="font-bold text-white mb-2 text-sm sm:text-base flex items-center gap-2" data-testid="footer-heading-wytlife">
-              <span className="w-1.5 h-1.5 bg-cyan-300 rounded-full animate-ping"></span>
-              WytLife
-            </h3>
-            <ul className="space-y-1.5 sm:space-y-2">
-              {wytLifeLinks.map((link) => (
-                <li key={link.label}>
-                  <a 
-                    href={link.href} 
-                    className="text-white/90 hover:text-white transition-all text-xs sm:text-sm font-medium inline-flex items-center group"
-                    data-testid={`footer-link-${link.label.toLowerCase().replace(' ', '-')}`}
-                  >
-                    <span className="group-hover:translate-x-2 transition-transform duration-300">{link.label}</span>
-                    <span className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
           {/* WytApps links */}
-          <div className="animate-fade-in-up animation-delay-600">
+          <div className="animate-fade-in-up animation-delay-500">
             <h3 className="font-bold text-white mb-2 text-sm sm:text-base flex items-center gap-2" data-testid="footer-heading-wytapps">
               <span className="w-1.5 h-1.5 bg-pink-300 rounded-full animate-ping"></span>
               WytApps
@@ -177,7 +152,7 @@ export default function Footer() {
           </div>
 
           {/* Resources links */}
-          <div className="animate-fade-in-up animation-delay-700">
+          <div className="animate-fade-in-up animation-delay-600">
             <h3 className="font-bold text-white mb-2 text-sm sm:text-base flex items-center gap-2" data-testid="footer-heading-resources">
               <span className="w-1.5 h-1.5 bg-green-300 rounded-full animate-ping"></span>
               Resources
@@ -199,7 +174,7 @@ export default function Footer() {
           </div>
 
           {/* Platform Access */}
-          <div className="col-span-2 sm:col-span-1 animate-fade-in-up animation-delay-800">
+          <div className="col-span-2 sm:col-span-1 animate-fade-in-up animation-delay-700">
             <h3 className="font-bold text-white mb-2 text-sm sm:text-base flex items-center gap-2" data-testid="footer-heading-platform">
               <span className="w-1.5 h-1.5 bg-purple-300 rounded-full animate-ping"></span>
               Platform Access
