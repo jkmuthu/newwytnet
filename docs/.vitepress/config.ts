@@ -4,6 +4,7 @@ export default defineConfig({
   title: 'WytNet DevDoc',
   description: 'Complete Developer Documentation for WytNet Platform',
   
+  base: '/devdoc/',
   ignoreDeadLinks: true,
   
   locales: {
