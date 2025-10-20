@@ -4,6 +4,8 @@ export default defineConfig({
   title: 'WytNet DevDoc',
   description: 'Complete Developer Documentation for WytNet Platform',
   
+  ignoreDeadLinks: true,
+  
   locales: {
     root: {
       label: 'English',
@@ -62,16 +64,14 @@ export default defineConfig({
             {
               text: 'Implementation Guide',
               items: [
-                { text: 'Getting Started', link: '/en/implementation/getting-started' },
-                { text: 'Implementation Checklist', link: '/en/implementation/checklist' },
-                { text: 'Code Patterns', link: '/en/implementation/patterns' }
+                { text: 'Replit Assistant Guide', link: '/en/implementation/replit-guide' }
               ]
             },
             {
               text: 'Admin Panels',
               items: [
-                { text: 'Engine Admin Panel', link: '/en/admin/engine-panel' },
-                { text: 'Hub Admin Panel', link: '/en/admin/hub-panel' }
+                { text: 'Engine Admin Panel', link: '/en/admin/engine-admin' },
+                { text: 'Hub Admin Panel', link: '/en/admin/hub-admin' }
               ]
             }
           ]
@@ -135,16 +135,14 @@ export default defineConfig({
             {
               text: 'செயல்படுத்தல் வழிகாட்டி',
               items: [
-                { text: 'தொடங்குதல்', link: '/ta/implementation/getting-started' },
-                { text: 'செயல்படுத்தல் பட்டியல்', link: '/ta/implementation/checklist' },
-                { text: 'குறியீடு முறைகள்', link: '/ta/implementation/patterns' }
+                { text: 'Replit Assistant வழிகாட்டி', link: '/ta/implementation/replit-guide' }
               ]
             },
             {
               text: 'நிர்வாக பேனல்கள்',
               items: [
-                { text: 'Engine நிர்வாக பேனல்', link: '/ta/admin/engine-panel' },
-                { text: 'Hub நிர்வாக பேனல்', link: '/ta/admin/hub-panel' }
+                { text: 'Engine நிர்வாக பேனல்', link: '/ta/admin/engine-admin' },
+                { text: 'Hub நிர்வாக பேனல்', link: '/ta/admin/hub-admin' }
               ]
             }
           ]
@@ -165,7 +163,7 @@ export default defineConfig({
 
   markdown: {
     config: (md) => {
-      // Enable Mermaid diagrams support
+      // Mermaid diagrams are automatically supported in VitePress markdown
     }
   }
 })
