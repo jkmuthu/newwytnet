@@ -4028,3 +4028,123 @@ export const selectPlatformThemeSchema = createSelectSchema(platformThemes);
 // Type exports for Platform Themes
 export type PlatformTheme = typeof platformThemes.$inferSelect;
 export type InsertPlatformTheme = z.infer<typeof insertPlatformThemeSchema>;
+
+// =======================
+// Features Checklist System
+// =======================
+
+// Features master list table
+export const features = pgTable("features", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // FT00001
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 100 }), // Authentication, UI/UX, Backend, etc.
+  priority: varchar("priority", { length: 20 }).default('medium'), // low, medium, high, critical
+  status: varchar("status", { length: 50 }).default('pending'), // pending, in_progress, completed, on_hold
+  
+  // Progress tracking
+  totalTasks: integer("total_tasks").default(0),
+  completedTasks: integer("completed_tasks").default(0),
+  agentTestedTasks: integer("agent_tested_tasks").default(0),
+  jkmTestedTasks: integer("jkm_tested_tasks").default(0),
+  
+  // Metadata
+  estimatedHours: integer("estimated_hours"),
+  actualHours: integer("actual_hours"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_features_display_id").on(table.displayId),
+  index("idx_features_status").on(table.status),
+  index("idx_features_category").on(table.category),
+]);
+
+// Tasks table for each feature
+export const featureTasks = pgTable("feature_tasks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // TSK00001
+  featureId: varchar("feature_id").notNull().references(() => features.id, { onDelete: 'cascade' }),
+  
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  url: varchar("url", { length: 500 }), // Direct link to test the feature
+  expectedUrlPattern: varchar("expected_url_pattern", { length: 100 }), // /auth/*, /admin/*, etc.
+  urlPatternValid: boolean("url_pattern_valid").default(true),
+  
+  // Testing status
+  agentTested: boolean("agent_tested").default(false),
+  agentTestedAt: timestamp("agent_tested_at"),
+  agentTestedBy: varchar("agent_tested_by", { length: 255 }),
+  agentTestComments: text("agent_test_comments"),
+  
+  jkmTested: boolean("jkm_tested").default(false),
+  jkmTestedAt: timestamp("jkm_tested_at"),
+  jkmTestComments: text("jkm_test_comments"),
+  
+  // Status and ordering
+  status: varchar("status", { length: 50 }).default('pending'), // pending, agent_tested, jkm_tested, completed, blocked
+  orderIndex: integer("order_index").default(0),
+  isBlocked: boolean("is_blocked").default(false),
+  blockedReason: text("blocked_reason"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_feature_tasks_feature_id").on(table.featureId),
+  index("idx_feature_tasks_status").on(table.status),
+  index("idx_feature_tasks_display_id").on(table.displayId),
+]);
+
+// Relations
+export const featuresRelations = relations(features, ({ many }) => ({
+  tasks: many(featureTasks),
+}));
+
+export const featureTasksRelations = relations(featureTasks, ({ one }) => ({
+  feature: one(features, {
+    fields: [featureTasks.featureId],
+    references: [features.id],
+  }),
+}));
+
+// Insert/Select schemas
+export const insertFeatureSchema = createInsertSchema(features, {
+  name: z.string().min(1).max(255),
+  description: z.string().optional(),
+  category: z.string().max(100).optional(),
+  priority: z.enum(['low', 'medium', 'high', 'critical']).optional(),
+  status: z.enum(['pending', 'in_progress', 'completed', 'on_hold']).optional(),
+}).omit({ id: true, displayId: true, createdAt: true, updatedAt: true });
+
+export const updateFeatureSchema = insertFeatureSchema.partial();
+
+export const insertFeatureTaskSchema = createInsertSchema(featureTasks, {
+  featureId: z.string(),
+  name: z.string().min(1).max(255),
+  description: z.string().optional(),
+  url: z.string().url().max(500).optional().or(z.literal('')),
+  expectedUrlPattern: z.string().max(100).optional(),
+  agentTestComments: z.string().optional(),
+  jkmTestComments: z.string().optional(),
+}).omit({ id: true, displayId: true, createdAt: true, updatedAt: true });
+
+export const updateFeatureTaskSchema = insertFeatureTaskSchema.partial();
+
+export const updateTaskTestStatusSchema = z.object({
+  testType: z.enum(['agent', 'jkm']),
+  tested: z.boolean(),
+  comments: z.string().optional(),
+});
+
+// Type exports
+export type Feature = typeof features.$inferSelect;
+export type InsertFeature = z.infer<typeof insertFeatureSchema>;
+export type UpdateFeature = z.infer<typeof updateFeatureSchema>;
+export type FeatureTask = typeof featureTasks.$inferSelect;
+export type InsertFeatureTask = z.infer<typeof insertFeatureTaskSchema>;
+export type UpdateFeatureTask = z.infer<typeof updateFeatureTaskSchema>;
+export type UpdateTaskTestStatus = z.infer<typeof updateTaskTestStatusSchema>;
