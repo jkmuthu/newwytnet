@@ -40,6 +40,31 @@ The platform incorporates modern UI elements like animated gradient backgrounds,
 - **Organizations Management API**: Full CRUD API for managing organizations with enhanced schema, integrated into the Tenants page.
 - **Mock Data Cleanup**: Replaced all mock data with real database-backed implementations across critical admin features.
 - **Progressive Web App (PWA) Support**: Full PWA implementation including service worker, manifest, icons, offline functionality, background sync, and push notifications.
+- **WytNet DevDoc (Developer Documentation System)**: Comprehensive bilingual (Tamil + English) technical documentation built with VitePress. Features include complete API reference, architecture docs, feature workflows with Mermaid diagrams, implementation guides for Replit Assistant, and database schema documentation with ERD diagrams. Protected by three authentication methods: password-only (external developers), Super Admin session (auto-access for logged-in admins), and API token (Replit Agent). Available at `/devdoc/` with 20+ documentation pages covering all platform features, RBAC system, multi-tenancy architecture, and step-by-step implementation patterns.
+
+## Developer Documentation Architecture
+
+### Documentation Structure
+- **VitePress Static Site**: Built documentation in `docs/.vitepress/dist/`
+- **Bilingual Support**: Full Tamil (`/ta/`) and English (`/en/`) versions
+- **20+ Pages**: Features, architecture, API reference, admin panels, implementation guide
+- **Mermaid Diagrams**: Workflow visualizations and architecture diagrams
+- **Search-Enabled**: Full-text search across all pages
+
+### Authentication System (Triple Method)
+1. **Password Authentication**: External developers use `DOC_SITE_PASSWORD` env var
+2. **Super Admin Session**: Automatic access for logged-in Engine Admin users via WytPass session
+3. **Replit Agent Token**: API access using `DOC_SITE_API_TOKEN` Bearer token for AI Assistant
+
+### Access URLs
+- **Login Page**: `/devdoc-login`
+- **Documentation**: `/devdoc/`
+- **Session API**: `/api/devdoc/session`
+- **Auth Endpoint**: `/devdoc-auth` (POST)
+
+### Environment Variables
+- `DOC_SITE_PASSWORD`: Password for external developer access (default: `wytnet123`)
+- `DOC_SITE_API_TOKEN`: Bearer token for Replit Agent (default: `replit-agent-token-12345`)
 
 # External Dependencies
 
@@ -67,6 +92,7 @@ The platform incorporates modern UI elements like animated gradient backgrounds,
 - **Vite**: Build tool and dev server.
 - **TypeScript**: Type-safe language.
 - **ESBuild**: JavaScript bundler.
+- **VitePress**: Documentation site generator with Vue-based SSG.
 
 ## AI and Machine Learning
 - **OpenAI API**: GPT-4 integration.
