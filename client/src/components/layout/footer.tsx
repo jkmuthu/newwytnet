@@ -46,82 +46,82 @@ export default function Footer() {
       <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-pink-400/20 rounded-full blur-3xl animate-pulse"></div>
       
       {/* Main footer content */}
-      <div className="relative px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <div className="relative px-4 sm:px-6 lg:px-8 py-4 sm:py-5">
         
         {/* Centered Company info */}
-        <div className="mb-6 text-center">
-          <div className="flex justify-center items-center space-x-3 mb-6 animate-fade-in-up">
+        <div className="mb-4 text-center">
+          <div className="flex justify-center items-center space-x-2 mb-3 animate-fade-in-up">
             <img 
               src="/wytnet-logo.png" 
               alt="WytNet" 
-              className="h-12 w-auto transition-transform hover:scale-110 hover:rotate-3 animate-pulse-slow"
+              className="h-8 sm:h-10 w-auto transition-transform hover:scale-110 hover:rotate-3 animate-pulse-slow"
             />
-            <Sparkles className="h-6 w-6 text-yellow-300 animate-spin-slow" />
+            <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-300 animate-spin-slow" />
           </div>
           
-          <p className="text-white mb-8 max-w-2xl mx-auto text-lg sm:text-xl font-semibold animate-fade-in-up animation-delay-100" data-testid="footer-description">
+          <p className="text-white mb-3 max-w-2xl mx-auto text-sm sm:text-base font-semibold animate-fade-in-up animation-delay-100" data-testid="footer-description">
             Your all-in-one digital platform for a better lifestyle and smarter workstyle.
           </p>
           
-          <div className="flex items-center justify-center gap-3 mb-8 flex-wrap animate-fade-in-up animation-delay-200">
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-md text-white rounded-full text-sm font-bold border-2 border-white/30 hover:bg-white/30 hover:scale-105 transition-all animate-bounce-slow">
+          <div className="flex items-center justify-center gap-2 mb-3 flex-wrap animate-fade-in-up animation-delay-200">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 backdrop-blur-md text-white rounded-full text-xs sm:text-sm font-bold border-2 border-white/30 hover:bg-white/30 hover:scale-105 transition-all animate-bounce-slow">
               ⚡ Speed
             </span>
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-md text-white rounded-full text-sm font-bold border-2 border-white/30 hover:bg-white/30 hover:scale-105 transition-all animate-bounce-slow animation-delay-100">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 backdrop-blur-md text-white rounded-full text-xs sm:text-sm font-bold border-2 border-white/30 hover:bg-white/30 hover:scale-105 transition-all animate-bounce-slow animation-delay-100">
               🔒 Secure
             </span>
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-md text-white rounded-full text-sm font-bold border-2 border-white/30 hover:bg-white/30 hover:scale-105 transition-all animate-bounce-slow animation-delay-200">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 backdrop-blur-md text-white rounded-full text-xs sm:text-sm font-bold border-2 border-white/30 hover:bg-white/30 hover:scale-105 transition-all animate-bounce-slow animation-delay-200">
               📈 Scale
             </span>
           </div>
           
-          <div className="flex items-center justify-center space-x-4 animate-fade-in-up animation-delay-300">
+          <div className="flex items-center justify-center space-x-3 animate-fade-in-up animation-delay-300">
             <Button 
               variant="outline" 
               size="icon"
-              className="rounded-full bg-white/20 backdrop-blur-md border-2 border-white/40 text-white hover:bg-white hover:text-blue-600 hover:scale-110 hover:-rotate-12 transition-all duration-300"
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-white/20 backdrop-blur-md border-2 border-white/40 text-white hover:bg-white hover:text-blue-600 hover:scale-110 hover:-rotate-12 transition-all duration-300"
               data-testid="social-facebook"
               onClick={() => window.open('https://www.facebook.com/WytNet', '_blank')}
             >
-              <FaFacebook className="h-5 w-5" />
+              <FaFacebook className="h-4 w-4" />
             </Button>
             <Button 
               variant="outline" 
               size="icon"
-              className="rounded-full bg-white/20 backdrop-blur-md border-2 border-white/40 text-white hover:bg-white hover:text-green-600 hover:scale-110 hover:rotate-12 transition-all duration-300"
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-white/20 backdrop-blur-md border-2 border-white/40 text-white hover:bg-white hover:text-green-600 hover:scale-110 hover:rotate-12 transition-all duration-300"
               data-testid="social-whatsapp"
               onClick={() => window.open('https://wa.me/918220449911', '_blank')}
             >
-              <MessageCircle className="h-5 w-5" />
+              <MessageCircle className="h-4 w-4" />
             </Button>
             <Button 
               variant="outline" 
               size="icon"
-              className="rounded-full bg-white/20 backdrop-blur-md border-2 border-white/40 text-white hover:bg-white hover:text-blue-600 hover:scale-110 hover:-rotate-12 transition-all duration-300"
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-white/20 backdrop-blur-md border-2 border-white/40 text-white hover:bg-white hover:text-blue-600 hover:scale-110 hover:-rotate-12 transition-all duration-300"
               data-testid="social-linkedin"
             >
-              <Linkedin className="h-5 w-5" />
+              <Linkedin className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
         {/* Gradient divider */}
-        <div className="h-1 w-full max-w-4xl mx-auto mb-6 bg-gradient-to-r from-transparent via-white/50 to-transparent rounded-full"></div>
+        <div className="h-px w-full max-w-4xl mx-auto mb-4 bg-gradient-to-r from-transparent via-white/50 to-transparent rounded-full"></div>
 
         {/* Links grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-10 max-w-6xl mx-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8 max-w-6xl mx-auto">
           {/* Company links */}
           <div className="animate-fade-in-up animation-delay-400">
-            <h3 className="font-bold text-white mb-4 text-base flex items-center gap-2" data-testid="footer-heading-company">
-              <span className="w-2 h-2 bg-yellow-300 rounded-full animate-ping"></span>
+            <h3 className="font-bold text-white mb-2 text-sm sm:text-base flex items-center gap-2" data-testid="footer-heading-company">
+              <span className="w-1.5 h-1.5 bg-yellow-300 rounded-full animate-ping"></span>
               Company
             </h3>
-            <ul className="space-y-3">
+            <ul className="space-y-1.5 sm:space-y-2">
               {companyLinks.map((link) => (
                 <li key={link.label}>
                   <a 
                     href={link.href} 
-                    className="text-white/90 hover:text-white transition-all text-sm font-medium inline-flex items-center group"
+                    className="text-white/90 hover:text-white transition-all text-xs sm:text-sm font-medium inline-flex items-center group"
                     data-testid={`footer-link-${link.label.toLowerCase().replace(' ', '-')}`}
                   >
                     <span className="group-hover:translate-x-2 transition-transform duration-300">{link.label}</span>
@@ -134,16 +134,16 @@ export default function Footer() {
 
           {/* WytLife links */}
           <div className="animate-fade-in-up animation-delay-500">
-            <h3 className="font-bold text-white mb-4 text-base flex items-center gap-2" data-testid="footer-heading-wytlife">
-              <span className="w-2 h-2 bg-cyan-300 rounded-full animate-ping"></span>
+            <h3 className="font-bold text-white mb-2 text-sm sm:text-base flex items-center gap-2" data-testid="footer-heading-wytlife">
+              <span className="w-1.5 h-1.5 bg-cyan-300 rounded-full animate-ping"></span>
               WytLife
             </h3>
-            <ul className="space-y-3">
+            <ul className="space-y-1.5 sm:space-y-2">
               {wytLifeLinks.map((link) => (
                 <li key={link.label}>
                   <a 
                     href={link.href} 
-                    className="text-white/90 hover:text-white transition-all text-sm font-medium inline-flex items-center group"
+                    className="text-white/90 hover:text-white transition-all text-xs sm:text-sm font-medium inline-flex items-center group"
                     data-testid={`footer-link-${link.label.toLowerCase().replace(' ', '-')}`}
                   >
                     <span className="group-hover:translate-x-2 transition-transform duration-300">{link.label}</span>
@@ -156,16 +156,16 @@ export default function Footer() {
 
           {/* WytApps links */}
           <div className="animate-fade-in-up animation-delay-600">
-            <h3 className="font-bold text-white mb-4 text-base flex items-center gap-2" data-testid="footer-heading-wytapps">
-              <span className="w-2 h-2 bg-pink-300 rounded-full animate-ping"></span>
+            <h3 className="font-bold text-white mb-2 text-sm sm:text-base flex items-center gap-2" data-testid="footer-heading-wytapps">
+              <span className="w-1.5 h-1.5 bg-pink-300 rounded-full animate-ping"></span>
               WytApps
             </h3>
-            <ul className="space-y-3">
+            <ul className="space-y-1.5 sm:space-y-2">
               {wytAppsLinks.map((link) => (
                 <li key={link.label}>
                   <a 
                     href={link.href} 
-                    className="text-white/90 hover:text-white transition-all text-sm font-medium inline-flex items-center group"
+                    className="text-white/90 hover:text-white transition-all text-xs sm:text-sm font-medium inline-flex items-center group"
                     data-testid={`footer-link-${link.label.toLowerCase().replace(' ', '-')}`}
                   >
                     <span className="group-hover:translate-x-2 transition-transform duration-300">{link.label}</span>
@@ -178,16 +178,16 @@ export default function Footer() {
 
           {/* Resources links */}
           <div className="animate-fade-in-up animation-delay-700">
-            <h3 className="font-bold text-white mb-4 text-base flex items-center gap-2" data-testid="footer-heading-resources">
-              <span className="w-2 h-2 bg-green-300 rounded-full animate-ping"></span>
+            <h3 className="font-bold text-white mb-2 text-sm sm:text-base flex items-center gap-2" data-testid="footer-heading-resources">
+              <span className="w-1.5 h-1.5 bg-green-300 rounded-full animate-ping"></span>
               Resources
             </h3>
-            <ul className="space-y-3">
+            <ul className="space-y-1.5 sm:space-y-2">
               {resourcesLinks.map((link) => (
                 <li key={link.label}>
                   <a 
                     href={link.href} 
-                    className="text-white/90 hover:text-white transition-all text-sm font-medium inline-flex items-center group"
+                    className="text-white/90 hover:text-white transition-all text-xs sm:text-sm font-medium inline-flex items-center group"
                     data-testid={`footer-link-${link.label.toLowerCase().replace(' ', '-')}`}
                   >
                     <span className="group-hover:translate-x-2 transition-transform duration-300">{link.label}</span>
@@ -200,11 +200,11 @@ export default function Footer() {
 
           {/* Platform Access */}
           <div className="col-span-2 sm:col-span-1 animate-fade-in-up animation-delay-800">
-            <h3 className="font-bold text-white mb-4 text-base flex items-center gap-2" data-testid="footer-heading-platform">
-              <span className="w-2 h-2 bg-purple-300 rounded-full animate-ping"></span>
+            <h3 className="font-bold text-white mb-2 text-sm sm:text-base flex items-center gap-2" data-testid="footer-heading-platform">
+              <span className="w-1.5 h-1.5 bg-purple-300 rounded-full animate-ping"></span>
               Platform Access
             </h3>
-            <ul className="space-y-3">
+            <ul className="space-y-1.5 sm:space-y-2">
               <li>
                 <a 
                   href="/login" 
@@ -234,22 +234,22 @@ export default function Footer() {
         <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/10 via-pink-400/10 to-cyan-400/10"></div>
         
         {/* Bottom footer */}
-        <div className="relative px-4 sm:px-6 lg:px-8 py-3 lg:py-4">
-          <div className="flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0">
-            <div className="flex items-center space-x-2 text-sm text-white/90 animate-fade-in">
+        <div className="relative px-4 sm:px-6 lg:px-8 py-2 sm:py-3">
+          <div className="flex flex-col lg:flex-row justify-between items-center space-y-2 lg:space-y-0">
+            <div className="flex items-center space-x-1.5 text-xs sm:text-sm text-white/90 animate-fade-in">
               <span data-testid="copyright-text" className="font-medium">
                 © {currentYear} WytNet. Made with
               </span>
-              <Heart className="h-4 w-4 text-red-400 fill-current animate-heartbeat" />
-              <span className="font-medium">for individuals and businesses everywhere.</span>
+              <Heart className="h-3 w-3 sm:h-4 sm:w-4 text-red-400 fill-current animate-heartbeat" />
+              <span className="font-medium hidden sm:inline">for individuals and businesses everywhere.</span>
             </div>
             
-            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-center animate-fade-in animation-delay-100">
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center animate-fade-in animation-delay-100">
               {legalLinks.map((link) => (
                 <a 
                   key={link.label}
                   href={link.href}
-                  className="text-sm text-white/80 hover:text-white transition-colors whitespace-nowrap font-medium hover:underline"
+                  className="text-[10px] sm:text-xs text-white/80 hover:text-white transition-colors whitespace-nowrap font-medium hover:underline"
                   data-testid={`legal-link-${link.label.toLowerCase().replace(' ', '-')}`}
                 >
                   {link.label}
