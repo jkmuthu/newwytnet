@@ -24,7 +24,8 @@ import {
   FileImage,
   List,
   Server,
-  Eye
+  Eye,
+  CheckSquare
 } from "lucide-react";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
@@ -192,6 +193,13 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
         icon: Eye, 
         href: "/engine/audit-logs", 
         active: location === "/engine/audit-logs",
+        superAdminOnly: true
+      },
+      { 
+        label: "Features Checklist", 
+        icon: CheckSquare, 
+        href: "/engine/features-checklist", 
+        active: location === "/engine/features-checklist",
         superAdminOnly: true
       },
     ];

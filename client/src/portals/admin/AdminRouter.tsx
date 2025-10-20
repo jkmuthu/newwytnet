@@ -52,6 +52,7 @@ import AdminNotifications from "@/pages/admin/notifications";
 import AdminIntegrations from "@/pages/admin/integrations";
 import AdminSystemLogsReal from "@/pages/admin/system-logs-real";
 import AdminAIManagement from "@/pages/admin/ai-management";
+import FeaturesChecklistPage from "@/pages/admin/features-checklist";
 
 /**
  * AdminRouter (now EngineRouter) - Handles all Engine admin routes
@@ -112,6 +113,9 @@ export default function AdminRouter() {
           <Route path="/engine/system-monitor" component={AdminSystemMonitor} />
           <Route path="/engine/system-status" component={AdminSystemStatus} />
           <Route path="/engine/security" component={AdminSecurity} />
+
+          {/* Project Management Routes */}
+          <Route path="/engine/features-checklist" component={FeaturesChecklistPage} />
 
           {/* Legacy/Other Routes */}
           <Route path="/engine/wytpoints" component={AdminWytPoints} />
