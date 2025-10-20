@@ -87,8 +87,11 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
       </header>
 
       {/* Main Content */}
-      <main className={cn("flex-1 overflow-y-auto overscroll-contain px-0 py-0", shouldShowBottomNav() ? "pb-16" : "pb-2")}>
+      <main className={cn("flex-1 overflow-y-auto overscroll-contain px-0 py-0", shouldShowBottomNav() ? "pb-20" : "pb-2")}>
         {children}
+        
+        {/* Footer - inside scrollable content */}
+        {showFooter && <Footer />}
       </main>
 
       {/* Bottom Navigation */}
@@ -114,9 +117,6 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
           </div>
         </nav>
       )}
-
-      {/* Footer */}
-      {showFooter && <Footer />}
     </div>
   );
 }
