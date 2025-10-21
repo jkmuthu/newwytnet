@@ -1,6 +1,14 @@
 # Overview
 
-WytNet is a white-label, multi-tenant SaaS platform built on "Engine," providing low-code tools for application building, content management, and cross-tenant hub creation. It offers CRUD builders, a CMS, app composition, hub aggregation, and the WytID Universal Identity & Validation system. WytNet.com serves as the initial hub, showcasing the platform's capabilities. The system features white-label authentication, role-based access control, comprehensive multi-tenancy with Row Level Security, and blockchain-anchored identity, designed for scalability and robustness.
+**WytNet.com** is an all-in-one digital platform for a better lifestyle and best workstyle — for individuals and organizations everywhere.
+
+**Tagline:** *"Get In. Get Done."*
+
+**Mission:** Create a connected digital ecosystem powered by **Speed | Security | Scale**. WytNet unifies productivity, social networking, and intelligent automation.
+
+**Vision:** Build a world where every task, connection, and opportunity happens in one smart environment powered by technology and trust.
+
+**Technical Foundation:** WytNet is a white-label, multi-tenant SaaS platform built on "Engine" — a central framework that creates, connects, and controls all components through a modular architecture: **Modules → Apps → Hubs**. The platform features universal WytPass authentication, role-based access control (RBAC), comprehensive multi-tenancy with Row Level Security, WytPoints economy system, and AI-powered automation through WytAI Agent.
 
 # User Preferences
 
