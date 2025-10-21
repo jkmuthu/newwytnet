@@ -44,15 +44,19 @@ export default defineConfig({
                 { text: 'WytLife', link: '/en/features/wytlife' },
                 { text: 'AI Directory', link: '/en/features/ai-directory' },
                 { text: 'QR Generator', link: '/en/features/qr-generator' },
-                { text: 'DISC Assessment', link: '/en/features/disc-assessment' }
+                { text: 'DISC Assessment', link: '/en/features/disc-assessment' },
+                { text: 'WytAI Agent', link: '/en/features/wytai-agent' },
+                { text: 'AI App Builder', link: '/en/features/ai-app-builder' },
+                { text: 'Audit Logs System', link: '/en/features/audit-logs' },
+                { text: 'PWA Support', link: '/en/features/pwa-support' }
               ]
             },
             {
               text: 'Architecture',
               items: [
-                { text: 'System Overview', link: '/en/architecture/system-overview' },
                 { text: 'Database Schema', link: '/en/architecture/database-schema' },
                 { text: 'Multi-tenancy & RLS', link: '/en/architecture/multi-tenancy' },
+                { text: 'Module Manifest Specification', link: '/en/architecture/module-manifest' },
                 { text: 'Frontend Architecture', link: '/en/architecture/frontend' },
                 { text: 'Backend Architecture', link: '/en/architecture/backend' },
                 { text: 'RBAC System', link: '/en/architecture/rbac' }
@@ -83,7 +87,8 @@ export default defineConfig({
             {
               text: 'Project Management',
               items: [
-                { text: 'Features Checklist System', link: '/en/project/features-checklist' }
+                { text: 'Features Checklist System', link: '/en/project/features-checklist' },
+                { text: 'Documentation Status', link: '/en/project/documentation-status' }
               ]
             }
           ]
