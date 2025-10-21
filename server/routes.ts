@@ -170,6 +170,7 @@ import platformSettingsRouter from "./routes/platform-settings";
 import mediaRouter from "./routes/media";
 import trashRouter from "./routes/trash";
 import { setupFeaturesChecklistRoutes } from "./routes/features-checklist";
+import { setupQATestingTrackerRoutes } from "./routes/qa-testing-tracker";
 
 // Trademark analysis functions now imported from services/trademarkAnalysis.ts
 
@@ -243,6 +244,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   
   // Register Features Checklist Routes
   setupFeaturesChecklistRoutes(app);
+  
+  // Register QA Testing Tracker Routes
+  setupQATestingTrackerRoutes(app);
 
   // Auth routes - unified endpoint for both authentication systems
   app.get('/api/auth/user', async (req: any, res) => {

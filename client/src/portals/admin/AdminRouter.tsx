@@ -53,6 +53,7 @@ import AdminIntegrations from "@/pages/admin/integrations";
 import AdminSystemLogsReal from "@/pages/admin/system-logs-real";
 import AdminAIManagement from "@/pages/admin/ai-management";
 import FeaturesChecklistPage from "@/pages/admin/features-checklist";
+import QATestingTrackerPage from "@/pages/admin/qa-testing-tracker";
 
 /**
  * AdminRouter (now EngineRouter) - Handles all Engine admin routes
@@ -116,6 +117,7 @@ export default function AdminRouter() {
 
           {/* Project Management Routes */}
           <Route path="/engine/features-checklist" component={FeaturesChecklistPage} />
+          <Route path="/engine/qa-testing-tracker" component={QATestingTrackerPage} />
 
           {/* Legacy/Other Routes */}
           <Route path="/engine/wytpoints" component={AdminWytPoints} />

@@ -25,7 +25,8 @@ import {
   List,
   Server,
   Eye,
-  CheckSquare
+  CheckSquare,
+  ClipboardCheck
 } from "lucide-react";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 
@@ -200,6 +201,13 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
         icon: CheckSquare, 
         href: "/engine/features-checklist", 
         active: location === "/engine/features-checklist",
+        superAdminOnly: true
+      },
+      { 
+        label: "QA Testing Tracker", 
+        icon: ClipboardCheck, 
+        href: "/engine/qa-testing-tracker", 
+        active: location === "/engine/qa-testing-tracker",
         superAdminOnly: true
       },
     ];
