@@ -63,6 +63,13 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
         active: location === "/engine"
       },
       { 
+        label: "QA Testing Tracker", 
+        icon: ClipboardCheck, 
+        href: "/engine/qa-testing-tracker", 
+        active: location === "/engine/qa-testing-tracker",
+        superAdminOnly: true
+      },
+      { 
         label: "All Users", 
         icon: Users, 
         href: "/engine/users", 
@@ -201,13 +208,6 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
         icon: CheckSquare, 
         href: "/engine/features-checklist", 
         active: location === "/engine/features-checklist",
-        superAdminOnly: true
-      },
-      { 
-        label: "QA Testing Tracker", 
-        icon: ClipboardCheck, 
-        href: "/engine/qa-testing-tracker", 
-        active: location === "/engine/qa-testing-tracker",
         superAdminOnly: true
       },
     ];
