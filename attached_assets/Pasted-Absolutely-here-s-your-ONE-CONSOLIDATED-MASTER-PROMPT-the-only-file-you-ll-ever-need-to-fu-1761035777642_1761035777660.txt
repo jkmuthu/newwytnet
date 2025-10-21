@@ -1,0 +1,234 @@
+Absolutely ✅ — here’s your **ONE CONSOLIDATED MASTER PROMPT** — the only file you’ll ever need to fully align your **Replit Agent**, your **DevDoc**, and your upcoming **WytAI Agent**.
+
+This version merges everything —
+🧠 Vision + 💻 Technical + 🤖 AI Integration + 🧱 Structure + ⚙️ Execution.
+
+It’s ready to paste directly into your **Replit Agent Prompt window** or your **DevDoc’s “Master Overview” section**.
+
+---
+
+# 🕊️ WytNet – Consolidated Master Prompt for Replit Agent
+
+**Version:** v25.10.13.21.00
+**Prepared by:** JK Muthu
+**Reviewed by:** GPT-5
+**Tagline:** *“Get In. Get Done.”*
+
+---
+
+## 🌍 About WytNet
+
+**WytNet.com** is an **all-in-one digital platform** designed to create a better lifestyle and best workstyle for **individuals** and **organizations** everywhere.
+
+Its purpose is simple yet powerful:
+
+> Help users “Get In and Get Done” — instantly, intelligently, and effortlessly.
+
+### 🌐 Mission
+
+To unify life, work, and intelligence through one digital ecosystem — connecting people, businesses, and ideas with **Speed, Security, and Scale.**
+
+### 🔭 Vision
+
+To build a world where every task, connection, and opportunity happens in one smart environment powered by technology and trust.
+
+---
+
+## ⚙️ Core Concept
+
+WytNet is powered by a **central Engine** that creates, connects, and controls all components —
+**Modules → Apps → Hubs**.
+
+* **Entity:** The smallest data or function unit.
+* **Module:** A group of related entities (e.g., Auth, Wallet, Stream).
+* **App:** A complete feature or tool made of multiple modules (e.g., WytWall, WytPoints).
+* **Hub:** A self-operating portal (e.g., WytNet.com, OwnerNet, VoterNet) built using WytPass Auth and WytEngine Modules.
+
+Each Hub runs independently yet shares one universal **WytPass login** and **WytPoints economy**.
+
+---
+
+## 🧱 Platform Architecture
+
+| Layer        | Path                    | Purpose                                                     |
+| ------------ | ----------------------- | ----------------------------------------------------------- |
+| **Engine**   | `/engine`               | Core framework managing all modules, services, and AI logic |
+| **Hub**      | `/hubs/`                | Independent portals using WytPass Auth (e.g., WytNet.com)   |
+| **Panels**   | `/mypanel`, `/orgpanel` | User & Organization dashboards                              |
+| **Admin**    | `/admin`                | Management system for users, hubs, AI, and points           |
+| **AI Layer** | `/engine/ai/`           | WytAI Agent for internal automation & intelligence          |
+| **DevDoc**   | `/devdoc`               | Knowledge base and development instructions                 |
+
+---
+
+## ⚙️ WytNet Engine – Foundation Logic
+
+The Engine is the **heart of WytNet**, acting as a living framework:
+
+* Auto-registers all modules, apps, and hubs
+* Provides APIs and shared services
+* Controls authentication (WytPass), points, wallet, and analytics
+* Powers the internal AI (WytAI Agent)
+
+Each component includes a **manifest.json**:
+
+```json
+{
+  "name": "WytWall",
+  "type": "core",
+  "version": "1.0.0",
+  "enabled": true,
+  "dependencies": ["auth", "points"],
+  "permissions": ["user:read", "stream:write"],
+  "routes": ["/wytwall", "/api/wytwall"],
+  "description": "Social marketplace for Needs & Offers"
+}
+```
+
+The Engine must scan all manifests, auto-register them, manage permissions, and generate internal docs.
+
+---
+
+## 🤖 AI Integration Model
+
+Two AI systems co-exist and complement each other:
+
+| Agent               | Location      | Role                                                                       |
+| ------------------- | ------------- | -------------------------------------------------------------------------- |
+| 🧠 **Replit Agent** | Replit Cloud  | External builder — reads DevDoc → builds & deploys code                    |
+| 🤖 **WytAI Agent**  | `/engine/ai/` | Internal runtime brain — validates data, fixes errors, optimizes processes |
+
+**Feedback Loop**
+
+```
+JK Muthu (Vision)
+     ↓
+DevDoc (Knowledge)
+     ↓
+Replit Agent (Build & Deploy)
+     ↓
+WytAI Agent (Operate, Learn, Report)
+     ↓
+DevDoc (Update for Next Version)
+```
+
+---
+
+## 🧠 WytAI Agent – Structure
+
+| Module        | Path                      | Function                              |
+| ------------- | ------------------------- | ------------------------------------- |
+| `validator`   | `/engine/ai/validator/`   | Check data consistency & completeness |
+| `recommender` | `/engine/ai/recommender/` | Suggest matches (Needs ↔ Offers)      |
+| `logger`      | `/engine/ai/logger/`      | Record user actions & usage trends    |
+| `trainer`     | `/engine/ai/trainer/`     | Learn from DevDoc & feedback logs     |
+
+### Goals
+
+* Detect configuration errors & auto-correct minor issues
+* Recommend new matches, modules, or tools
+* Monitor usage & generate optimization reports
+* Continuously learn from live data & DevDoc updates
+
+---
+
+## 🧭 Development Workflow
+
+| Phase               | Role                                 | Responsible Agent |
+| ------------------- | ------------------------------------ | ----------------- |
+| **Build Phase**     | Code generation, testing, deployment | 🧠 Replit Agent   |
+| **Runtime Phase**   | Validation, optimization, auto-fix   | 🤖 WytAI Agent    |
+| **Evolution Phase** | Learn → Improve → Document           | 🤖 WytAI + DevDoc |
+
+**Principle:**
+
+> “Build with Replit Agent, Run with WytAI Agent.”
+
+---
+
+## 🔐 Roles & Permissions
+
+| Role           | Scope        | Description                             |
+| -------------- | ------------ | --------------------------------------- |
+| **SuperAdmin** | Engine level | Manages admins, hubs, AI, backups       |
+| **Admin**      | Hub level    | Approves content, manages users, points |
+| **OrgAdmin**   | Organization | Manages teams, wallets                  |
+| **User**       | Personal     | Posts needs/offers, earns points        |
+
+---
+
+## 🪙 WytPoints Economy
+
+| Action           | Points | Type  |
+| :--------------- | :----: | :---- |
+| Register / Login |   +10  | Earn  |
+| Complete Profile |   +50  | Earn  |
+| Post Need        |   +5   | Earn  |
+| Post Offer       |   −5   | Spend |
+| Daily Login      |   +1   | Earn  |
+
+*All values configurable through Admin Panel → WytPoints Config.*
+
+---
+
+## 📜 Operational Standards
+
+1. Non-destructive updates only (additive logic).
+2. Each panel has separate session tokens.
+3. All UI responsive and PWA-ready.
+4. Global Light/Dark mode support.
+5. Demo data auto-seeded for testing.
+6. `/version.json` maintains module versions.
+7. WytAI syncs with DevDoc for context.
+
+---
+
+## 🧱 Current Tasks for Replit Agent
+
+| Task                                  | Description                        |
+| ------------------------------------- | ---------------------------------- |
+| Finalize Engine manifest registration | Enable dynamic module discovery    |
+| Create WytAI Agent base modules       | Validator, Logger, Recommender     |
+| Connect WytAI ↔ DevDoc                | Two-way context sync               |
+| Add Admin Engine Overview page        | Engine metrics + status            |
+| Implement version tracking            | Auto-update `/version.json`        |
+| Prepare Phase-2 Docs                  | WytLife, WytStar, WytGames modules |
+
+---
+
+## 🧾 Developer Commitment
+
+* Maintain backward compatibility.
+* Keep Engine schema stable.
+* Document all module manifests.
+* Ensure UI/UX parity across devices.
+* Validate every release with SuperAdmin credentials:
+
+  * `jkm@jkmuthu.com / SuperAdmin@2025`
+  * `info@wytnet.com / Admin@2025`
+
+---
+
+## 🏁 Next Milestone
+
+Once the **DevDoc site** and **Engine v1.0** are finalized:
+
+1. Replit Agent will build all modules & hubs using this document.
+2. WytAI Agent will begin runtime automation & feedback reporting.
+3. The Engine will evolve into a fully intelligent, self-managing digital ecosystem.
+
+---
+
+### ✨ Final Quote
+
+> **“WytNet isn’t just software — it’s a living digital organism that learns, connects, and helps people get things done.”**
+
+---
+
+📂 **Deliverable:**
+`WytNet_Consolidated_MasterPrompt_v25.10.13.md`
+*(Paste directly into Replit Agent prompt input or DevDoc master section)*
+--------------------------------------------------------------------------
+
+Would you like me to create a **compact “Replit Execution Prompt”** (2-paragraph version) that summarizes this same logic —
+so you can use it when you just need to trigger Replit Assistant for specific module builds (like WytAI, WytLife, or Engine update)?
