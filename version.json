@@ -1,0 +1,151 @@
+{
+  "platform": {
+    "name": "WytNet",
+    "version": "1.0.0",
+    "tagline": "Get In. Get Done.",
+    "mission": "Speed | Security | Scale",
+    "lastUpdated": "2025-10-21T09:06:19.430Z"
+  },
+  "modules": [
+    {
+      "id": "wytscore",
+      "displayId": "MD0066",
+      "name": "WytScore",
+      "version": "1.0.0",
+      "changelog": null,
+      "status": "enabled",
+      "category": "platform"
+    },
+    {
+      "id": "wytwallet",
+      "displayId": "MD0067",
+      "name": "WytWallet",
+      "version": "1.0.0",
+      "changelog": null,
+      "status": "enabled",
+      "category": "platform"
+    },
+    {
+      "id": "ai-directory",
+      "displayId": "MD0001",
+      "name": "AI Directory",
+      "version": "1.0.0",
+      "changelog": null,
+      "status": "enabled",
+      "category": "wythubs"
+    },
+    {
+      "id": "business-card-designer",
+      "displayId": "MD0010",
+      "name": "Business Card Designer",
+      "version": "1.0.0",
+      "changelog": null,
+      "status": "enabled",
+      "category": "wytapps"
+    },
+    {
+      "id": "expense-calculator",
+      "displayId": "MD0018",
+      "name": "Expense Calculator",
+      "version": "1.0.0",
+      "changelog": null,
+      "status": "enabled",
+      "category": "wytapps"
+    },
+    {
+      "id": "tenant-manager",
+      "displayId": "MD0046",
+      "name": "Multi-Tenant Core",
+      "version": "1.0.0",
+      "changelog": null,
+      "status": "enabled",
+      "category": "platform"
+    },
+    {
+      "id": "wytduty",
+      "displayId": "MD0056",
+      "name": "WytDuty Task Manager",
+      "version": "1.0.0",
+      "changelog": null,
+      "status": "enabled",
+      "category": "wythubs"
+    },
+    {
+      "id": "habit-tracker",
+      "displayId": "MD0022",
+      "name": "Habit Tracker",
+      "version": "1.0.0",
+      "changelog": null,
+      "status": "enabled",
+      "category": "wytapps"
+    },
+    {
+      "id": "invoice-generator",
+      "displayId": "MD0024",
+      "name": "Invoice Generator",
+      "version": "1.0.0",
+      "changelog": null,
+      "status": "enabled",
+      "category": "wytapps"
+    },
+    {
+      "id": "assessment",
+      "displayId": "MD0005",
+      "name": "DISC Assessment",
+      "version": "1.0.0",
+      "changelog": null,
+      "status": "enabled",
+      "category": "wytapps"
+    },
+    {
+      "id": "astro-predictor",
+      "displayId": "MD0006",
+      "name": "Multi Factor Astro Predictor",
+      "version": "1.0.0",
+      "changelog": null,
+      "status": "enabled",
+      "category": "wytapps"
+    },
+    {
+      "id": "wyt-circle",
+      "displayId": "MD0053",
+      "name": "WytCircle",
+      "version": "1.0.0",
+      "changelog": null,
+      "status": "enabled",
+      "category": "social"
+    },
+    {
+      "id": "unit-converter",
+      "displayId": "MD0048",
+      "name": "Unit Converter",
+      "version": "1.0.0",
+      "changelog": null,
+      "status": "enabled",
+      "category": "wytapps"
+    },
+    {
+      "id": "quote-generator",
+      "displayId": "MD0036",
+      "name": "Quote Generator",
+      "version": "1.0.0",
+      "changelog": null,
+      "status": "enabled",
+      "category": "wytapps"
+    },
+    {
+      "id": "wytpoints",
+      "displayId": "MD0064",
+      "name": "WytPoints",
+      "version": "1.0.0",
+      "changelog": null,
+      "status": "enabled",
+      "category": "platform"
+    }
+  ],
+  "apps": [],
+  "summary": {
+    "totalModules": 15,
+    "totalApps": 0
+  }
+}

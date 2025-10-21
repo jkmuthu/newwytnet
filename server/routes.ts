@@ -58,6 +58,7 @@ import {
   insertPlatformModuleSchema,
   type PlatformModule,
   type InsertPlatformModule,
+  platformSettings,
   users,
   tenants,
   apps,
@@ -12546,5 +12547,83 @@ CONSTRAINTS:
 
   // ========================================
   // END NOTIFICATIONS APIs
+  // ========================================
+
+  // ========================================
+  // VERSION TRACKING API
+  // ========================================
+
+  // GET /api/version - Get current platform version information
+  app.get('/api/version', async (req, res) => {
+    try {
+      // Fetch platform settings from database
+      const platformInfoKeys = ['platform_name', 'platform_version', 'platform_tagline', 'platform_mission'];
+      const platformInfo = await db.select()
+        .from(platformSettings)
+        .where(inArray(platformSettings.key, platformInfoKeys));
+
+      // Convert array to object for easy access
+      const platformData: Record<string, string> = {};
+      platformInfo.forEach(setting => {
+        platformData[setting.key] = setting.value || '';
+      });
+
+      // Fetch all enabled modules with their versions
+      const modulesData = await db.select({
+        id: platformModules.id,
+        displayId: platformModules.displayId,
+        name: platformModules.name,
+        version: platformModules.version,
+        changelog: platformModules.changelog,
+        status: platformModules.status,
+        category: platformModules.category,
+      })
+      .from(platformModules)
+      .where(eq(platformModules.status, 'enabled'));
+
+      // Fetch all published apps with their versions
+      const appsData = await db.select({
+        id: apps.id,
+        displayId: apps.displayId,
+        key: apps.key,
+        name: apps.name,
+        version: apps.version,
+        changelog: apps.changelog,
+        status: apps.status,
+      })
+      .from(apps)
+      .where(eq(apps.status, 'published'));
+
+      const versionData = {
+        platform: {
+          name: platformData.platform_name || 'WytNet',
+          version: platformData.platform_version || '1.0.0',
+          tagline: platformData.platform_tagline || 'Get In. Get Done.',
+          mission: platformData.platform_mission || 'Speed | Security | Scale',
+          lastUpdated: new Date().toISOString(),
+        },
+        modules: modulesData,
+        apps: appsData,
+        summary: {
+          totalModules: modulesData.length,
+          totalApps: appsData.length,
+        },
+      };
+
+      res.json({
+        success: true,
+        data: versionData,
+      });
+    } catch (error) {
+      console.error('Error fetching version data:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch version data',
+      });
+    }
+  });
+
+  // ========================================
+  // END VERSION TRACKING API
   // ========================================
 }
