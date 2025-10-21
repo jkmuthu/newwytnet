@@ -20,10 +20,11 @@ export default defineConfig({
         nav: [
           { text: 'Home', link: '/' },
           { text: 'Core Concepts', link: '/en/core-concepts' },
-          { text: 'Features', link: '/en/features/' },
+          { text: 'WytApps', link: '/en/wytapps/' },
+          { text: 'WytSuites', link: '/en/wytsuites/' },
+          { text: 'WytModules', link: '/en/wytmodules/' },
           { text: 'Architecture', link: '/en/architecture/' },
-          { text: 'API Reference', link: '/en/api/' },
-          { text: 'Implementation', link: '/en/implementation/' }
+          { text: 'API Reference', link: '/en/api/' }
         ],
         sidebar: {
           '/en/': [
@@ -35,20 +36,48 @@ export default defineConfig({
               ]
             },
             {
-              text: 'Features',
+              text: 'Platform Foundation',
+              collapsed: true,
               items: [
-                { text: 'WytPass Authentication', link: '/en/features/wytpass' },
-                { text: 'User Registration & Panel', link: '/en/features/user-registration' },
-                { text: 'WytWall', link: '/en/features/wytwall' },
-                { text: 'MyWyt Apps', link: '/en/features/mywyt-apps' },
-                { text: 'WytLife', link: '/en/features/wytlife' },
-                { text: 'AI Directory', link: '/en/features/ai-directory' },
-                { text: 'QR Generator', link: '/en/features/qr-generator' },
-                { text: 'DISC Assessment', link: '/en/features/disc-assessment' },
-                { text: 'WytAI Agent', link: '/en/features/wytai-agent' },
-                { text: 'AI App Builder', link: '/en/features/ai-app-builder' },
-                { text: 'Audit Logs System', link: '/en/features/audit-logs' },
-                { text: 'PWA Support', link: '/en/features/pwa-support' }
+                { text: 'WytPass Authentication', link: '/en/architecture/rbac#wytpass-authentication' },
+                { text: 'RBAC & Permissions', link: '/en/architecture/rbac' },
+                { text: 'Multi-Tenancy & RLS', link: '/en/architecture/multi-tenancy' },
+                { text: 'WytAI Agent', link: '/en/project/documentation-status#wytai-agent' },
+                { text: 'Audit Logs', link: '/en/project/documentation-status#audit-logs' },
+                { text: 'PWA Support', link: '/en/project/documentation-status#pwa' }
+              ]
+            },
+            {
+              text: 'WytApps',
+              collapsed: false,
+              items: [
+                { text: 'WytApps Overview', link: '/en/wytapps/' },
+                { text: 'Apps Catalog (39 apps)', link: '/en/wytapps/apps-catalog' }
+              ]
+            },
+            {
+              text: 'WytSuites',
+              collapsed: false,
+              items: [
+                { text: 'WytSuites Overview', link: '/en/wytsuites/' },
+                { text: 'WytWorks Bundle', link: '/en/wytsuites/wytworks' },
+                { text: 'WytStax Bundle', link: '/en/wytsuites/wytstax' },
+                { text: 'WytCRM Bundle', link: '/en/wytsuites/wytcrm' }
+              ]
+            },
+            {
+              text: 'WytModules',
+              collapsed: false,
+              items: [
+                { text: 'WytModules Overview', link: '/en/wytmodules/' },
+                { text: 'Modules Catalog (51 modules)', link: '/en/wytmodules/modules-catalog' }
+              ]
+            },
+            {
+              text: 'WytHubs',
+              collapsed: false,
+              items: [
+                { text: 'WytHubs Overview', link: '/en/wythubs/' }
               ]
             },
             {
@@ -74,14 +103,18 @@ export default defineConfig({
             {
               text: 'Implementation Guide',
               items: [
-                { text: 'Replit Assistant Guide', link: '/en/implementation/replit-guide' }
+                { text: 'Replit Assistant Guide', link: '/en/implementation/replit-guide' },
+                { text: 'VitePress Editing Guide', link: '/en/implementation/vitepress-guide' }
               ]
             },
             {
               text: 'Admin Panels',
+              collapsed: true,
               items: [
                 { text: 'Engine Admin Panel', link: '/en/admin/engine-admin' },
-                { text: 'Hub Admin Panel', link: '/en/admin/hub-admin' }
+                { text: 'Hub Admin Panel', link: '/en/admin/hub-admin' },
+                { text: 'MyPanel (User Panel)', link: '/en/admin/mypanel' },
+                { text: 'OrgPanel (Organization Panel)', link: '/en/admin/orgpanel' }
               ]
             },
             {

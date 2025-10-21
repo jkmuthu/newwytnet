@@ -56,9 +56,91 @@ The platform incorporates modern UI elements like animated gradient backgrounds,
 ### Documentation Structure
 - **VitePress Static Site**: Built documentation in `docs/.vitepress/dist/`
 - **Bilingual Support**: Full Tamil (`/ta/`) and English (`/en/`) versions
-- **20+ Pages**: Features, architecture, API reference, admin panels, implementation guide
+- **100+ Pages**: Comprehensive documentation across 8 major sections
 - **Mermaid Diagrams**: Workflow visualizations and architecture diagrams
-- **Search-Enabled**: Full-text search across all pages
+- **Search-Enabled**: Full-text search across all pages in both languages
+
+### Documentation Sections
+1. **Introduction**: Platform overview and core concepts
+2. **Platform Features**: Foundation features (WytPass Auth, RBAC, Multi-tenancy, WytAI Agent, Audit Logs, PWA)
+3. **WytApps**: 39 applications across 17 categories with multi-category support, MyPanel/OrgPanel availability, individual app pricing
+4. **WytSuites**: 3 app bundles (WytWorks, WytStax, WytCRM) with bundle pricing and included apps
+5. **WytModules**: 51 modules across 9 categories (Authentication, Payment, Content, Communication, Data, User-Org, Productivity, Platform Core, Location)
+6. **WytHubs**: 5 active hubs (WytEngine, WytNet.com, ClanNet, MemberNet, VoterNet) with multi-domain routing and hub management
+7. **Architecture**: Database schema, multi-tenancy, RBAC, frontend/backend architecture
+8. **Admin Panels**: Engine Admin, Hub Admin, MyPanel, OrgPanel documentation
+9. **API Reference**: Complete API documentation with authentication, users, admin endpoints
+10. **Implementation Guide**: Replit Assistant guide, VitePress editing guide
+
+### Content Architecture
+
+#### WytApps (39 Apps)
+**Category System**: Apps can belong to multiple categories simultaneously
+- **17 Categories**: Productivity, Finance & Accounting, E-commerce & Sales, HR & Payroll, CRM & Customer Management, Marketing & Communications, Education & Learning, Healthcare & Wellness, Real Estate & Property, Legal & Compliance, Travel & Hospitality, Events & Entertainment, Social & Community, Utilities & Tools, Analytics & Reporting, Documents & Media, AI-Powered
+
+**Panel Availability**:
+- **MyPanel**: Individual user workspace (24 apps available)
+- **OrgPanel**: Organization workspace (33 apps available)
+- **Both Panels**: Apps available in both contexts (18 apps)
+
+**Pricing Models**:
+- **Free Apps**: Basic functionality apps (9 apps)
+- **Premium Apps**: Monthly subscription (₹199-₹999/month) (30 apps)
+- Individual app pricing documented in apps-catalog.md
+
+#### WytSuites (3 Bundles)
+**Bundle Pricing**: Discounted bundles vs individual app subscriptions
+- **WytWorks Bundle**: 8 productivity apps for individuals and small teams (₹1,599/month, saves ₹2,193/month)
+- **WytStax Bundle**: 11 business management apps for startups and SMEs (₹2,999/month, saves ₹2,690/month)
+- **WytCRM Bundle**: 6 customer management apps for sales and marketing teams (₹1,799/month, saves ₹1,795/month)
+
+**Mixed Pricing Plans**: Users can subscribe to individual apps OR bundles OR both, with Pricing Plans API managing subscriptions
+
+#### WytModules (51 Modules)
+**9 Module Categories**:
+1. Authentication & Identity (7 modules)
+2. Payment Gateways (4 modules)
+3. Content & Media (5 modules)
+4. Communication (6 modules)
+5. Data Management (6 modules)
+6. User & Organization (8 modules)
+7. Productivity (4 modules)
+8. Platform Core (10 modules)
+9. Location Services (3 modules)
+
+**Pricing Models**:
+- **Free Modules**: 25 modules (WytPass Auth, Payment Core, Content uploaders, etc.)
+- **Premium Modules**: 13 modules with monthly subscription (₹29-₹249/month)
+- **Usage-Based Modules**: 13 modules with per-transaction/API call pricing (₹0.023/GB to ₹5/verification)
+
+**Module Contexts**: Platform, Hub, App, Game - determines where modules can be activated
+**Dependencies**: Modules can require other modules (e.g., Email OTP depends on WytPass Auth + Email Service)
+
+#### WytHubs (5 Active Hubs)
+**Hub Types**:
+1. **WytEngine** (engine.wytnet.com): Platform control center for Super Admins
+2. **WytNet.com** (wytnet.com): Public platform portal and marketplace
+3. **ClanNet** (clannet.org): Community and social hub
+4. **MemberNet** (membernet.in): Membership management hub
+5. **VoterNet** (voternet.co): Civic engagement hub
+
+**Multi-Domain Routing**: Automatic hub detection based on domain with DNS configuration
+**Hub Tenancy**: Row Level Security (RLS) ensures complete data isolation between hubs
+**Hub Pricing**: Free for 1 hub, ₹999/month per additional hub
+
+**Hub Management**:
+- Super Admin creates hubs via Engine Admin
+- Hub Admin manages branding, apps, modules, settings
+- Hub-level RBAC with 5 roles (Super Admin, Hub Admin, Hub Manager, Content Manager, Member)
+
+### VitePress Editing Workflow
+**Development**: `npm run docs:dev` for live preview with hot reload
+**Building**: `npm run docs:build` to generate static site in `docs/.vitepress/dist/`
+**Content Editing**: Direct markdown file editing in `docs/en/` and `docs/ta/` directories
+**Navigation Updates**: Edit `docs/.vitepress/config.ts` for sidebar and top navigation
+**Branding**: Logo and favicon in `docs/public/` directory
+
+Comprehensive VitePress editing guide available at `/en/implementation/vitepress-guide`
 
 ### Authentication System (Triple Method)
 1. **Password Authentication**: External developers use `DOC_SITE_PASSWORD` env var
