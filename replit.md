@@ -70,7 +70,8 @@ The platform incorporates modern UI elements like animated gradient backgrounds,
 7. **Architecture**: Database schema, multi-tenancy, RBAC, frontend/backend architecture
 8. **Admin Panels**: Engine Admin, Hub Admin, MyPanel, OrgPanel documentation
 9. **API Reference**: Complete API documentation with authentication, users, admin endpoints
-10. **Implementation Guide**: Replit Assistant guide, VitePress editing guide
+10. **Use Case Flows & Diagrams**: 11 comprehensive workflow documentation pages with Mermaid diagrams covering all major user journeys (Public Pages, Authentication, Multi-Tenancy, RBAC, Admin Panel Switching, WytAI Agent, Module Installation, App Subscription, Audit Logs)
+11. **Implementation Guide**: Replit Assistant guide, VitePress editing guide
 
 ### Content Architecture
 
