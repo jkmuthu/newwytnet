@@ -18,7 +18,7 @@ hero:
       text: தமிழில் படிக்க →
       link: /ta/core-concepts
   image:
-    src: /wytnet-logo.png
+    src: /wytnet-logo-hero.png
     alt: WytNet Logo
 
 features:

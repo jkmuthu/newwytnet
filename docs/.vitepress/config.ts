@@ -7,6 +7,11 @@ export default defineConfig({
   base: '/devdoc/',
   ignoreDeadLinks: true,
   
+  head: [
+    ['link', { rel: 'icon', type: 'image/x-icon', href: '/devdoc/favicon.ico' }],
+    ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/devdoc/wytnet-logo.png' }]
+  ],
+  
   locales: {
     root: {
       label: 'English',
@@ -73,6 +78,12 @@ export default defineConfig({
               items: [
                 { text: 'Engine Admin Panel', link: '/en/admin/engine-admin' },
                 { text: 'Hub Admin Panel', link: '/en/admin/hub-admin' }
+              ]
+            },
+            {
+              text: 'Project Management',
+              items: [
+                { text: 'Features Checklist System', link: '/en/project/features-checklist' }
               ]
             }
           ]
@@ -144,6 +155,12 @@ export default defineConfig({
               items: [
                 { text: 'Engine நிர்வாக பேனல்', link: '/ta/admin/engine-admin' },
                 { text: 'Hub நிர்வாக பேனல்', link: '/ta/admin/hub-admin' }
+              ]
+            },
+            {
+              text: 'திட்ட மேலாண்மை',
+              items: [
+                { text: 'அம்சங்கள் சரிபார்ப்பு அமைப்பு', link: '/ta/project/features-checklist' }
               ]
             }
           ]
