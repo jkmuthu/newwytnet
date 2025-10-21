@@ -707,52 +707,148 @@ WytLand is a comprehensive real estate platform for property listings, managemen
 
 ---
 
-## App Categories Index
+## Browse by Category
 
-### Core Platform
-WytPass, WytPanel, WytPoints, WytApps
+Apps are organized by function - many apps appear in multiple categories based on their features.
 
-### Communication
-WytWall, WytSonic, WytCall, WytCast, WytMeet, WytMail
+### Core Platform {#core-platform}
 
-### Finance
-WytWallet, WytPay, WytInvoice, WytCoin, WytGold
+Essential platform infrastructure and features.
 
-### Business
-WytBiz, WytQuote, WytPay, WytInvoice, Esign Creator, WytQRC, WytTrace
+- [WytPass](#1-wytpass) - Universal Authentication & Identity
+- [WytPanel](#2-wytpanel) - Personal & Organizational Dashboards
+- [WytPoints](#4-wytpoints) - Gamification & Rewards Economy
+- [WytApps](#11-wytapps) - App Store & Launcher
 
-### Social
-WytWall, WytCircle, WytHash, WytScore, WytWorld
+### Communication {#communication}
 
-### Productivity
-WytPanel, WytDuty, WytHive, WytForm, WytMeet, WytApps
+Messaging, calling, and broadcasting tools.
 
-### Marketplace
-WytApps, WytStore, WytShop
+- [WytWall](#3-wytwall) - Social Feed & Timeline
+- [WytSonic](#10-wytsonic) - Audio Messaging & Podcasts
+- [WytCall](#27-wytcall) - Voice & Video Calling
+- [WytCast](#28-wytcast) - Broadcasting & Streaming
+- [WytMeet](#32-wytmeet) - Meeting Scheduler & Rooms
+- [WytMail](#33-wytmail) - Email Management System
 
-### Development
-WytCode, WytBuilder
+### Finance {#finance}
 
-### Creation
-WytSite, WytBuilder, WytForm, WytCast
+Payment, wallet, and financial services.
 
-### Utilities
-WytQRC, Currency/Unit Converter
+- [WytWallet](#7-wytwallet) - Digital Wallet & Payment Management
+- [WytPay](#17-wytpay) - Payment Gateway Integration
+- [WytInvoice](#20-wytinvoice) - Invoice Generation & Management
+- [WytCoin](#22-wytcoin) - Cryptocurrency & Token Management
+- [WytGold](#38-wytgold) - Gold Trading & Investment
 
-### Lifestyle
-WytLife, WytGod, WytWorld
+### Business {#business}
 
-### Digital Assets
-WytWallet, WytCoin, WytGold
+Business management and operations tools.
 
-### Storage
-WytCloud
+- [WytBiz](#26-wytbiz) - Business Management Hub
+- [WytQuote](#21-wytquote) - Quotation Management System
+- [WytPay](#17-wytpay) - Payment Gateway Integration
+- [WytInvoice](#20-wytinvoice) - Invoice Generation & Management
+- [Esign Creator](#14-esign-creator) - Digital Signature Solution
+- [WytQRC](#12-wytqrc) - QR Code Generator & Scanner
+- [WytTrace](#29-wyttrace) - Tracking & Analytics Platform
 
-### Analytics
-WytScore, WytTrace
+### Social {#social}
 
-### Education
-DiscAssesser
+Social networking and community features.
 
-### Real Estate
-WytLand
+- [WytWall](#3-wytwall) - Social Feed & Timeline
+- [WytCircle](#6-wytcircle) - Groups & Communities
+- [WytHash](#8-wythash) - Hashtag & Trending Topics
+- [WytScore](#5-wytscore) - Rating & Reputation System
+- [WytWorld](#36-wytworld) - Global Experiences & Travel
+
+### Productivity {#productivity}
+
+Task management and productivity tools.
+
+- [WytPanel](#2-wytpanel) - Personal & Organizational Dashboards
+- [WytDuty](#16-wytduty) - Task & Duty Management
+- [WytHive](#9-wythive) - Team Collaboration Workspace
+- [WytForm](#25-wytform) - Form Builder & Data Collection
+- [WytMeet](#32-wytmeet) - Meeting Scheduler & Rooms
+- [WytApps](#11-wytapps) - App Store & Launcher
+
+### Marketplace {#marketplace}
+
+App stores and digital marketplaces.
+
+- [WytApps](#11-wytapps) - App Store & Launcher
+- [WytStore](#31-wytstore) - Digital Product Marketplace
+- [WytShop](#30-wytshop) - E-Commerce Storefront
+
+### E-Commerce {#e-commerce}
+
+Online stores and selling platforms.
+
+- [WytShop](#30-wytshop) - E-Commerce Storefront
+- [WytStore](#31-wytstore) - Digital Product Marketplace
+
+### Development {#development}
+
+Coding and app building tools.
+
+- [WytCode](#23-wytcode) - Code Editor & IDE
+- [WytBuilder](#37-wytbuilder) - Visual App Builder
+
+### Creation {#creation}
+
+Content and website creation tools.
+
+- [WytSite](#19-wytsite) - Website Builder & CMS
+- [WytBuilder](#37-wytbuilder) - Visual App Builder
+- [WytForm](#25-wytform) - Form Builder & Data Collection
+- [WytCast](#28-wytcast) - Broadcasting & Streaming
+
+### Utilities {#utilities}
+
+General purpose tools and converters.
+
+- [WytQRC](#12-wytqrc) - QR Code Generator & Scanner
+- [Currency / Unit Converter](#15-currency--unit-converter) - Universal Conversion Utilities
+
+### Lifestyle {#lifestyle}
+
+Health, wellness, and personal life apps.
+
+- [WytLife](#34-wytlife) - Health & Wellness Platform
+- [WytGod](#35-wytgod) - Spirituality & Faith Platform
+- [WytWorld](#36-wytworld) - Global Experiences & Travel
+
+### Digital Assets {#digital-assets}
+
+Cryptocurrency and investment management.
+
+- [WytWallet](#7-wytwallet) - Digital Wallet & Payment Management
+- [WytCoin](#22-wytcoin) - Cryptocurrency & Token Management
+- [WytGold](#38-wytgold) - Gold Trading & Investment
+
+### Storage {#storage}
+
+File storage and cloud services.
+
+- [WytCloud](#18-wytcloud) - Cloud Storage & File Management
+
+### Analytics {#analytics}
+
+Tracking, rating, and analytics platforms.
+
+- [WytScore](#5-wytscore) - Rating & Reputation System
+- [WytTrace](#29-wyttrace) - Tracking & Analytics Platform
+
+### Education {#education}
+
+Learning and assessment tools.
+
+- [DiscAssesser](#13-discassesser) - Assessment & Testing Platform
+
+### Real Estate {#real-estate}
+
+Property management and listings.
+
+- [WytLand](#39-wytland) - Real Estate Management
