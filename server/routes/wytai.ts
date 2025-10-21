@@ -2,108 +2,14 @@ import { Router } from "express";
 import { adminAuthMiddleware } from "../customAuth";
 import { aiService } from "../services/aiService";
 import { db } from "../db";
-import { platformModules, apps, platformHubs, wytaiUsage, users, wytaiConversations, wytaiMessages, insertWytaiConversationSchema, insertWytaiMessageSchema } from "@shared/schema";
-import { eq, and, gte, sql, desc } from "drizzle-orm";
+import { platformModules, apps, platformHubs, wytaiConversations, wytaiMessages, insertWytaiConversationSchema, insertWytaiMessageSchema } from "@shared/schema";
+import { eq, desc, sql, and } from "drizzle-orm";
+
+// Import WytAI modular services
+import { checkRateLimits, checkWytAIAccess, RATE_LIMITS } from "../services/wytai/validator";
+import { trackUsage, getUserUsageStats } from "../services/wytai/logger";
 
 const router = Router();
-
-// Rate limits configuration
-const RATE_LIMITS = {
-  daily: 100,   // 100 requests per day
-  monthly: 2000 // 2000 requests per month
-};
-
-// Check if user has exceeded rate limits
-async function checkRateLimits(userId: string): Promise<{ allowed: boolean; message?: string; stats?: any }> {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  // Get daily usage count
-  const dailyUsage = await db.select({
-    count: sql<number>`cast(count(*) as int)`,
-  })
-    .from(wytaiUsage)
-    .where(and(
-      eq(wytaiUsage.userId, userId),
-      gte(wytaiUsage.createdAt, today)
-    ));
-
-  // Get monthly usage count
-  const monthlyUsage = await db.select({
-    count: sql<number>`cast(count(*) as int)`,
-  })
-    .from(wytaiUsage)
-    .where(and(
-      eq(wytaiUsage.userId, userId),
-      gte(wytaiUsage.createdAt, thisMonth)
-    ));
-
-  const dailyCount = dailyUsage[0]?.count || 0;
-  const monthlyCount = monthlyUsage[0]?.count || 0;
-
-  const stats = {
-    daily: { used: dailyCount, limit: RATE_LIMITS.daily, remaining: RATE_LIMITS.daily - dailyCount },
-    monthly: { used: monthlyCount, limit: RATE_LIMITS.monthly, remaining: RATE_LIMITS.monthly - monthlyCount },
-  };
-
-  if (dailyCount >= RATE_LIMITS.daily) {
-    return {
-      allowed: false,
-      message: `Daily limit of ${RATE_LIMITS.daily} requests exceeded. Try again tomorrow.`,
-      stats,
-    };
-  }
-
-  if (monthlyCount >= RATE_LIMITS.monthly) {
-    return {
-      allowed: false,
-      message: `Monthly limit of ${RATE_LIMITS.monthly} requests exceeded. Limit resets next month.`,
-      stats,
-    };
-  }
-
-  return { allowed: true, stats };
-}
-
-// Track usage in database and return fresh stats
-async function trackUsage(userId: string, model: string, provider: string, usage: any, ipAddress?: string) {
-  try {
-    await db.insert(wytaiUsage).values({
-      userId,
-      model,
-      provider,
-      promptTokens: usage?.prompt_tokens || 0,
-      completionTokens: usage?.completion_tokens || 0,
-      totalTokens: usage?.total_tokens || 0,
-      requestData: {},
-      responseData: { usage },
-      ipAddress,
-    });
-
-    // Return fresh stats after tracking
-    const rateLimitCheck = await checkRateLimits(userId);
-    return rateLimitCheck.stats;
-  } catch (error) {
-    console.error("Failed to track WytAI usage:", error);
-    return null;
-  }
-}
-
-// Check if user has access to WytAI (Super Admin only)
-async function checkWytAIAccess(userId: string): Promise<boolean> {
-  const user = await db.select()
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-  
-  if (!user || user.length === 0) return false;
-  
-  const isSuperAdmin = user[0].isSuperAdmin;
-  
-  // Only Super Admins have access to WytAI
-  return isSuperAdmin === true;
-}
 
 // System prompt for WytAI Agent with Engine context
 const getEngineContextPrompt = (engineData: any, mode: 'free' | 'guided' = 'free', pageContext?: { path: string; pageName: string }) => {
