@@ -101,6 +101,23 @@ export default defineConfig({
               ]
             },
             {
+              text: 'Use Case Flows & Diagrams',
+              collapsed: false,
+              items: [
+                { text: 'Overview & Guide', link: '/en/use-case-flows/' },
+                { text: '1. Public Pages & Unauthorized Visitor', link: '/en/use-case-flows/public-pages-unauthorized-visitor' },
+                { text: '2. Unified Header Authentication', link: '/en/use-case-flows/unified-header-authentication' },
+                { text: '3. WytPass Authentication System', link: '/en/use-case-flows/wytpass-authentication' },
+                { text: '4. Multi-Tenant Architecture', link: '/en/use-case-flows/multi-tenant-architecture' },
+                { text: '5. RBAC Permissions', link: '/en/use-case-flows/rbac-permissions' },
+                { text: '6. Super Admin Panel Switching', link: '/en/use-case-flows/admin-panel-switching' },
+                { text: '7. WytAI Agent Workflow', link: '/en/use-case-flows/wytai-agent-workflow' },
+                { text: '8. Module Installation & Activation', link: '/en/use-case-flows/module-installation' },
+                { text: '9. App Subscription Flow', link: '/en/use-case-flows/app-subscription-flow' },
+                { text: '10. Audit Logs System', link: '/en/use-case-flows/audit-logs-system' }
+              ]
+            },
+            {
               text: 'Implementation Guide',
               items: [
                 { text: 'Replit Assistant Guide', link: '/en/implementation/replit-guide' },
@@ -180,6 +197,23 @@ export default defineConfig({
                 { text: 'பயனர் APIs', link: '/ta/api/users' },
                 { text: 'WytWall APIs', link: '/ta/api/wytwall' },
                 { text: 'நிர்வாக APIs', link: '/ta/api/admin' }
+              ]
+            },
+            {
+              text: 'பயன் வழக்கு ஓட்டங்கள் & வரைபடங்கள்',
+              collapsed: false,
+              items: [
+                { text: 'கண்ணோட்டம் & வழிகாட்டி', link: '/en/use-case-flows/' },
+                { text: '1. பொது பக்கங்கள் & அங்கீகாரமற்ற பார்வையாளர்', link: '/en/use-case-flows/public-pages-unauthorized-visitor' },
+                { text: '2. ஒருங்கிணைந்த Header அங்கீகாரம்', link: '/en/use-case-flows/unified-header-authentication' },
+                { text: '3. WytPass அங்கீகார அமைப்பு', link: '/en/use-case-flows/wytpass-authentication' },
+                { text: '4. Multi-Tenant கட்டமைப்பு', link: '/en/use-case-flows/multi-tenant-architecture' },
+                { text: '5. RBAC அனுமதிகள்', link: '/en/use-case-flows/rbac-permissions' },
+                { text: '6. Super Admin பேனல் மாற்றம்', link: '/en/use-case-flows/admin-panel-switching' },
+                { text: '7. WytAI Agent பணி ஓட்டம்', link: '/en/use-case-flows/wytai-agent-workflow' },
+                { text: '8. Module நிறுவல் & செயல்படுத்தல்', link: '/en/use-case-flows/module-installation' },
+                { text: '9. App சந்தா ஓட்டம்', link: '/en/use-case-flows/app-subscription-flow' },
+                { text: '10. Audit Logs அமைப்பு', link: '/en/use-case-flows/audit-logs-system' }
               ]
             },
             {
