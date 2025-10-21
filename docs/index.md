@@ -6,7 +6,7 @@ titleTemplate: Complete Developer Documentation
 hero:
   name: WytNet
   text: Developer Documentation
-  tagline: Complete technical documentation for the WytNet multi-tenant SaaS platform
+  tagline: Get In. Get Done. — Speed | Security | Scale
   actions:
     - theme: brand
       text: Get Started →
@@ -22,6 +22,10 @@ hero:
     alt: WytNet Logo
 
 features:
+  - icon: 🚀
+    title: Our Mission & Vision
+    details: "Mission: Create a connected digital ecosystem powered by Speed | Security | Scale, unifying productivity, social networking, and intelligent automation. Vision: Build a world where every task, connection, and opportunity happens in one smart environment powered by technology and trust. Get In. Get Done."
+    link: /en/overview
   - icon: 🏗️
     title: Core Concepts
     details: Understand Entity → Module → App → Hub architecture and platform fundamentals
