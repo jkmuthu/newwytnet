@@ -135,6 +135,20 @@ app.use((req, res, next) => {
     console.error('Module seeding failed:', error);
   }
 
+  // Auto-discover and register modules from manifest.json files
+  try {
+    console.log('🔍 Scanning for module manifests...');
+    const { manifestScanner } = await import('./services/manifestScanner');
+    const scanResult = await manifestScanner.scanAll();
+    console.log(`✅ Manifest scan complete: ${scanResult.discovered} found, ${scanResult.registered} new, ${scanResult.updated} updated`);
+    if (scanResult.errors.length > 0) {
+      console.warn(`⚠️  ${scanResult.errors.length} manifest errors:`);
+      scanResult.errors.forEach(err => console.warn(`  - ${err.path}: ${err.error}`));
+    }
+  } catch (error) {
+    console.error('Manifest scanning failed:', error);
+  }
+
   // Seed entity types and starter entities
   try {
     const { entitySeedingService } = await import('./services/entitySeedingService');
