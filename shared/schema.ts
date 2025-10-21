@@ -4148,3 +4148,61 @@ export type FeatureTask = typeof featureTasks.$inferSelect;
 export type InsertFeatureTask = z.infer<typeof insertFeatureTaskSchema>;
 export type UpdateFeatureTask = z.infer<typeof updateFeatureTaskSchema>;
 export type UpdateTaskTestStatus = z.infer<typeof updateTaskTestStatusSchema>;
+
+// =======================
+// QA Testing Tracker
+// =======================
+
+// Simplified QA testing tracker with flat table structure
+export const qaTestItems = pgTable("qa_test_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // QA00001
+  
+  // Core fields
+  title: varchar("title", { length: 255 }).notNull(), // Checklist Title
+  task: text("task").notNull(), // Task description
+  category: varchar("category", { length: 100 }).notNull(), // Under (Engine, MyPanel, OrgPanel, etc.)
+  status: varchar("status", { length: 50 }).default('pending'), // pending, in_progress, done, blocked
+  
+  // Testing tracking
+  agentTested: boolean("agent_tested").default(false),
+  agentTestedAt: timestamp("agent_tested_at"),
+  agentTestedBy: varchar("agent_tested_by", { length: 255 }),
+  
+  jkmTested: boolean("jkm_tested").default(false),
+  jkmTestedAt: timestamp("jkm_tested_at"),
+  
+  // Optional fields
+  notes: text("notes"),
+  priority: varchar("priority", { length: 20 }).default('medium'), // low, medium, high
+  orderIndex: integer("order_index").default(0), // For custom ordering
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_qa_test_items_display_id").on(table.displayId),
+  index("idx_qa_test_items_category").on(table.category),
+  index("idx_qa_test_items_status").on(table.status),
+]);
+
+// Insert/Select schemas
+export const insertQATestItemSchema = createInsertSchema(qaTestItems, {
+  title: z.string().min(1).max(255),
+  task: z.string().min(1),
+  category: z.string().min(1).max(100),
+  status: z.enum(['pending', 'in_progress', 'done', 'blocked']).optional(),
+  priority: z.enum(['low', 'medium', 'high']).optional(),
+  notes: z.string().optional(),
+}).omit({ id: true, displayId: true, createdAt: true, updatedAt: true });
+
+export const updateQATestItemSchema = insertQATestItemSchema.partial();
+
+export const markJKMTestedSchema = z.object({
+  jkmTested: z.boolean(),
+});
+
+// Type exports
+export type QATestItem = typeof qaTestItems.$inferSelect;
+export type InsertQATestItem = z.infer<typeof insertQATestItemSchema>;
+export type UpdateQATestItem = z.infer<typeof updateQATestItemSchema>;
+export type MarkJKMTested = z.infer<typeof markJKMTestedSchema>;
