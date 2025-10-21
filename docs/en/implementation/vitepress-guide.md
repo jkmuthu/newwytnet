@@ -61,7 +61,7 @@ docs/
 │   ├── wytmodules/
 │   │   ├── index.md
 │   │   └── modules-catalog.md
-│   ├── wyth hubs/
+│   ├── wythubs/
 │   │   └── index.md
 │   ├── features/
 │   │   ├── wytpass.md
