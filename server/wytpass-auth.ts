@@ -72,43 +72,42 @@ export function setupWytPassAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
   
-  // UNIFIED AUTH FIX: Auto-populate all session contexts after passport loads user
+  // UNIFIED AUTH FIX: Auto-populate wytpassPrincipal with panel access flags
   // This enables seamless panel switching without re-authentication
   app.use(async (req, res, next) => {
     if (req.user && req.session) {
       const user = req.user as any;
       
-      // 1. Always populate wytpassPrincipal for base user context
+      // Populate wytpassPrincipal with all necessary flags for panel detection
       (req.session as any).wytpassPrincipal = {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
         isSuperAdmin: user.isSuperAdmin || false,
+        isHubAdmin: user._hasHubAdminRole || false,
         loginType: user.socialProviders?.[0] || 'password',
         profileImageUrl: user.profileImageUrl,
+        panels: [], // Will be populated based on flags
       };
       
-      // 2. Populate adminUser session if user has Engine Admin role
-      if (user._hasEngineAdminRole || user.isSuperAdmin) {
-        (req.session as any).adminUser = {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          isSuperAdmin: user.isSuperAdmin || false,
-        };
+      // Build panels array based on user's access
+      const panels = [];
+      
+      // All authenticated users get WytNet user panel
+      panels.push('wytnet');
+      
+      // Super Admins get Engine Admin panel
+      if (user.isSuperAdmin) {
+        panels.push('engine_admin');
       }
       
-      // 3. Populate hubAdminUser session if user has Hub Admin role
-      if (user._hasHubAdminRole && user._hubAdminData) {
-        (req.session as any).hubAdminUser = {
-          userId: user.id,
-          hubId: user._hubAdminData.hubId,
-          roleId: user._hubAdminData.roleId,
-          isActive: user._hubAdminData.isActive,
-        };
+      // Hub Admins get Hub Admin panel
+      if (user._hasHubAdminRole) {
+        panels.push('hub_admin');
       }
+      
+      (req.session as any).wytpassPrincipal.panels = panels;
     }
     next();
   });

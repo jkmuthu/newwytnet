@@ -172,6 +172,7 @@ import trashRouter from "./routes/trash";
 import { setupFeaturesChecklistRoutes } from "./routes/features-checklist";
 import { setupQATestingTrackerRoutes } from "./routes/qa-testing-tracker";
 import { rateLimiters } from "./middleware/rateLimiter";
+import { requireAuth } from "./wytpass-identity";
 
 // Trademark analysis functions now imported from services/trademarkAnalysis.ts
 
