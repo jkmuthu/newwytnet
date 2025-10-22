@@ -1,0 +1,72 @@
+WytWall – Updated Short & Functional Description
+
+Short Description:
+
+> Unified social wall where users post needs, offers, and life updates — connecting opportunities automatically.
+
+
+
+
+---
+
+Extended Functional Definition (for DevDoc / Replit manifest):
+
+> WytWall is the dynamic social marketplace and interaction layer of WytNet.
+It functions as both a public discovery stream and a personal intelligent feed, merging user needs, offers, updates, and activities across apps and networks.
+
+
+
+Key Functional Highlights:
+
+Public WytWall:
+
+Displays all user-published Needs and Offers that are made public.
+
+Automatically matches similar listings (e.g., a user’s need appears for others offering related products or services).
+
+Includes Bucket List items — things users wish to do, buy, or achieve — visible to others who can offer related solutions.
+
+
+Personal WytWall (Authenticated):
+
+Shows matched opportunities specifically relevant to the logged-in user (based on their needs, offers, and interests).
+
+Integrates updates from apps the user has installed; each app has a toggle — “Show in My WytWall.”
+
+Streams connected social network updates (Facebook, LinkedIn, Instagram, etc.) when linked via OAuth.
+
+Acts as a unified timeline of the user’s WytNet and external digital activity.
+
+
+Smart Matching Engine:
+
+Matches Needs ↔ Offers automatically based on categories, location, and keywords.
+
+Enables Offerers to view active Needs and bid or promote (via points).
+
+Enables Needers to receive best-fit Offers directly in their WytWall feed.
+
+
+
+Result:
+
+> WytWall becomes the “Digital Pulse” of WytNet — combining marketplace, productivity, and social intelligence into one adaptive stream.
+
+
+
+
+---
+
+Manifest Update for Replit Agent:
+
+{
+  "name": "WytWall",
+  "description": "Unified social wall where users post needs, offers, and updates — connecting opportunities automatically.",
+  "features": [
+    "Public stream for needs & offers",
+    "Personal feed with matched opportunities",
+    "Bucket List integration",
+    "Show-in-My-WytWall app updates",
+    "Social network stream aggregation"
+  ]
+}
