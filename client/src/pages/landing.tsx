@@ -23,7 +23,7 @@ export default function Landing() {
           
           <div className="flex items-center justify-center mb-6">
             <img 
-              src="/wytnet-logo.png" 
+              src="/wytnet-logo.png?v=2" 
               alt="WytNet - Multi-Tenant SaaS Platform" 
               className="h-16 w-auto transition-transform hover:scale-105"
               loading="eager"

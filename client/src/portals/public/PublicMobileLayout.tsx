@@ -71,7 +71,7 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
             {/* Logo */}
             <Link href="/" className="flex items-center" data-testid="mobile-logo">
               <img 
-                src="/wytnet-logo.png" 
+                src="/wytnet-logo.png?v=2" 
                 alt="WytNet" 
                 className="h-8 w-auto transition-transform hover:scale-105"
               />

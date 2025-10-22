@@ -49,7 +49,7 @@ export default function Footer() {
         <div className="mb-4 text-center">
           <div className="flex justify-center items-center space-x-2 mb-3 animate-fade-in-up">
             <img 
-              src="/wytnet-logo.png" 
+              src="/wytnet-logo.png?v=2" 
               alt="WytNet" 
               className="h-8 sm:h-10 w-auto transition-transform hover:scale-110 hover:rotate-3 animate-pulse-slow"
             />

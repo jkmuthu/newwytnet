@@ -72,7 +72,7 @@ export default function MobileLayout({ children, isMobile }: MobileLayoutProps) 
             {/* Logo - Left */}
             <Link href="/" className="flex items-center" data-testid="mobile-logo">
               <img 
-                src="/wytnet-logo.png" 
+                src="/wytnet-logo.png?v=2" 
                 alt="WytNet" 
                 className="h-8 w-auto transition-transform hover:scale-105"
               />
@@ -118,7 +118,7 @@ export default function MobileLayout({ children, isMobile }: MobileLayoutProps) 
                 <SheetHeader>
                   <SheetTitle className="flex items-center gap-2">
                     <img 
-                      src="/wytnet-logo.png" 
+                      src="/wytnet-logo.png?v=2" 
                       alt="WytNet" 
                       className="h-6 w-auto"
                     />

@@ -170,7 +170,7 @@ export default function AdminMobileLayout({ children }: AdminMobileLayoutProps) 
             <div className="flex items-center space-x-2">
               <Link href="/">
                 <img 
-                  src="/wytnet-logo.png" 
+                  src="/wytnet-logo.png?v=2" 
                   alt="WytNet" 
                   className="h-6 w-auto"
                 />

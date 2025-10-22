@@ -32,7 +32,7 @@ export default function EmailOTPLoginPage() {
         {/* WytNet Logo/Header */}
         <div className="text-center space-y-2">
           <img 
-            src="/wytnet-logo.png" 
+            src="/wytnet-logo.png?v=2" 
             alt="WytNet" 
             className="h-12 w-auto mx-auto mb-4"
           />

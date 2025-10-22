@@ -168,7 +168,7 @@ export default function Sidebar({ open, onClose, isCollapsed, onToggleCollapse }
             {!isCollapsed && (
               <div className="flex items-center space-x-3">
                 <img 
-                  src="/wytnet-logo.png" 
+                  src="/wytnet-logo.png?v=2" 
                   alt="WytNet" 
                   className="h-8 w-auto transition-transform hover:scale-105"
                 />

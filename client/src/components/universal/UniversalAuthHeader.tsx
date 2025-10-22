@@ -170,7 +170,7 @@ export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuth
                 {/* Logo Header */}
                 <div className="p-4 border-b">
                   <img 
-                    src="/wytnet-logo.png" 
+                    src="/wytnet-logo.png?v=2" 
                     alt="WytNet" 
                     className="h-8 w-auto"
                   />
