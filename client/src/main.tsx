@@ -3,8 +3,9 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-// Register Service Worker for PWA functionality
-if ('serviceWorker' in navigator) {
+// Register Service Worker for PWA functionality (PRODUCTION ONLY)
+// In development, service worker caching causes blank screens and stale content
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then((registration) => {
@@ -13,6 +14,25 @@ if ('serviceWorker' in navigator) {
       .catch((registrationError) => {
         console.log('WytNet SW registration failed: ', registrationError);
       });
+  });
+}
+
+// Clear service worker caches in development to prevent blank screen issues
+if ('serviceWorker' in navigator && !import.meta.env.PROD) {
+  window.addEventListener('load', async () => {
+    // Unregister any existing service workers
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    for (const registration of registrations) {
+      await registration.unregister();
+      console.log('Dev mode: Unregistered service worker');
+    }
+    
+    // Clear all caches
+    const cacheNames = await caches.keys();
+    for (const cacheName of cacheNames) {
+      await caches.delete(cacheName);
+      console.log('Dev mode: Cleared cache:', cacheName);
+    }
   });
 }
 
