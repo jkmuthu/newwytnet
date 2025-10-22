@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from "@/components/ui/textarea";
 import { Lock, BookOpen, CheckCircle, Clock, AlertCircle, Code, Database, Shield, Filter, Search, ExternalLink, MessageSquare, ArrowUpDown, Edit, Save, Download, Play, FileText, Settings, Users, Calendar, TrendingUp, Activity, Zap, GitBranch, TestTube, Bug, ChevronRight, Plus, Trash2, Eye, EyeOff, Link as LinkIcon, Timer, Target, Sparkles, Layers, Globe, Boxes, Package, HelpCircle, Server, Cpu, Monitor, Link2, BarChart3, History, Terminal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type StatusType = "tested-live" | "tested-preview" | "completed" | "in-error" | "priority-1" | "priority-2" | "priority-3" | "in-progress" | "planned" | "blocked" | "testing" | "review";
 type AreaType = "public" | "user-panel" | "admin-panel" | "api" | "core";
@@ -61,6 +62,17 @@ interface ApiEndpoint {
   authentication: boolean;
 }
 
+// Helper component to render documentation sections
+const DocSection: React.FC<{ title: string; id: string; children: React.ReactNode }> = ({ title, id, children }) => (
+  <section id={id} className="mb-8">
+    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+      {children?.toString().includes("WytPass") ? <Shield className="h-6 w-6 text-violet-600" /> : <BookOpen className="h-6 w-6 text-blue-600" />}
+      {title}
+    </h3>
+    {children}
+  </section>
+);
+
 export default function DevDocumentation() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -76,8 +88,6 @@ export default function DevDocumentation() {
   const [activeSection, setActiveSection] = useState("about-platform");
   const [activeSubTab, setActiveSubTab] = useState("platform-concepts");
   const [isDownloading, setIsDownloading] = useState(false);
-  const [viewMode, setViewMode] = useState<"table" | "kanban" | "timeline">("table");
-  const [adminBypass, setAdminBypass] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -457,25 +467,66 @@ export default function DevDocumentation() {
               WytPass is a unified identity and authentication system that provides seamless access across all hubs and applications with blockchain-anchored identity validation.
             </p>
 
+            <Alert className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Critical: User ID Validation & Duplicate Prevention</AlertTitle>
+              <AlertDescription>
+                <div className="space-y-2 text-sm mt-2">
+                  <p><strong>Issue:</strong> System must properly validate email as user ID and prevent duplicates across all authentication methods.</p>
+                  <p><strong>Standard Implementation:</strong></p>
+                  <ul className="list-disc list-inside ml-4 space-y-1">
+                    <li>Email is the primary unique identifier (user ID)</li>
+                    <li>All auth methods (Google, Email+Password, OTP) must check for existing email before creating user</li>
+                    <li>Database unique constraint on email field prevents duplicates</li>
+                    <li>Auto-assign roles (e.g., Super Admin for jkm@jkmuthu.com) on both new user creation AND existing user login</li>
+                    <li>Handle edge case: User exists in users table but missing in user_roles table</li>
+                  </ul>
+                  <p className="mt-2"><strong>Fix Applied:</strong> Auto-role assignment now works for both scenarios - prevents future issues when users have access to multiple panels.</p>
+                </div>
+              </AlertDescription>
+            </Alert>
+
             <div className="grid md:grid-cols-2 gap-4">
               <div className="border rounded-lg p-4">
-                <h4 className="font-semibold mb-2">Authentication Methods</h4>
-                <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>• Google OAuth</li>
-                  <li>• Email OTP</li>
-                  <li>• Email/Password</li>
-                  <li>• LinkedIn OAuth</li>
+                <h4 className="font-semibold mb-2">Supported Methods:</h4>
+                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                  <li>Email + Password (Traditional)</li>
+                  <li>Email OTP (Passwordless via MSG91)</li>
+                  <li>Google OAuth 2.0</li>
+                  <li>LinkedIn OAuth 2.0</li>
+                  <li>Facebook OAuth 2.0 (Configured)</li>
                 </ul>
               </div>
               <div className="border rounded-lg p-4">
-                <h4 className="font-semibold mb-2">Key Features</h4>
-                <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>• Single Sign-On (SSO)</li>
-                  <li>• Cross-hub authentication</li>
-                  <li>• WytID validation</li>
-                  <li>• Blockchain anchoring</li>
+                <h4 className="font-semibold mb-2">Key Features:</h4>
+                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                  <li>Session-based authentication (7-day expiry)</li>
+                  <li>HttpOnly secure cookies</li>
+                  <li>Multi-device session management</li>
+                  <li>OAuth 2.0 integration with token refresh</li>
+                  <li>OTP generation with 5-minute expiry</li>
+                  <li>Password strength validation</li>
+                  <li>Rate limiting on auth endpoints</li>
+                  <li><strong>Auto-role assignment on login</strong> (checks both user creation and existing user scenarios)</li>
                 </ul>
               </div>
+            </div>
+
+            <div className="bg-muted p-4 rounded-lg mt-4">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                User Role Validation Flow
+              </h4>
+              <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
+                <li>User authenticates via any method (Google/Email/OTP)</li>
+                <li>System checks if user exists in users table by email</li>
+                <li>If exists: Update user record + Check user_roles table</li>
+                <li>If user_roles missing: Auto-assign appropriate role(s)</li>
+                <li>Special case: jkm@jkmuthu.com → Auto-assign Super Admin role</li>
+                <li>Validate role assignment before session creation</li>
+                <li>Create session with validated roles</li>
+                <li>User can now access panels based on assigned roles</li>
+              </ol>
             </div>
           </CardContent>
         </Card>
@@ -771,47 +822,47 @@ export default function DevDocumentation() {
                           <h4 className="font-semibold mb-1">What is the difference between Hub and App?</h4>
                           <p className="text-sm text-muted-foreground">A Hub is a standalone portal with custom domain support, while an App runs within WytNet.com and can be installed by users from the marketplace.</p>
                         </div>
-                        
+
                         <div className="border-l-4 border-purple-500 pl-4 py-2 bg-purple-50 dark:bg-purple-950 rounded">
                           <h4 className="font-semibold mb-1">How does multi-tenancy work?</h4>
                           <p className="text-sm text-muted-foreground">Each tenant has complete data isolation through row-level security in PostgreSQL with session-based tenant context. The tenantId is injected into all queries automatically.</p>
                         </div>
-                        
+
                         <div className="border-l-4 border-green-500 pl-4 py-2 bg-green-50 dark:bg-green-950 rounded">
                           <h4 className="font-semibold mb-1">What is WytPass and how does it work?</h4>
                           <p className="text-sm text-muted-foreground">WytPass is a unified authentication system supporting Google OAuth, Email OTP, Email/Password, and LinkedIn OAuth. It provides single sign-on across all hubs and apps with blockchain-anchored identity validation.</p>
                         </div>
-                        
+
                         <div className="border-l-4 border-orange-500 pl-4 py-2 bg-orange-50 dark:bg-orange-950 rounded">
                           <h4 className="font-semibold mb-1">How do Modules differ from Apps?</h4>
                           <p className="text-sm text-muted-foreground">Modules are building blocks with specific functionality (47+ available), while Apps are composed of multiple modules to create complete applications (39+ apps available).</p>
                         </div>
-                        
+
                         <div className="border-l-4 border-red-500 pl-4 py-2 bg-red-50 dark:bg-red-950 rounded">
                           <h4 className="font-semibold mb-1">What are WytPoints?</h4>
                           <p className="text-sm text-muted-foreground">WytPoints is the platform's economy system where users earn points through activities and can redeem them for premium features, apps, or services.</p>
                         </div>
-                        
+
                         <div className="border-l-4 border-yellow-500 pl-4 py-2 bg-yellow-50 dark:bg-yellow-950 rounded">
                           <h4 className="font-semibold mb-1">How does RBAC work?</h4>
                           <p className="text-sm text-muted-foreground">The platform uses 64 permissions across 16 resources with 8 default roles. Permissions can be assigned at engine-level, hub-level, and organization-level with inheritance.</p>
                         </div>
-                        
+
                         <div className="border-l-4 border-indigo-500 pl-4 py-2 bg-indigo-50 dark:bg-indigo-950 rounded">
                           <h4 className="font-semibold mb-1">What is the WytAI Agent?</h4>
                           <p className="text-sm text-muted-foreground">WytAI Agent is an AI-powered assistant using GPT-4o, Claude, and Gemini to help users with tasks, provide recommendations, and automate workflows across the platform.</p>
                         </div>
-                        
+
                         <div className="border-l-4 border-cyan-500 pl-4 py-2 bg-cyan-50 dark:bg-cyan-950 rounded">
                           <h4 className="font-semibold mb-1">Can I white-label the platform?</h4>
                           <p className="text-sm text-muted-foreground">Yes! The platform supports complete white-labeling including custom domains, branding, themes, and logos for both hubs and individual apps.</p>
                         </div>
-                        
+
                         <div className="border-l-4 border-pink-500 pl-4 py-2 bg-pink-50 dark:bg-pink-950 rounded">
                           <h4 className="font-semibold mb-1">How are Global Display IDs generated?</h4>
                           <p className="text-sm text-muted-foreground">Display IDs follow a strict format: 2-letter prefix + 7-digit number (e.g., WY0000001). They are unique across the entire platform and used for easy reference.</p>
                         </div>
-                        
+
                         <div className="border-l-4 border-teal-500 pl-4 py-2 bg-teal-50 dark:bg-teal-950 rounded">
                           <h4 className="font-semibold mb-1">What payment gateways are supported?</h4>
                           <p className="text-sm text-muted-foreground">Currently Razorpay is integrated with support for Stripe. Payment modules handle subscriptions, one-time payments, and recurring billing.</p>
@@ -929,7 +980,7 @@ export default function DevDocumentation() {
                               <strong>Security:</strong> Maintains two-tier access control
                             </div>
                           </div>
-                          
+
                           <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
                             <p className="text-sm text-muted-foreground italic">
                               💡 All agent conversations are preserved in this section for historical reference and knowledge transfer.
@@ -976,7 +1027,7 @@ export default function DevDocumentation() {
                               <strong>Strategy:</strong> Planned Features → ADR → Roadmap → Implementation
                             </div>
                           </div>
-                          
+
                           <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
                             <p className="text-sm text-muted-foreground italic">
                               💬 Assistant conversations focus on architectural guidance, best practices, and strategic planning.
@@ -987,7 +1038,7 @@ export default function DevDocumentation() {
                         <TabsContent value="key-decisions" className="space-y-4">
                           <div className="space-y-3">
                             <h4 className="font-semibold">Architecture Decisions Record (ADR)</h4>
-                            
+
                             <div className="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
                               <div className="flex items-center gap-2 mb-2">
                                 <Terminal className="h-4 w-4 text-blue-600" />
@@ -1071,7 +1122,7 @@ export default function DevDocumentation() {
                                 <Badge variant="outline">Neon Serverless Driver</Badge>
                               </div>
                             </div>
-                            
+
                             <h4 className="font-semibold mt-6">Key Features</h4>
                             <ul className="text-sm space-y-2 ml-4">
                               <li className="flex items-start gap-2">
@@ -1111,7 +1162,7 @@ export default function DevDocumentation() {
                                 <Badge variant="outline">5000</Badge>
                               </div>
                             </div>
-                            
+
                             <h4 className="font-semibold mt-6">External Services</h4>
                             <div className="space-y-2 text-sm">
                               <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded border">
@@ -1167,7 +1218,7 @@ export default function DevDocumentation() {
                                 <Badge variant="outline">TanStack Query</Badge>
                               </div>
                             </div>
-                            
+
                             <h4 className="font-semibold mt-6">Backend Stack</h4>
                             <div className="grid grid-cols-2 gap-2 text-sm">
                               <div className="p-3 bg-indigo-50 dark:bg-indigo-950 rounded border border-indigo-200 dark:border-indigo-800">
@@ -1187,7 +1238,7 @@ export default function DevDocumentation() {
                                 <Badge variant="outline">Zod</Badge>
                               </div>
                             </div>
-                            
+
                             <h4 className="font-semibold mt-6">AI Services</h4>
                             <div className="grid grid-cols-3 gap-2 text-sm">
                               <div className="p-3 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 rounded border">
