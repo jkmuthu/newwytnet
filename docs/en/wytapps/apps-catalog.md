@@ -6,163 +6,205 @@ Complete catalog of all WytApps available in the WytNet ecosystem. Each app can 
 
 ## 1. WytPass
 
-**Universal Authentication & Identity System**
+**Unified Login & Identity System Across All WytNet Platforms**
 
-WytPass is the unified identity and authentication system powering the entire WytNet ecosystem. It provides secure, multi-method authentication including Google OAuth, email OTP, and traditional email/password login.
+WytPass is the universal authentication and identity management system that powers secure access across the entire WytNet ecosystem. It provides seamless single sign-on with multiple authentication methods, ensuring users maintain one consistent identity across all platforms, apps, and hubs.
 
 - **Categories**: Core Platform, Security, Authentication
 - **Panel Availability**: Both (MyPanel + OrgPanel)
 - **Pricing**: Included in all plans (core platform feature)
 - **Key Features**:
-  - Multi-method authentication (Google, Email OTP, Password)
-  - Universal single sign-on across all WytApps
-  - Session management with triple-context support
-  - Profile management and verification
-  - Social provider integration
+  - Multi-method authentication (Google OAuth, Email OTP, Email/Password)
+  - Universal single sign-on across all WytApps and WytHubs
+  - Session management with triple-context support (User, Hub Admin, Super Admin)
+  - Unified profile management and verification
+  - Social provider integration (Google, LinkedIn, Facebook)
+  - Cross-platform identity synchronization
+  - Secure session persistence with httpOnly cookies
+  - Role-based access control integration
 
 ---
 
 ## 2. WytPanel
 
-**Personal & Organizational Dashboard System**
+**Personalized Dashboard for Individuals and Organizations**
 
-WytPanel provides intelligent dashboards for both individuals (MyPanel) and organizations (OrgPanel). Users can seamlessly switch between personal and organizational workspaces based on their memberships.
+WytPanel is the intelligent dashboard system providing customized workspaces for both individual users (MyPanel) and organizations (OrgPanel). Users can seamlessly switch between personal and organizational contexts, managing all their WytApps, data, and activities from one unified interface.
 
 - **Categories**: Core Platform, Productivity, Dashboard
 - **Panel Availability**: Both (MyPanel + OrgPanel)
 - **Pricing**: Included in all plans (core platform feature)
 - **Key Features**:
-  - Dual-panel architecture (MyPanel for individuals, OrgPanel for teams)
-  - Seamless panel switching based on org membership
-  - Customizable widgets and layouts
-  - Real-time notifications and updates
+  - Dual-panel architecture (MyPanel for individuals, OrgPanel for organizations)
+  - Seamless context switching based on organization membership
+  - Customizable widgets, layouts, and dashboard configurations
+  - Real-time notifications, alerts, and activity updates
   - Integrated access to all subscribed WytApps
+  - Role-based workspace customization
+  - Personal and organizational analytics at a glance
+  - Quick actions and shortcuts for frequent tasks
 
 ---
 
 ## 3. WytWall
 
-**Social Feed & Timeline**
+**Unified Social Wall Where Users Post Needs, Offers, and Life Updates — Connecting Opportunities Automatically**
 
-WytWall is a dynamic social feed system where users can share updates, thoughts, media, and interact with their network through likes, comments, and shares.
+WytWall is the dynamic social marketplace and interaction layer combining social networking with intelligent opportunity matching. Users post their needs, offers, and life updates, while the platform automatically connects matching opportunities through smart algorithms, creating a unified stream of personal activity and marketplace discovery.
 
-- **Categories**: Social, Communication, Content
+- **Categories**: Social, Communication, Content, Marketplace
 - **Panel Availability**: Both (MyPanel + OrgPanel)
 - **Pricing**: Individual app pricing
 - **Key Features**:
-  - Personal and organizational timelines
-  - Rich media support (text, images, videos, links)
-  - Social interactions (likes, comments, shares)
-  - Privacy controls (public, private, connections only)
+  - Dual post types (Needs and Offers) with automatic matching (WytMatch)
+  - Personal and organizational timelines with intelligent feed algorithm
+  - Rich media support (text, images, videos, links, location)
+  - Social interactions (likes, comments, shares, saves)
+  - Privacy controls (public, private, circles only)
+  - Location-based filtering and radius search
+  - Category-based organization and discovery
+  - Admin moderation queue with approval workflow
   - Hashtag support via WytHash integration
+  - Bucket List items visibility for opportunity matching
+  - Smart feed ranking based on relevance, location, freshness, and engagement
 
 ---
 
 ## 4. WytPoints
 
-**Gamification & Rewards Economy**
+**Reward and Spend Points System for Engagement Actions**
 
-WytPoints is the universal rewards and gamification system across WytNet. Users earn points through activities, engagement, and achievements which can be redeemed for benefits.
+WytPoints is the universal rewards economy and gamification engine powering engagement across the entire WytNet ecosystem. Users earn points through activities, contributions, and engagement across all WytApps, and can spend or redeem points for premium features, services, and benefits within the platform.
 
 - **Categories**: Core Platform, Gamification, Economy
 - **Panel Availability**: Both (MyPanel + OrgPanel)
 - **Pricing**: Included in all plans (core platform feature)
 - **Key Features**:
-  - Universal points system across all WytApps
-  - Activity-based point earning mechanisms
-  - Achievement and milestone rewards
-  - Points redemption marketplace
-  - Leaderboards and rankings via WytScore
+  - Universal points system working across all WytApps and WytHubs
+  - Activity-based point earning for specific actions (posts, comments, shares, referrals)
+  - Configurable point values for each action type
+  - Achievement and milestone bonus rewards
+  - Points redemption marketplace for premium features and services
+  - Lifetime earned and spent tracking
+  - Transaction history with balance tracking
+  - Admin controls for manual balance adjustments
+  - Integration with WytScore for reputation calculation
+  - Leaderboards and rankings based on points accumulation
 
 ---
 
 ## 5. WytScore
 
-**Rating & Reputation System**
+**Consolidated Digital Reputation & Engagement Score**
 
-WytScore provides comprehensive rating and reputation tracking for users, organizations, products, and services across the WytNet ecosystem.
+WytScore is the comprehensive reputation and credibility scoring system that aggregates user behavior, contributions, reviews, and engagement across the entire WytNet ecosystem into a single unified score. This digital reputation score reflects trustworthiness, activity level, and community standing, influencing visibility, privileges, and opportunities throughout the platform.
 
-- **Categories**: Social, Analytics, Reputation
+- **Categories**: Social, Analytics, Reputation, Gamification
 - **Panel Availability**: Both (MyPanel + OrgPanel)
 - **Pricing**: Individual app pricing
 - **Key Features**:
-  - User and organization reputation scores
-  - Product and service ratings
-  - Review and feedback system
-  - Trust badges and verification levels
-  - Historical score tracking and analytics
+  - Unified reputation score aggregating activity across all WytApps
+  - Multi-level scoring tiers (Bronze, Silver, Gold, Platinum, Diamond)
+  - User and organization reputation tracking
+  - Product and service ratings integration
+  - Review and feedback system with verified purchases
+  - Trust badges and verification levels (WytStar)
+  - Historical score tracking and trend analytics
+  - Contribution-based score calculation (posts, reviews, transactions)
+  - Impact on feed visibility and platform privileges
+  - Transparent scoring algorithm with detailed breakdowns
 
 ---
 
 ## 6. WytCircle
 
-**Groups & Communities**
+**Advanced Contact and Relationship Management System**
 
-WytCircle enables users to create and manage communities, interest groups, and collaborative spaces for focused discussions and shared activities.
+WytCircle is the comprehensive relationship management platform enabling users to organize contacts, create interest-based communities, manage professional and personal networks, and collaborate within focused groups. It combines contact management with social community features for seamless relationship building and networking.
 
-- **Categories**: Social, Collaboration, Community
+- **Categories**: Social, Collaboration, Community, CRM
 - **Panel Availability**: Both (MyPanel + OrgPanel)
 - **Pricing**: Individual app pricing
 - **Key Features**:
-  - Public and private groups
-  - Member management and permissions
-  - Group feeds and discussions
-  - Event organization within circles
-  - File and resource sharing
+  - Advanced contact organization and categorization
+  - Public and private groups for communities and interests
+  - Member management with granular permissions and roles
+  - Group feeds, discussions, and activity streams
+  - Event organization and RSVP management within circles
+  - File and resource sharing with version control
+  - Relationship tracking (connections, followers, network strength)
+  - Circle-specific privacy controls for content sharing
+  - Integration with WytWall for targeted post distribution
+  - Professional networking tools and collaboration spaces
 
 ---
 
 ## 7. WytWallet
 
-**Digital Wallet & Payment Management**
+**Smart Wallet for WytPoints, Payments, and Transactions**
 
-WytWallet is a secure digital wallet for managing funds, making payments, and tracking financial transactions across the WytNet ecosystem.
+WytWallet is the unified digital wallet managing WytPoints balances, real money transactions, cryptocurrency holdings, and payment processing across the entire WytNet ecosystem. It provides a single interface for all financial activities including earning, spending, transferring, and tracking digital and traditional currencies.
 
 - **Categories**: Finance, Payments, Digital Assets
 - **Panel Availability**: Both (MyPanel + OrgPanel)
 - **Pricing**: Individual app pricing
 - **Key Features**:
-  - Multi-currency support
-  - Secure fund storage and management
-  - Peer-to-peer money transfers
-  - Transaction history and analytics
-  - Integration with WytPay and WytCoin
+  - Unified wallet for WytPoints, fiat currency, and cryptocurrency
+  - Multi-currency support (INR, USD, EUR, and major cryptocurrencies)
+  - Secure fund storage and management with encryption
+  - Peer-to-peer money transfers within WytNet ecosystem
+  - Transaction history with detailed analytics and categorization
+  - Integration with WytPay for seamless payment processing
+  - Integration with WytCoin for cryptocurrency management
+  - Real-time balance tracking across all asset types
+  - Automated transaction reconciliation
+  - Export and reporting for accounting purposes
 
 ---
 
 ## 8. WytHash
 
-**Hashtag & Trending Topics**
+**Digital Verification & Data Authenticity Management Tool**
 
-WytHash powers the hashtag system across WytNet, enabling content discovery, trending topics, and viral content tracking.
+WytHash is the cryptographic verification and data integrity system that provides digital fingerprinting, content authenticity verification, and tamper-proof data tracking across WytNet. It combines hashtag functionality for content discovery with blockchain-inspired hashing for data verification, ensuring trust and authenticity in all platform interactions.
 
-- **Categories**: Social, Content Discovery, Analytics
+- **Categories**: Social, Content Discovery, Analytics, Security, Verification
 - **Panel Availability**: Both (MyPanel + OrgPanel)
 - **Pricing**: Included with WytWall subscription
 - **Key Features**:
-  - Universal hashtag indexing
-  - Trending topics and viral content
-  - Hashtag analytics and insights
-  - Custom hashtag creation and tracking
-  - Cross-app hashtag integration
+  - Universal hashtag indexing and content discovery
+  - Trending topics and viral content tracking
+  - Hashtag analytics with engagement insights
+  - Custom hashtag creation, tracking, and ownership
+  - Cross-app hashtag integration for unified discovery
+  - Digital fingerprinting for content authenticity
+  - Data integrity verification with cryptographic hashing
+  - Tamper-proof transaction and activity logging
+  - Content provenance tracking (who created, when, modifications)
+  - Integration with WytID for identity verification
 
 ---
 
 ## 9. WytHive
 
-**Team Collaboration Workspace**
+**Community-Powered Data and Hardware Resource Network**
 
-WytHive is a comprehensive team collaboration platform with project management, task tracking, and shared workspace capabilities.
+WytHive is the decentralized collaboration and resource-sharing platform that enables teams, organizations, and communities to pool computational resources, share data, collaborate on projects, and distribute workloads across a network of contributors. It combines team workspace features with distributed computing capabilities for scalable, community-powered solutions.
 
-- **Categories**: Productivity, Collaboration, Project Management
+- **Categories**: Productivity, Collaboration, Project Management, Distributed Computing
 - **Panel Availability**: OrgPanel (organization-focused)
 - **Pricing**: Individual app pricing
 - **Key Features**:
-  - Project and workspace organization
-  - Task management with assignments
-  - Team communication channels
-  - File sharing and collaboration
-  - Integration with WytDuty for task tracking
+  - Project and workspace organization with hierarchical structure
+  - Task management with assignments, dependencies, and tracking
+  - Team communication channels (chat, video, discussions)
+  - File sharing and real-time collaboration on documents
+  - Integration with WytDuty for personal task synchronization
+  - Community-powered resource pooling (CPU, storage, bandwidth)
+  - Distributed data storage and processing capabilities
+  - Hardware resource contribution and compensation system
+  - Collaborative computing for large-scale tasks
+  - Network node management and monitoring
 
 ---
 
@@ -205,109 +247,140 @@ WytApps is the central app marketplace and launcher for discovering, subscribing
 
 ## 12. WytQRC
 
-**QR Code Generator & Scanner**
+**Generate, Track, and Manage Dynamic QR Codes Easily**
 
-WytQRC provides QR code generation, scanning, and management for various use cases including payments, contact sharing, and asset tracking.
+WytQRC is the comprehensive QR code management platform enabling users to create, customize, track, and analyze QR codes for various purposes including payments, marketing campaigns, product tracking, contact sharing, and event management. Dynamic QR codes can be updated in real-time without regeneration, with detailed analytics on scans and user engagement.
 
-- **Categories**: Utilities, Tools, Business
+- **Categories**: Utilities, Tools, Business, Marketing
 - **Panel Availability**: Both (MyPanel + OrgPanel)
 - **Pricing**: Individual app pricing
 - **Key Features**:
-  - Dynamic QR code generation
-  - Multi-format QR scanning (URLs, payments, contacts, etc.)
-  - QR code analytics and tracking
-  - Bulk QR code generation
-  - Custom branding and styling
+  - Dynamic QR code generation with real-time editability
+  - Multi-format QR code support (URLs, payments, contacts, WiFi, events, products)
+  - QR code analytics with scan tracking, location, device, and timestamp data
+  - Bulk QR code generation for large-scale deployments
+  - Custom branding with logos, colors, and styling options
+  - QR code expiration and scheduling controls
+  - Password protection for secure content access
+  - Integration with WytPay for payment QR codes
+  - Campaign management and A/B testing for marketing QRs
+  - Export in multiple formats (PNG, SVG, PDF)
 
 ---
 
 ## 13. DiscAssesser
 
-**Assessment & Testing Platform**
+**Personality & Behavior DISC Assessment and Reporting Tool**
 
-DiscAssesser is a comprehensive assessment and testing platform for creating quizzes, exams, surveys, and personality assessments.
+DiscAssesser is the professional personality profiling platform based on the DISC (Dominance, Influence, Steadiness, Conscientiousness) behavioral model. It provides comprehensive assessments, detailed personality reports, team analytics, and career guidance based on individual behavioral styles and team dynamics.
 
-- **Categories**: Education, HR, Analytics
+- **Categories**: Education, HR, Analytics, Professional Development
 - **Panel Availability**: Both (MyPanel + OrgPanel)
 - **Pricing**: Individual app pricing
 - **Key Features**:
-  - Quiz and exam builder
-  - Multiple question types (MCQ, essay, true/false, etc.)
-  - Automated grading and scoring
-  - Result analytics and reporting
-  - Time-bound assessments
+  - 25-question DISC personality assessment with validated scoring
+  - Detailed personality reports with strengths, weaknesses, and career paths
+  - Visual DISC profile graphs and radar charts
+  - Team assessment and composition analysis
+  - Communication style recommendations for each DISC type
+  - Automated grading and comprehensive scoring algorithms
+  - Result analytics with historical tracking and trend analysis
+  - PDF export for sharing and archival
+  - Integration with WytPoints for assessment completion rewards
+  - Profile visibility on user profiles for networking and collaboration
 
 ---
 
 ## 14. Esign Creator
 
-**Digital Signature Solution**
+**Create and Manage Secure Digital Signatures & E-Agreements**
 
-Esign Creator enables secure digital document signing with legally compliant electronic signatures for contracts, agreements, and forms.
+Esign Creator is the professional digital signature and e-agreement platform providing legally compliant electronic signatures, multi-party signing workflows, and comprehensive audit trails. It enables businesses and individuals to create, send, sign, and manage documents digitally with full legal validity and tamper-proof security.
 
-- **Categories**: Business, Legal, Documents
+- **Categories**: Business, Legal, Documents, Security
 - **Panel Availability**: Both (MyPanel + OrgPanel)
 - **Pricing**: Individual app pricing
 - **Key Features**:
-  - Electronic signature creation and verification
-  - Multi-party document signing workflows
-  - Audit trail and compliance tracking
-  - Template management
-  - Integration with WytCloud for document storage
+  - Electronic signature creation with biometric and cryptographic security
+  - Multi-party document signing workflows with sequential or parallel routing
+  - Legally compliant e-signatures meeting digital signature standards
+  - Comprehensive audit trail with timestamp, IP address, and device tracking
+  - Template management for frequently used documents and agreements
+  - Integration with WytCloud for secure document storage and archival
+  - Document verification and authenticity checking
+  - Reminder and notification system for pending signatures
+  - Mobile-friendly signing experience
+  - Integration with WytHash for document integrity verification
 
 ---
 
 ## 15. Currency / Unit Converter
 
-**Universal Conversion Utilities**
+**Real-Time Currency & Measurement Conversion Tool**
 
-A comprehensive conversion tool supporting currency exchange rates, measurement units, and various other conversion types with real-time data.
+Currency / Unit Converter is the comprehensive conversion utility providing real-time currency exchange rates, measurement unit conversions, and multi-format data transformations. It supports 150+ currencies with live exchange rates, multiple measurement systems, and historical data tracking for financial and scientific calculations.
 
-- **Categories**: Utilities, Tools, Finance
+- **Categories**: Utilities, Tools, Finance, Science
 - **Panel Availability**: Both (MyPanel + OrgPanel)
 - **Pricing**: Free (ad-supported) or Premium (ad-free with advanced features)
 - **Key Features**:
-  - Real-time currency conversion (150+ currencies)
-  - Unit conversion (length, weight, volume, temperature, etc.)
-  - Historical exchange rates
-  - Offline mode support
-  - Custom conversion favorites
+  - Real-time currency conversion with 150+ global currencies
+  - Live exchange rate updates from multiple financial sources
+  - Unit conversion for length, weight, volume, temperature, area, speed, and more
+  - Support for metric, imperial, and regional measurement systems
+  - Historical exchange rate data and trend analysis
+  - Offline mode with cached conversion rates
+  - Custom conversion favorites and quick access shortcuts
+  - Batch conversion for multiple values simultaneously
+  - Scientific notation and precision controls
+  - Integration with WytWallet for transaction currency conversions
 
 ---
 
 ## 16. WytDuty
 
-**Task & Duty Management**
+**Daily Duty, Task, and Responsibility Manager**
 
-WytDuty is a powerful task and duty management system for individuals and teams to track responsibilities, deadlines, and work progress.
+WytDuty is the comprehensive task and responsibility management platform helping individuals and teams organize daily duties, track deadlines, manage recurring responsibilities, and monitor work progress. It combines personal task management with team collaboration features for seamless coordination and accountability.
 
-- **Categories**: Productivity, Task Management, Collaboration
+- **Categories**: Productivity, Task Management, Collaboration, Workflow
 - **Panel Availability**: Both (MyPanel + OrgPanel)
 - **Pricing**: Individual app pricing
 - **Key Features**:
-  - Personal and team task lists
-  - Duty assignment and tracking
-  - Deadline reminders and notifications
-  - Recurring tasks and schedules
-  - Integration with WytHive and WytWorks
+  - Personal and team task lists with priority levels
+  - Duty assignment and tracking with responsibility delegation
+  - Deadline reminders and smart notification system
+  - Recurring tasks and automated scheduling for routine duties
+  - Task dependencies and workflow management
+  - Progress tracking with completion status and milestones
+  - Integration with WytHive for team project synchronization
+  - Integration with WytWorks productivity suite
+  - Calendar view with daily, weekly, and monthly planning
+  - Task templates for common duty types
 
 ---
 
 ## 17. WytPay
 
-**Payment Gateway Integration**
+**Secure Multi-Gateway Payments with Escrow Protection**
 
-WytPay is the universal payment gateway solution supporting multiple payment methods including UPI, cards, net banking, and digital wallets.
+WytPay is the enterprise-grade payment processing platform integrating multiple payment gateways (Razorpay, Stripe) to provide secure transactions, escrow protection, multi-currency support, and comprehensive payment management. It enables businesses to accept payments through UPI, cards, net banking, digital wallets, and cryptocurrencies with built-in fraud protection and dispute resolution.
 
-- **Categories**: Finance, Payments, Business
+- **Categories**: Finance, Payments, Business, E-Commerce
 - **Panel Availability**: OrgPanel (business-focused)
 - **Pricing**: Transaction-based pricing + subscription
 - **Key Features**:
-  - Multi-payment method support (UPI, cards, wallets)
-  - Payment link generation
-  - Recurring payments and subscriptions
-  - Settlement and reconciliation
-  - Integration with WytInvoice and WytWallet
+  - Multi-payment gateway integration (Razorpay, Stripe, PayPal)
+  - Support for UPI, cards, net banking, digital wallets, and cryptocurrencies
+  - Escrow payment protection for secure buyer-seller transactions
+  - Payment link generation with expiration and usage limits
+  - Recurring payments and subscription management
+  - Automated settlement and reconciliation
+  - Multi-currency transaction support with real-time conversion
+  - Fraud detection and risk management
+  - Dispute resolution and chargeback handling
+  - Integration with WytInvoice for invoice-based payments
+  - Integration with WytWallet for fund management
 
 ---
 
