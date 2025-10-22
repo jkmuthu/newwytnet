@@ -238,9 +238,9 @@ const mobileLoginSchema = z.object({
 });
 
 export async function setupAuth(app: Express) {
-  app.set("trust proxy", 1);
-  app.use(getSession());
-
+  // UNIFIED AUTH FIX: Session middleware now handled by setupWytPassAuth
+  // Removed duplicate app.use(getSession()) to prevent session conflicts
+  
   // Simple registration endpoint
   app.post("/api/auth/register", async (req, res) => {
     try {

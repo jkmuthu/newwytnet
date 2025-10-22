@@ -71,6 +71,47 @@ export function setupWytPassAuth(app: Express) {
   app.use(session(sessionSettings));
   app.use(passport.initialize());
   app.use(passport.session());
+  
+  // UNIFIED AUTH FIX: Auto-populate all session contexts after passport loads user
+  // This enables seamless panel switching without re-authentication
+  app.use(async (req, res, next) => {
+    if (req.user && req.session) {
+      const user = req.user as any;
+      
+      // 1. Always populate wytpassPrincipal for base user context
+      (req.session as any).wytpassPrincipal = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isSuperAdmin: user.isSuperAdmin || false,
+        loginType: user.socialProviders?.[0] || 'password',
+        profileImageUrl: user.profileImageUrl,
+      };
+      
+      // 2. Populate adminUser session if user has Engine Admin role
+      if (user._hasEngineAdminRole || user.isSuperAdmin) {
+        (req.session as any).adminUser = {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isSuperAdmin: user.isSuperAdmin || false,
+        };
+      }
+      
+      // 3. Populate hubAdminUser session if user has Hub Admin role
+      if (user._hasHubAdminRole && user._hubAdminData) {
+        (req.session as any).hubAdminUser = {
+          userId: user.id,
+          hubId: user._hubAdminData.hubId,
+          roleId: user._hubAdminData.roleId,
+          isActive: user._hubAdminData.isActive,
+        };
+      }
+    }
+    next();
+  });
 
   // Local Strategy (Email/Password)
   passport.use(
@@ -455,21 +496,44 @@ export function setupWytPassAuth(app: Express) {
         .from(users)
         .where(eq(users.id, id));
 
-      if (user) {
-        cb(null, {
-          id: user.id,
-          name: user.name,
-          email: user.email || undefined,
-          profileImageUrl: user.profileImageUrl || undefined,
-          role: user.role,
-          authMethods: user.authMethods as string[],
-          socialProviders: user.socialProviders as string[],
-          isSuperAdmin: user.isSuperAdmin || false,
-          profileComplete: user.profileComplete || false,
-        });
-      } else {
-        cb(null, false);
+      if (!user) {
+        return cb(null, false);
       }
+
+      // UNIFIED AUTH FIX: Auto-populate ALL session contexts based on user's roles
+      // This enables seamless panel switching without re-authentication
+      const { userRoles, platformHubAdmins } = await import("@shared/schema");
+      
+      // Check Engine Admin role (query user_roles table)
+      const engineAdminRoles = await db
+        .select()
+        .from(userRoles)
+        .where(eq(userRoles.userId, user.id));
+      
+      // Check Hub Admin role (query platform_hub_admins table)
+      const hubAdminRoles = await db
+        .select()
+        .from(platformHubAdmins)
+        .where(eq(platformHubAdmins.userId, user.id));
+      
+      // Return user object to passport (populates req.user)
+      const passportUser = {
+        id: user.id,
+        name: user.name,
+        email: user.email || undefined,
+        profileImageUrl: user.profileImageUrl || undefined,
+        role: user.role,
+        authMethods: user.authMethods as string[],
+        socialProviders: user.socialProviders as string[],
+        isSuperAdmin: user.isSuperAdmin || false,
+        profileComplete: user.profileComplete || false,
+        // Store role flags for session population
+        _hasEngineAdminRole: engineAdminRoles.length > 0,
+        _hasHubAdminRole: hubAdminRoles.length > 0,
+        _hubAdminData: hubAdminRoles[0], // First hub admin assignment
+      };
+      
+      cb(null, passportUser);
     } catch (error) {
       cb(error);
     }
