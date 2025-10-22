@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -11,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Eye, EyeOff, Mail, Sparkles } from "lucide-react";
 import { SiGoogle, SiFacebook, SiLinkedin } from "react-icons/si";
 import { apiRequest } from "@/lib/queryClient";
+import { getAndClearReturnUrl } from "@/lib/authUtils";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -36,6 +38,7 @@ export default function WytPassLoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -67,7 +70,13 @@ export default function WytPassLoginForm() {
         description: `Welcome back, ${userData.name}!`,
       });
       
-      window.location.href = "/";
+      // Check for return URL and redirect
+      const returnUrl = getAndClearReturnUrl();
+      if (returnUrl) {
+        setLocation(returnUrl);
+      } else {
+        window.location.href = "/";
+      }
     } catch (error: any) {
       toast({
         title: "Login failed", 
@@ -90,7 +99,13 @@ export default function WytPassLoginForm() {
         description: `Welcome to WytNet, ${userData.name}!`,
       });
       
-      window.location.href = "/";
+      // Check for return URL and redirect
+      const returnUrl = getAndClearReturnUrl();
+      if (returnUrl) {
+        setLocation(returnUrl);
+      } else {
+        window.location.href = "/";
+      }
     } catch (error: any) {
       toast({
         title: "Registration failed",

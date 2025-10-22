@@ -552,7 +552,14 @@ export function setupWytPassAuth(app: Express) {
   app.get("/api/auth/google/callback",
     passport.authenticate("google", { failureRedirect: "/login?error=google_failed" }),
     (req, res) => {
-      res.redirect("/"); // Redirect to dashboard after successful login
+      // Check for return URL in session or query
+      const returnUrl = (req.session as any).returnUrl || req.query.state as string;
+      if (returnUrl && returnUrl.startsWith('/') && !returnUrl.includes('/login')) {
+        delete (req.session as any).returnUrl;
+        res.redirect(returnUrl);
+      } else {
+        res.redirect("/");
+      }
     }
   );
 
@@ -564,7 +571,14 @@ export function setupWytPassAuth(app: Express) {
   app.get("/api/auth/linkedin/callback",
     passport.authenticate("linkedin", { failureRedirect: "/login?error=linkedin_failed" }),
     (req, res) => {
-      res.redirect("/"); // Redirect to dashboard after successful login
+      // Check for return URL in session or query
+      const returnUrl = (req.session as any).returnUrl || req.query.state as string;
+      if (returnUrl && returnUrl.startsWith('/') && !returnUrl.includes('/login')) {
+        delete (req.session as any).returnUrl;
+        res.redirect(returnUrl);
+      } else {
+        res.redirect("/");
+      }
     }
   );
 

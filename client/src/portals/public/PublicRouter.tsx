@@ -1,5 +1,8 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
+import { useEffect } from "react";
 import PublicLayout from "./PublicLayout";
+import { useAuth } from "@/hooks/useAuth";
+import { saveReturnUrl } from "@/lib/authUtils";
 
 // Import existing page components
 import Home from "@/pages/home";
@@ -47,6 +50,42 @@ import WytWall from "@/pages/wytwall";
 import WytLife from "@/pages/wytlife";
 
 /**
+ * ProtectedRoute - Redirects to login if not authenticated, saves return URL
+ */
+function ProtectedRoute({ children, path }: { children: React.ReactNode; path: string }) {
+  const { user, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      // Save the current URL for post-login redirect
+      saveReturnUrl(path);
+      setLocation('/login');
+    }
+  }, [user, isLoading, path, setLocation]);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not authenticated - will redirect via useEffect
+  if (!user) {
+    return null;
+  }
+
+  // Authenticated - render protected content
+  return <>{children}</>;
+}
+
+/**
  * PublicRouter handles all public routes accessible to guests and basic authenticated users
  * Routes: '/', '/features', '/pricing', '/login', '/auth/*', '/tools/*'
  */
@@ -88,9 +127,19 @@ export default function PublicRouter() {
       <Route path="/email-otp-login" component={EmailOTPLoginPage} />
       <Route path="/user-auth-methods" component={UserAuthMethods} />
 
-      {/* Account pages */}
-      <Route path="/account" component={MyAccountPage} />
-      <Route path="/account/:tab" component={MyAccountPage} />
+      {/* Account pages - Protected */}
+      <Route path="/account">
+        <ProtectedRoute path="/account">
+          <MyAccountPage />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/account/:tab">
+        {(params) => (
+          <ProtectedRoute path={`/account/${params.tab}`}>
+            <MyAccountPage />
+          </ProtectedRoute>
+        )}
+      </Route>
 
       {/* Tool routes */}
       <Route path="/tools" component={AIDirectory} />
