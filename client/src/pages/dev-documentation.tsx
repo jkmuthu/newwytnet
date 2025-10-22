@@ -767,13 +767,54 @@ export default function DevDocumentation() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        <div className="border-l-4 border-blue-500 pl-4">
+                        <div className="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 dark:bg-blue-950 rounded">
                           <h4 className="font-semibold mb-1">What is the difference between Hub and App?</h4>
-                          <p className="text-sm text-muted-foreground">A Hub is a standalone portal with custom domain support, while an App runs within WytNet.com and can be installed by users.</p>
+                          <p className="text-sm text-muted-foreground">A Hub is a standalone portal with custom domain support, while an App runs within WytNet.com and can be installed by users from the marketplace.</p>
                         </div>
-                        <div className="border-l-4 border-purple-500 pl-4">
+                        
+                        <div className="border-l-4 border-purple-500 pl-4 py-2 bg-purple-50 dark:bg-purple-950 rounded">
                           <h4 className="font-semibold mb-1">How does multi-tenancy work?</h4>
-                          <p className="text-sm text-muted-foreground">Each tenant has complete data isolation through row-level security in PostgreSQL with session-based tenant context.</p>
+                          <p className="text-sm text-muted-foreground">Each tenant has complete data isolation through row-level security in PostgreSQL with session-based tenant context. The tenantId is injected into all queries automatically.</p>
+                        </div>
+                        
+                        <div className="border-l-4 border-green-500 pl-4 py-2 bg-green-50 dark:bg-green-950 rounded">
+                          <h4 className="font-semibold mb-1">What is WytPass and how does it work?</h4>
+                          <p className="text-sm text-muted-foreground">WytPass is a unified authentication system supporting Google OAuth, Email OTP, Email/Password, and LinkedIn OAuth. It provides single sign-on across all hubs and apps with blockchain-anchored identity validation.</p>
+                        </div>
+                        
+                        <div className="border-l-4 border-orange-500 pl-4 py-2 bg-orange-50 dark:bg-orange-950 rounded">
+                          <h4 className="font-semibold mb-1">How do Modules differ from Apps?</h4>
+                          <p className="text-sm text-muted-foreground">Modules are building blocks with specific functionality (47+ available), while Apps are composed of multiple modules to create complete applications (39+ apps available).</p>
+                        </div>
+                        
+                        <div className="border-l-4 border-red-500 pl-4 py-2 bg-red-50 dark:bg-red-950 rounded">
+                          <h4 className="font-semibold mb-1">What are WytPoints?</h4>
+                          <p className="text-sm text-muted-foreground">WytPoints is the platform's economy system where users earn points through activities and can redeem them for premium features, apps, or services.</p>
+                        </div>
+                        
+                        <div className="border-l-4 border-yellow-500 pl-4 py-2 bg-yellow-50 dark:bg-yellow-950 rounded">
+                          <h4 className="font-semibold mb-1">How does RBAC work?</h4>
+                          <p className="text-sm text-muted-foreground">The platform uses 64 permissions across 16 resources with 8 default roles. Permissions can be assigned at engine-level, hub-level, and organization-level with inheritance.</p>
+                        </div>
+                        
+                        <div className="border-l-4 border-indigo-500 pl-4 py-2 bg-indigo-50 dark:bg-indigo-950 rounded">
+                          <h4 className="font-semibold mb-1">What is the WytAI Agent?</h4>
+                          <p className="text-sm text-muted-foreground">WytAI Agent is an AI-powered assistant using GPT-4o, Claude, and Gemini to help users with tasks, provide recommendations, and automate workflows across the platform.</p>
+                        </div>
+                        
+                        <div className="border-l-4 border-cyan-500 pl-4 py-2 bg-cyan-50 dark:bg-cyan-950 rounded">
+                          <h4 className="font-semibold mb-1">Can I white-label the platform?</h4>
+                          <p className="text-sm text-muted-foreground">Yes! The platform supports complete white-labeling including custom domains, branding, themes, and logos for both hubs and individual apps.</p>
+                        </div>
+                        
+                        <div className="border-l-4 border-pink-500 pl-4 py-2 bg-pink-50 dark:bg-pink-950 rounded">
+                          <h4 className="font-semibold mb-1">How are Global Display IDs generated?</h4>
+                          <p className="text-sm text-muted-foreground">Display IDs follow a strict format: 2-letter prefix + 7-digit number (e.g., WY0000001). They are unique across the entire platform and used for easy reference.</p>
+                        </div>
+                        
+                        <div className="border-l-4 border-teal-500 pl-4 py-2 bg-teal-50 dark:bg-teal-950 rounded">
+                          <h4 className="font-semibold mb-1">What payment gateways are supported?</h4>
+                          <p className="text-sm text-muted-foreground">Currently Razorpay is integrated with support for Stripe. Payment modules handle subscriptions, one-time payments, and recurring billing.</p>
                         </div>
                       </div>
                     </CardContent>
@@ -837,22 +878,155 @@ export default function DevDocumentation() {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <MessageSquare className="h-5 w-5 text-orange-600" />
-                        Replit Conversations
+                        Replit Conversations Archive
                       </CardTitle>
+                      <CardDescription>Historical record of development decisions and implementations</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <Tabs defaultValue="agent">
                         <TabsList>
                           <TabsTrigger value="agent">Agent Conversations</TabsTrigger>
                           <TabsTrigger value="assistant">Assistant Conversations</TabsTrigger>
+                          <TabsTrigger value="key-decisions">Key Decisions</TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="agent">
-                          <p className="text-sm text-muted-foreground">Agent conversation history and key decisions will be documented here.</p>
+                        <TabsContent value="agent" className="space-y-4">
+                          <div className="border-l-4 border-blue-500 pl-4 py-3 bg-blue-50 dark:bg-blue-950 rounded">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-semibold">DevDoc Route Simplification</h4>
+                              <Badge variant="outline">2025-01-14</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              Simplified documentation route from /dev-documentation to /devdoc for easier access and cleaner URLs.
+                            </p>
+                            <div className="text-xs text-muted-foreground">
+                              <strong>Impact:</strong> Improved developer experience, easier to remember and share
+                            </div>
+                          </div>
+
+                          <div className="border-l-4 border-purple-500 pl-4 py-3 bg-purple-50 dark:bg-purple-950 rounded">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-semibold">Multi-Level Navigation Structure</h4>
+                              <Badge variant="outline">2025-01-18</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              Implemented comprehensive left sidebar navigation with expandable sections for better organization of documentation content.
+                            </p>
+                            <div className="text-xs text-muted-foreground">
+                              <strong>Sections Added:</strong> About All, How It Works, FAQ, Standards, Conversations, Server & Tech, Planning
+                            </div>
+                          </div>
+
+                          <div className="border-l-4 border-green-500 pl-4 py-3 bg-green-50 dark:bg-green-950 rounded">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-semibold">Admin Session Bypass</h4>
+                              <Badge variant="outline">2025-01-18</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              Added automatic password bypass for logged-in Engine admins while maintaining password protection for external users.
+                            </p>
+                            <div className="text-xs text-muted-foreground">
+                              <strong>Security:</strong> Maintains two-tier access control
+                            </div>
+                          </div>
+                          
+                          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                            <p className="text-sm text-muted-foreground italic">
+                              💡 All agent conversations are preserved in this section for historical reference and knowledge transfer.
+                            </p>
+                          </div>
                         </TabsContent>
 
-                        <TabsContent value="assistant">
-                          <p className="text-sm text-muted-foreground">Assistant conversation history and implementation details will be documented here.</p>
+                        <TabsContent value="assistant" className="space-y-4">
+                          <div className="border-l-4 border-orange-500 pl-4 py-3 bg-orange-50 dark:bg-orange-950 rounded">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-semibold">Entity-Module-App Hierarchy Clarification</h4>
+                              <Badge variant="outline">2025-01-18</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              Provided detailed Tamil and English explanation of the platform's architectural hierarchy: Entity → Module → App → Hub.
+                            </p>
+                            <div className="text-xs text-muted-foreground">
+                              <strong>Language Support:</strong> Bilingual documentation for Tamil-speaking developers
+                            </div>
+                          </div>
+
+                          <div className="border-l-4 border-cyan-500 pl-4 py-3 bg-cyan-50 dark:bg-cyan-950 rounded">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-semibold">Feature Template Implementation</h4>
+                              <Badge variant="outline">2025-01-18</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              Created comprehensive feature specification template to standardize documentation of new features before implementation.
+                            </p>
+                            <div className="text-xs text-muted-foreground">
+                              <strong>Components:</strong> Overview, UI/UX Spec, Technical Spec, Implementation Steps
+                            </div>
+                          </div>
+
+                          <div className="border-l-4 border-pink-500 pl-4 py-3 bg-pink-50 dark:bg-pink-950 rounded">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="font-semibold">Documentation-First Approach</h4>
+                              <Badge variant="outline">2025-01-19</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              Recommended hybrid approach: document architecture first, then develop features with immediate documentation updates.
+                            </p>
+                            <div className="text-xs text-muted-foreground">
+                              <strong>Strategy:</strong> Planned Features → ADR → Roadmap → Implementation
+                            </div>
+                          </div>
+                          
+                          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                            <p className="text-sm text-muted-foreground italic">
+                              💬 Assistant conversations focus on architectural guidance, best practices, and strategic planning.
+                            </p>
+                          </div>
+                        </TabsContent>
+
+                        <TabsContent value="key-decisions" className="space-y-4">
+                          <div className="space-y-3">
+                            <h4 className="font-semibold">Architecture Decisions Record (ADR)</h4>
+                            
+                            <div className="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Terminal className="h-4 w-4 text-blue-600" />
+                                <h5 className="font-semibold">ADR-001: Documentation Structure</h5>
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                <strong>Decision:</strong> Use left sidebar navigation with tabbed content for multi-level organization
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                <strong>Rationale:</strong> Provides better scalability for growing documentation, easier navigation, and clear content hierarchy
+                              </p>
+                            </div>
+
+                            <div className="border rounded-lg p-4 bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-950 dark:to-teal-950">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Shield className="h-4 w-4 text-green-600" />
+                                <h5 className="font-semibold">ADR-002: Access Control Strategy</h5>
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                <strong>Decision:</strong> Dual-tier access - admin bypass + external password protection
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                <strong>Rationale:</strong> Balances convenience for internal developers with security for external sharing
+                              </p>
+                            </div>
+
+                            <div className="border rounded-lg p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950 dark:to-red-950">
+                              <div className="flex items-center gap-2 mb-2">
+                                <FileText className="h-4 w-4 text-orange-600" />
+                                <h5 className="font-semibold">ADR-003: Feature Documentation Workflow</h5>
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                <strong>Decision:</strong> Document planned features before implementation using standardized templates
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                <strong>Rationale:</strong> Reduces rework, improves clarity, enables better collaboration between stakeholders and developers
+                              </p>
+                            </div>
+                          </div>
                         </TabsContent>
                       </Tabs>
                     </CardContent>
@@ -873,30 +1047,161 @@ export default function DevDocumentation() {
                         <TabsList>
                           <TabsTrigger value="database">Database</TabsTrigger>
                           <TabsTrigger value="infrastructure">Infrastructure</TabsTrigger>
+                          <TabsTrigger value="tech-stack">Tech Stack</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="database" className="space-y-4">
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded">
-                              <span>Database</span>
-                              <Badge variant="outline">PostgreSQL (Neon)</Badge>
+                          <div className="space-y-3">
+                            <h4 className="font-semibold">Database Architecture</h4>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded border">
+                                <span className="font-medium">Database Engine</span>
+                                <Badge variant="outline">PostgreSQL (Neon Serverless)</Badge>
+                              </div>
+                              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded border">
+                                <span className="font-medium">ORM</span>
+                                <Badge variant="outline">Drizzle ORM</Badge>
+                              </div>
+                              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded border">
+                                <span className="font-medium">Session Store</span>
+                                <Badge variant="outline">PostgreSQL (connect-pg-simple)</Badge>
+                              </div>
+                              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded border">
+                                <span className="font-medium">Connection Pool</span>
+                                <Badge variant="outline">Neon Serverless Driver</Badge>
+                              </div>
                             </div>
-                            <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded">
-                              <span>ORM</span>
-                              <Badge variant="outline">Drizzle</Badge>
+                            
+                            <h4 className="font-semibold mt-6">Key Features</h4>
+                            <ul className="text-sm space-y-2 ml-4">
+                              <li className="flex items-start gap-2">
+                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                                <span>Row-Level Security (RLS) for multi-tenancy</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                                <span>JSONB support for flexible schema</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                                <span>Full-text search capabilities</span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                                <span>Automatic backups and point-in-time recovery</span>
+                              </li>
+                            </ul>
+                          </div>
+                        </TabsContent>
+
+                        <TabsContent value="infrastructure" className="space-y-4">
+                          <div className="space-y-3">
+                            <h4 className="font-semibold">Hosting & Deployment</h4>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded border">
+                                <span className="font-medium">Platform</span>
+                                <Badge variant="outline">Replit</Badge>
+                              </div>
+                              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded border">
+                                <span className="font-medium">Runtime</span>
+                                <Badge variant="outline">Node.js v20.19.3</Badge>
+                              </div>
+                              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded border">
+                                <span className="font-medium">Server Port</span>
+                                <Badge variant="outline">5000</Badge>
+                              </div>
+                            </div>
+                            
+                            <h4 className="font-semibold mt-6">External Services</h4>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded border">
+                                <span className="font-medium">Object Storage</span>
+                                <Badge variant="outline">Google Cloud Storage</Badge>
+                              </div>
+                              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded border">
+                                <span className="font-medium">Email Service</span>
+                                <Badge variant="outline">MSG91</Badge>
+                              </div>
+                              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded border">
+                                <span className="font-medium">SMS Service</span>
+                                <Badge variant="outline">MSG91</Badge>
+                              </div>
+                              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded border">
+                                <span className="font-medium">Payment Gateway</span>
+                                <Badge variant="outline">Razorpay</Badge>
+                              </div>
+                              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded border">
+                                <span className="font-medium">Search Engine</span>
+                                <Badge variant="outline">Meilisearch (Mock in Dev)</Badge>
+                              </div>
                             </div>
                           </div>
                         </TabsContent>
 
-                        <TabsContent value="infrastructure">
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded">
-                              <span>Runtime</span>
-                              <Badge variant="outline">Node.js</Badge>
+                        <TabsContent value="tech-stack" className="space-y-4">
+                          <div className="space-y-3">
+                            <h4 className="font-semibold">Frontend Stack</h4>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded border border-blue-200 dark:border-blue-800">
+                                <div className="font-medium mb-1">Framework</div>
+                                <Badge variant="outline">React 18 + TypeScript</Badge>
+                              </div>
+                              <div className="p-3 bg-purple-50 dark:bg-purple-950 rounded border border-purple-200 dark:border-purple-800">
+                                <div className="font-medium mb-1">Build Tool</div>
+                                <Badge variant="outline">Vite</Badge>
+                              </div>
+                              <div className="p-3 bg-green-50 dark:bg-green-950 rounded border border-green-200 dark:border-green-800">
+                                <div className="font-medium mb-1">UI Library</div>
+                                <Badge variant="outline">shadcn/ui + Radix</Badge>
+                              </div>
+                              <div className="p-3 bg-orange-50 dark:bg-orange-950 rounded border border-orange-200 dark:border-orange-800">
+                                <div className="font-medium mb-1">Styling</div>
+                                <Badge variant="outline">Tailwind CSS</Badge>
+                              </div>
+                              <div className="p-3 bg-cyan-50 dark:bg-cyan-950 rounded border border-cyan-200 dark:border-cyan-800">
+                                <div className="font-medium mb-1">Routing</div>
+                                <Badge variant="outline">Wouter</Badge>
+                              </div>
+                              <div className="p-3 bg-pink-50 dark:bg-pink-950 rounded border border-pink-200 dark:border-pink-800">
+                                <div className="font-medium mb-1">State Management</div>
+                                <Badge variant="outline">TanStack Query</Badge>
+                              </div>
                             </div>
-                            <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-900 rounded">
-                              <span>Framework</span>
-                              <Badge variant="outline">Express.js</Badge>
+                            
+                            <h4 className="font-semibold mt-6">Backend Stack</h4>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              <div className="p-3 bg-indigo-50 dark:bg-indigo-950 rounded border border-indigo-200 dark:border-indigo-800">
+                                <div className="font-medium mb-1">Framework</div>
+                                <Badge variant="outline">Express.js</Badge>
+                              </div>
+                              <div className="p-3 bg-yellow-50 dark:bg-yellow-950 rounded border border-yellow-200 dark:border-yellow-800">
+                                <div className="font-medium mb-1">Language</div>
+                                <Badge variant="outline">TypeScript</Badge>
+                              </div>
+                              <div className="p-3 bg-red-50 dark:bg-red-950 rounded border border-red-200 dark:border-red-800">
+                                <div className="font-medium mb-1">Auth</div>
+                                <Badge variant="outline">Passport.js + WytPass</Badge>
+                              </div>
+                              <div className="p-3 bg-teal-50 dark:bg-teal-950 rounded border border-teal-200 dark:border-teal-800">
+                                <div className="font-medium mb-1">Validation</div>
+                                <Badge variant="outline">Zod</Badge>
+                              </div>
+                            </div>
+                            
+                            <h4 className="font-semibold mt-6">AI Services</h4>
+                            <div className="grid grid-cols-3 gap-2 text-sm">
+                              <div className="p-3 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 rounded border">
+                                <div className="font-medium mb-1">OpenAI</div>
+                                <Badge variant="outline">GPT-4o</Badge>
+                              </div>
+                              <div className="p-3 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900 rounded border">
+                                <div className="font-medium mb-1">Anthropic</div>
+                                <Badge variant="outline">Claude 3.5</Badge>
+                              </div>
+                              <div className="p-3 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 rounded border">
+                                <div className="font-medium mb-1">Google AI</div>
+                                <Badge variant="outline">Gemini 2.0</Badge>
+                              </div>
                             </div>
                           </div>
                         </TabsContent>
@@ -1256,11 +1561,73 @@ export default function DevDocumentation() {
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <Target className="h-5 w-5 text-blue-600" />
-                        Task Management
+                        Task & Feature Tracking
                       </CardTitle>
+                      <CardDescription>Current implementation status and task breakdown</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-muted-foreground">Task management interface (existing functionality preserved)</p>
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
+                            <CardContent className="p-4">
+                              <div className="text-3xl font-bold text-blue-600">{features.length}</div>
+                              <div className="text-sm text-muted-foreground mt-1">Total Features</div>
+                            </CardContent>
+                          </Card>
+                          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900">
+                            <CardContent className="p-4">
+                              <div className="text-3xl font-bold text-green-600">
+                                {features.filter(f => f.status === "completed" || f.status === "tested-live").length}
+                              </div>
+                              <div className="text-sm text-muted-foreground mt-1">Completed</div>
+                            </CardContent>
+                          </Card>
+                          <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950 dark:to-orange-900">
+                            <CardContent className="p-4">
+                              <div className="text-3xl font-bold text-orange-600">
+                                {features.filter(f => f.status === "in-progress" || f.status === "priority-1").length}
+                              </div>
+                              <div className="text-sm text-muted-foreground mt-1">In Progress</div>
+                            </CardContent>
+                          </Card>
+                        </div>
+
+                        <div className="space-y-3">
+                          <h4 className="font-semibold">Recent Completions</h4>
+                          {features.filter(f => f.status === "completed").slice(0, 5).map((feature) => (
+                            <div key={feature.id} className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors">
+                              <div className="flex items-center justify-between mb-2">
+                                <h5 className="font-medium">{feature.title}</h5>
+                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  {feature.status}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-2">{feature.description}</p>
+                              <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                <span>Area: {feature.area}</span>
+                                <span>Updated: {feature.lastUpdated}</span>
+                                {feature.testReportUrl && (
+                                  <a href={feature.testReportUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-blue-600 hover:underline">
+                                    <ExternalLink className="h-3 w-3" />
+                                    View Live
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                          <p className="text-sm text-muted-foreground">
+                            💡 <strong>Pro Tip:</strong> For full task management and tracking, visit the{' '}
+                            <a href="/engine/features-checklist" className="text-blue-600 hover:underline">
+                              Features Checklist
+                            </a>{' '}
+                            in Engine Admin panel for comprehensive project management tools.
+                          </p>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 )}
