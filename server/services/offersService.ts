@@ -11,9 +11,43 @@ import { pointsService } from './pointsService';
 export class OffersService {
   /**
    * Create a standalone offer (user posts what they can offer)
-   * Deducts WytPoints from user
+   * Deducts WytPoints from user with comprehensive validation
    */
   async createOffer(data: Omit<InsertOffer, 'id' | 'createdAt' | 'updatedAt' | 'pointsSpent'>, userId: string, tenantId?: string): Promise<{ offer: Offer; pointsSpent: number }> {
+    // Input validation
+    if (!data.title || data.title.trim().length < 5) {
+      throw new Error('Title must be at least 5 characters long');
+    }
+
+    if (!data.description || data.description.trim().length < 10) {
+      throw new Error('Description must be at least 10 characters long');
+    }
+
+    if (data.description.length > 1000) {
+      throw new Error('Description cannot exceed 1000 characters');
+    }
+
+    // Sanitize inputs to prevent XSS
+    const sanitizedTitle = data.title.trim().replace(/[<>]/g, '');
+    const sanitizedDescription = data.description.trim().replace(/[<>]/g, '');
+
+    // Check for spam patterns
+    const spamPatterns = /\b(buy now|click here|limited time|act now|viagra|casino|scam)\b/gi;
+    if (spamPatterns.test(sanitizedDescription)) {
+      throw new Error('Content contains prohibited spam-like patterns');
+    }
+
+    // Validate category
+    const validCategories = ['selling_bike', 'selling_car', 'selling_property', 'renting_house', 'providing_service', 'other'];
+    if (!validCategories.includes(data.category as string)) {
+      throw new Error('Invalid category selected');
+    }
+
+    // Price validation
+    if (data.price && (data.price < 0 || data.price > 100000000)) {
+      throw new Error('Price must be between 0 and 100,000,000');
+    }
+
     // Get points configuration for posting offers
     const [config] = await db.select()
       .from(pointsConfig)
@@ -41,9 +75,11 @@ export class OffersService {
       });
     }
 
-    // Create the offer
+    // Create the offer with sanitized data
     const [offer] = await db.insert(offers).values({
       ...data,
+      title: sanitizedTitle,
+      description: sanitizedDescription,
       userId,
       tenantId: tenantId || null,
       pointsSpent: pointsCost,

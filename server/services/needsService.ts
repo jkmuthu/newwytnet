@@ -8,11 +8,48 @@ import { eq, desc, and, or, sql, inArray, SQL } from 'drizzle-orm';
 
 export class NeedsService {
   /**
-   * Create a new need
+   * Create a new need with comprehensive validation
    */
   async createNeed(data: InsertNeed): Promise<Need> {
+    // Input validation
+    if (!data.title || data.title.trim().length < 5) {
+      throw new Error('Title must be at least 5 characters long');
+    }
+
+    if (!data.description || data.description.trim().length < 10) {
+      throw new Error('Description must be at least 10 characters long');
+    }
+
+    if (data.description.length > 1000) {
+      throw new Error('Description cannot exceed 1000 characters');
+    }
+
+    // Sanitize inputs to prevent XSS
+    const sanitizedTitle = data.title.trim().replace(/[<>]/g, '');
+    const sanitizedDescription = data.description.trim().replace(/[<>]/g, '');
+
+    // Check for spam patterns
+    const spamPatterns = /\b(buy now|click here|limited time|act now|viagra|casino)\b/gi;
+    if (spamPatterns.test(sanitizedDescription)) {
+      throw new Error('Content contains prohibited spam-like patterns');
+    }
+
+    // Validate category
+    const validCategories = ['need_job', 'house_for_rent', 'require_service', 'product_for_use', 'bulk_supply', 'other'];
+    if (!validCategories.includes(data.category as string)) {
+      throw new Error('Invalid category selected');
+    }
+
+    // Budget validation
+    if (data.budget && (data.budget < 0 || data.budget > 100000000)) {
+      throw new Error('Budget must be between 0 and 100,000,000');
+    }
+
+    // Create the need with sanitized data
     const [need] = await db.insert(needs).values({
       ...data,
+      title: sanitizedTitle,
+      description: sanitizedDescription,
       status: 'active',
       createdAt: new Date(),
       updatedAt: new Date(),

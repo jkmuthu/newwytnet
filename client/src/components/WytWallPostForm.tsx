@@ -32,9 +32,37 @@ const OFFER_CATEGORIES = [
 ];
 
 const formSchema = z.object({
-  postType: z.enum(["need", "offer"]),
-  category: z.string().min(1, "Please select a category"),
-  description: z.string().min(10, "Description must be at least 10 characters").max(200, "Description cannot exceed 200 characters"),
+  postType: z.enum(["need", "offer"], {
+    required_error: "Post type is required",
+    invalid_type_error: "Invalid post type selected"
+  }),
+  category: z.string()
+    .min(1, "Please select a category")
+    .refine((val) => val !== "", {
+      message: "Category selection is mandatory"
+    }),
+  description: z.string()
+    .min(10, "Description must be at least 10 characters")
+    .max(500, "Description cannot exceed 500 characters")
+    .refine((val) => val.trim().length >= 10, {
+      message: "Description must contain at least 10 non-whitespace characters"
+    })
+    .refine((val) => !/[<>]/.test(val), {
+      message: "Description cannot contain HTML tags"
+    })
+    .refine((val) => {
+      // Check for spam patterns
+      const spamPatterns = /\b(buy now|click here|limited time|act now)\b/gi;
+      return !spamPatterns.test(val);
+    }, {
+      message: "Description contains spam-like content"
+    }),
+  location: z.string().optional(),
+  budget: z.number()
+    .positive("Budget must be positive")
+    .max(10000000, "Budget exceeds maximum allowed value")
+    .optional()
+    .nullable(),
 });
 
 type FormValues = z.infer<typeof formSchema>;

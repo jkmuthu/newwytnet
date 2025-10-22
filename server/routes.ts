@@ -1,4 +1,4 @@
-import type { Express, RequestHandler } from "express";
+import type { Express, Request, Response } from "express";
 import { 
   setupAuth, 
   isAuthenticated, 
@@ -171,6 +171,7 @@ import mediaRouter from "./routes/media";
 import trashRouter from "./routes/trash";
 import { setupFeaturesChecklistRoutes } from "./routes/features-checklist";
 import { setupQATestingTrackerRoutes } from "./routes/qa-testing-tracker";
+import { rateLimiters } from "./middleware/rateLimiter";
 
 // Trademark analysis functions now imported from services/trademarkAnalysis.ts
 
@@ -196,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Initialize services
   const wytidService = new WytIDService('mock');
   const assessmentService = new AssessmentService();
-  
+
   // Initialize assessment default data
   await assessmentService.initializeDefaultData();
 
@@ -214,37 +215,37 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // Register Roles & Permissions Management Router
   app.use('/api', rolesRouter);
-  
+
   // Register Platform Hubs Management Router
   app.use('/api', platformHubsRouter);
-  
+
   // Register WytAI Agent Router
   app.use('/api', wytaiRouter);
-  
+
   // Register Themes Management Router
   app.use('/api', themesRouter);
-  
+
   // Register Support & Knowledge Base Router
   app.use('/api', supportRouter);
-  
+
   // Register Integrations Management Router
   app.use('/api', integrationsRouter);
-  
+
   // Register Organizations Router
   app.use('/api', organizationsRouter);
-  
+
   // Register Platform Settings Router
   app.use('/api', platformSettingsRouter);
-  
+
   // Register Media Router
   app.use('/api', mediaRouter);
-  
+
   // Register Trash Management Router
   app.use('/api', trashRouter);
-  
+
   // Register Features Checklist Routes
   setupFeaturesChecklistRoutes(app);
-  
+
   // Register QA Testing Tracker Routes
   setupQATestingTrackerRoutes(app);
 
@@ -293,10 +294,10 @@ export async function registerRoutes(app: Express): Promise<void> {
       const adminUser = req.session.adminUser;
       const hubAdminUser = req.session.hubAdminUser;
       const regularUser = req.user;
-      
+
       // Determine primary user ID (WytNet user ID is the base for all contexts)
       const userId = principal?.id || adminUser?.id || hubAdminUser?.userId || regularUser?.id;
-      
+
       if (!userId) {
         // No authentication - return empty contexts
         return res.json({ contexts: [], count: 0 });
@@ -304,14 +305,14 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       // Get current route to determine active panel
       const currentPath = req.headers.referer || '';
-      
+
       // 1. Check Engine Admin Access (user_roles table)
       const engineAdminRecord = await db
         .select()
         .from(userRoles)
         .where(eq(userRoles.userId, userId))
         .limit(1);
-      
+
       if (engineAdminRecord.length > 0) {
         // Get role details
         const roleRecord = await db
@@ -319,11 +320,11 @@ export async function registerRoutes(app: Express): Promise<void> {
           .from(roles)
           .where(eq(roles.id, engineAdminRecord[0].roleId))
           .limit(1);
-        
+
         // Get user details from database if not in session
         let userName = principal?.name || adminUser?.name;
         let userEmail = principal?.email || adminUser?.email;
-        
+
         if (!userName || !userEmail) {
           const userRecord = await db
             .select()
@@ -335,7 +336,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             userEmail = userRecord[0].email || userEmail;
           }
         }
-        
+
         contexts.push({
           type: 'engine_admin',
           name: 'WytEngine',
@@ -367,7 +368,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             eq(platformHubs.status, 'active')
           )
         );
-      
+
       for (const hubAdmin of hubAdminRecords) {
         contexts.push({
           type: 'hub_admin',
@@ -391,7 +392,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         .from(platformHubs)
         .where(eq(platformHubs.slug, 'wytnet'))
         .limit(1);
-      
+
       if (wytnetHub.length > 0 && wytnetHub[0].status === 'active') {
         // Only add if not already added as hub admin
         const alreadyAddedAsAdmin = contexts.some(c => c.hubKey === 'wytnet' && c.type === 'hub_admin');
@@ -426,7 +427,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
     try {
       const user = req.user;
-      
+
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
       }
@@ -443,7 +444,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/models', isAuthenticated, async (req: any, res) => {
     try {
       const user = req.user;
-      
+
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
       }
@@ -459,7 +460,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.post('/api/models', isAuthenticated, async (req: any, res) => {
     try {
       const user = req.user;
-      
+
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
       }
@@ -485,14 +486,14 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
       }
 
       const { id } = req.params;
       const model = await storage.updateModel(id, req.body, user.tenantId);
-      
+
       if (!model) {
         return res.status(404).json({ message: "Model not found" });
       }
@@ -509,7 +510,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
       }
@@ -526,7 +527,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
       }
@@ -669,13 +670,13 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
 
       const { createFullBackup, ensureBackupSequence } = await import('./services/backupService');
-      
+
       // Ensure backup sequence exists
       await ensureBackupSequence();
-      
+
       // Create backup
       const backupId = await createFullBackup(principal.id);
-      
+
       // Get the created backup
       const [backup] = await db.select()
         .from(backups)
@@ -730,7 +731,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const { downloadBackup } = await import('./services/backupService');
       const tempPath = path.join(process.cwd(), '.backup-temp', 'download', backup.filename);
       const tempDir = path.dirname(tempPath);
-      
+
       if (!fsSync.existsSync(tempDir)) {
         fsSync.mkdirSync(tempDir, { recursive: true });
       }
@@ -795,9 +796,9 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       const { id } = req.params;
       const { restoreBackup } = await import('./services/backupService');
-      
+
       await restoreBackup(id);
-      
+
       res.json({ success: true, message: 'Backup restored successfully' });
     } catch (error: any) {
       console.error('Error restoring backup:', error);
@@ -809,7 +810,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/admin/audit-logs', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { auditLogService } = await import('./services/auditLogService');
-      
+
       const {
         userId,
         action,
@@ -852,7 +853,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/admin/audit-logs/stats', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { auditLogService } = await import('./services/auditLogService');
-      
+
       const { startDate, endDate } = req.query;
 
       const filters = {
@@ -871,7 +872,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/admin/audit-logs/user/:userId', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { auditLogService } = await import('./services/auditLogService');
-      
+
       const { userId } = req.params;
       const { limit = 10 } = req.query;
 
@@ -1092,7 +1093,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
       }
@@ -1111,7 +1112,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       const activities = await storage.getRecentActivity(user?.tenantId);
       res.json(activities);
     } catch (error) {
@@ -1121,12 +1122,12 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // Marketplace API Routes
-  
+
   // Get marketplace apps with pricing
   app.get('/api/marketplace/apps', async (req: any, res) => {
     try {
       const apps = await storage.getMarketplaceApps();
-      
+
       // Check user ownership if authenticated
       let appsWithOwnership = apps;
       if (req.user) {
@@ -1140,7 +1141,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       } else {
         appsWithOwnership = apps.map(app => ({ ...app, owned: false }));
       }
-      
+
       res.json(appsWithOwnership);
     } catch (error) {
       console.error("Error fetching marketplace apps:", error);
@@ -1153,7 +1154,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const { id } = req.params;
       const app = await storage.getMarketplaceApp(id);
-      
+
       if (!app) {
         return res.status(404).json({ message: "App not found" });
       }
@@ -1164,7 +1165,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         const userId = req.user.claims?.sub || req.user.id;
         owned = await storage.checkUserAppOwnership(userId, app.id);
       }
-      
+
       res.json({ ...app, owned });
     } catch (error) {
       console.error("Error fetching marketplace app:", error);
@@ -1225,11 +1226,11 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const { id } = req.params;
       const hub = await storage.getMarketplaceHub(id);
-      
+
       if (!hub) {
         return res.status(404).json({ message: "Hub not found" });
       }
-      
+
       res.json(hub);
     } catch (error) {
       console.error("Error fetching marketplace hub:", error);
@@ -1242,11 +1243,11 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const { slug } = req.params;
       const hub = await storage.getMarketplaceHubBySlug(slug);
-      
+
       if (!hub) {
         return res.status(404).json({ message: "Hub not found" });
       }
-      
+
       res.json(hub);
     } catch (error) {
       console.error("Error fetching marketplace hub by slug:", error);
@@ -1259,11 +1260,11 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const { id } = req.params;
       const hub = await storage.getMarketplaceHub(id);
-      
+
       if (!hub) {
         return res.status(404).json({ message: "Hub not found" });
       }
-      
+
       res.json(hub.items || []);
     } catch (error) {
       console.error("Error fetching hub items:", error);
@@ -1272,13 +1273,13 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // WytID API Routes
-  
+
   // Get WytID stats for dashboard
   app.get('/api/wytid/stats', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
       }
@@ -1296,7 +1297,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
       }
@@ -1313,14 +1314,14 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
       }
 
       const validatedData = createEntitySchema.parse(req.body);
       const entity = await wytidService.createEntity(validatedData, userId, user.tenantId);
-      
+
       res.json(entity);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1335,14 +1336,14 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
       }
 
       const { id } = req.params;
       const entity = await wytidService.getEntity(id, user.tenantId);
-      
+
       if (!entity) {
         return res.status(404).json({ message: "Entity not found" });
       }
@@ -1359,7 +1360,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
       }
@@ -1377,14 +1378,14 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
       }
 
       const validatedData = createProofSchema.parse(req.body);
       const proof = await wytidService.createProof(validatedData, user.tenantId);
-      
+
       res.json(proof);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1399,14 +1400,14 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
       }
 
       const { id } = req.params;
       const proof = await wytidService.revokeProof(id, user.tenantId);
-      
+
       if (!proof) {
         return res.status(404).json({ message: "Proof not found" });
       }
@@ -1423,14 +1424,14 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
       }
 
       const validatedData = transferEntitySchema.parse(req.body);
       const transfer = await wytidService.transferEntity(validatedData, userId, user.tenantId);
-      
+
       res.json(transfer);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -1445,7 +1446,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
       }
@@ -1486,7 +1487,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      
+
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
       }
@@ -1499,7 +1500,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         user.tenantId, 
         expiresAt ? new Date(expiresAt) : undefined
       );
-      
+
       res.json(apiKey);
     } catch (error) {
       console.error("Error creating WytID API key:", error);
@@ -1508,16 +1509,16 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // WytAi Trademark Engine - Proprietary AI-Powered Indian Trademark Intelligence
-  
+
   // Analytics endpoint for WytAi dashboard
   app.get('/api/wytai/analytics', async (req, res) => {
     try {
       // Get total trademarks count
       const totalTrademarks = await db.select({ count: sql<number>`count(*)` }).from(trademarks);
-      
+
       // Get total searches count  
       const totalSearches = await db.select({ count: sql<number>`count(*)` }).from(trademarkSearches);
-      
+
       // Get recent activity (last 10 searches)
       const recentActivity = await db
         .select({
@@ -1545,13 +1546,13 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.status(500).json({ error: 'Internal server error' });
     }
   });
-  
+
   // Core trademark search functionality
   app.post('/api/wytai/trademark/search', async (req, res) => {
     try {
       const startTime = Date.now();
       const { queryText, searchType = 'wytai_combined', filters = {} } = req.body;
-      
+
       if (!queryText) {
         return res.status(400).json({ message: "Query text is required" });
       }
@@ -1603,7 +1604,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const similarities = await Promise.all(
         results.map(async (trademark) => {
           const similarity = calculateSimilarityScore(queryText, trademark);
-          
+
           const similarityRecord = {
             searchId: search.id,
             trademarkId: trademark.id,
@@ -1619,7 +1620,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           };
 
           await db.insert(trademarkSimilarities).values([similarityRecord]);
-          
+
           return {
             trademark,
             similarity: similarityRecord
@@ -1666,7 +1667,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/wytai/trademark/:applicationNumber', async (req, res) => {
     try {
       const { applicationNumber } = req.params;
-      
+
       const [trademark] = await db
         .select()
         .from(trademarks)
@@ -1687,7 +1688,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/wytai/searches', async (req, res) => {
     try {
       const { limit = 10 } = req.query;
-      
+
       const searches = await db
         .select()
         .from(trademarkSearches)
@@ -1777,7 +1778,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/tm/numbers/validate/:number', async (req, res) => {
     try {
       const { number } = req.params;
-      
+
       const tmNumberingService = await import('./services/tmNumbering');
       const validation = tmNumberingService.validateTMNumber11(number);
 
@@ -1821,13 +1822,13 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/tm/classes', async (req, res) => {
     try {
       const { category } = req.query;
-      
+
       let query = db.select().from(niceClassifications).where(eq(niceClassifications.isActive, true));
-      
+
       if (category) {
         query = query.where(eq(niceClassifications.category, category as string));
       }
-      
+
       const classifications = await query.orderBy(niceClassifications.classNumber);
 
       res.json({
@@ -1905,11 +1906,11 @@ export async function registerRoutes(app: Express): Promise<void> {
       const user = await storage.getUser(userId);
 
       const conditions = [eq(ingestJobs.tenantId, user?.tenantId)];
-      
+
       if (status) {
         conditions.push(eq(ingestJobs.status, status as string));
       }
-      
+
       if (adapter) {
         conditions.push(eq(ingestJobs.adapter, adapter as string));
       }
@@ -1963,13 +1964,13 @@ export async function registerRoutes(app: Express): Promise<void> {
               isSuperAdmin: true,
             })
             .returning();
-          
+
           superAdminUser = [newSuperAdmin];
         }
 
         if (superAdminUser.length > 0) {
           const user = superAdminUser[0];
-          
+
           // Use Passport's login mechanism for proper session management
           const passportUser = {
             id: user.id,
@@ -1981,7 +1982,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             socialProviders: user.socialProviders as string[],
             isSuperAdmin: true
           };
-          
+
           // Use Passport login to properly serialize user in session
           await new Promise<void>((resolve, reject) => {
             (req as any).login(passportUser, (err: any) => {
@@ -1994,10 +1995,10 @@ export async function registerRoutes(app: Express): Promise<void> {
               }
             });
           });
-          
+
           // Check if MFA is required (for future implementation)
           const requiresMFA = false; // Set to true when MFA is implemented
-          
+
           if (requiresMFA) {
             return res.json({
               success: true,
@@ -2005,7 +2006,7 @@ export async function registerRoutes(app: Express): Promise<void> {
               message: 'MFA verification required'
             });
           }
-          
+
           return res.json({
             success: true,
             message: 'Admin login successful',
@@ -2037,7 +2038,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.post('/api/auth/admin/verify-mfa', async (req, res) => {
     try {
       const { username, mfaCode, rememberDevice } = req.body;
-      
+
       // MFA verification logic (implement with actual MFA service)
       // For now, accept any 6-digit code for development
       if (mfaCode && mfaCode.length === 6) {
@@ -2050,7 +2051,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
         if (superAdminUser.length > 0) {
           const user = superAdminUser[0];
-          
+
           // Set unified session structure for admin users
           (req.session as any).user = {
             type: 'whatsapp' as const,
@@ -2059,7 +2060,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             role: user.role || 'super_admin',
             isSuperAdmin: true
           };
-          
+
           return res.json({
             success: true,
             message: 'MFA verification successful',
@@ -2072,7 +2073,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           });
         }
       }
-      
+
       return res.status(401).json({
         success: false,
         error: 'Invalid verification code'
@@ -2090,7 +2091,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/auth/admin/status', async (req, res) => {
     try {
       const user = req.user;
-      
+
       if (user && user.isSuperAdmin) {
         return res.json({
           authenticated: true,
@@ -2102,7 +2103,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           }
         });
       }
-      
+
       return res.json({ authenticated: false });
     } catch (error) {
       return res.json({ authenticated: false });
@@ -2127,7 +2128,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             error: 'Logout failed'
           });
         }
-        
+
         // Clear the session cookie
         res.clearCookie('connect.sid', {
           path: '/',
@@ -2135,7 +2136,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax'
         });
-        
+
         return res.json({
           success: true,
           message: 'Logged out successfully'
@@ -2166,12 +2167,12 @@ export async function registerRoutes(app: Express): Promise<void> {
 
         if (superAdminUser.length > 0) {
           const user = superAdminUser[0];
-          
+
           // Set session for Super Admin
           (req.session as any).whatsappUserId = user.id;
           (req.session as any).whatsappNumber = user.whatsappNumber;
           (req.session as any).superAdminAuth = true;
-          
+
           return res.json({
             success: true,
             message: 'Super Admin login successful',
@@ -2215,7 +2216,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       };
 
       const admin = adminCredentials[username as keyof typeof adminCredentials];
-      
+
       if (!admin || admin.password !== password) {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
@@ -2258,13 +2259,13 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/search/global', async (req, res) => {
     try {
       const { q, limit = 20, offset = 0, filter, tenantId } = req.query as any;
-      
+
       if (!q || typeof q !== 'string') {
         return res.status(400).json({ error: 'Search query is required' });
       }
 
       const { shouldUseMockService } = await import('./services/searchService');
-      
+
       let results;
       if (shouldUseMockService()) {
         const { mockSearchService } = await import('./services/mockSearchService');
@@ -2296,7 +2297,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/search/tenants', async (req, res) => {
     try {
       const { q, limit = 20, offset = 0 } = req.query as any;
-      
+
       const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
 
       const results = await searchService.search(
@@ -2319,7 +2320,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/search/users', async (req, res) => {
     try {
       const { q, limit = 20, offset = 0, tenantId } = req.query as any;
-      
+
       const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
 
       const results = await searchService.tenantSearch(
@@ -2343,7 +2344,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/search/whatsapp-users', async (req, res) => {
     try {
       const { q, limit = 20, offset = 0, tenantId, country } = req.query as any;
-      
+
       const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
 
       let filter = '';
@@ -2373,7 +2374,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/search/models', async (req, res) => {
     try {
       const { q, limit = 20, offset = 0, tenantId, status } = req.query as any;
-      
+
       const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
 
       let filter = '';
@@ -2403,7 +2404,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/search/pages', async (req, res) => {
     try {
       const { q, limit = 20, offset = 0, tenantId, status, locale } = req.query as any;
-      
+
       const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
 
       const filters = [];
@@ -2432,7 +2433,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/search/apps', async (req, res) => {
     try {
       const { q, limit = 20, offset = 0, tenantId, status, isPublic } = req.query as any;
-      
+
       const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
 
       const filters = [];
@@ -2461,7 +2462,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/search/trademarks', async (req, res) => {
     try {
       const { q, limit = 20, offset = 0, status, classification, country } = req.query as any;
-      
+
       const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
 
       const filters = [];
@@ -2491,7 +2492,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/search/tm-numbers', async (req, res) => {
     try {
       const { q, limit = 20, offset = 0, classCc, countryCcc, status } = req.query as any;
-      
+
       const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
 
       const filters = [];
@@ -2520,7 +2521,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/search/media', async (req, res) => {
     try {
       const { q, limit = 20, offset = 0, tenantId, mimeType } = req.query as any;
-      
+
       const { searchService, SEARCH_INDEXES } = await import('./services/searchService');
 
       let filter = '';
@@ -2551,7 +2552,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const { index } = req.params;
       const { q, limit = 5, tenantId } = req.query as any;
-      
+
       if (!q || typeof q !== 'string') {
         return res.status(400).json({ error: 'Search query is required' });
       }
@@ -2595,7 +2596,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const { shouldUseMockService, SEARCH_INDEXES } = await import('./services/searchService');
 
       const stats: Record<string, any> = {};
-      
+
       if (shouldUseMockService()) {
         const { mockSearchService } = await import('./services/mockSearchService');
         for (const [key, indexName] of Object.entries(SEARCH_INDEXES)) {
@@ -2619,7 +2620,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/search/health', async (req, res) => {
     try {
       const { shouldUseMockService } = await import('./services/searchService');
-      
+
       let isHealthy;
       if (shouldUseMockService()) {
         const { mockSearchService } = await import('./services/mockSearchService');
@@ -2628,7 +2629,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         const { searchService } = await import('./services/searchService');
         isHealthy = await searchService.isHealthy();
       }
-      
+
       res.json({ 
         status: isHealthy ? 'healthy' : 'unhealthy',
         service: shouldUseMockService() ? 'mock' : 'meilisearch',
@@ -2648,7 +2649,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.post('/api/search/rebuild', async (req, res) => {
     try {
       const { index } = req.body;
-      
+
       const { searchIndexer } = await import('./services/searchIndexer');
 
       if (index === 'all') {
@@ -2669,19 +2670,19 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // AssessDisc DISC Assessment Routes (Public Access)
-  
+
   // Initialize assessment data (safe for production) - GET version for browser access
   app.get('/api/assessments/initialize', async (req, res) => {
     try {
       const force = req.query.force === 'true';
-      
+
       if (force) {
         // Delete existing questions and options to force reinit
         await db.delete(assessmentOptions);
         await db.delete(assessmentQuestions);
         console.log('Forced deletion of questions and options for reinitialization');
       }
-      
+
       // Force initialization of default data
       await assessmentService.initializeDefaultData();
       res.json({ success: true, message: 'Assessment data initialized successfully', forced: force });
@@ -2713,10 +2714,10 @@ export async function registerRoutes(app: Express): Promise<void> {
       await db.delete(assessmentResults);
       await db.delete(assessmentResponses);
       await db.delete(assessmentSessions);
-      
+
       // Reinitialize default data
       await assessmentService.initializeDefaultData();
-      
+
       res.json({ success: true, message: 'Assessment data reset and reinitialized' });
     } catch (error) {
       console.error('Error resetting assessment data:', error);
@@ -2758,7 +2759,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         ipAddress: req.ip,
         userAgent: req.get('User-Agent'),
       });
-      
+
       const session = await assessmentService.createSession(sessionData);
       res.json(session);
     } catch (error) {
@@ -2802,11 +2803,11 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const { sessionId } = req.params;
       const sessionWithResult = await assessmentService.getSessionWithResult(sessionId);
-      
+
       if (!sessionWithResult) {
         return res.status(404).json({ message: "Session not found" });
       }
-      
+
       res.json(sessionWithResult);
     } catch (error) {
       console.error("Error fetching assessment results:", error);
@@ -2819,11 +2820,11 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const { sessionId } = req.params;
       const session = await assessmentService.getSessionWithResult(sessionId);
-      
+
       if (!session) {
         return res.status(404).json({ message: "Session not found" });
       }
-      
+
       res.json(session);
     } catch (error) {
       console.error("Error fetching assessment session:", error);
@@ -3077,7 +3078,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         .select()
         .from(profileFieldWeights)
         .orderBy(profileFieldWeights.tabSection, profileFieldWeights.fieldName);
-      
+
       res.json({ success: true, fields });
     } catch (error) {
       console.error("Error fetching profile fields:", error);
@@ -3088,7 +3089,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.post('/api/admin/profile-fields', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { fieldName, fieldLabel, weightPercentage, isRequired, tabSection } = req.body;
-      
+
       const [newField] = await db
         .insert(profileFieldWeights)
         .values({
@@ -3099,7 +3100,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           tabSection
         })
         .returning();
-      
+
       res.json({ success: true, field: newField });
     } catch (error) {
       console.error("Error creating profile field:", error);
@@ -3111,7 +3112,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const { id } = req.params;
       const { fieldLabel, weightPercentage, isRequired, tabSection } = req.body;
-      
+
       const [updatedField] = await db
         .update(profileFieldWeights)
         .set({
@@ -3123,11 +3124,11 @@ export async function registerRoutes(app: Express): Promise<void> {
         })
         .where(eq(profileFieldWeights.id, id))
         .returning();
-      
+
       if (!updatedField) {
         return res.status(404).json({ message: "Profile field not found" });
       }
-      
+
       res.json({ success: true, field: updatedField });
     } catch (error) {
       console.error("Error updating profile field:", error);
@@ -3138,16 +3139,16 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.delete('/api/admin/profile-fields/:id', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
-      
+
       const [deletedField] = await db
         .delete(profileFieldWeights)
         .where(eq(profileFieldWeights.id, id))
         .returning();
-      
+
       if (!deletedField) {
         return res.status(404).json({ message: "Profile field not found" });
       }
-      
+
       res.json({ success: true, message: "Profile field deleted successfully" });
     } catch (error) {
       console.error("Error deleting profile field:", error);
@@ -3163,7 +3164,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         .from(pointsConfig)
         .where(eq(pointsConfig.isActive, true))
         .orderBy(pointsConfig.category, pointsConfig.action);
-      
+
       res.json({ success: true, configs });
     } catch (error) {
       console.error("Error fetching points configuration:", error);
@@ -3174,7 +3175,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.post('/api/admin/points-config', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { action, points, description, category } = req.body;
-      
+
       const [newConfig] = await db
         .insert(pointsConfig)
         .values({
@@ -3186,7 +3187,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           updatedBy: req.user.id
         })
         .returning();
-      
+
       res.json({ success: true, config: newConfig });
     } catch (error) {
       console.error("Error creating points configuration:", error);
@@ -3198,7 +3199,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const { id } = req.params;
       const { points, description, isActive, category } = req.body;
-      
+
       const [updatedConfig] = await db
         .update(pointsConfig)
         .set({
@@ -3211,11 +3212,11 @@ export async function registerRoutes(app: Express): Promise<void> {
         })
         .where(eq(pointsConfig.id, id))
         .returning();
-      
+
       if (!updatedConfig) {
         return res.status(404).json({ message: "Points configuration not found" });
       }
-      
+
       res.json({ success: true, config: updatedConfig });
     } catch (error) {
       console.error("Error updating points configuration:", error);
@@ -3226,16 +3227,16 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.delete('/api/admin/points-config/:id', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
-      
+
       const [deletedConfig] = await db
         .delete(pointsConfig)
         .where(eq(pointsConfig.id, id))
         .returning();
-      
+
       if (!deletedConfig) {
         return res.status(404).json({ message: "Points configuration not found" });
       }
-      
+
       res.json({ success: true, message: "Points configuration deleted successfully" });
     } catch (error) {
       console.error("Error deleting points configuration:", error);
@@ -3364,7 +3365,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/assessments/questions', async (req, res) => {
     try {
       const { categoryId, language = 'en' } = req.query;
-      
+
       const questions = [
         {
           id: 'q1',
@@ -3499,7 +3500,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const sessionData = req.body;
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       const session = {
         id: sessionId,
         ...sessionData,
@@ -3517,7 +3518,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.post('/api/assessments/responses', async (req, res) => {
     try {
       const responseData = req.body;
-      
+
       // Store response (in a real app, this would go to database)
       const response = {
         id: `response_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -3535,7 +3536,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.post('/api/assessments/sessions/:sessionId/calculate', async (req, res) => {
     try {
       const { sessionId } = req.params;
-      
+
       // Mock calculation - in a real app this would calculate based on stored responses
       const result = {
         sessionId,
@@ -3582,7 +3583,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.get('/api/assessments/sessions/:sessionId/results', async (req, res) => {
     try {
       const { sessionId } = req.params;
-      
+
       // Mock results - in a real app this would fetch from database
       const result = {
         sessionId,
@@ -3627,17 +3628,17 @@ export async function registerRoutes(app: Express): Promise<void> {
   });
 
   // ============================================================================
-  // Platform Modules Management API
+  // PLATFORM MODULES MANAGEMENT API
   // ============================================================================
-  
+
   // Initialize default platform modules service
   async function initializeDefaultModules() {
     try {
       const existingModules = await db.select().from(platformModules).limit(1);
-      
+
       if (existingModules.length === 0) {
         console.log('Initializing default platform modules...');
-        
+
         const defaultModules: InsertPlatformModule[] = [
           // WYTAPPS (Direct user-facing applications)
           {
@@ -3760,7 +3761,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             installs: 1200,
             order: 7
           },
-          
+
           // NEW WYTAPPS (Free productivity tools)
           {
             id: 'invoice-generator',
@@ -3874,7 +3875,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             installs: 0,
             order: 14
           },
-          
+
           // WYTHUBS (Hub services with /h/ routes)  
           {
             id: 'ai-directory-hub',
@@ -3892,7 +3893,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             installs: 15600,
             order: 101
           },
-          
+
           // PLATFORM MODULES (System components)
           {
             id: 'auth-module',
@@ -4008,10 +4009,10 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       // Clear all platform modules
       await db.delete(platformModules);
-      
+
       // Reinitialize default modules
       await initializeDefaultModules();
-      
+
       res.json({ success: true, message: 'Platform modules reset and reinitialized' });
     } catch (error) {
       console.error('Error resetting platform modules:', error);
@@ -4147,7 +4148,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       });
     } catch (error) {
       console.error('Error creating platform module:', error);
-      
+
       if (error instanceof z.ZodError) {
         return res.status(400).json({
           success: false,
@@ -4429,7 +4430,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         if (updates[field] !== undefined) {
           const oldValue = currentModule[field as keyof typeof currentModule];
           const newValue = updates[field];
-          
+
           // Convert to string for comparison
           const oldValueStr = typeof oldValue === 'object' ? JSON.stringify(oldValue) : String(oldValue || '');
           const newValueStr = typeof newValue === 'object' ? JSON.stringify(newValue) : String(newValue || '');
@@ -4513,7 +4514,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         if (updates[field] !== undefined) {
           const oldValue = currentApp[field as keyof typeof currentApp];
           const newValue = updates[field];
-          
+
           // Convert to string for comparison
           const oldValueStr = typeof oldValue === 'object' ? JSON.stringify(oldValue) : String(oldValue || '');
           const newValueStr = typeof newValue === 'object' ? JSON.stringify(newValue) : String(newValue || '');
@@ -4858,12 +4859,12 @@ When suggesting improvements, format your response with suggestions in a structu
         page = '1',
         limit = '50'
       } = req.query;
-      
+
       // Pagination
       const pageNum = Math.max(1, parseInt(page as string, 10));
       const limitNum = Math.min(100, Math.max(1, parseInt(limit as string, 10))); // Max 100 per page
       const offset = (pageNum - 1) * limitNum;
-      
+
       // Build query with filters
       const conditions = [];
       if (countryCode) conditions.push(eq(geoRegulatoryRules.countryCode, countryCode as string));
@@ -4871,28 +4872,28 @@ When suggesting improvements, format your response with suggestions in a structu
       if (tenantId) conditions.push(eq(geoRegulatoryRules.tenantId, tenantId as string));
       if (appId) conditions.push(eq(geoRegulatoryRules.appId, appId as string));
       if (isActive !== undefined) conditions.push(eq(geoRegulatoryRules.isActive, isActive === 'true'));
-      
+
       // Get total count for pagination
       const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-      
+
       const [totalResult] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(geoRegulatoryRules)
         .where(whereClause);
-      
+
       const total = totalResult?.count || 0;
-      
+
       // Get paginated rules
       let query = db.select().from(geoRegulatoryRules);
       if (whereClause) {
         query = query.where(whereClause);
       }
-      
+
       const rules = await query
         .orderBy(desc(geoRegulatoryRules.createdAt))
         .limit(limitNum)
         .offset(offset);
-      
+
       res.json({
         success: true,
         rules,
@@ -4916,14 +4917,14 @@ When suggesting improvements, format your response with suggestions in a structu
   app.post('/api/geo-regulatory/rules', adminAuthMiddleware, async (req: any, res) => {
     try {
       const user = req.user;
-      
+
       if (!user?.id) {
         return res.status(401).json({ error: 'Not authenticated' });
       }
-      
+
       // Validate request body with Zod schema
       const validationResult = createGeoRegulatoryRuleSchema.safeParse(req.body);
-      
+
       if (!validationResult.success) {
         return res.status(400).json({
           success: false,
@@ -4931,9 +4932,9 @@ When suggesting improvements, format your response with suggestions in a structu
           details: validationResult.error.issues
         });
       }
-      
+
       const validatedData = validationResult.data;
-      
+
       // Insert with validated data only - prevents privilege escalation
       const [newRule] = await db.insert(geoRegulatoryRules).values({
         ...validatedData,
@@ -4942,7 +4943,7 @@ When suggesting improvements, format your response with suggestions in a structu
         createdBy: user.id,
         updatedBy: user.id
       }).returning();
-      
+
       // Log compliance event
       await db.insert(geoComplianceLogs).values({
         ruleId: newRule.id,
@@ -4958,7 +4959,7 @@ When suggesting improvements, format your response with suggestions in a structu
         result: 'success',
         metadata: { ruleName: newRule.regionName }
       });
-      
+
       res.json({
         success: true,
         rule: newRule
@@ -4977,14 +4978,14 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const { id } = req.params;
       const user = req.user;
-      
+
       if (!user?.id) {
         return res.status(401).json({ error: 'Not authenticated' });
       }
-      
+
       // Validate request body with partial update schema
       const validationResult = updateGeoRegulatoryRuleSchema.safeParse(req.body);
-      
+
       if (!validationResult.success) {
         return res.status(400).json({
           success: false,
@@ -4992,9 +4993,9 @@ When suggesting improvements, format your response with suggestions in a structu
           details: validationResult.error.issues
         });
       }
-      
+
       const validatedData = validationResult.data;
-      
+
       // Convert date strings to Date objects if present
       const updateData: any = { ...validatedData };
       if (validatedData.effectiveDate) {
@@ -5003,7 +5004,7 @@ When suggesting improvements, format your response with suggestions in a structu
       if (validatedData.expiryDate) {
         updateData.expiryDate = new Date(validatedData.expiryDate);
       }
-      
+
       // Update with validated data only - prevents privilege escalation
       const [updatedRule] = await db.update(geoRegulatoryRules)
         .set({
@@ -5013,14 +5014,14 @@ When suggesting improvements, format your response with suggestions in a structu
         })
         .where(eq(geoRegulatoryRules.id, id))
         .returning();
-      
+
       if (!updatedRule) {
         return res.status(404).json({
           success: false,
           error: 'Rule not found'
         });
       }
-      
+
       // Log compliance event
       await db.insert(geoComplianceLogs).values({
         ruleId: id,
@@ -5036,7 +5037,7 @@ When suggesting improvements, format your response with suggestions in a structu
         result: 'success',
         metadata: { changes: Object.keys(validatedData) }
       });
-      
+
       res.json({
         success: true,
         rule: updatedRule
@@ -5055,26 +5056,26 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const { id } = req.params;
       const user = req.user;
-      
+
       if (!user?.id) {
         return res.status(401).json({ error: 'Not authenticated' });
       }
-      
+
       // First get the rule to capture full details for audit
       const [ruleToDelete] = await db.select().from(geoRegulatoryRules)
         .where(eq(geoRegulatoryRules.id, id));
-      
+
       if (!ruleToDelete) {
         return res.status(404).json({
           success: false,
           error: 'Rule not found'
         });
       }
-      
+
       // Delete the rule
       await db.delete(geoRegulatoryRules)
         .where(eq(geoRegulatoryRules.id, id));
-      
+
       // Log compliance event with full context
       await db.insert(geoComplianceLogs).values({
         ruleId: id,
@@ -5094,7 +5095,7 @@ When suggesting improvements, format your response with suggestions in a structu
           deletedAt: new Date().toISOString()
         }
       });
-      
+
       res.json({
         success: true,
         message: 'Rule deleted successfully'
@@ -5122,12 +5123,12 @@ When suggesting improvements, format your response with suggestions in a structu
         page = '1',
         limit = '50'
       } = req.query;
-      
+
       // Pagination
       const pageNum = Math.max(1, parseInt(page as string, 10));
       const limitNum = Math.min(500, Math.max(1, parseInt(limit as string, 10))); // Max 500 per page for logs
       const offset = (pageNum - 1) * limitNum;
-      
+
       // Build query with filters
       const conditions = [];
       if (countryCode) conditions.push(eq(geoComplianceLogs.countryCode, countryCode as string));
@@ -5137,28 +5138,28 @@ When suggesting improvements, format your response with suggestions in a structu
       if (tenantId) conditions.push(eq(geoComplianceLogs.tenantId, tenantId as string));
       if (hubId) conditions.push(eq(geoComplianceLogs.hubId, hubId as string));
       if (appId) conditions.push(eq(geoComplianceLogs.appId, appId as string));
-      
+
       const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-      
+
       // Get total count for pagination
       const [totalResult] = await db
         .select({ count: sql<number>`count(*)::int` })
         .from(geoComplianceLogs)
         .where(whereClause);
-      
+
       const total = totalResult?.count || 0;
-      
+
       // Get paginated logs
       let query = db.select().from(geoComplianceLogs);
       if (whereClause) {
         query = query.where(whereClause);
       }
-      
+
       const logs = await query
         .orderBy(desc(geoComplianceLogs.timestamp))
         .limit(limitNum)
         .offset(offset);
-      
+
       res.json({
         success: true,
         logs,
@@ -5251,7 +5252,7 @@ When suggesting improvements, format your response with suggestions in a structu
           }
         }
       };
-      
+
       res.json({
         success: true,
         templates
@@ -5282,17 +5283,17 @@ When suggesting improvements, format your response with suggestions in a structu
     updateEntityRelationshipSchema,
     createEntityTagSchema
   } = await import("@shared/schema");
-  
+
   const { ENTITY_TYPES_CATALOG } = await import("./entity-types-catalog");
 
   // Entity Types - CRUD APIs
-  
+
   // GET all entity types
   app.get('/api/entities/types', adminAuthMiddleware, async (req: any, res) => {
     try {
       const types = await db.select().from(entityTypes)
         .orderBy(entityTypes.displayOrder, entityTypes.name);
-      
+
       res.json({ success: true, types });
     } catch (error) {
       console.error('Error fetching entity types:', error);
@@ -5305,11 +5306,11 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const { typeId } = req.params;
       const [type] = await db.select().from(entityTypes).where(eq(entityTypes.id, typeId));
-      
+
       if (!type) {
         return res.status(404).json({ success: false, error: 'Entity type not found' });
       }
-      
+
       res.json({ success: true, type });
     } catch (error) {
       console.error('Error fetching entity type:', error);
@@ -5321,11 +5322,11 @@ When suggesting improvements, format your response with suggestions in a structu
   app.post('/api/entities/types', adminAuthMiddleware, async (req: any, res) => {
     try {
       const validatedData = createEntityTypeSchema.parse(req.body);
-      
+
       const [newType] = await db.insert(entityTypes)
         .values(validatedData)
         .returning();
-      
+
       res.status(201).json({ success: true, type: newType });
     } catch (error: any) {
       console.error('Error creating entity type:', error);
@@ -5341,16 +5342,16 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const { typeId } = req.params;
       const validatedData = updateEntityTypeSchema.parse(req.body);
-      
+
       const [updatedType] = await db.update(entityTypes)
         .set({ ...validatedData, updatedAt: new Date() })
         .where(eq(entityTypes.id, typeId))
         .returning();
-      
+
       if (!updatedType) {
         return res.status(404).json({ success: false, error: 'Entity type not found' });
       }
-      
+
       res.json({ success: true, type: updatedType });
     } catch (error: any) {
       console.error('Error updating entity type:', error);
@@ -5365,13 +5366,13 @@ When suggesting improvements, format your response with suggestions in a structu
   app.delete('/api/entities/types/:typeId', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { typeId } = req.params;
-      
+
       // Check if system type
       const [type] = await db.select().from(entityTypes).where(eq(entityTypes.id, typeId));
       if (type?.isSystem) {
         return res.status(403).json({ success: false, error: 'Cannot delete system entity types' });
       }
-      
+
       await db.delete(entityTypes).where(eq(entityTypes.id, typeId));
       res.json({ success: true, message: 'Entity type deleted' });
     } catch (error) {
@@ -5395,38 +5396,38 @@ When suggesting improvements, format your response with suggestions in a structu
         page = '1', 
         limit = '50' 
       } = req.query;
-      
+
       const pageNum = parseInt(page);
       const limitNum = Math.min(parseInt(limit), 100);
       const offset = (pageNum - 1) * limitNum;
-      
+
       // Build filter conditions array
       const conditions: any[] = [];
-      
+
       if (typeId) conditions.push(eq(entities.entityTypeId, typeId));
       if (search) conditions.push(like(entities.title, `%${search}%`));
       if (isPublic !== undefined) conditions.push(eq(entities.isPublic, isPublic === 'true'));
       if (isVerified !== undefined) conditions.push(eq(entities.isVerified, isVerified === 'true'));
       if (tenantId) conditions.push(eq(entities.tenantId, tenantId));
       if (hubId) conditions.push(eq(entities.hubId, hubId));
-      
+
       let query = db.select().from(entities).$dynamic();
       if (conditions.length > 0) {
         query = query.where(and(...conditions));
       }
-      
+
       const results = await query
         .orderBy(desc(entities.tagCount), desc(entities.createdAt))
         .limit(limitNum)
         .offset(offset);
-      
+
       // Get filtered count
       let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(entities).$dynamic();
       if (conditions.length > 0) {
         countQuery = countQuery.where(and(...conditions));
       }
       const [{ count }] = await countQuery;
-      
+
       res.json({
         success: true,
         entities: results,
@@ -5448,13 +5449,13 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const { entityId } = req.params;
       const { includeRelationships = 'true' } = req.query;
-      
+
       const [entity] = await db.select().from(entities).where(eq(entities.id, entityId));
-      
+
       if (!entity) {
         return res.status(404).json({ success: false, error: 'Entity not found' });
       }
-      
+
       let relationships = null;
       if (includeRelationships === 'true') {
         const parents = await db.select().from(entityRelationships)
@@ -5462,22 +5463,22 @@ When suggesting improvements, format your response with suggestions in a structu
             eq(entityRelationships.sourceEntityId, entityId),
             eq(entityRelationships.relationshipType, 'parent')
           ));
-        
+
         const children = await db.select().from(entityRelationships)
           .where(and(
             eq(entityRelationships.sourceEntityId, entityId),
             eq(entityRelationships.relationshipType, 'child')
           ));
-        
+
         const friends = await db.select().from(entityRelationships)
           .where(and(
             eq(entityRelationships.sourceEntityId, entityId),
             eq(entityRelationships.relationshipType, 'friend')
           ));
-        
+
         relationships = { parents, children, friends };
       }
-      
+
       res.json({ success: true, entity, relationships });
     } catch (error) {
       console.error('Error fetching entity:', error);
@@ -5490,7 +5491,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const admin = req.admin;
       const validatedData = createEntitySchema.parse(req.body);
-      
+
       const [newEntity] = await db.insert(entities)
         .values({
           ...validatedData,
@@ -5498,7 +5499,7 @@ When suggesting improvements, format your response with suggestions in a structu
           updatedBy: admin.id
         })
         .returning();
-      
+
       res.status(201).json({ success: true, entity: newEntity });
     } catch (error: any) {
       console.error('Error creating entity:', error);
@@ -5515,7 +5516,7 @@ When suggesting improvements, format your response with suggestions in a structu
       const { entityId } = req.params;
       const admin = req.admin;
       const validatedData = updateEntitySchema.parse(req.body);
-      
+
       const [updatedEntity] = await db.update(entities)
         .set({
           ...validatedData,
@@ -5524,11 +5525,11 @@ When suggesting improvements, format your response with suggestions in a structu
         })
         .where(eq(entities.id, entityId))
         .returning();
-      
+
       if (!updatedEntity) {
         return res.status(404).json({ success: false, error: 'Entity not found' });
       }
-      
+
       res.json({ success: true, entity: updatedEntity });
     } catch (error: any) {
       console.error('Error updating entity:', error);
@@ -5543,7 +5544,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.delete('/api/entities/:entityId', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { entityId } = req.params;
-      
+
       await db.delete(entities).where(eq(entities.id, entityId));
       res.json({ success: true, message: 'Entity deleted' });
     } catch (error) {
@@ -5559,14 +5560,14 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const { entityId } = req.params;
       const { type } = req.query; // parent, child, friend
-      
+
       let query = db.select().from(entityRelationships)
         .where(eq(entityRelationships.sourceEntityId, entityId)).$dynamic();
-      
+
       if (type) {
         query = query.where(eq(entityRelationships.relationshipType, type));
       }
-      
+
       const relationships = await query;
       res.json({ success: true, relationships });
     } catch (error) {
@@ -5580,19 +5581,19 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const admin = req.admin;
       const validatedData = createEntityRelationshipSchema.parse(req.body);
-      
+
       // Check for circular references
       if (validatedData.sourceEntityId === validatedData.targetEntityId) {
         return res.status(400).json({ success: false, error: 'Cannot create self-referential relationship' });
       }
-      
+
       const [newRelationship] = await db.insert(entityRelationships)
         .values({
           ...validatedData,
           createdBy: admin.id
         })
         .returning();
-      
+
       res.status(201).json({ success: true, relationship: newRelationship });
     } catch (error: any) {
       console.error('Error creating relationship:', error);
@@ -5607,7 +5608,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.delete('/api/entities/relationships/:relationshipId', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { relationshipId } = req.params;
-      
+
       await db.delete(entityRelationships).where(eq(entityRelationships.id, relationshipId));
       res.json({ success: true, message: 'Relationship deleted' });
     } catch (error) {
@@ -5622,11 +5623,11 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/entities/:entityId/tags', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { entityId } = req.params;
-      
+
       const tags = await db.select().from(entityTags)
         .where(eq(entityTags.entityId, entityId))
         .orderBy(desc(entityTags.taggedAt));
-      
+
       res.json({ success: true, tags });
     } catch (error) {
       console.error('Error fetching tags:', error);
@@ -5639,19 +5640,19 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const admin = req.admin;
       const validatedData = createEntityTagSchema.parse(req.body);
-      
+
       const [newTag] = await db.insert(entityTags)
         .values({
           ...validatedData,
           taggedBy: admin.id
         })
         .returning();
-      
+
       // Increment tag count on entity
       await db.update(entities)
         .set({ tagCount: sql`${entities.tagCount} + 1` })
         .where(eq(entities.id, validatedData.entityId));
-      
+
       res.status(201).json({ success: true, tag: newTag });
     } catch (error: any) {
       console.error('Error creating tag:', error);
@@ -5666,18 +5667,18 @@ When suggesting improvements, format your response with suggestions in a structu
   app.delete('/api/entities/tags/:tagId', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { tagId } = req.params;
-      
+
       const [tag] = await db.select().from(entityTags).where(eq(entityTags.id, tagId));
-      
+
       if (tag) {
         await db.delete(entityTags).where(eq(entityTags.id, tagId));
-        
+
         // Decrement tag count
         await db.update(entities)
           .set({ tagCount: sql`GREATEST(${entities.tagCount} - 1, 0)` })
           .where(eq(entities.id, tag.entityId));
       }
-      
+
       res.json({ success: true, message: 'Tag deleted' });
     } catch (error) {
       console.error('Error deleting tag:', error);
@@ -5691,14 +5692,14 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/entities/search', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { q, typeId, limit = '20' } = req.query;
-      
+
       if (!q || typeof q !== 'string') {
         return res.status(400).json({ success: false, error: 'Search query required' });
       }
-      
+
       const limitNum = Math.min(parseInt(limit as string), 50);
       const searchTerm = `%${q}%`;
-      
+
       let query = db.select().from(entities)
         .where(
           or(
@@ -5707,15 +5708,22 @@ When suggesting improvements, format your response with suggestions in a structu
             sql`${entities.aliases}::text LIKE ${searchTerm}`
           )
         ).$dynamic();
-      
+
       if (typeId) {
         query = query.where(eq(entities.entityTypeId, typeId as string));
       }
-      
+
       const results = await query
         .orderBy(desc(entities.isVerified), desc(entities.tagCount))
         .limit(limitNum);
-      
+
+      // Get filtered count
+      let countQuery = db.select({ count: sql<number>`count(*)::int` }).from(entities).$dynamic();
+      if (typeId) {
+         countQuery = countQuery.where(eq(entities.entityTypeId, typeId as string));
+      }
+      const [{ count }] = await countQuery;
+
       res.json({ success: true, entities: results });
     } catch (error) {
       console.error('Error searching entities:', error);
@@ -5741,7 +5749,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/modules/wytmap/geocode', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { moduleProxyService } = await import('./services/moduleProxyService');
-      
+
       const result = await moduleProxyService.proxyRequest({
         moduleId: 'wytmap-mappls',
         endpoint: '/geocode',
@@ -5765,7 +5773,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/modules/wytmap/reverse-geocode', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { moduleProxyService } = await import('./services/moduleProxyService');
-      
+
       const result = await moduleProxyService.proxyRequest({
         moduleId: 'wytmap-mappls',
         endpoint: '/rev_geocode',
@@ -5789,7 +5797,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/modules/wytmap/directions', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { moduleProxyService } = await import('./services/moduleProxyService');
-      
+
       const result = await moduleProxyService.proxyRequest({
         moduleId: 'wytmap-mappls',
         endpoint: '/route_adv/driving',
@@ -5813,7 +5821,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/modules/wytmap/nearby', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { moduleProxyService } = await import('./services/moduleProxyService');
-      
+
       const result = await moduleProxyService.proxyRequest({
         moduleId: 'wytmap-mappls',
         endpoint: '/nearby',
@@ -5837,7 +5845,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/modules/wytmap/distance', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { moduleProxyService } = await import('./services/moduleProxyService');
-      
+
       const result = await moduleProxyService.proxyRequest({
         moduleId: 'wytmap-mappls',
         endpoint: '/distance_matrix/driving',
@@ -5862,7 +5870,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.post('/api/modules/wytkyc/esign/initiate', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { moduleProxyService } = await import('./services/moduleProxyService');
-      
+
       const result = await moduleProxyService.proxyRequest({
         moduleId: 'wytkyc-digio',
         endpoint: '/client/document/upload',
@@ -5886,7 +5894,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/modules/wytkyc/esign/status/:requestId', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { moduleProxyService } = await import('./services/moduleProxyService');
-      
+
       const result = await moduleProxyService.proxyRequest({
         moduleId: 'wytkyc-digio',
         endpoint: `/client/document/${req.params.requestId}`,
@@ -5909,7 +5917,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.post('/api/modules/wytkyc/verify/pan', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { moduleProxyService } = await import('./services/moduleProxyService');
-      
+
       const result = await moduleProxyService.proxyRequest({
         moduleId: 'wytkyc-digio',
         endpoint: '/kyc/v2/fetch/pan',
@@ -5933,7 +5941,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.post('/api/modules/wytkyc/verify/aadhaar', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { moduleProxyService } = await import('./services/moduleProxyService');
-      
+
       const result = await moduleProxyService.proxyRequest({
         moduleId: 'wytkyc-digio',
         endpoint: '/kyc/v2/request/with_digilocker',
@@ -5957,7 +5965,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.post('/api/modules/wytkyc/face-match', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { moduleProxyService } = await import('./services/moduleProxyService');
-      
+
       const result = await moduleProxyService.proxyRequest({
         moduleId: 'wytkyc-digio',
         endpoint: '/kyc/v2/face_match',
@@ -6003,7 +6011,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'countries'));
       if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
-      
+
       const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
       res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wytgeo' } });
     } catch (error: any) {
@@ -6015,7 +6023,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'india-states'));
       if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
-      
+
       const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
       res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wytgeo' } });
     } catch (error: any) {
@@ -6027,7 +6035,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'india-cities'));
       if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
-      
+
       const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
       res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wytgeo' } });
     } catch (error: any) {
@@ -6039,7 +6047,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'timezones'));
       if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
-      
+
       const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
       res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wytgeo' } });
     } catch (error: any) {
@@ -6052,7 +6060,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'languages'));
       if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
-      
+
       const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
       res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wyti18n' } });
     } catch (error: any) {
@@ -6064,7 +6072,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'currencies'));
       if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
-      
+
       const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
       res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wyti18n' } });
     } catch (error: any) {
@@ -6077,7 +6085,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'industries'));
       if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
-      
+
       const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
       res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wytbiz' } });
     } catch (error: any) {
@@ -6089,7 +6097,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'company-sizes'));
       if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
-      
+
       const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
       res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wytbiz' } });
     } catch (error: any) {
@@ -6101,7 +6109,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'job-roles'));
       if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
-      
+
       const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
       res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wytbiz' } });
     } catch (error: any) {
@@ -6113,7 +6121,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const collection = await db.select().from(datasetCollections).where(eq(datasetCollections.key, 'gst-state-codes'));
       if (!collection[0]) return res.status(404).json({ success: false, error: 'Collection not found' });
-      
+
       const items = await db.select().from(datasetItems).where(eq(datasetItems.collectionId, collection[0].id)).orderBy(asc(datasetItems.sortOrder));
       res.json({ success: true, collection: collection[0], items, total: items.length, _wytnet: { module: 'wytbiz' } });
     } catch (error: any) {
@@ -6159,31 +6167,31 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/modules/wytdata/:key', async (req: any, res) => {
     try {
       const { key } = req.params;
-      
+
       // List of public datasets that don't require authentication
       const publicDatasets = ['india-cities', 'countries', 'currencies', 'timezones', 'india-states'];
-      
+
       // If dataset is not public and user is not authenticated, return 401
       if (!publicDatasets.includes(key) && !req.isAuthenticated()) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
-      
+
       const [collection] = await db.select()
         .from(datasetCollections)
         .where(eq(datasetCollections.key, key));
-      
+
       if (!collection) {
         return res.status(404).json({
           success: false,
           error: `Dataset '${key}' not found`
         });
       }
-      
+
       const items = await db.select()
         .from(datasetItems)
         .where(eq(datasetItems.collectionId, collection.id))
         .orderBy(asc(datasetItems.sortOrder), asc(datasetItems.label));
-      
+
       res.json({
         success: true,
         collection: {
@@ -6216,7 +6224,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const { key } = req.params;
       const { q, locale } = req.query;
-      
+
       if (!q || typeof q !== 'string') {
         return res.status(400).json({
           success: false,
@@ -6227,32 +6235,32 @@ When suggesting improvements, format your response with suggestions in a structu
       const [collection] = await db.select()
         .from(datasetCollections)
         .where(eq(datasetCollections.key, key));
-      
+
       if (!collection) {
         return res.status(404).json({
           success: false,
           error: `Dataset '${key}' not found`
         });
       }
-      
+
       let query = db.select()
         .from(datasetItems)
         .where(eq(datasetItems.collectionId, collection.id));
-      
+
       // Filter by locale if provided
       if (locale && typeof locale === 'string') {
         query = query.where(eq(datasetItems.locale, locale as string));
       }
-      
+
       const allItems = await query;
-      
+
       // Client-side search filtering (case-insensitive)
       const searchTerm = q.toLowerCase();
       const filteredItems = allItems.filter(item => 
         item.label.toLowerCase().includes(searchTerm) ||
         item.code.toLowerCase().includes(searchTerm)
       );
-      
+
       res.json({
         success: true,
         query: q,
@@ -6284,18 +6292,18 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/modules/wytdata/:key/locale/:locale', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { key, locale } = req.params;
-      
+
       const [collection] = await db.select()
         .from(datasetCollections)
         .where(eq(datasetCollections.key, key));
-      
+
       if (!collection) {
         return res.status(404).json({
           success: false,
           error: `Dataset '${key}' not found`
         });
       }
-      
+
       const items = await db.select()
         .from(datasetItems)
         .where(and(
@@ -6303,7 +6311,7 @@ When suggesting improvements, format your response with suggestions in a structu
           eq(datasetItems.locale, locale)
         ))
         .orderBy(asc(datasetItems.sortOrder), asc(datasetItems.label));
-      
+
       // Fallback to 'en' if no items found for requested locale
       let finalItems = items;
       if (items.length === 0 && locale !== 'en') {
@@ -6315,7 +6323,7 @@ When suggesting improvements, format your response with suggestions in a structu
           ))
           .orderBy(asc(datasetItems.sortOrder), asc(datasetItems.label));
       }
-      
+
       res.json({
         success: true,
         collection: {
@@ -6349,7 +6357,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.post('/api/modules/wytdata/batch', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const { keys } = req.body;
-      
+
       if (!Array.isArray(keys) || keys.length === 0) {
         return res.status(400).json({
           success: false,
@@ -6364,19 +6372,19 @@ When suggesting improvements, format your response with suggestions in a structu
         });
       }
 
-      const results: any = {};
-      
+      const results: Record<string, any> = {};
+
       for (const key of keys) {
         const [collection] = await db.select()
           .from(datasetCollections)
           .where(eq(datasetCollections.key, key));
-        
+
         if (collection) {
           const items = await db.select()
             .from(datasetItems)
             .where(eq(datasetItems.collectionId, collection.id))
             .orderBy(asc(datasetItems.sortOrder), asc(datasetItems.label));
-          
+
           results[key] = {
             collection: {
               key: collection.key,
@@ -6397,7 +6405,7 @@ When suggesting improvements, format your response with suggestions in a structu
           };
         }
       }
-      
+
       res.json({
         success: true,
         datasets: results,
@@ -6423,7 +6431,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/apps/catalog', async (req, res) => {
     try {
       const { category, pricing } = req.query;
-      
+
       let query = db
         .select()
         .from(platformModules)
@@ -6677,7 +6685,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.post('/api/auth/social/complete-setup', async (req, res) => {
     try {
       const { pendingUserId, verifiedMobileNumber, otpToken } = req.body;
-      
+
       if (!pendingUserId || !verifiedMobileNumber || !otpToken) {
         return res.status(400).json({
           success: false,
@@ -6696,11 +6704,11 @@ When suggesting improvements, format your response with suggestions in a structu
 
       // Complete social account setup with verified mobile
       const user = await socialAuthService.completeSocialAccountSetup(pendingUserId, verifiedMobileNumber);
-      
+
       // Create session for the user
       (req as any).session.userId = user.id;
       (req as any).session.isAuthenticated = true;
-      
+
       res.json({
         success: true,
         message: 'Social account setup completed successfully',
@@ -6727,9 +6735,9 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/auth/social/pending/:userId', async (req, res) => {
     try {
       const { userId } = req.params;
-      
+
       const pendingStatus = await socialAuthService.getPendingSocialVerification(userId);
-      
+
       res.json({
         success: true,
         ...pendingStatus
@@ -6751,7 +6759,7 @@ When suggesting improvements, format your response with suggestions in a structu
       timestamp: Date.now(),
       requiresMobileVerification: true
     })).toString('base64');
-    
+
     res.json({
       success: true,
       provider: 'google',
@@ -6768,7 +6776,7 @@ When suggesting improvements, format your response with suggestions in a structu
       timestamp: Date.now(),
       requiresMobileVerification: true
     })).toString('base64');
-    
+
     res.json({
       success: true,
       provider: 'facebook',
@@ -6788,7 +6796,7 @@ When suggesting improvements, format your response with suggestions in a structu
       timestamp: Date.now(),
       requiresMobileVerification: true
     })).toString('base64');
-    
+
     res.json({
       success: true,
       provider: 'instagram',
@@ -6804,7 +6812,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const { provider } = req.params;
       const { code, state } = req.query;
-      
+
       if (!code || !state) {
         return res.redirect('/auth/error?message=Missing authorization code or state');
       }
@@ -6841,10 +6849,10 @@ When suggesting improvements, format your response with suggestions in a structu
 
       // Create pending social user (requires mobile verification)
       const result = await socialAuthService.createPendingSocialUser(mockProfile, mockTokens);
-      
+
       // Redirect to mobile verification page
       const redirectUrl = `/auth/mobile-verification?userId=${result.pendingUserId}&provider=${provider}&requiresVerification=${result.requiresMobileVerification}`;
-      
+
       res.redirect(redirectUrl);
     } catch (error) {
       console.error(`Error in ${req.params.provider} OAuth callback:`, error);
@@ -6856,7 +6864,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.post('/api/auth/social/demo-login', async (req, res) => {
     try {
       const { provider, userEmail, userName } = req.body;
-      
+
       if (!provider || !socialAuthService.SOCIAL_PROVIDERS[provider as socialAuthService.SocialProvider]) {
         return res.status(400).json({
           success: false,
@@ -6884,7 +6892,7 @@ When suggesting improvements, format your response with suggestions in a structu
 
       // Create pending social user
       const result = await socialAuthService.createPendingSocialUser(demoProfile, demoTokens);
-      
+
       res.json({
         success: true,
         pendingUserId: result.pendingUserId,
@@ -6908,7 +6916,7 @@ When suggesting improvements, format your response with suggestions in a structu
 
   // NOTE: Admin dashboard endpoint moved to server/admin-auth.ts
   // Using isolated admin authentication system with dedicated session
-  
+
   // Super Admin dashboard data - COMMENTED OUT - Using new isolated admin system
   // app.get('/api/admin/dashboard', adminAuthMiddleware, async (req: any, res) => {
   //   ... old implementation ...
@@ -6937,8 +6945,8 @@ When suggesting improvements, format your response with suggestions in a structu
           name: users.firstName,
           email: users.email,
           whatsappNumber: users.whatsappNumber,
-          country: sql<string>`'N/A'`.as('country'),
-          gender: sql<string>`'N/A'`.as('gender'),
+          country: sql<string>'N/A'.as('country'),
+          gender: sql<string>'N/A'.as('gender'),
           role: users.role,
           isVerified: users.isVerified,
           isSuperAdmin: users.isSuperAdmin,
@@ -6952,7 +6960,7 @@ When suggesting improvements, format your response with suggestions in a structu
         .limit(limit)
         .offset(offset)
         .orderBy(desc(users.createdAt)),
-        
+
         db.select({ count: sql<number>`cast(count(*) as integer)` }).from(users)
       ]);
 
@@ -7176,7 +7184,7 @@ When suggesting improvements, format your response with suggestions in a structu
         db.select({ count: sql<number>`cast(count(*) as integer)` })
           .from(users)
           .where(sql`cardinality(social_providers) > 0`),
-        
+
         // Pending mobile verifications
         db.select({ count: sql<number>`cast(count(*) as integer)` })
           .from(users)
@@ -7184,7 +7192,7 @@ When suggesting improvements, format your response with suggestions in a structu
             sql`cardinality(social_providers) > 0`,
             eq(users.isVerified, false)
           )),
-        
+
         // Verified social accounts
         db.select({ count: sql<number>`cast(count(*) as integer)` })
           .from(users)
@@ -7192,7 +7200,7 @@ When suggesting improvements, format your response with suggestions in a structu
             sql`cardinality(social_providers) > 0`,
             eq(users.isVerified, true)
           )),
-        
+
         // Recent social users
         db.select({
           id: users.id,
@@ -7207,7 +7215,7 @@ When suggesting improvements, format your response with suggestions in a structu
           .where(sql`cardinality(social_providers) > 0`)
           .orderBy(desc(users.lastLoginAt))
           .limit(50),
-        
+
         // All social tokens for audit
         db.select()
           .from(socialAuthTokens)
@@ -7303,7 +7311,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.put('/api/admin/social-auth/provider/:provider', adminAuthMiddleware, async (req: any, res) => {
     try {
       const user = req.user;
-      
+
       if (!user?.isSuperAdmin) {
         return res.status(403).json({
           success: false,
@@ -7316,7 +7324,7 @@ When suggesting improvements, format your response with suggestions in a structu
 
       // For demo purposes, just return success
       // In production, this would update provider settings in database
-      
+
       res.json({
         success: true,
         message: `${provider} provider ${enabled ? 'enabled' : 'disabled'} successfully`,
@@ -7336,7 +7344,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.post('/api/admin/social-auth/unlink', adminAuthMiddleware, async (req: any, res) => {
     try {
       const user = req.user;
-      
+
       if (!user?.isSuperAdmin) {
         return res.status(403).json({
           success: false,
@@ -7372,12 +7380,12 @@ When suggesting improvements, format your response with suggestions in a structu
   });
 
   // SEO Settings endpoints
-  
+
   // Get SEO settings
   app.get('/api/admin/seo-settings', isAuthenticated, async (req: any, res) => {
     try {
       const user = req.user;
-      
+
       if (!user) {
         return res.status(401).json({
           success: false,
@@ -7409,7 +7417,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.put('/api/admin/seo-settings', isAuthenticated, async (req: any, res) => {
     try {
       const user = req.user;
-      
+
       if (!user) {
         return res.status(401).json({
           success: false,
@@ -7419,7 +7427,7 @@ When suggesting improvements, format your response with suggestions in a structu
 
       // Validate request body
       const validatedData = insertSeoSettingSchema.partial().parse(req.body);
-      
+
       // Check if settings already exist
       const existingSettings = await db
         .select()
@@ -7465,12 +7473,12 @@ When suggesting improvements, format your response with suggestions in a structu
   });
 
   // API Integrations endpoints for Super Admin
-  
+
   // Get all API integrations
   app.get('/api/admin/api-integrations', adminAuthMiddleware, async (req: any, res) => {
     try {
       const user = req.user;
-      
+
       if (!user?.isSuperAdmin) {
         return res.status(403).json({
           success: false,
@@ -7511,7 +7519,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const user = req.user;
       const { provider } = req.params;
-      
+
       if (!user?.isSuperAdmin) {
         return res.status(403).json({
           success: false,
@@ -7610,7 +7618,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.post('/api/admin/api-integrations/bulk', adminAuthMiddleware, async (req: any, res) => {
     try {
       const user = req.user;
-      
+
       if (!user?.isSuperAdmin) {
         return res.status(403).json({
           success: false,
@@ -7628,11 +7636,11 @@ When suggesting improvements, format your response with suggestions in a structu
       }
 
       const results = [];
-      
+
       // Process each integration
       for (const integration of integrations) {
         const { provider, credentials, isEnabled = false } = integration;
-        
+
         if (!provider || !credentials) {
           continue; // Skip invalid entries
         }
@@ -7721,7 +7729,7 @@ When suggesting improvements, format your response with suggestions in a structu
       // Authenticate CI requests using secure token
       const authHeader = req.headers.authorization;
       const expectedToken = process.env.CI_UPLOAD_TOKEN;
-      
+
       if (!expectedToken) {
         console.error('CI_UPLOAD_TOKEN not configured - CI uploads disabled');
         return res.status(503).json({
@@ -7729,14 +7737,14 @@ When suggesting improvements, format your response with suggestions in a structu
           error: 'CI upload service not configured'
         });
       }
-      
+
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({
           success: false,
           error: 'Missing or invalid authorization header'
         });
       }
-      
+
       const token = authHeader.substring(7);
       if (token !== expectedToken) {
         console.warn('Unauthorized CI upload attempt from IP:', req.ip);
@@ -7745,14 +7753,14 @@ When suggesting improvements, format your response with suggestions in a structu
           error: 'Invalid authorization token'
         });
       }
-      
+
       // Generate signed upload URLs
       const { ObjectStorageService } = await import('./objectStorage');
       const objectStorageService = new ObjectStorageService();
-      
+
       const apkUploadUrl = await objectStorageService.getApkUploadURL();
       const metadataUploadUrl = await objectStorageService.getMetadataUploadURL();
-      
+
       console.log('Generated signed upload URLs for authorized CI request');
       res.json({
         success: true,
@@ -7772,7 +7780,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/downloads/wytnet-latest.apk', async (req, res) => {
     try {
       const { apkStorage } = await import('./services/apkStorage');
-      
+
       const apkFile = await apkStorage.getAPKFile();
       if (!apkFile) {
         return res.status(404).json({
@@ -7784,10 +7792,10 @@ When suggesting improvements, format your response with suggestions in a structu
       // Use Object Storage service to properly stream the file
       const { ObjectStorageService } = await import('./objectStorage');
       const objectStorageService = new ObjectStorageService();
-      
+
       res.setHeader('Content-Type', 'application/vnd.android.package-archive');
       res.setHeader('Content-Disposition', 'attachment; filename="wytnet-latest.apk"');
-      
+
       await objectStorageService.downloadObject(apkFile, res);
     } catch (error) {
       console.error('Error serving APK download:', error);
@@ -7801,7 +7809,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/mobile/latest', async (req, res) => {
     try {
       const { apkStorage } = await import('./services/apkStorage');
-      
+
       const metadata = await apkStorage.getLatestMetadata();
       if (!metadata) {
         return res.status(404).json({
@@ -7834,10 +7842,10 @@ When suggesting improvements, format your response with suggestions in a structu
           error: 'Configuration endpoint not available in production'
         });
       }
-      
+
       const { apkStorage } = await import('./services/apkStorage');
       const config = apkStorage.getConfig();
-      
+
       res.json({
         success: true,
         data: {
@@ -7854,15 +7862,15 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // ==========================================
+  // ========================================
   // PAYMENT ROUTES (Razorpay Integration)
-  // ==========================================
+  // ========================================
 
   // Get available plans
   app.get('/api/payments/plans', requireModule('razorpay-payment'), async (req, res) => {
     try {
       const result = await razorpayService.getPlans();
-      
+
       if (result.success) {
         res.json({
           success: true,
@@ -8070,12 +8078,12 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       // Verify webhook signature (implement webhook signature verification)
       const webhookSignature = req.headers['x-razorpay-signature'] as string;
-      
+
       // Handle different webhook events
       const { event, payload } = req.body;
-      
+
       console.log('📩 Razorpay Webhook received:', event);
-      
+
       switch (event) {
         case 'payment.captured':
           // Handle successful payment
@@ -8085,7 +8093,7 @@ When suggesting improvements, format your response with suggestions in a structu
             razorpay_signature: '' // Webhook doesn't provide signature
           });
           break;
-          
+
         case 'payment.failed':
           // Handle failed payment
           await razorpayService.handlePaymentFailure(
@@ -8093,7 +8101,7 @@ When suggesting improvements, format your response with suggestions in a structu
             payload.payment.entity.error_description
           );
           break;
-          
+
         default:
           console.log('Unhandled webhook event:', event);
       }
@@ -8113,7 +8121,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const principal = getPrincipal(req);
       const adminPrincipal = getAdminPrincipal(req);
-      
+
       if (!adminPrincipal && !isSuperAdmin(principal)) {
         return res.status(403).json({
           success: false,
@@ -8400,11 +8408,11 @@ When suggesting improvements, format your response with suggestions in a structu
   // ========================================
   // WYTPOINTS ECONOMY API ROUTES
   // ========================================
-  
+
   const { pointsService } = await import('./services/pointsService');
 
   // User Points Routes
-  
+
   // Get current points balance
   app.get('/api/points/balance', async (req: any, res) => {
     try {
@@ -8431,8 +8439,7 @@ When suggesting improvements, format your response with suggestions in a structu
   });
 
   // Wallet balance alias (for convenience)
-  app.get('/api/wallet/balance', async (req: any, res) => {
-    try {
+  app.get('/api/wallet/balance', async (req: any, res) => {    try {
       const principal = await getPrincipal(req);
       if (!principal) {
         return res.status(401).json({ error: 'Not authenticated' });
@@ -8464,7 +8471,7 @@ When suggesting improvements, format your response with suggestions in a structu
 
       const limit = parseInt(req.query.limit as string) || 20;
       const details = await pointsService.getWalletDetails(principal.id, limit);
-      
+
       res.json({ success: true, data: details });
     } catch (error) {
       console.error('Error fetching wallet details:', error);
@@ -8482,7 +8489,7 @@ When suggesting improvements, format your response with suggestions in a structu
 
       const limit = parseInt(req.query.limit as string) || 50;
       const transactions = await pointsService.getTransactions(principal.id, limit);
-      
+
       res.json({ success: true, transactions });
     } catch (error) {
       console.error('Error fetching transactions:', error);
@@ -8500,7 +8507,7 @@ When suggesting improvements, format your response with suggestions in a structu
 
       // Get user from unified users table
       const [user] = await db.select().from(users).where(eq(users.id, principal.id)).limit(1);
-      
+
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
@@ -8536,7 +8543,7 @@ When suggesting improvements, format your response with suggestions in a structu
 
       // Get user's referral code from unified users table
       const [user] = await db.select().from(users).where(eq(users.id, principal.id)).limit(1);
-      
+
       if (!user || !user.referralCode) {
         return res.json({ 
           success: true, 
@@ -8582,7 +8589,7 @@ When suggesting improvements, format your response with suggestions in a structu
         .from(pointsConfig)
         .where(eq(pointsConfig.isActive, true))
         .orderBy(pointsConfig.category, pointsConfig.action);
-      
+
       res.json({ success: true, configs });
     } catch (error) {
       console.error('Error fetching points configuration:', error);
@@ -8680,7 +8687,7 @@ When suggesting improvements, format your response with suggestions in a structu
   });
 
   // Admin Points Routes
-  
+
   // Get points system statistics
   app.get('/api/admin/points/statistics', requireSuperAdmin, async (req: any, res) => {
     try {
@@ -8699,7 +8706,7 @@ When suggesting improvements, format your response with suggestions in a structu
         .from(pointsWallets)
         .orderBy(desc(pointsWallets.balance))
         .limit(100);
-      
+
       res.json({ success: true, wallets });
     } catch (error) {
       console.error('Error fetching wallets:', error);
@@ -8712,7 +8719,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const { userId } = req.params;
       const limit = parseInt(req.query.limit as string) || 50;
-      
+
       const details = await pointsService.getWalletDetails(userId, limit);
       res.json({ success: true, data: details });
     } catch (error) {
@@ -8758,14 +8765,14 @@ When suggesting improvements, format your response with suggestions in a structu
   });
 
   // Points Configuration Routes (Admin)
-  
+
   // Get all points configurations
   app.get('/api/admin/points/config', requireSuperAdmin, async (req: any, res) => {
     try {
       const configs = await db.select()
         .from(pointsConfig)
         .orderBy(pointsConfig.category, pointsConfig.action);
-      
+
       res.json({ success: true, configs });
     } catch (error) {
       console.error('Error fetching points config:', error);
@@ -8785,12 +8792,12 @@ When suggesting improvements, format your response with suggestions in a structu
       const { points, description, isActive } = req.body;
 
       const [updated] = await db.update(pointsConfig)
-        .set({ 
-          points, 
-          description, 
+        .set({
+          points,
+          description,
           isActive,
           updatedBy: principal.id,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(pointsConfig.id, id))
         .returning();
@@ -8810,7 +8817,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/points/config/:action', async (req: any, res) => {
     try {
       const { action } = req.params;
-      
+
       const [config] = await db.select()
         .from(pointsConfig)
         .where(eq(pointsConfig.action, action))
@@ -8837,7 +8844,7 @@ When suggesting improvements, format your response with suggestions in a structu
       const collections = await db.select()
         .from(datasetCollections)
         .orderBy(datasetCollections.name);
-      
+
       res.json({ success: true, collections });
     } catch (error) {
       console.error('Error fetching dataset collections:', error);
@@ -8849,7 +8856,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/admin/datasets/:id', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
-      
+
       const [collection] = await db.select()
         .from(datasetCollections)
         .where(eq(datasetCollections.id, id))
@@ -9069,7 +9076,7 @@ When suggesting improvements, format your response with suggestions in a structu
       }
 
       const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      
+
       if (targetIndex < 0 || targetIndex >= allItems.length) {
         return res.status(400).json({ error: 'Cannot move item in that direction' });
       }
@@ -9077,11 +9084,11 @@ When suggesting improvements, format your response with suggestions in a structu
       // Swap sort orders
       const currentItem = allItems[currentIndex];
       const targetItem = allItems[targetIndex];
-      
+
       await db.update(datasetItems)
         .set({ sortOrder: targetItem.sortOrder })
         .where(eq(datasetItems.id, currentItem.id));
-        
+
       await db.update(datasetItems)
         .set({ sortOrder: currentItem.sortOrder })
         .where(eq(datasetItems.id, targetItem.id));
@@ -9094,6 +9101,10 @@ When suggesting improvements, format your response with suggestions in a structu
   });
 
   // ========================================
+  // END DATASET MANAGEMENT ROUTES
+  // ========================================
+
+  // ========================================
   // WYTWALL MARKETPLACE ROUTES
   // ========================================
 
@@ -9103,7 +9114,7 @@ When suggesting improvements, format your response with suggestions in a structu
   const { profileCompletionService } = await import('./services/profileCompletionService');
 
   // Needs Routes
-  
+
   // List public needs (unauthenticated)
   app.get('/api/needs/public', async (req: any, res) => {
     try {
@@ -9179,7 +9190,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const { id } = req.params;
       const need = await needsService.getNeedById(id);
-      
+
       if (!need) {
         return res.status(404).json({ error: 'Need not found' });
       }
@@ -9254,7 +9265,7 @@ When suggesting improvements, format your response with suggestions in a structu
 
       const { id } = req.params;
       const need = await needsService.updateNeed(id, principal.id, req.body);
-      
+
       res.json({ success: true, need });
     } catch (error: any) {
       console.error('Error updating need:', error);
@@ -9272,7 +9283,7 @@ When suggesting improvements, format your response with suggestions in a structu
 
       const { id } = req.params;
       await needsService.deleteNeed(id, principal.id);
-      
+
       res.json({ success: true, message: 'Need deleted successfully' });
     } catch (error: any) {
       console.error('Error deleting need:', error);
@@ -9396,7 +9407,7 @@ When suggesting improvements, format your response with suggestions in a structu
 
       const { id } = req.params;
       const offer = await offersService.updateOffer(id, principal.id, req.body);
-      
+
       res.json({ success: true, offer });
     } catch (error: any) {
       console.error('Error updating offer:', error);
@@ -9414,7 +9425,7 @@ When suggesting improvements, format your response with suggestions in a structu
 
       const { id } = req.params;
       await offersService.deleteOffer(id, principal.id);
-      
+
       res.json({ success: true, message: 'Offer deleted successfully' });
     } catch (error: any) {
       console.error('Error deleting offer:', error);
@@ -9477,11 +9488,11 @@ When suggesting improvements, format your response with suggestions in a structu
   // ========================================
 
   // Create a new WytWall post
-  app.post('/api/wytwall/posts', async (req: any, res) => {
+  app.post('/api/wytwall/posts', rateLimiters.postCreation, requireAuth, async (req: Request, res: Response) => {
     try {
       const principal = await getPrincipal(req);
       if (!principal) {
-        return res.status(401).json({ error: 'Not authenticated' });
+        return res.status(401).json({ error: "Not authenticated" });
       }
 
       // Validate request body
@@ -9494,8 +9505,8 @@ When suggesting improvements, format your response with suggestions in a structu
 
       res.json({ success: true, post });
     } catch (error: any) {
-      console.error('Error creating WytWall post:', error);
-      res.status(400).json({ error: error.message || 'Failed to create post' });
+      console.error("Error creating WytWall post:", error);
+      res.status(400).json({ error: error.message || "Failed to create post" });
     }
   });
 
@@ -9504,13 +9515,13 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const principal = await getPrincipal(req);
       if (!principal) {
-        return res.status(401).json({ error: 'Not authenticated' });
+        return res.status(401).json({ error: "Not authenticated" });
       }
 
       const postType = req.query.postType as string;
 
       let query = db.select().from(wytWallPosts).where(eq(wytWallPosts.userId, principal.id));
-      
+
       if (postType && (postType === 'need' || postType === 'offer')) {
         query = query.where(and(
           eq(wytWallPosts.userId, principal.id),
@@ -9546,8 +9557,8 @@ When suggesting improvements, format your response with suggestions in a structu
         userProfileImage: users.profileImageUrl,
       })
       .from(wytWallPosts)
-      .leftJoin(whatsappUsers, eq(wytWallPosts.userId, users.id));
-      
+      .leftJoin(users, eq(wytWallPosts.userId, users.id)); // Corrected join alias
+
       if (postType && (postType === 'need' || postType === 'offer')) {
         query = query.where(eq(wytWallPosts.postType, postType));
       }
@@ -9661,7 +9672,7 @@ When suggesting improvements, format your response with suggestions in a structu
         )`.as('user')
       })
         .from(offers)
-        .leftJoin(sql`users u`, sql`u.id = ${offers.userId}`)
+        .leftJoin(users, eq(users.id, offers.userId)) // Corrected join alias
         .where(eq(offers.approvalStatus, 'pending'))
         .orderBy(desc(offers.createdAt))
         .limit(limit)
@@ -9772,7 +9783,7 @@ When suggesting improvements, format your response with suggestions in a structu
   });
 
   // Profile Wizard Routes
-  
+
   // Update basic profile info
   app.post('/api/profile/basic-info', async (req: any, res) => {
     try {
@@ -9882,10 +9893,10 @@ When suggesting improvements, format your response with suggestions in a structu
 
       // Validate actual file content using magic bytes (not just claimed mimetype)
       const fileType = await fileTypeFromBuffer(req.file.buffer);
-      
+
       // List of allowed image types based on magic bytes
       const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-      
+
       if (!fileType || !allowedImageTypes.includes(fileType.mime)) {
         console.warn('Rejected upload attempt:', {
           claimedMimetype: req.file.mimetype,
@@ -9908,7 +9919,7 @@ When suggesting improvements, format your response with suggestions in a structu
 
       // Sanitize principal ID to prevent directory traversal (whitelist alphanumeric, hyphens, underscores only)
       const safePrincipalId = principal.id.replace(/[^a-zA-Z0-9_-]/g, '');
-      
+
       // Generate secure UUID-based filename (ignore user-provided filename)
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).substring(2, 15);
@@ -9917,7 +9928,7 @@ When suggesting improvements, format your response with suggestions in a structu
       // Get the private object directory from environment
       const privateDir = process.env.PRIVATE_OBJECT_DIR || '/replit-objstore-f99ecc31-a513-406e-afc5-c84fcbc3d8c7/.private';
       const fullPath = `${privateDir}/profile-photos/${filename}`;
-      
+
       // Parse the path to get bucket and object name
       const pathParts = fullPath.split('/').filter(p => p);
       const bucketName = pathParts[0];
@@ -9927,7 +9938,7 @@ When suggesting improvements, format your response with suggestions in a structu
       const { objectStorageClient } = await import('./objectStorage');
       const bucket = objectStorageClient.bucket(bucketName);
       const file = bucket.file(objectName);
-      
+
       await file.save(req.file.buffer, {
         contentType: fileType.mime,
         metadata: {
@@ -9971,7 +9982,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       // Sanitize filename to prevent directory traversal
       const filename = path.basename(req.params.filename);
-      
+
       // Validate filename format (userId_timestamp_randomId.ext)
       if (!/^[a-zA-Z0-9_-]+\.(jpg|jpeg|png|gif|webp)$/.test(filename)) {
         return res.status(400).json({ error: 'Invalid filename format' });
@@ -9980,7 +9991,7 @@ When suggesting improvements, format your response with suggestions in a structu
       // Get the private object directory from environment
       const privateDir = process.env.PRIVATE_OBJECT_DIR || '/replit-objstore-f99ecc31-a513-406e-afc5-c84fcbc3d8c7/.private';
       const fullPath = `${privateDir}/profile-photos/${filename}`;
-      
+
       // Parse the path to get bucket and object name
       const pathParts = fullPath.split('/').filter(p => p);
       const bucketName = pathParts[0];
@@ -9990,7 +10001,7 @@ When suggesting improvements, format your response with suggestions in a structu
       const { objectStorageClient } = await import('./objectStorage');
       const bucket = objectStorageClient.bucket(bucketName);
       const file = bucket.file(objectName);
-      
+
       // Check if file exists
       const [exists] = await file.exists();
       if (!exists) {
@@ -9999,7 +10010,7 @@ When suggesting improvements, format your response with suggestions in a structu
 
       // Get file metadata
       const [metadata] = await file.getMetadata();
-      
+
       // Set appropriate headers
       res.set({
         'Content-Type': metadata.contentType || 'image/jpeg',
@@ -10009,7 +10020,7 @@ When suggesting improvements, format your response with suggestions in a structu
 
       // Stream the file to the response
       const stream = file.createReadStream();
-      
+
       stream.on('error', (err) => {
         console.error('Stream error:', err);
         if (!res.headersSent) {
@@ -10096,25 +10107,25 @@ When suggesting improvements, format your response with suggestions in a structu
       const fieldWeights = await db.select()
         .from(profileFieldWeights)
         .where(eq(profileFieldWeights.tabSection, 'personal'));
-      
+
       let totalWeight = 0;
       let completedWeight = 0;
-      
+
       for (const weight of fieldWeights) {
         totalWeight += weight.weightPercentage;
-        
+
         // Check if field is filled
         const fieldValue = (profileData as any)[weight.fieldName];
         const isFilled = fieldValue && 
           (typeof fieldValue === 'string' ? fieldValue.trim() !== '' : 
            Array.isArray(fieldValue) ? fieldValue.length > 0 : 
            true);
-        
+
         if (isFilled) {
           completedWeight += weight.weightPercentage;
         }
       }
-      
+
       const completionPercentage = totalWeight > 0 
         ? Math.round((completedWeight / totalWeight) * 100) 
         : 0;
@@ -10152,7 +10163,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/account/username/check', async (req: any, res) => {
     try {
       const { username } = req.query;
-      
+
       if (!username || typeof username !== 'string' || username.length < 3) {
         return res.json({ available: false, error: 'Username must be at least 3 characters' });
       }
@@ -10343,7 +10354,7 @@ When suggesting improvements, format your response with suggestions in a structu
       }
 
       const itemData = insertBucketListSchema.parse({ ...req.body, userId: principal.id });
-      
+
       const [newItem] = await db.insert(bucketList)
         .values(itemData)
         .returning();
@@ -10364,7 +10375,7 @@ When suggesting improvements, format your response with suggestions in a structu
       }
 
       const { id } = req.params;
-      
+
       // Verify ownership
       const [existing] = await db.select()
         .from(bucketList)
@@ -10406,7 +10417,7 @@ When suggesting improvements, format your response with suggestions in a structu
       }
 
       const { id } = req.params;
-      
+
       // Verify ownership and delete
       const deleted = await db.delete(bucketList)
         .where(and(
@@ -10434,22 +10445,22 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/datasets/:key', async (req: any, res) => {
     try {
       const { key } = req.params;
-      
+
       // Find collection by key
       const [collection] = await db.select()
         .from(datasetCollections)
         .where(eq(datasetCollections.key, key));
-      
+
       if (!collection) {
         return res.status(404).json({ error: 'Dataset not found' });
       }
-      
+
       // Get items for this collection
       const items = await db.select()
         .from(datasetItems)
         .where(eq(datasetItems.collectionId, collection.id))
         .orderBy(asc(datasetItems.sortOrder), asc(datasetItems.label));
-      
+
       res.json({ items });
     } catch (error: any) {
       console.error('Error fetching dataset:', error);
@@ -10625,7 +10636,7 @@ When suggesting improvements, format your response with suggestions in a structu
       const offset = parseInt(req.query.offset as string) || 0;
 
       let query = db.select().from(wytLifeApplications);
-      
+
       if (status) {
         query = query.where(eq(wytLifeApplications.status, status));
       }
@@ -10649,7 +10660,7 @@ When suggesting improvements, format your response with suggestions in a structu
   // ========================================
   // WYTLIFE SEO/SMO ROUTE HANDLER (Production Only)
   // ========================================
-  
+
   // Only apply server-side meta tag injection in production
   // In development, let Vite handle routing and the client-side router will work
   if (process.env.NODE_ENV === 'production') {
@@ -10657,10 +10668,10 @@ When suggesting improvements, format your response with suggestions in a structu
       try {
         const fs = await import('fs/promises');
         const path = await import('path');
-        
+
         const indexPath = path.resolve(process.cwd(), 'dist', 'public', 'index.html');
         let html = await fs.readFile(indexPath, 'utf-8');
-        
+
         // Replace meta tags for WytLife-specific SEO/SMO
         html = html.replace(
           '<title>WytNet - Multi-Tenant SaaS Platform | Free Assessment Tools</title>',
@@ -10702,7 +10713,7 @@ When suggesting improvements, format your response with suggestions in a structu
           '<meta property="twitter:url" content="https://wytnet.com/" />',
           '<meta property="twitter:url" content="https://wytnet.com/wytlife" />'
         );
-        
+
         res.set('Content-Type', 'text/html').send(html);
       } catch (error) {
         next(error);
@@ -10911,7 +10922,7 @@ CONSTRAINTS:
       const updateData: any = {
         updatedAt: new Date()
       };
-      
+
       if (name?.trim()) updateData.name = name.trim();
       if (description !== undefined) updateData.description = description?.trim() || '';
       if (status) updateData.status = status;
@@ -11025,99 +11036,6 @@ CONSTRAINTS:
   // APPS ADMIN ROUTES
   // ========================================
 
-  // Get all apps from apps_registry with module composition
-  app.get('/api/admin/apps', adminAuthMiddleware, async (req: any, res) => {
-    try {
-      const principal = await getAdminPrincipal(req);
-      if (!principal) {
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
-
-      // Get all apps
-      const apps = await db.select()
-        .from(appsRegistry)
-        .orderBy(appsRegistry.name);
-
-      // Get modules for each app via junction table
-      const appsWithModules = await Promise.all(
-        apps.map(async (app) => {
-          const appModulesData = await db.select({
-            module: platformModules,
-            isRequired: appModules.isRequired,
-            version: appModules.version,
-            sortOrder: appModules.sortOrder,
-          })
-            .from(appModules)
-            .innerJoin(platformModules, eq(appModules.moduleId, platformModules.id))
-            .where(eq(appModules.appId, app.id))
-            .orderBy(appModules.sortOrder);
-
-          return {
-            ...app,
-            modules: appModulesData.map(m => ({
-              ...m.module,
-              isRequired: m.isRequired,
-              version: m.version,
-              sortOrder: m.sortOrder,
-            })),
-            moduleCount: appModulesData.length,
-          };
-        })
-      );
-
-      res.json({ success: true, apps: appsWithModules });
-    } catch (error) {
-      console.error('Error fetching apps:', error);
-      res.status(500).json({ error: 'Failed to fetch apps' });
-    }
-  });
-
-  // Create a new app in apps_registry
-  app.post('/api/admin/apps', adminAuthMiddleware, async (req: any, res) => {
-    try {
-      const principal = await getAdminPrincipal(req);
-      if (!principal) {
-        return res.status(401).json({ error: 'Not authenticated' });
-      }
-
-      const { name, slug, description, icon, category, moduleIds } = req.body;
-
-      // Create the app
-      const [newApp] = await db.insert(appsRegistry)
-        .values({
-          name,
-          slug,
-          description,
-          icon,
-          category,
-          isActive: true,
-        })
-        .returning();
-
-      // Add modules if provided
-      if (moduleIds && Array.isArray(moduleIds) && moduleIds.length > 0) {
-        await db.insert(appModules)
-          .values(
-            moduleIds.map((moduleId: string, index: number) => ({
-              appId: newApp.id,
-              moduleId,
-              isRequired: true,
-              sortOrder: index,
-            }))
-          );
-      }
-
-      res.json({ success: true, app: newApp });
-    } catch (error) {
-      console.error('Error creating app:', error);
-      res.status(500).json({ error: 'Failed to create app' });
-    }
-  });
-
-  // ========================================
-  // PRICING PLANS ADMIN ROUTES
-  // ========================================
-
   // Get all apps with plan counts and module counts for pricing configuration
   app.get('/api/admin/pricing/apps', adminAuthMiddleware, async (req: any, res) => {
     try {
@@ -11190,6 +11108,7 @@ CONSTRAINTS:
     try {
       const { appId } = req.params;
 
+      // Get all plans for the app
       const plans = await db.select()
         .from(pricingPlans)
         .where(eq(pricingPlans.appId, appId))
@@ -11548,7 +11467,7 @@ CONSTRAINTS:
 
       // Insert new feature access (only for enabled features)
       const enabledFeatures = features.filter(f => f.isEnabled);
-      
+
       if (enabledFeatures.length > 0) {
         await db.insert(planFeatureAccess)
           .values(
@@ -11573,6 +11492,10 @@ CONSTRAINTS:
   });
 
   // ========================================
+  // END APP FEATURES & PLAN FEATURE ACCESS ROUTES
+  // ========================================
+
+  // ========================================
   // PRICING MATRIX API (Unified Features & Plans)
   // ========================================
 
@@ -11593,7 +11516,7 @@ CONSTRAINTS:
           const types = await db.select()
             .from(pricingPlanTypes)
             .where(eq(pricingPlanTypes.pricingPlanId, plan.id));
-          
+
           return {
             ...plan,
             pricingTypes: types,
@@ -12093,7 +12016,7 @@ CONSTRAINTS:
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       ];
-      
+
       if (allowedMimeTypes.includes(file.mimetype)) {
         cb(null, true);
       } else {
@@ -12106,7 +12029,7 @@ CONSTRAINTS:
   app.post('/api/hub-admin/media/upload', hubAdminAuthMiddleware, mediaUpload.single('file'), async (req: any, res) => {
     try {
       const hubAdminPrincipal = (req.session as any)?.hubAdminPrincipal;
-      
+
       if (!hubAdminPrincipal) {
         return res.status(401).json({ 
           success: false, 
@@ -12127,7 +12050,7 @@ CONSTRAINTS:
 
       // Server-side file type validation (security critical!)
       const detectedType = await fileTypeFromBuffer(file.buffer);
-      
+
       // Allowed MIME types for security
       const allowedMimes = [
         'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
@@ -12155,7 +12078,7 @@ CONSTRAINTS:
       // Upload to Object Storage private directory
       const privateDir = objectStorageService.getPrivateObjectDir();
       const objectPath = `${privateDir}/media/${tenantId}/${filename}`;
-      
+
       // Parse bucket and object name
       const pathParts = objectPath.startsWith('/') ? objectPath : `/${objectPath}`;
       const parts = pathParts.split('/');
@@ -12165,7 +12088,7 @@ CONSTRAINTS:
       // Upload file to Object Storage
       const bucket = objectStorageClient.bucket(bucketName);
       const fileObj = bucket.file(objectName);
-      
+
       await fileObj.save(file.buffer, {
         metadata: {
           contentType: trustedMimeType, // Use server-detected MIME type
@@ -12209,7 +12132,7 @@ CONSTRAINTS:
   app.get('/api/hub-admin/media', hubAdminAuthMiddleware, async (req: any, res) => {
     try {
       const hubAdminPrincipal = (req.session as any)?.hubAdminPrincipal;
-      
+
       if (!hubAdminPrincipal) {
         return res.status(401).json({ 
           success: false, 
@@ -12218,11 +12141,11 @@ CONSTRAINTS:
       }
 
       const tenantId = hubAdminPrincipal.tenantId;
-      
+
       // Pagination parameters
       const limit = parseInt(req.query.limit as string) || 20;
       const offset = parseInt(req.query.offset as string) || 0;
-      
+
       // Filter by mimeType category
       const mimeTypeFilter = req.query.mimeType as string;
 
@@ -12236,7 +12159,7 @@ CONSTRAINTS:
       // Apply mimeType filter if provided
       if (mimeTypeFilter) {
         const conditions = [];
-        
+
         if (mimeTypeFilter === 'images') {
           conditions.push(like(media.mimeType, 'image/%'));
         } else if (mimeTypeFilter === 'videos') {
@@ -12250,7 +12173,7 @@ CONSTRAINTS:
             )!
           );
         }
-        
+
         if (conditions.length > 0) {
           query = db.select()
             .from(media)
@@ -12270,7 +12193,7 @@ CONSTRAINTS:
 
       if (mimeTypeFilter) {
         const conditions = [];
-        
+
         if (mimeTypeFilter === 'images') {
           conditions.push(like(media.mimeType, 'image/%'));
         } else if (mimeTypeFilter === 'videos') {
@@ -12284,7 +12207,7 @@ CONSTRAINTS:
             )!
           );
         }
-        
+
         if (conditions.length > 0) {
           countQuery = db.select({ count: sql<number>`count(*)` })
             .from(media)
@@ -12317,7 +12240,7 @@ CONSTRAINTS:
   app.delete('/api/hub-admin/media/:id', hubAdminAuthMiddleware, async (req: any, res) => {
     try {
       const hubAdminPrincipal = (req.session as any)?.hubAdminPrincipal;
-      
+
       if (!hubAdminPrincipal) {
         return res.status(401).json({ 
           success: false, 
@@ -12351,7 +12274,7 @@ CONSTRAINTS:
 
         const bucket = objectStorageClient.bucket(bucketName);
         const file = bucket.file(objectName);
-        
+
         await file.delete();
       } catch (storageError) {
         console.error('Error deleting from Object Storage:', storageError);
@@ -12387,7 +12310,7 @@ CONSTRAINTS:
   app.get('/api/notifications', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const principal = getPrincipal(req);
-      
+
       if (!principal) {
         return res.status(401).json({ 
           success: false, 
@@ -12435,7 +12358,7 @@ CONSTRAINTS:
   app.get('/api/notifications/unread-count', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const principal = getPrincipal(req);
-      
+
       if (!principal) {
         return res.status(401).json({ 
           success: false, 
@@ -12469,7 +12392,7 @@ CONSTRAINTS:
   app.post('/api/notifications/:id/mark-read', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const principal = getPrincipal(req);
-      
+
       if (!principal) {
         return res.status(401).json({ 
           success: false, 
@@ -12518,7 +12441,7 @@ CONSTRAINTS:
   app.post('/api/notifications/mark-all-read', isAuthenticatedUnified, async (req: any, res) => {
     try {
       const principal = getPrincipal(req);
-      
+
       if (!principal) {
         return res.status(401).json({ 
           success: false, 
