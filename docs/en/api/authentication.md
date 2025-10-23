@@ -1,5 +1,16 @@
 # Authentication API Reference
 
+:::danger PRODUCTION API STANDARDS
+All authentication endpoints MUST implement:
+- ✅ **Zod Validation** - Validate ALL inputs before processing
+- 🔒 **Rate Limiting** - Prevent brute force attacks (3-5 attempts per IP/email)
+- 📊 **Comprehensive Logging** - Log all authentication attempts (success & failure)
+- ⚠️ **Secure Error Messages** - Never leak user existence or security details
+- 🎯 **Session Security** - httpOnly, secure, sameSite cookies with CSRF protection
+
+See [Production Standards](/en/production-standards/) for complete requirements.
+:::
+
 ## Overview
 
 WytNet provides a comprehensive authentication system called **WytPass** that supports multiple authentication methods:
@@ -153,6 +164,132 @@ curl -X POST https://wytnet.com/api/auth/login \
 - At least one lowercase letter
 - At least one number
 - At least one special character (recommended)
+
+**Validation Schema (Zod)**
+
+```typescript
+import { z } from 'zod';
+
+export const loginSchema = z.object({
+  email: z.string()
+    .email('Invalid email format')
+    .toLowerCase()
+    .trim(),
+  password: z.string()
+    .min(1, 'Password required')
+});
+
+export const registerSchema = z.object({
+  name: z.string()
+    .min(2, 'Name must be at least 2 characters')
+    .max(100, 'Name too long'),
+  email: z.string()
+    .email('Invalid email format')
+    .toLowerCase()
+    .trim(),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Must contain uppercase letter')
+    .regex(/[a-z]/, 'Must contain lowercase letter')
+    .regex(/[0-9]/, 'Must contain number'),
+  whatsappNumber: z.string()
+    .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number')
+    .optional()
+});
+```
+
+**Security Implementation**
+
+```typescript
+// Rate Limiting
+const loginRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per IP
+  message: 'Too many login attempts, please try again later'
+});
+
+// Login endpoint with validation
+app.post('/api/auth/login', loginRateLimiter, async (req, res) => {
+  try {
+    // 1. Validate input
+    const validated = loginSchema.parse(req.body);
+    
+    // 2. Find user (prevent timing attacks)
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, validated.email));
+    
+    if (!user || !user.passwordHash) {
+      // Generic error - don't reveal if user exists
+      return res.status(401).json({ 
+        message: 'Invalid credentials' 
+      });
+    }
+    
+    // 3. Verify password
+    const isValid = await bcrypt.compare(
+      validated.password, 
+      user.passwordHash
+    );
+    
+    if (!isValid) {
+      // Log failed attempt
+      await logAuthAttempt({
+        userId: user.id,
+        email: validated.email,
+        success: false,
+        ip: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      return res.status(401).json({ 
+        message: 'Invalid credentials' 
+      });
+    }
+    
+    // 4. Create session
+    req.session.regenerate((err) => {
+      if (err) {
+        logger.error('Session regeneration failed', { error: err });
+        return res.status(500).json({ 
+          message: 'Authentication failed' 
+        });
+      }
+      
+      req.session.userId = user.id;
+      req.session.email = user.email;
+      
+      // Log successful login
+      logAuthAttempt({
+        userId: user.id,
+        email: validated.email,
+        success: true,
+        ip: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+      
+      res.json({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      });
+    });
+    
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        message: 'Validation failed',
+        errors: error.errors
+      });
+    }
+    
+    logger.error('Login error', { error });
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+```
 
 ---
 

@@ -1,5 +1,16 @@
 # Admin API Reference
 
+:::danger PRODUCTION API STANDARDS  
+All admin endpoints MUST implement:
+- ✅ **Authentication Check** - Verify valid session exists
+- 🔒 **Permission Verification** - Check user has required permission BEFORE operation
+- 📊 **Audit Logging** - Log ALL admin actions to audit_logs table
+- ⚠️ **Input Validation** - Validate all inputs with Zod schemas
+- 🎯 **Error Handling** - Return appropriate HTTP codes with clear messages
+
+See [Production Standards](/en/production-standards/) for complete requirements.
+:::
+
 ## Overview
 
 The Admin API provides comprehensive endpoints for managing the WytNet platform at the Engine level. These endpoints are protected by role-based access control (RBAC) and require Super Admin or specific admin permissions.
@@ -58,6 +69,108 @@ The RBAC system has 64 permissions across 16 resources:
 | analytics | view, create, edit, delete |
 | roles-permissions | view, create, edit, delete |
 | system-security | view, create, edit, delete |
+
+---
+
+## Middleware & Security
+
+### Required Middleware Stack
+
+All admin endpoints use this middleware stack:
+
+```typescript
+import { requireAuth } from './wytpass-auth';
+import { requirePermission } from './rbac-middleware';
+import { auditLog } from './audit-middleware';
+
+// Example: Module management endpoint
+app.get('/api/admin/modules',
+  requireAuth,                    // 1. Check authentication
+  requirePermission('modules:view'), // 2. Check permission
+  auditLog('modules', 'list'),    // 3. Log action
+  async (req, res) => {
+    // Implementation...
+  }
+);
+```
+
+### Authentication Middleware
+
+```typescript
+export const requireAuth = (req, res, next) => {
+  if (!req.session || !req.session.userId) {
+    return res.status(401).json({ 
+      message: 'Authentication required' 
+    });
+  }
+  next();
+};
+```
+
+### Permission Middleware
+
+```typescript
+export const requirePermission = (permission: string) => {
+  return async (req, res, next) => {
+    const userId = req.session.userId;
+    
+    // Check if user has permission
+    const hasPermission = await checkUserPermission(userId, permission);
+    
+    if (!hasPermission) {
+      // Log permission denial
+      await logAudit({
+        userId,
+        action: 'permission_denied',
+        permission,
+        ip: req.ip
+      });
+      
+      return res.status(403).json({ 
+        message: 'Permission denied',
+        required: permission
+      });
+    }
+    
+    next();
+  };
+};
+```
+
+### Audit Logging Middleware
+
+```typescript
+export const auditLog = (resourceType: string, action: string) => {
+  return async (req, res, next) => {
+    const originalJson = res.json.bind(res);
+    
+    res.json = function(body) {
+      // Log after successful operation
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        logAuditEntry({
+          userId: req.session.userId,
+          action,
+          resourceType,
+          resourceId: req.params.id || null,
+          details: {
+            method: req.method,
+            path: req.path,
+            body: req.body
+          },
+          ip: req.ip,
+          userAgent: req.headers['user-agent']
+        }).catch(err => {
+          logger.error('Audit logging failed', { error: err });
+        });
+      }
+      
+      return originalJson(body);
+    };
+    
+    next();
+  };
+};
+```
 
 ---
 

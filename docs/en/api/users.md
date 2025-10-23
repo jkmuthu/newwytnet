@@ -1,5 +1,16 @@
 # User Management API Reference
 
+:::danger PRODUCTION API STANDARDS
+All user endpoints MUST implement:
+- ✅ **Session Validation** - Verify user is authenticated
+- 🔒 **Data Ownership** - Users can only access/modify their own data
+- 📊 **Input Sanitization** - Prevent XSS attacks on user-generated content
+- ⚠️ **Privacy Protection** - Respect privacy settings, don't leak sensitive data
+- 🎯 **Tenant Isolation** - Filter by tenant_id where applicable
+
+See [Production Standards](/en/production-standards/) for complete requirements.
+:::
+
 ## Overview
 
 The User Management API provides endpoints for managing user profiles, settings, notifications, and sessions. All endpoints require authentication via the WytPass session cookie.
