@@ -9221,3 +9221,4 @@ When suggesting improvements, format your response with suggestions in a structu
       res.status(500).json({ error: error.message || 'Failed to create need' });
     }
   });
+}
