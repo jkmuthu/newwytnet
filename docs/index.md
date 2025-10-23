@@ -76,6 +76,41 @@ features:
     link: /en/admin/engine-admin
 ---
 
+## ⚠️ ENTERPRISE PRODUCTION STANDARDS
+
+:::danger 🎯 READ THIS FIRST - MANDATORY FOR ALL DEVELOPERS
+WytNet is an **enterprise-grade platform** built for millions of users. Every implementation MUST follow strict production quality standards:
+
+### 🚨 Non-Negotiable Requirements
+
+**[📖 Read Complete Production Standards →](/en/production-standards/)**
+
+1. **NO Hardcoded Logic** - All configuration database-driven
+2. **Comprehensive Validation** - Zod schemas for ALL inputs
+3. **Security First** - Authentication, authorization, rate limiting, SQL injection prevention
+4. **Error Handling** - Try-catch blocks, graceful fallbacks, structured logging
+5. **Multi-Tenant Isolation** - EVERY query filters by tenant_id
+6. **RBAC Enforcement** - Permission checks on ALL protected operations
+7. **Audit Everything** - Log all admin actions, track data changes
+
+**Platform Infrastructure:**
+- ✅ Replit Production (99.95% uptime, SOC 2 certified, GCP-backed)
+- ✅ Autoscaling to millions of users
+- ✅ PostgreSQL with Row Level Security
+- ✅ Enterprise-standard security practices
+
+### 📚 Enhanced Documentation Sections
+
+All documentation now includes production requirements:
+- 🔐 [Use Case Flows](/en/use-case-flows/) - Validation checkpoints & security gates
+- 🛠️ [API Reference](/en/api/authentication) - Validation schemas & middleware examples
+- 🏗️ [Architecture](/en/architecture/database-schema) - RLS policies & scalability notes
+
+**This is not a prototype. This is production infrastructure for millions of users.**
+:::
+
+---
+
 ## Quick Navigation
 
 <div class="vp-doc">

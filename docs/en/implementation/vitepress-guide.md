@@ -1,5 +1,16 @@
 # VitePress DevDoc Editing Guide
 
+:::tip DOCUMENTATION QUALITY STANDARDS
+When editing DevDoc:
+- ✅ **Accuracy** - Verify all code examples work in the actual codebase
+- 📊 **Completeness** - Include validation, error handling, security notes
+- 🔒 **Production Focus** - Emphasize enterprise standards, not prototypes
+- ⚠️ **Bilingual** - Keep Tamil and English versions synchronized
+- 🎯 **Examples** - Use real WytNet patterns, not generic tutorials
+
+See [Production Standards](/en/production-standards/) for quality requirements.
+:::
+
 This guide covers how to edit, update, and maintain the WytNet DevDoc documentation built with VitePress.
 
 ## Quick Start

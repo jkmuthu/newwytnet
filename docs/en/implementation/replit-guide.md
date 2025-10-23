@@ -1,5 +1,18 @@
 # WytNet Implementation Guide for Replit Assistant
 
+:::danger ⚠️ READ BEFORE IMPLEMENTING ANY FEATURE
+This guide provides code patterns and examples. **CRITICAL**: Before implementing ANY feature:
+
+1. **Read [Production Standards](/en/production-standards/)** first
+2. **NO hardcoded logic** - Everything database/environment-driven
+3. **Validate ALL inputs** - Use Zod schemas before processing
+4. **Implement proper error handling** - Try-catch blocks everywhere
+5. **Enforce security** - Auth checks, permission checks, rate limiting
+6. **Test with real data** - Verify multi-tenant isolation, RBAC enforcement
+
+**Every implementation MUST meet enterprise production standards. This is not optional.**
+:::
+
 **Version:** 1.0  
 **Last Updated:** October 20, 2025  
 **Purpose:** Comprehensive step-by-step guide for implementing features in WytNet
