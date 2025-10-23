@@ -103,12 +103,6 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               href: "/mypanel/profile", 
               active: location === "/mypanel/profile" 
             },
-            { 
-              label: "My Account", 
-              icon: Settings, 
-              href: "/mypanel/account", 
-              active: location === "/mypanel/account" 
-            },
           ]
         }
       ];
@@ -165,12 +159,6 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               icon: User, 
               href: "/orgpanel/profile", 
               active: location === "/orgpanel/profile" 
-            },
-            { 
-              label: "Our Account", 
-              icon: Settings, 
-              href: "/orgpanel/account", 
-              active: location === "/orgpanel/account" 
             },
           ]
         }

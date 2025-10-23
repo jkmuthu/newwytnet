@@ -9221,4 +9221,82 @@ When suggesting improvements, format your response with suggestions in a structu
       res.status(500).json({ error: error.message || 'Failed to create need' });
     }
   });
+
+  // ========================================
+  // ACCOUNT MANAGEMENT ROUTES
+  // ========================================
+
+  // Update user profile (name, email, profileImageUrl)
+  app.patch('/api/account/profile', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { name, email, profileImageUrl } = req.body;
+
+      // Update user in database
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          name: name || null,
+          email: email || null,
+          profileImageUrl: profileImageUrl || null,
+        })
+        .where(eq(users.id, principal.id))
+        .returning();
+
+      res.json({ success: true, user: updatedUser });
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      res.status(500).json({ error: error.message || 'Failed to update profile' });
+    }
+  });
+
+  // Update/create user password
+  app.patch('/api/account/password', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { currentPassword, newPassword } = req.body;
+
+      if (!newPassword || newPassword.length < 8) {
+        return res.status(400).json({ error: 'New password must be at least 8 characters' });
+      }
+
+      // Get user from database
+      const [user] = await db.select().from(users).where(eq(users.id, principal.id));
+
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // If user has a password, verify current password
+      if (user.passwordHash && currentPassword) {
+        const bcrypt = await import('bcryptjs');
+        const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+        if (!isValid) {
+          return res.status(400).json({ error: 'Current password is incorrect' });
+        }
+      }
+
+      // Hash and save new password
+      const bcrypt = await import('bcryptjs');
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+
+      await db
+        .update(users)
+        .set({ passwordHash })
+        .where(eq(users.id, principal.id));
+
+      res.json({ success: true, message: 'Password updated successfully' });
+    } catch (error: any) {
+      console.error('Error updating password:', error);
+      res.status(500).json({ error: error.message || 'Failed to update password' });
+    }
+  });
 }

@@ -22,9 +22,9 @@ const profileSchema = z.object({
   profileImageUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
 });
 
-// Schema for password update
+// Schema for password update - currentPassword is optional for users who logged in via OAuth
 const passwordSchema = z.object({
-  currentPassword: z.string().min(1, "Current password is required"),
+  currentPassword: z.string().optional(),
   newPassword: z.string().min(8, "New password must be at least 8 characters"),
   confirmPassword: z.string().min(1, "Please confirm your password"),
 }).refine((data) => data.newPassword === data.confirmPassword, {
@@ -290,34 +290,20 @@ export default function MyAccountPage() {
           <TabsContent value="security">
             <Card>
               <CardHeader>
-                <CardTitle>Change Password</CardTitle>
+                <CardTitle>Update Password</CardTitle>
                 <CardDescription>
-                  Ensure your account is using a strong password
+                  Set or update your account password. If you logged in with Google or Email OTP, you can create a password here to enable email/password login.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={passwordForm.handleSubmit((data) => passwordMutation.mutate(data))} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Current Password</Label>
-                    <Input
-                      id="currentPassword"
-                      type="password"
-                      {...passwordForm.register("currentPassword")}
-                      data-testid="input-current-password"
-                    />
-                    {passwordForm.formState.errors.currentPassword && (
-                      <p className="text-sm text-destructive">
-                        {passwordForm.formState.errors.currentPassword.message}
-                      </p>
-                    )}
-                  </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="newPassword">New Password</Label>
                     <Input
                       id="newPassword"
                       type="password"
                       {...passwordForm.register("newPassword")}
+                      placeholder="Enter new password (min 8 characters)"
                       data-testid="input-new-password"
                     />
                     {passwordForm.formState.errors.newPassword && (
@@ -333,6 +319,7 @@ export default function MyAccountPage() {
                       id="confirmPassword"
                       type="password"
                       {...passwordForm.register("confirmPassword")}
+                      placeholder="Confirm new password"
                       data-testid="input-confirm-password"
                     />
                     {passwordForm.formState.errors.confirmPassword && (
@@ -345,12 +332,12 @@ export default function MyAccountPage() {
                   <Button
                     type="submit"
                     disabled={passwordMutation.isPending}
-                    data-testid="button-change-password"
+                    data-testid="button-update-password"
                   >
                     {passwordMutation.isPending && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
-                    Change Password
+                    Update Password
                   </Button>
                 </form>
               </CardContent>
