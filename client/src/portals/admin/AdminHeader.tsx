@@ -1,15 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { Menu, User, Settings, LogOut, Shield, Activity, HelpCircle, Bell, Search, Home, Layers, Moon, Sun } from "lucide-react";
-import { Link, useLocation } from "wouter";
-import { useAdminAuth } from "@/contexts/AdminAuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { Menu, Home, Moon, Sun } from "lucide-react";
+import { Link } from "wouter";
 import ContextAwareLogo from "@/components/shared/ContextAwareLogo";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import UniversalAuthHeader from "@/components/universal/UniversalAuthHeader";
 
 interface AdminHeaderProps {
   onToggleSidebar: () => void;
@@ -24,10 +19,6 @@ export default function AdminHeader({
   onToggleSidebar,
   sidebarCollapsed 
 }: AdminHeaderProps) {
-  const { adminUser } = useAdminAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [location, setLocation] = useLocation();
   const [isDark, setIsDark] = useState(false);
 
   // Initialize theme from localStorage
@@ -46,59 +37,6 @@ export default function AdminHeader({
     setIsDark(newTheme);
     document.documentElement.classList.toggle('dark', newTheme);
     localStorage.setItem('theme', newTheme ? 'dark' : 'light');
-  };
-
-  // Fetch available contexts/panels
-  const { data: contextsData } = useQuery<{ contexts: any[]; count: number }>({
-    queryKey: ['/api/auth/contexts'],
-    refetchInterval: 30000, // Refresh every 30 seconds
-  });
-
-  const availableContexts = contextsData?.contexts || [];
-
-  const handleSwitchContext = (path: string) => {
-    setLocation(path);
-  };
-
-  const adminLogoutMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch('/api/auth/admin/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        throw new Error('Failed to logout');
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      // Clear all cached queries
-      queryClient.clear();
-      
-      // Force a full page reload to the Engine login page
-      // This ensures all session state is completely cleared
-      window.location.href = '/engine/login';
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to logout",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleLogout = () => {
-    adminLogoutMutation.mutate();
-  };
-
-  const getUserInitials = (user: any) => {
-    if (!user?.name) return 'A';
-    const nameParts = user.name.split(' ');
-    if (nameParts.length >= 2) {
-      return `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase();
-    }
-    return user.name[0]?.toUpperCase() || 'A';
   };
 
   return (
@@ -148,7 +86,7 @@ export default function AdminHeader({
             </div>
           </div>
 
-          {/* Right section - Notifications + User Menu */}
+          {/* Right section - Notifications + Unified Auth Header */}
           <div className="flex items-center space-x-2">
             {/* Notification Bell */}
             <NotificationBell />
@@ -160,104 +98,8 @@ export default function AdminHeader({
               </Button>
             </Link>
 
-            {/* Admin User Menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  className="relative h-10 w-10 rounded-full border-2 border-red-200 dark:border-red-800"
-                  data-testid="admin-user-menu"
-                >
-                  <Avatar className="h-10 w-10">
-                    {adminUser?.profileImageUrl && (
-                      <AvatarImage src={adminUser.profileImageUrl} alt={adminUser.name || "Admin"} />
-                    )}
-                    <AvatarFallback className="bg-red-600 text-white">
-                      {getUserInitials(adminUser)}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <div className="flex items-center justify-start gap-2 p-2">
-                  <Avatar className="h-8 w-8">
-                    {adminUser?.profileImageUrl && (
-                      <AvatarImage src={adminUser.profileImageUrl} alt={adminUser.name || "Admin"} />
-                    )}
-                    <AvatarFallback className="bg-red-600 text-white text-xs">
-                      {getUserInitials(adminUser)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {adminUser?.name || "Admin User"}
-                    </p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {adminUser?.email || ""}
-                    </p>
-                    <div className="flex gap-1 mt-1">
-                      <Badge variant="outline" className="text-xs px-1 py-0 h-4">
-                        {adminUser?.role || 'admin'}
-                      </Badge>
-                      {adminUser?.isSuperAdmin && (
-                        <Badge variant="secondary" className="text-xs px-1 py-0 h-4 bg-yellow-100 text-yellow-800">
-                          Super
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <DropdownMenuSeparator />
-
-                {/* Panel/Role Switcher */}
-                {availableContexts.length > 1 && (
-                  <>
-                    <DropdownMenuLabel className="text-xs text-muted-foreground font-normal px-2 py-1">
-                      Switch Panel
-                    </DropdownMenuLabel>
-                    {availableContexts.map((context: any) => (
-                      <DropdownMenuItem
-                        key={context.type}
-                        onClick={() => handleSwitchContext(context.path)}
-                        className={`cursor-pointer ${context.active ? 'bg-accent' : ''}`}
-                        data-testid={`switch-to-${context.type}`}
-                      >
-                        {context.type === 'engine_admin' && <Shield className="mr-2 h-4 w-4" />}
-                        {context.type === 'hub_admin' && <Settings className="mr-2 h-4 w-4" />}
-                        {context.type === 'user' && <User className="mr-2 h-4 w-4" />}
-                        <div className="flex-1">
-                          <div className="text-sm font-medium">{context.name}</div>
-                          <div className="text-xs text-muted-foreground">{context.user.role}</div>
-                        </div>
-                        {context.active && (
-                          <Badge variant="outline" className="text-xs px-1 py-0 h-4 ml-2">
-                            Active
-                          </Badge>
-                        )}
-                      </DropdownMenuItem>
-                    ))}
-                    <DropdownMenuSeparator />
-                  </>
-                )}
-
-                <Link href="/engine/account">
-                  <DropdownMenuItem className="cursor-pointer" data-testid="admin-menu-account">
-                    <User className="mr-2 h-4 w-4" />
-                    <span>My Account</span>
-                  </DropdownMenuItem>
-                </Link>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="cursor-pointer text-red-600 dark:text-red-400"
-                  onClick={handleLogout}
-                  disabled={adminLogoutMutation.isPending}
-                  data-testid="admin-menu-logout"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>{adminLogoutMutation.isPending ? "Signing out..." : "Sign out"}</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {/* Unified Auth Header with Panel Switcher */}
+            <UniversalAuthHeader />
           </div>
         </div>
       </div>
