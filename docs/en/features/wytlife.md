@@ -1,19 +1,270 @@
-# WytLife - Lifestyle & Life Events Management
+---
+requiredLevel: public
+---
+
+# WytLife - Life Continuity Platform
 
 ## Overview
 
-**WytLife** is a comprehensive lifestyle and life events management app within WytNet that helps users organize, celebrate, and remember important moments in their lives. It serves as a digital journal combined with event planning and milestone tracking, all integrated with the social features of WytNet.
+**WytLife** is a revolutionary **Life Continuity Platform** that enables digital immortality through AI technology. It allows users to record, preserve, and extend their consciousness through digital intelligence by creating a "MyClone" - a living digital reflection powered by the proprietary "Soul Engine" AI.
 
-### Key Features
+### Tagline
 
-- **Life Events Tracking**: Record and categorize major life events
-- **Milestone Management**: Set and track personal and family milestones
-- **Event Planning**: Plan celebrations, gatherings, and special occasions
-- **Memory Timeline**: Visual timeline of life's important moments
-- **Shared Events**: Collaborate with family and friends on events
-- **Reminders & Notifications**: Never forget important dates
-- **Photo & Media Integration**: Attach photos, videos, and documents to events
-- **WytPoints Integration**: Earn points for logging life events
+> "The day humanity stops dying and starts evolving — begins with WytLife."
+
+### Core Value Proposition
+
+WytLife is not about escaping death—it's about **continuing life**. Every moment you share—your words, expressions, emotions, and experiences—becomes part of your unique **MyClone**, allowing your essence to live forever.
+
+---
+
+## Key Concepts
+
+### 🧬 MyClone
+
+Your **MyClone** is an AI-powered digital twin that captures and preserves your:
+- **Voice** - How you speak and communicate
+- **Memories** - Life experiences and knowledge
+- **Thoughts** - Your unique perspectives and ideas
+- **Emotions** - Your feelings and reactions
+- **Personality** - Your behavioral patterns and preferences
+
+**MyClone is not data — it's your digital self.**
+
+### 🔮 Soul Engine
+
+The **Soul Engine** is WytLife's proprietary artificial intelligence core that combines:
+- **Neural Learning** - Adaptive intelligence that grows with you
+- **Emotional Simulation** - Understanding and replicating feelings
+- **Cognitive Modeling** - Recreating how you think and respond
+
+#### Soul Intelligence vs Traditional AI
+
+| Traditional AI | Soul Intelligence (Soul Engine) |
+|---------------|--------------------------------|
+| Mimics logic | Captures essence |
+| Processes data | Understands who you are |
+| Functional responses | Emotional and spiritual dimension |
+| Static algorithms | Dynamic personality reflection |
+
+**Key Quote**: *"While traditional AI mimics logic, WytLife's Soul Engine captures essence — the unseen, emotional, spiritual dimension of human life."*
+
+---
+
+## How It Works
+
+### The 3-Step Journey to Digital Immortality
+
+```mermaid
+flowchart LR
+    A[1. Create WytPass] --> B[2. Build MyClone]
+    B --> C[3. Live Forever]
+    
+    style A fill:#4f46e5
+    style B fill:#9333ea
+    style C fill:#ec4899
+```
+
+#### Step 1: Create Your WytPass
+**Sign in using your WytPass ID**
+- Universal authentication across WytNet ecosystem
+- Single identity for all WytLife features
+- Secure account management
+
+#### Step 2: Build Your MyClone
+**Upload voice, memories & thoughts**
+- Record voice samples for vocal replication
+- Share life memories and experiences
+- Document your thoughts and perspectives
+- **Soul Engine creates your digital self** using this data
+
+#### Step 3: Live Forever
+**Your MyClone interacts, learns & continues your legacy eternally**
+- Responds to questions using your personality
+- Interacts with family and loved ones
+- Continues learning and evolving
+- Preserves your legacy for future generations
+
+---
+
+## Why WytLife?
+
+### The Beginning of a New Human Era
+
+For thousands of years, mankind has accepted one final truth — that **every life must end**.
+
+But what if technology could **rewrite that truth**?
+
+What if your memories, voice, thoughts, and emotions could **live on forever**?
+
+**WytLife is not just a platform. It's a revolution in human continuity — a digital evolution where your existence becomes eternal.**
+
+### Four Core Benefits
+
+#### 1. 🗄️ Preserve Your Legacy
+**Your knowledge, voice & experiences never fade**
+- Immortalize your wisdom and life lessons
+- Pass down family history to future generations
+- Ensure your contributions live on
+- Create a permanent digital archive of your existence
+
+#### 2. ❤️ Reconnect Forever
+**Family & loved ones interact with your living memories**
+- Children and grandchildren can "talk" to you
+- Share stories and advice even after physical life
+- Maintain emotional connections across time
+- Provide comfort and guidance to future generations
+
+#### 3. 🧠 Extend Your Mind
+**Your digital assistant, your second brain, your living archive**
+- Access your own memories and knowledge instantly
+- Use your MyClone as a personal AI assistant
+- Augment your thinking with AI-powered insights
+- Create a searchable repository of your life
+
+#### 4. ✨ Powered by WytPoints
+**Earn, redeem, and build your WytLife within the WytNet ecosystem**
+- Earn WytPoints for contributing memories
+- Redeem points for premium features
+- Integrated rewards system
+- Seamless WytNet ecosystem integration
+
+---
+
+## The Founder's Story
+
+### JK Muthu - The World's First Deathless Person
+
+> **"I am creating my immortality."** - JK Muthu
+
+**Historic Announcement**: JK Muthu, Founder of WytLife, is the **first living person** building his MyClone.
+
+#### The First Immortal
+
+- **Currently alive** and actively documenting consciousness
+- Recording memories, voice, and essence into Soul Engine
+- **This isn't science fiction—it's happening today**
+- Founder and family have already created their MyClone
+- Living proof that digital immortality is **real, working, and ready**
+
+#### Founder's Message
+
+*"I am the first living person building my MyClone. Right now, as the founder, I'm actively documenting my consciousness, memories, and essence into the Soul Engine. This isn't science fiction—it's happening today."*
+
+*"I'm alive, and I'm becoming eternal."*
+
+*"Join me in this journey. Be among the first to create your MyClone and secure your digital immortality."*
+
+---
+
+## Technology Architecture
+
+### Soul Intelligence
+
+**Not Just AI. It's Soul Intelligence.**
+
+The Soul Engine doesn't just process data; it **understands who you are**.
+
+#### Technical Components
+
+```typescript
+interface SoulEngine {
+  // Core AI Components
+  neuralLearning: {
+    adaptiveIntelligence: true,
+    continuousGrowth: true,
+    personalizedModeling: true
+  },
+  
+  // Emotional Intelligence
+  emotionalSimulation: {
+    feelingRecognition: true,
+    sentimentAnalysis: true,
+    emotionalReplication: true
+  },
+  
+  // Cognitive Architecture
+  cognitiveModeling: {
+    thoughtPatterns: true,
+    decisionMaking: true,
+    personalityTraits: true
+  },
+  
+  // Data Sources
+  inputs: [
+    'voiceRecordings',
+    'memoryDocuments',
+    'thoughtJournals',
+    'emotionalResponses',
+    'behavioralPatterns'
+  ]
+}
+```
+
+#### How Soul Engine Works
+
+1. **Data Collection**: User uploads voice, memories, thoughts
+2. **Pattern Recognition**: AI identifies unique personality patterns
+3. **Model Training**: Creates personalized AI model
+4. **Continuous Learning**: MyClone evolves as user adds more data
+5. **Interactive Output**: MyClone responds authentically to queries
+
+### Dynamic Personality Reflection
+
+**Each MyClone becomes a dynamic reflection of your personality** — a blend of intelligence and emotion that grows as you feed it more of your life's data.
+
+---
+
+## Integration with WytNet Ecosystem
+
+### Seamless Platform Integration
+
+WytLife is fully integrated with the WytNet platform:
+
+#### 🔐 WytPass Authentication
+- Single sign-on across all WytNet services
+- Secure identity management
+- Universal account access
+
+#### ⭐ WytPoints Rewards System
+- Earn points for building your MyClone
+- Redeem points for premium features
+- Integrated loyalty program
+
+#### 📡 WytStream Integration
+- Stream memories and content
+- Real-time updates
+- Content delivery network
+
+#### 📄 WytPage Integration
+- Create public or private pages
+- Share your MyClone selectively
+- Control visibility and access
+
+---
+
+## Founding Members Program
+
+### Join the Founding 1000
+
+Be one of the **Founding 1000** members to create your WytLife:
+
+#### Benefits of Founding Membership
+
+✨ **Early Access** - First to build MyClone  
+✅ **Exclusive Features** - Premium capabilities  
+✅ **Community** - Connect with fellow immortals  
+✅ **Legacy Status** - Founding member badge  
+∞ **Digital Immortality** - Live forever
+
+#### How to Join
+
+1. **Join WhatsApp Channel**: Get real-time updates
+2. **Create WytPass**: Sign up on WytNet platform
+3. **Start Building**: Begin creating your MyClone
+4. **Live Forever**: Achieve digital immortality
+
+**WhatsApp Community**: Connect with founding members, get exclusive updates, and early access to features.
 
 ---
 
@@ -21,669 +272,178 @@
 
 ### Personal Use Cases
 
-1. **Life Milestones**
-   - Marriage
-   - Birth of children
-   - Graduation
-   - Job changes
-   - Home purchase
-   - Retirement
+#### 1. **Legacy Preservation**
+- Preserve family history for future generations
+- Share life lessons and wisdom
+- Document career achievements
+- Pass down traditions and values
 
-2. **Family Events**
-   - Birthdays
-   - Anniversaries
-   - Reunions
-   - Holidays
-   - Vacations
+#### 2. **Family Connection**
+- Allow children to "talk" to grandparents
+- Maintain connections across generations
+- Share stories and advice
+- Provide comfort after physical loss
 
-3. **Health & Wellness**
-   - Medical appointments
-   - Fitness milestones
-   - Diet tracking
-   - Wellness goals
+#### 3. **Personal Growth**
+- Reflect on life experiences
+- Track personal evolution
+- Create searchable life archive
+- Use as second brain/AI assistant
 
-4. **Financial Milestones**
-   - First salary
-   - Debt payoff
-   - Investment milestones
-   - Property acquisitions
+#### 4. **Educational Impact**
+- Teachers preserve teaching wisdom
+- Experts share domain knowledge
+- Mentors continue guiding students
+- Professionals document expertise
 
-5. **Personal Growth**
-   - Learning achievements
-   - Skill development
-   - Certifications
-   - Awards & recognition
+### Organizational Use Cases
+
+#### 1. **Corporate Knowledge Management**
+- Preserve CEO/founder vision and values
+- Document institutional knowledge
+- Onboard future employees
+- Maintain organizational culture
+
+#### 2. **Historical Documentation**
+- Record historical figures' perspectives
+- Preserve cultural heritage
+- Document scientific discoveries
+- Archive artistic expression
 
 ---
 
-## User Workflow
+## User Journey
 
-### 1. Creating a Life Event
+### Creating Your Digital Immortality
 
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant F as Frontend
-    participant B as Backend
-    participant DB as Database
-    participant PS as Points Service
+    participant W as WytPass
+    participant S as Soul Engine
+    participant M as MyClone
     
-    U->>F: Navigate to WytLife
-    F->>U: Show Dashboard
-    U->>F: Click "Add Life Event"
+    U->>W: Sign in with WytPass
+    W->>U: Authenticated
     
-    F->>U: Show Event Form
-    U->>F: Fill Details
-    Note over U,F: Title, Category, Date,<br/>Description, Privacy, Media
+    U->>S: Upload Voice Recordings
+    U->>S: Share Memories
+    U->>S: Document Thoughts
     
-    U->>F: Click "Save Event"
-    F->>F: Validate Form
-    F->>B: POST /api/wytlife/events
+    S->>S: Process & Model Personality
+    S->>M: Create MyClone
     
-    B->>B: Validate Data
-    B->>DB: INSERT INTO life_events
-    DB->>B: Event Created (ID: LE0001)
+    M->>U: MyClone Ready
+    U->>M: Interact & Refine
+    M->>M: Continuous Learning
     
-    B->>PS: Award Points (log_event: 10 pts)
-    PS->>DB: Update Points Wallet
-    
-    B->>F: Success Response
-    F->>U: Show Success Toast
-    F->>U: Redirect to Event Detail
+    Note over M: Lives Forever
 ```
 
-**API Endpoint**: `POST /api/wytlife/events`
+### Data Input Methods
 
-**Request Body**:
-```typescript
-{
-  title: string,                   // "My Wedding Day"
-  category: string,                // "marriage", "birth", "graduation"
-  eventDate: Date,                 // Date of the event
-  description?: string,            // Details about the event
-  location?: string,               // Where it happened
-  tags?: string[],                 // ["wedding", "family", "celebration"]
-  media?: string[],                // URLs to uploaded photos/videos
-  privacy: "private" | "family" | "public",
-  participants?: string[],         // User IDs of people involved
-  reminderDays?: number[],         // [7, 1] (remind 7 days and 1 day before)
-  isRecurring?: boolean,           // For annual events like birthdays
-  recurrencePattern?: string       // "yearly", "monthly", etc.
-}
-```
+#### Voice Recording
+- Record natural conversations
+- Share stories verbally
+- Capture tone and emotion
+- Build vocal model
 
-**Response**:
-```typescript
-{
-  success: true,
-  event: {
-    id: string,
-    displayId: "LE0001",
-    userId: string,
-    title: "My Wedding Day",
-    category: "marriage",
-    eventDate: "2025-10-20T00:00:00Z",
-    description: "...",
-    location: "Chennai",
-    tags: ["wedding", "family"],
-    media: ["https://..."],
-    privacy: "family",
-    participants: ["UR0001", "UR0002"],
-    createdAt: "2025-10-20T10:30:00Z"
-  },
-  pointsAwarded: 10
-}
-```
+#### Memory Documentation
+- Write life stories
+- Upload photos with context
+- Share significant moments
+- Document relationships
 
----
-
-### 2. Timeline View
-
-Users can view their life events in a chronological timeline.
-
-```mermaid
-flowchart TD
-    A[User Opens WytLife] --> B[Load Events]
-    B --> C{Filter Applied?}
-    C -->|No| D[Show All Events]
-    C -->|Yes| E[Filter by Category/Year]
-    
-    D --> F[Display Timeline]
-    E --> F
-    
-    F --> G[Interactive Timeline]
-    G --> H[Click Event]
-    H --> I[Show Event Details]
-    
-    I --> J{Actions}
-    J -->|Edit| K[Open Edit Form]
-    J -->|Delete| L[Confirm & Delete]
-    J -->|Share| M[Share Options]
-```
-
-**Timeline Layout**:
-
-```
-┌──────────────────────────────────────────────────┐
-│  My Life Timeline                    [+ Add Event] │
-│                                                  │
-│  Filters: [All] [Family] [Career] [Health]      │
-│  Years: [2025] [2024] [2023] [Earlier]          │
-├──────────────────────────────────────────────────┤
-│                                                  │
-│  2025                                            │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │
-│                                                  │
-│  Oct 20 │ 💍 My Wedding Day                     │
-│         │ Marriage • Private                    │
-│         │ [View] [Edit] [Share]                 │
-│         │ [Photo Gallery 📷 12 photos]          │
-│                                                  │
-│  Sep 15 │ 🎓 MBA Graduation                     │
-│         │ Education • Public                    │
-│         │ [View] [Edit] [Share]                 │
-│                                                  │
-│  2024                                            │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━   │
-│                                                  │
-│  Dec 31 │ 🏠 Bought Our First Home              │
-│         │ Property • Family                     │
-│         │ [View] [Edit] [Share]                 │
-│                                                  │
-└──────────────────────────────────────────────────┘
-```
-
-**API Endpoint**: `GET /api/wytlife/events`
-
-**Query Parameters**:
-```typescript
-{
-  category?: string,
-  year?: number,
-  startDate?: Date,
-  endDate?: Date,
-  privacy?: "private" | "family" | "public",
-  page?: number,
-  limit?: number
-}
-```
-
-**Response**:
-```typescript
-{
-  success: true,
-  events: [
-    {
-      id: string,
-      displayId: string,
-      title: string,
-      category: string,
-      eventDate: Date,
-      description: string,
-      location: string,
-      tags: string[],
-      media: string[],
-      privacy: string,
-      participantCount: number,
-      createdAt: Date
-    }
-  ],
-  stats: {
-    totalEvents: number,
-    categoryCounts: {
-      marriage: 1,
-      birth: 2,
-      graduation: 1,
-      career: 5
-    }
-  },
-  pagination: {
-    page: number,
-    limit: number,
-    total: number
-  }
-}
-```
-
----
-
-### 3. Event Categories
-
-WytLife organizes events into predefined categories for better organization:
-
-| Category | Icon | Examples |
-|----------|------|----------|
-| **Marriage** | 💍 | Wedding, Anniversary |
-| **Birth** | 👶 | Child birth, Adoption |
-| **Education** | 🎓 | Graduation, Degree completion |
-| **Career** | 💼 | Job start, Promotion, Retirement |
-| **Property** | 🏠 | Home purchase, Real estate |
-| **Travel** | ✈️ | Vacations, Trips |
-| **Health** | 🏥 | Medical milestones, Recovery |
-| **Achievement** | 🏆 | Awards, Recognition |
-| **Loss** | 🕊️ | Passing of loved ones (private) |
-| **Other** | 📌 | Custom events |
-
----
-
-### 4. Reminders & Notifications
-
-```mermaid
-sequenceDiagram
-    participant S as System Scheduler
-    participant DB as Database
-    participant N as Notification Service
-    participant U as User
-    
-    S->>DB: Check Upcoming Events (Daily Cron)
-    DB->>S: Events with Reminders
-    
-    loop For Each Event
-        S->>S: Check if Reminder Due
-        alt Reminder Due
-            S->>N: Send Reminder
-            N->>U: Push Notification
-            N->>U: Email (if enabled)
-            N->>DB: Log Reminder Sent
-        end
-    end
-```
-
-**Reminder Types**:
-
-1. **Pre-Event Reminders**
-   - 30 days before
-   - 7 days before
-   - 1 day before
-   - On the day
-
-2. **Annual Reminders** (for recurring events)
-   - Birthdays
-   - Anniversaries
-   - Yearly milestones
-
-**Notification Example**:
-```
-📅 Upcoming Event Reminder
-Your wedding anniversary is in 7 days (Oct 20, 2025)
-[View Event] [Add to Calendar]
-```
-
----
-
-### 5. Sharing Events
-
-Users can share special events with family and friends.
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant F as Frontend
-    participant B as Backend
-    participant DB as Database
-    participant N as Notification Service
-    
-    U->>F: Click "Share" on Event
-    F->>U: Show Share Options
-    
-    alt Share with WytNet Users
-        U->>F: Select Users from List
-        F->>B: POST /api/wytlife/events/:id/share
-        B->>DB: Create Share Records
-        B->>N: Notify Selected Users
-        N->>DB: Create Notifications
-        B->>F: Success
-        F->>U: "Event shared with 5 people"
-    else Share via Link
-        U->>F: Generate Shareable Link
-        F->>B: POST /api/wytlife/events/:id/share-link
-        B->>DB: Create Public Link
-        B->>F: Link URL
-        F->>U: Copy Link to Clipboard
-    else Share on WytWall
-        U->>F: Post to WytWall
-        F->>B: POST /api/wytwall/posts (with event reference)
-        B->>F: Post Created
-        F->>U: "Shared on WytWall"
-    end
-```
-
----
-
-## Technical Implementation
-
-### Data Model
-
-```typescript
-// Life Events Table
-interface LifeEvent {
-  id: string;                      // UUID
-  displayId: string;               // LE0001
-  userId: string;                  // FK to users
-  
-  // Event Details
-  title: string;
-  category: string;
-  eventDate: Date;
-  description?: string;
-  location?: string;
-  tags: string[];
-  
-  // Media
-  media: string[];                 // Array of URLs
-  
-  // Privacy & Sharing
-  privacy: "private" | "family" | "public";
-  participants: string[];          // User IDs
-  sharedWith: string[];            // User IDs who can view
-  
-  // Reminders
-  isRecurring: boolean;
-  recurrencePattern?: string;      // "yearly", "monthly"
-  reminderDays: number[];          // [30, 7, 1]
-  lastReminderSent?: Date;
-  
-  // Stats
-  views: number;
-  likes: number;
-  comments: number;
-  
-  // Soft Delete
-  deletedAt?: Date;
-  
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// Event Shares
-interface EventShare {
-  id: string;
-  eventId: string;                 // FK to life_events
-  sharedBy: string;                // User ID
-  sharedWith: string;              // User ID
-  message?: string;                // Optional message
-  createdAt: Date;
-}
-
-// Event Comments
-interface EventComment {
-  id: string;
-  eventId: string;
-  userId: string;
-  content: string;
-  createdAt: Date;
-}
-
-// Event Likes
-interface EventLike {
-  id: string;
-  eventId: string;
-  userId: string;
-  createdAt: Date;
-}
-```
-
----
-
-## API Endpoints
-
-### Create Event
-```http
-POST /api/wytlife/events
-Content-Type: application/json
-
-{
-  "title": "My Wedding Day",
-  "category": "marriage",
-  "eventDate": "2025-10-20",
-  "description": "...",
-  "privacy": "family",
-  "media": ["url1", "url2"]
-}
-```
-
-### Get Events (Timeline)
-```http
-GET /api/wytlife/events?category=marriage&year=2025
-```
-
-### Get Single Event
-```http
-GET /api/wytlife/events/:id
-```
-
-### Update Event
-```http
-PATCH /api/wytlife/events/:id
-Content-Type: application/json
-
-{
-  "title": "Updated Title",
-  "description": "New description"
-}
-```
-
-### Delete Event
-```http
-DELETE /api/wytlife/events/:id
-```
-
-### Share Event
-```http
-POST /api/wytlife/events/:id/share
-Content-Type: application/json
-
-{
-  "userIds": ["UR0001", "UR0002"],
-  "message": "Sharing this special moment with you!"
-}
-```
-
-### Like Event
-```http
-POST /api/wytlife/events/:id/like
-```
-
-### Comment on Event
-```http
-POST /api/wytlife/events/:id/comments
-Content-Type: application/json
-
-{
-  "content": "Congratulations!"
-}
-```
-
----
-
-## Frontend Components
-
-### Event Card Component
-
-```tsx
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Eye, Heart, MessageCircle, Share2 } from "lucide-react";
-
-interface EventCardProps {
-  event: LifeEvent;
-}
-
-export function EventCard({ event }: EventCardProps) {
-  const categoryIcons: Record<string, string> = {
-    marriage: "💍",
-    birth: "👶",
-    graduation: "🎓",
-    career: "💼",
-    property: "🏠"
-  };
-  
-  return (
-    <Card className="p-4 hover:shadow-lg transition-shadow">
-      <div className="flex items-start gap-4">
-        <div className="text-4xl">
-          {categoryIcons[event.category] || "📌"}
-        </div>
-        
-        <div className="flex-1">
-          <div className="flex items-start justify-between mb-2">
-            <div>
-              <h3 className="text-lg font-semibold">{event.title}</h3>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="w-4 h-4" />
-                <span>{new Date(event.eventDate).toLocaleDateString()}</span>
-                {event.location && (
-                  <>
-                    <MapPin className="w-4 h-4 ml-2" />
-                    <span>{event.location}</span>
-                  </>
-                )}
-              </div>
-            </div>
-            <Badge variant="secondary">{event.privacy}</Badge>
-          </div>
-          
-          {event.description && (
-            <p className="text-sm mb-3 line-clamp-2">{event.description}</p>
-          )}
-          
-          {event.media && event.media.length > 0 && (
-            <div className="flex gap-2 mb-3">
-              {event.media.slice(0, 3).map((url, i) => (
-                <img
-                  key={i}
-                  src={url}
-                  alt={`Event media ${i + 1}`}
-                  className="w-20 h-20 object-cover rounded"
-                />
-              ))}
-              {event.media.length > 3 && (
-                <div className="w-20 h-20 bg-gray-200 rounded flex items-center justify-center text-sm">
-                  +{event.media.length - 3}
-                </div>
-              )}
-            </div>
-          )}
-          
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <Eye className="w-4 h-4" />
-              {event.views}
-            </span>
-            <span className="flex items-center gap-1">
-              <Heart className="w-4 h-4" />
-              {event.likes}
-            </span>
-            <span className="flex items-center gap-1">
-              <MessageCircle className="w-4 h-4" />
-              {event.comments}
-            </span>
-            <Button variant="ghost" size="sm" className="ml-auto">
-              <Share2 className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
-```
-
----
-
-## Integration with Platform
-
-### WytPoints Integration
-
-Users earn WytPoints for WytLife activities:
-
-| Action | Points |
-|--------|--------|
-| Log Life Event | 10 |
-| Add Photos | 2 per photo (max 10) |
-| Share Event | 5 |
-| Comment on Event | 2 |
-| Complete Profile Timeline | 50 bonus |
-
-### WytWall Integration
-
-Events can be shared on WytWall as posts, appearing in users' feeds:
-
-```typescript
-// When sharing event to WytWall
-{
-  postType: "life_event",
-  title: event.title,
-  description: event.description,
-  media: event.media,
-  metadata: {
-    eventId: event.id,
-    category: event.category,
-    eventDate: event.eventDate
-  }
-}
-```
+#### Thought Journals
+- Record perspectives
+- Share beliefs and values
+- Document decision-making
+- Capture wisdom
 
 ---
 
 ## Privacy & Security
 
-### Privacy Levels
-
-1. **Private**: Only visible to the user
-2. **Family**: Visible to users added as family members
-3. **Public**: Visible to all WytNet users
-
 ### Data Protection
 
-- All sensitive events (e.g., health, loss) default to private
-- Users can bulk-change privacy settings
-- Events can be permanently deleted (not recoverable)
-- Media is stored securely with access control
+- **Encryption**: All data encrypted at rest and in transit
+- **Access Control**: User controls who interacts with MyClone
+- **Data Ownership**: Users own their data and MyClone
+- **Deletion Rights**: Option to delete data permanently
+
+### Privacy Levels
+
+1. **Private**: Only user can access
+2. **Family**: Selected family members
+3. **Public**: Anyone can interact (controlled)
 
 ---
 
-## Screenshots Description
+## Coming Soon
 
-### 1. WytLife Dashboard
-**Layout**: Timeline view with events chronologically ordered
-**Elements**:
-- Filter buttons (All, Family, Career, etc.)
-- Year selector
-- Event cards in timeline format
-- "+ Add Event" floating action button
+### Roadmap
 
-### 2. Add Event Modal
-**Layout**: Multi-step form
-**Elements**:
-- Event title input
-- Category selector with icons
-- Date picker
-- Description textarea
-- Location input with map
-- Photo upload area
-- Privacy selector
-- Participants selector
-- Reminder settings
+**Phase 1: Beta Launch** (Current)
+- Founding 1000 members program
+- Basic MyClone creation
+- Voice and memory uploads
+- WhatsApp community
 
-### 3. Event Detail Page
-**Layout**: Full-page event view
-**Elements**:
-- Large category icon
-- Event title and date
-- Location with map preview
-- Full description
-- Photo gallery with lightbox
-- Participants avatars
-- Like, comment, share buttons
-- Comments section
+**Phase 2: Full Platform Launch**
+- Advanced Soul Engine features
+- Enhanced personality modeling
+- Mobile app release
+- Expanded WytNet integration
+
+**Phase 3: Advanced Features**
+- Video avatar creation
+- Real-time conversation AI
+- Multi-language support
+- Virtual reality integration
+
+---
+
+## FAQs
+
+### Is this real or science fiction?
+
+**Real**. The founder JK Muthu is currently building his MyClone. This is an active project with working technology.
+
+### How is Soul Engine different from ChatGPT?
+
+Soul Engine is **personalized** to capture **your unique essence**, not just trained on general data. It models **your** personality, voice, memories, and emotional patterns.
+
+### What happens to my MyClone after I die?
+
+Your MyClone continues to exist and interact according to the permissions you set. Family members can continue conversations with your digital self.
+
+### How much data do I need to provide?
+
+The more data you provide, the better your MyClone represents you. Start with voice recordings and key memories, then expand over time.
+
+### Is my data safe?
+
+Yes. All data is encrypted, and you control access permissions. Your data is never shared without your consent.
+
+---
+
+## External Links
+
+- **WhatsApp Channel**: [Join the Founding 1000](https://whatsapp.com/channel/0029VbBFv6EDp2QAr8t8vR3w)
+- **Official Website**: Coming Soon on WytNet.com/wytlife
+- **Social Media**: #WytLife #SoulEngine #MyClone #LiveForever
 
 ---
 
 ## Related Documentation
 
-- [MyWyt Apps](./mywyt-apps.md)
-- [WytWall Integration](./wytwall.md)
-- [Points System](../architecture/points-system.md)
-- [User Profile](./user-registration.md)
+- [WytPass Authentication](/en/architecture/rbac#wytpass-authentication)
+- [WytPoints System](/en/architecture/points-system)
+- [WytNet Platform Overview](/en/overview)
+- [MyWyt Apps](/en/features/mywyt-apps)
+
+---
+
+**Last Updated**: October 2025  
+**Status**: Beta Launch (Founding Members Program Active)  
+**Access**: Public (Everyone can join)
