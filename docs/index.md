@@ -127,7 +127,7 @@ All documentation now includes production requirements:
 - **[User Registration & Panel](/en/features/user-registration)** - User journey and dashboard
 - **[WytWall](/en/features/wytwall)** - Social commerce Needs & Offers feed
 - **[MyWyt Apps](/en/features/mywyt-apps)** - App marketplace and management
-- **[WytLife](/en/features/wytlife)** - Life events & milestones tracking
+- **[WytLife](/en/features/wytlife)** - Life Continuity Platform (Digital Immortality)
 - **[AI Directory](/en/features/ai-directory)** - Curated AI tools database
 - **[QR Generator](/en/features/qr-generator)** - QR code creation and analytics
 - **[DISC Assessment](/en/features/disc-assessment)** - Personality profiling tool

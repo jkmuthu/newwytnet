@@ -40,7 +40,7 @@ The foundational layer that powers everything:
 The primary hub showcasing platform capabilities:
 - User dashboard with app management
 - Social features (WytWall)
-- Lifestyle & community tools (WytLife)
+- Life Continuity Platform (WytLife)
 - AI tools directory
 - Utility apps (QR Generator, DISC Assessment)
 

@@ -47,7 +47,7 @@ WytApps span 17 distinct categories:
 9. **Development** - Coding and app building (WytCode, WytBuilder)
 10. **Creation** - Content and website creation (WytSite, WytBuilder, WytForm)
 11. **Utilities** - Tools and converters (WytQRC, Currency Converter)
-12. **Lifestyle** - Health and wellness (WytLife, WytGod, WytWorld)
+12. **Lifestyle & Legacy** - Life continuity, spirituality, and experiences (WytLife, WytGod, WytWorld)
 13. **Digital Assets** - Crypto and investments (WytCoin, WytGold, WytWallet)
 14. **Storage** - File management (WytCloud)
 15. **Analytics** - Tracking and insights (WytScore, WytTrace)
