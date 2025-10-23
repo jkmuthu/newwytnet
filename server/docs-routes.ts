@@ -2,6 +2,7 @@ import { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
+import { devdocAuthMiddleware } from "./middleware/devdocAuth";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -387,7 +388,9 @@ export function setupDocsRoutes(app: Express) {
   });
   
   // Serve built VitePress documentation with auth middleware
-  app.use('/devdoc', checkDocsAuth, express.static(
+  // Layer 1: Basic authentication (password/Super Admin/token)
+  // Layer 2: Granular RBAC (section-level permissions based on WytPass role)
+  app.use('/devdoc', checkDocsAuth, devdocAuthMiddleware, express.static(
     path.join(__dirname, '../docs/.vitepress/dist')
   ));
   
