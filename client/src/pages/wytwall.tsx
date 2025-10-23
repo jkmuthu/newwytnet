@@ -64,6 +64,15 @@ export default function WytWall() {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
+  // Calculate location counts
+  const locationCounts: Record<string, number> = {};
+  allPosts.forEach((post: any) => {
+    if (post.location) {
+      const location = post.location.trim();
+      locationCounts[location] = (locationCounts[location] || 0) + 1;
+    }
+  });
+
   let filteredPosts = allPosts;
 
   // Apply search filter
@@ -138,6 +147,7 @@ export default function WytWall() {
       categoryCounts={counts}
       selectedLocation={selectedLocation}
       onLocationChange={handleLocationChange}
+      locationCounts={locationCounts}
     />
   );
 

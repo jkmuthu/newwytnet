@@ -26,6 +26,7 @@ interface FiltersPanelProps {
   categoryCounts?: Record<string, number>;
   selectedLocation?: string;
   onLocationChange?: (location: string) => void;
+  locationCounts?: Record<string, number>;
 }
 
 const CATEGORIES = [
@@ -42,7 +43,8 @@ export default function FiltersPanel({
   onCategoryChange, 
   categoryCounts = {},
   selectedLocation = "",
-  onLocationChange
+  onLocationChange,
+  locationCounts = {}
 }: FiltersPanelProps) {
   const [categoriesOpen, setCategoriesOpen] = useState(true);
   const [locationOpen, setLocationOpen] = useState(false);
@@ -141,7 +143,7 @@ export default function FiltersPanel({
                       {/* City options */}
                       {filteredCities.map((city: any) => {
                         const cityName = city.label || city.name;
-                        const cityState = city.metadata?.state || city.state;
+                        const postCount = locationCounts[cityName] || 0;
                         return (
                           <CommandItem
                             key={city.code || cityName}
@@ -151,9 +153,9 @@ export default function FiltersPanel({
                           >
                             <MapPin className="mr-2 h-4 w-4" />
                             <span>{cityName}</span>
-                            {cityState && (
-                              <span className="ml-auto text-xs text-gray-500">
-                                {cityState}
+                            {postCount > 0 && (
+                              <span className="ml-auto text-xs font-medium text-blue-600 dark:text-blue-400">
+                                {postCount} {postCount === 1 ? 'post' : 'posts'}
                               </span>
                             )}
                           </CommandItem>
