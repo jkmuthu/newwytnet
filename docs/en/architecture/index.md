@@ -1,3 +1,7 @@
+---
+requiredLevel: developer
+---
+
 # Architecture Overview
 
 WytNet is built on a modular, scalable architecture designed for multi-tenancy, security, and extensibility. This section covers the technical architecture of the platform.

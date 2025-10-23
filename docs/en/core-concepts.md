@@ -1,3 +1,7 @@
+---
+requiredLevel: public
+---
+
 # Core Concepts
 
 ## Platform Architecture Hierarchy

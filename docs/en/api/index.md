@@ -1,3 +1,7 @@
+---
+requiredLevel: developer
+---
+
 # API Reference Overview
 
 WytNet provides a comprehensive RESTful API for all platform operations. All APIs follow consistent patterns for authentication, error handling, and data formatting.

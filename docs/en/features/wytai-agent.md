@@ -1,3 +1,7 @@
+---
+requiredLevel: developer
+---
+
 # WytAI Agent
 
 :::info IMPLEMENTATION STATUS

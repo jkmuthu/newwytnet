@@ -1,3 +1,7 @@
+---
+requiredLevel: developer
+---
+
 # Production Standards & Enterprise Commitment
 
 :::danger ⚠️ CRITICAL - READ BEFORE ANY IMPLEMENTATION

@@ -2,6 +2,7 @@
 layout: home
 title: WytNet DevDoc
 titleTemplate: Complete Developer Documentation
+requiredLevel: public
 
 hero:
   name: WytNet

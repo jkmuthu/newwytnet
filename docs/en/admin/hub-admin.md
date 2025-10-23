@@ -1,3 +1,7 @@
+---
+requiredLevel: internal
+---
+
 # Hub Admin Panel Guide
 
 ## Overview

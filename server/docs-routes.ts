@@ -26,12 +26,15 @@ declare module 'express-session' {
 }
 
 /**
- * Documentation Authentication Middleware
+ * Documentation Authentication Middleware (Layer 1: Basic Auth)
  * 
  * Three authentication methods:
  * 1. Replit Agent Token (Bearer token in Authorization header)
- * 2. Super Admin Session (already logged into Engine Admin)
- * 3. Password-only (for external developers)
+ * 2. WytPass Session (any authenticated user - granular permissions checked by devdocAuthMiddleware)
+ * 3. Password-only (for external developers - backward compatibility)
+ * 
+ * Note: This is a basic authentication gate. Granular permission checking
+ * (public/developer/internal/admin levels) is handled by devdocAuthMiddleware (Layer 2).
  */
 function checkDocsAuth(req: Request, res: Response, next: NextFunction) {
   // Method 1: Check Bearer token for Replit Agent
@@ -44,15 +47,17 @@ function checkDocsAuth(req: Request, res: Response, next: NextFunction) {
     }
   }
   
-  // Method 2: Check Super Admin session
+  // Method 2: Check WytPass session (any authenticated user)
+  // Granular permission checking happens in devdocAuthMiddleware
   const principal = req.session.wytpassPrincipal;
-  if (principal && principal.isSuperAdmin) {
-    console.log(`📖 Super Admin ${principal.name} accessing DevDoc`);
+  if (principal) {
+    console.log(`📖 WytPass user ${principal.name || principal.email} accessing DevDoc`);
     return next();
   }
   
-  // Method 3: Check password-based session
+  // Method 3: Check password-based session (backward compatibility)
   if (req.session.docsAuthenticated) {
+    console.log('📖 Password-authenticated user accessing DevDoc');
     return next();
   }
   

@@ -1,3 +1,7 @@
+---
+requiredLevel: internal
+---
+
 # Engine Admin Panel Guide
 
 ## Overview

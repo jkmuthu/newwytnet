@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { users, userRoles, rolePermissions, permissions, auditLogs } from "@shared/schema";
 
 // Whitelist patterns for public assets
@@ -18,12 +18,15 @@ const PUBLIC_ASSETS = [
 const PATH_PERMISSION_MAP: Record<string, string[]> = {
   '/devdoc/en/production-standards': ['devdoc-admin', 'devdoc-internal', 'devdoc-developer'],
   '/devdoc/en/api-reference': ['devdoc-admin', 'devdoc-internal', 'devdoc-developer'],
+  '/devdoc/en/api': ['devdoc-admin', 'devdoc-internal', 'devdoc-developer'],
   '/devdoc/en/architecture': ['devdoc-admin', 'devdoc-internal', 'devdoc-developer'],
   '/devdoc/en/implementation': ['devdoc-admin', 'devdoc-internal', 'devdoc-developer'],
   '/devdoc/en/workflows': ['devdoc-admin', 'devdoc-internal', 'devdoc-developer'],
-  '/devdoc/en/business-strategy': ['devdoc-admin'],
-  '/devdoc/en/internal-systems': ['devdoc-admin', 'devdoc-internal'],
-  '/devdoc/en/deployment': ['devdoc-admin', 'devdoc-internal'],
+  '/devdoc/en/use-case-flows': ['devdoc-admin', 'devdoc-internal', 'devdoc-developer'],
+  '/devdoc/en/features': ['devdoc-admin', 'devdoc-internal', 'devdoc-developer'],
+  '/devdoc/en/business': ['devdoc-admin'],  // Super Admin only
+  '/devdoc/en/admin': ['devdoc-admin', 'devdoc-internal'],  // Internal team only
+  '/devdoc/en/project': ['devdoc-admin', 'devdoc-internal'],  // Internal team only
 };
 
 // Helper function to get user's DevDoc permissions
@@ -38,7 +41,7 @@ async function getUserDevDocPermissions(userId: string): Promise<string[]> {
 
     if (!user) return [];
 
-    // Get user's role assignments
+    // Get user's role assignments (can have multiple roles)
     const userRolesList = await db
       .select({ roleId: userRoles.roleId })
       .from(userRoles)
@@ -46,14 +49,17 @@ async function getUserDevDocPermissions(userId: string): Promise<string[]> {
 
     if (userRolesList.length === 0) return [];
 
-    // Get all permissions for all user's roles
+    // Extract all roleIds
+    const roleIds = userRolesList.map(ur => ur.roleId);
+
+    // Get all permissions for ALL user's roles (not just first one)
     const rolePermsList = await db
       .select({
         permission: permissions
       })
       .from(rolePermissions)
       .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
-      .where(eq(rolePermissions.roleId, userRolesList[0].roleId));
+      .where(inArray(rolePermissions.roleId, roleIds));
 
     // Filter for DevDoc permissions
     const devdocPermissions = rolePermsList

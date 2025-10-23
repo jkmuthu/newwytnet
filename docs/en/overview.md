@@ -1,3 +1,7 @@
+---
+requiredLevel: public
+---
+
 # Platform Overview
 
 ## What is WytNet?
