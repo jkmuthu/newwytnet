@@ -153,14 +153,6 @@ export const navigationSections: NavigationSection[] = [
         keywords: ["organizations", "tenants", "companies"]
       },
       {
-        label: "Admin Users",
-        icon: Shield,
-        href: "/engine/admin-users",
-        description: "Engine admin user management",
-        keywords: ["admin", "users", "administrators"],
-        superAdminOnly: true
-      },
-      {
         label: "Platform Hubs",
         icon: Network,
         href: "/engine/platform-hubs",
@@ -189,27 +181,6 @@ export const navigationSections: NavigationSection[] = [
         href: "/engine/notifications",
         description: "System notifications, alerts, announcements",
         keywords: ["notifications", "alerts", "announcements", "messages"]
-      },
-      {
-        label: "Profile",
-        icon: User,
-        href: "/engine/profile",
-        description: "Admin user profile settings",
-        keywords: ["profile", "user", "settings", "account"]
-      },
-      {
-        label: "Account",
-        icon: User,
-        href: "/engine/account",
-        description: "Admin account settings, preferences",
-        keywords: ["account", "settings", "preferences", "config"]
-      },
-      {
-        label: "Admin Settings",
-        icon: Settings,
-        href: "/engine/settings",
-        description: "Admin portal settings, configuration",
-        keywords: ["settings", "config", "preferences", "admin"]
       }
     ]
   },
@@ -231,7 +202,7 @@ export const navigationSections: NavigationSection[] = [
         keywords: ["modules", "library", "catalog", "plugins"]
       },
       {
-        label: "Apps",
+        label: "All Apps",
         icon: Smartphone,
         href: "/engine/apps",
         description: "WytApps management, app installation, configuration",
