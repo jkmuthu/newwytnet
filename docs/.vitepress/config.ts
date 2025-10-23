@@ -20,6 +20,7 @@ export default defineConfig({
         nav: [
           { text: 'Home', link: '/' },
           { text: '⚠️ Standards', link: '/en/production-standards/' },
+          { text: '📋 PRD', link: '/en/prd/' },
           { text: 'Core Concepts', link: '/en/core-concepts' },
           { text: 'WytApps', link: '/en/wytapps/' },
           { text: 'WytSuites', link: '/en/wytsuites/' },
