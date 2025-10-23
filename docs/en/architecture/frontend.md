@@ -1,5 +1,17 @@
 # Frontend Architecture
 
+:::danger PRODUCTION FRONTEND STANDARDS
+All frontend code MUST implement:
+- ✅ **Input Validation** - Validate user input client-side AND server-side
+- 🔒 **XSS Prevention** - Sanitize all user-generated content before rendering
+- 📊 **Error Boundaries** - Catch and handle React errors gracefully
+- ⚠️ **Performance** - Code splitting, lazy loading, optimize bundle size
+- 🎯 **Accessibility** - WCAG 2.1 AA compliance, keyboard navigation, screen readers
+- 🔍 **State Management** - Proper cleanup, prevent memory leaks
+
+See [Production Standards](/en/production-standards/) for complete requirements.
+:::
+
 ## Overview
 
 WytNet's frontend is built with modern React patterns optimized for performance, type safety, and developer experience. The stack includes:

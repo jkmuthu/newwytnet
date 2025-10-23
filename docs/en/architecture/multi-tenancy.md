@@ -1,5 +1,19 @@
 # Multi-Tenancy Architecture
 
+:::danger CRITICAL PRODUCTION REQUIREMENT
+Multi-tenant data isolation is NON-NEGOTIABLE:
+- ✅ **Always Filter by tenant_id** - EVERY query MUST include tenant_id filter
+- 🔒 **Prevent Cross-Tenant Access** - Never allow users to access other tenant data
+- 📊 **Test Isolation** - Create automated tests to verify no data leakage
+- ⚠️ **Database Indexes** - Index tenant_id on ALL tables for performance
+- 🎯 **Audit Cross-Tenant Attempts** - Log and alert on cross-tenant access attempts
+- 🔍 **Code Review Focus** - Every PR must verify tenant_id filtering
+
+**Failure to enforce tenant isolation is a CRITICAL security vulnerability.**
+
+See [Production Standards](/en/production-standards/) for complete requirements.
+:::
+
 ## Overview
 
 WytNet implements a **multi-tenant SaaS architecture** where multiple organizations (tenants) share the same infrastructure and codebase while maintaining complete data isolation. This approach provides:

@@ -1,5 +1,17 @@
 # Database Schema
 
+:::danger PRODUCTION DATABASE REQUIREMENTS
+All database operations MUST follow these enterprise standards:
+- ✅ **Indexes Required** - Index ALL foreign keys, tenant_id, and frequently queried columns
+- 🔒 **Row Level Security (RLS)** - Enforce tenant isolation with RLS policies
+- 📊 **Transaction Safety** - Use database transactions for related operations
+- ⚠️ **Migration Safety** - Test migrations in staging, have rollback plan ready
+- 🎯 **Query Optimization** - Monitor slow queries, optimize N+1 problems
+- 🔍 **Audit Trails** - Track all data changes with created_at, updated_at, deleted_at
+
+See [Production Standards](/en/production-standards/) for complete requirements.
+:::
+
 ## Overview
 
 WytNet uses **PostgreSQL** as its primary database with **Drizzle ORM** for type-safe database operations. The schema is designed to support multi-tenancy, soft deletes, comprehensive audit trails, and a global Display ID system for human-readable entity references.

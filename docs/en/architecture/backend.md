@@ -1,5 +1,17 @@
 # Backend Architecture
 
+:::danger PRODUCTION BACKEND STANDARDS
+All backend code MUST implement:
+- ✅ **Input Validation** - Validate ALL inputs with Zod schemas before processing
+- 🔒 **Error Handling** - Wrap all async operations in try-catch blocks
+- 📊 **Logging** - Use structured logging (never console.log in production)
+- ⚠️ **Performance** - Monitor response times, optimize slow endpoints (<200ms target)
+- 🎯 **Security** - Rate limiting, CSRF protection, SQL injection prevention
+- 🔍 **Scalability** - Design for horizontal scaling (stateless where possible)
+
+See [Production Standards](/en/production-standards/) for complete requirements.
+:::
+
 ## Overview
 
 WytNet's backend is built with **Express.js** and follows a **layered architecture** pattern that separates concerns into middleware, routes, services, and storage layers. The architecture emphasizes:
