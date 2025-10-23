@@ -9210,4 +9210,14 @@ When suggesting improvements, format your response with suggestions in a structu
           userId: principal.id,
           amount: config.points,
           type: 'post_need',
-          description: `Posted need: ${need
+          description: `Posted need: ${need.title}`,
+          metadata: { needId: need.id }
+        });
+      }
+
+      res.json({ success: true, need });
+    } catch (error: any) {
+      console.error('Error creating need:', error);
+      res.status(500).json({ error: error.message || 'Failed to create need' });
+    }
+  });
