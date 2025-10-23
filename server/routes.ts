@@ -6101,9 +6101,9 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // =============================================================================
+  // ========================================
   // WYTDATA API ROUTES - Legacy/Backward Compatibility
-  // =============================================================================
+  // ========================================
 
   // Get all available dataset collections
   app.get('/api/modules/wytdata/collections', isAuthenticatedUnified, async (req: any, res) => {
@@ -6395,9 +6395,9 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // =============================================================================
+  // ========================================
   // USER APP INSTALLATIONS - WytApps Marketplace
-  // =============================================================================
+  // ========================================
 
   // Get apps catalog for marketplace (public)
   app.get('/api/apps/catalog', async (req, res) => {
@@ -6679,7 +6679,7 @@ When suggesting improvements, format your response with suggestions in a structu
 
       // Create session for the user
       (req as any).session.userId = user.id;
-      (req as any).session.isAuthenticated = true;
+      (req.session as any).isAuthenticated = true;
 
       res.json({
         success: true,
@@ -9892,7 +9892,7 @@ When suggesting improvements, format your response with suggestions in a structu
       // Sanitize principal ID to prevent directory traversal (whitelist alphanumeric, hyphens, underscores only)
       const safePrincipalId = principal.id.replace(/[^a-zA-Z0-9_-]/g, '');
 
-      // Generate secure UUID-based filename (ignore user-provided filename)
+      // Generate unique UUID-based filename (ignore user-provided filename)
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).substring(2, 15);
       const filename = `${safePrincipalId}_${timestamp}_${randomId}${safeExtension}`;
@@ -10117,7 +10117,7 @@ When suggesting improvements, format your response with suggestions in a structu
           })
           .where(eq(userProfiles.userId, principal.id));
       } else {
-        // Create new profile
+        // Create new profile with photo
         await db.insert(userProfiles).values({
           ...profileData,
           profileCompletionPercentage: completionPercentage
@@ -11959,10 +11959,6 @@ CONSTRAINTS:
 
   // ========================================
   // END JUNCTION TABLE MANAGEMENT API
-  // ========================================
-
-  // ========================================
-  // END APP FEATURES & PLAN FEATURE ACCESS ROUTES
   // ========================================
 
   // ========================================
