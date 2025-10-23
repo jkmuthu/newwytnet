@@ -169,6 +169,7 @@ import organizationsRouter from "./routes/organizations";
 import platformSettingsRouter from "./routes/platform-settings";
 import mediaRouter from "./routes/media";
 import trashRouter from "./routes/trash";
+import devdocRouter from "./routes/devdoc";
 import { setupFeaturesChecklistRoutes } from "./routes/features-checklist";
 import { setupQATestingTrackerRoutes } from "./routes/qa-testing-tracker";
 import { rateLimiters } from "./middleware/rateLimiter";
@@ -243,6 +244,9 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // Register Trash Management Router
   app.use('/api', trashRouter);
+
+  // Register DevDoc Access Control Router
+  app.use(devdocRouter);
 
   // Register Features Checklist Routes
   setupFeaturesChecklistRoutes(app);
