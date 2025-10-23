@@ -19,6 +19,7 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: 'Home', link: '/' },
+          { text: '⚠️ Standards', link: '/en/production-standards/' },
           { text: 'Core Concepts', link: '/en/core-concepts' },
           { text: 'WytApps', link: '/en/wytapps/' },
           { text: 'WytSuites', link: '/en/wytsuites/' },
@@ -33,6 +34,13 @@ export default defineConfig({
               items: [
                 { text: 'Platform Overview', link: '/en/overview' },
                 { text: 'Core Concepts', link: '/en/core-concepts' }
+              ]
+            },
+            {
+              text: '⚠️ Production Standards (READ FIRST)',
+              collapsed: false,
+              items: [
+                { text: 'Enterprise Commitment & Quality Standards', link: '/en/production-standards/' }
               ]
             },
             {
@@ -164,6 +172,13 @@ export default defineConfig({
               items: [
                 { text: 'தளம் பற்றிய கண்ணோட்டம்', link: '/ta/overview' },
                 { text: 'முக்கிய கருத்துக்கள்', link: '/ta/core-concepts' }
+              ]
+            },
+            {
+              text: '⚠️ உற்பத்தி தரநிலைகள் (முதலில் படிக்கவும்)',
+              collapsed: false,
+              items: [
+                { text: 'நிறுவன உறுதிமொழி & தர தரநிலைகள்', link: '/en/production-standards/' }
               ]
             },
             {
