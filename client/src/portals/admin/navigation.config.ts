@@ -48,6 +48,8 @@ import {
   Home,
   TrendingUp,
   Zap,
+  Bell,
+  User,
   type LucideIcon
 } from "lucide-react";
 
@@ -101,27 +103,28 @@ export const navigationSections: NavigationSection[] = [
         keywords: ["dashboard", "overview", "metrics", "stats"]
       },
       {
-        label: "System Health",
-        icon: Activity,
-        href: "/engine/system-health",
-        description: "Server status, database health, service monitoring",
-        keywords: ["health", "status", "monitoring", "uptime"],
+        label: "System Overview",
+        icon: Server,
+        href: "/engine/system-overview",
+        description: "System overview, resource usage, performance",
+        keywords: ["system", "overview", "resources", "performance"],
         superAdminOnly: true
       },
       {
-        label: "Real-time Analytics",
-        icon: TrendingUp,
-        href: "/engine/analytics-realtime",
-        description: "Live user activity, performance metrics",
-        keywords: ["analytics", "realtime", "live", "monitoring"],
-        adminOnly: true
+        label: "System Status",
+        icon: Activity,
+        href: "/engine/system-status",
+        description: "Real-time system status, service health",
+        keywords: ["status", "health", "services", "realtime"],
+        superAdminOnly: true
       },
       {
-        label: "Quick Actions",
-        icon: Zap,
-        href: "/engine/quick-actions",
-        description: "Common administrative tasks, shortcuts",
-        keywords: ["quick", "actions", "shortcuts", "tasks"]
+        label: "System Monitor",
+        icon: Activity,
+        href: "/engine/system-monitor",
+        description: "System monitoring, metrics, alerts",
+        keywords: ["monitor", "metrics", "alerts", "tracking"],
+        superAdminOnly: true
       }
     ]
   },
@@ -174,12 +177,39 @@ export const navigationSections: NavigationSection[] = [
         superAdminOnly: true
       },
       {
-        label: "WytPass Authentication",
-        icon: Lock,
-        href: "/engine/wytpass",
-        description: "Unified authentication system, OAuth providers",
-        keywords: ["auth", "authentication", "wytpass", "oauth"],
-        superAdminOnly: true
+        label: "Global Search",
+        icon: Search,
+        href: "/engine/search",
+        description: "Search across all platform resources",
+        keywords: ["search", "find", "query", "lookup"]
+      },
+      {
+        label: "Notifications",
+        icon: Bell,
+        href: "/engine/notifications",
+        description: "System notifications, alerts, announcements",
+        keywords: ["notifications", "alerts", "announcements", "messages"]
+      },
+      {
+        label: "Profile",
+        icon: User,
+        href: "/engine/profile",
+        description: "Admin user profile settings",
+        keywords: ["profile", "user", "settings", "account"]
+      },
+      {
+        label: "Account",
+        icon: User,
+        href: "/engine/account",
+        description: "Admin account settings, preferences",
+        keywords: ["account", "settings", "preferences", "config"]
+      },
+      {
+        label: "Admin Settings",
+        icon: Settings,
+        href: "/engine/settings",
+        description: "Admin portal settings, configuration",
+        keywords: ["settings", "config", "preferences", "admin"]
       }
     ]
   },
@@ -229,19 +259,11 @@ export const navigationSections: NavigationSection[] = [
         keywords: ["datasets", "data", "wytdata"]
       },
       {
-        label: "Page Builder",
-        icon: FileText,
-        href: "/engine/page-builder",
-        description: "Visual page builder for custom layouts",
-        keywords: ["pages", "builder", "visual", "custom"],
-        superAdminOnly: true
-      },
-      {
-        label: "Hub Builder",
-        icon: Globe,
-        href: "/engine/hub-builder",
-        description: "Create and configure new hubs",
-        keywords: ["hub", "builder", "create"],
+        label: "App Builder",
+        icon: Code,
+        href: "/engine/app-builder",
+        description: "AI-powered application builder",
+        keywords: ["app", "builder", "ai", "create", "generate"],
         superAdminOnly: true
       }
     ]
@@ -271,33 +293,25 @@ export const navigationSections: NavigationSection[] = [
         keywords: ["finance", "revenue", "transactions"]
       },
       {
-        label: "Subscriptions",
-        icon: FileText,
-        href: "/engine/subscriptions",
-        description: "User subscriptions, billing management",
-        keywords: ["subscriptions", "billing", "payments"]
-      },
-      {
-        label: "Payment Methods",
-        icon: CreditCard,
-        href: "/engine/payment-methods",
-        description: "Configure payment gateways, methods",
-        keywords: ["payments", "gateways", "razorpay", "stripe"],
-        superAdminOnly: true
-      },
-      {
-        label: "Revenue Analytics",
-        icon: TrendingUp,
-        href: "/engine/revenue-analytics",
-        description: "Revenue reports, financial analytics",
-        keywords: ["revenue", "analytics", "reports", "finance"]
-      },
-      {
         label: "WytPoints Management",
         icon: CreditCard,
         href: "/engine/wytpoints",
         description: "WytPoints economy, rewards, transactions",
         keywords: ["wytpoints", "rewards", "economy", "credits"]
+      },
+      {
+        label: "Billing",
+        icon: CreditCard,
+        href: "/engine/billing",
+        description: "Billing management, invoices, payment history",
+        keywords: ["billing", "invoices", "payments", "history"]
+      },
+      {
+        label: "Transactions",
+        icon: List,
+        href: "/engine/transactions",
+        description: "Transaction history, payment records",
+        keywords: ["transactions", "payments", "history", "records"]
       }
     ]
   },
@@ -324,22 +338,6 @@ export const navigationSections: NavigationSection[] = [
         href: "/engine/media",
         description: "Media library, images, assets",
         keywords: ["media", "images", "assets", "files"]
-      },
-      {
-        label: "Branding Settings",
-        icon: Palette,
-        href: "/engine/branding",
-        description: "Platform branding, logos, colors",
-        keywords: ["branding", "logo", "colors", "identity"],
-        superAdminOnly: true
-      },
-      {
-        label: "UI Customization",
-        icon: Settings,
-        href: "/engine/ui-customization",
-        description: "Customize UI components, layouts",
-        keywords: ["ui", "customization", "components", "layouts"],
-        superAdminOnly: true
       }
     ]
   },
@@ -360,30 +358,6 @@ export const navigationSections: NavigationSection[] = [
         description: "Third-party integrations, services",
         keywords: ["integrations", "services", "third-party"],
         superAdminOnly: true
-      },
-      {
-        label: "API Management",
-        icon: Code,
-        href: "/engine/api-management",
-        description: "API keys, rate limiting, documentation",
-        keywords: ["api", "keys", "documentation", "endpoints"],
-        superAdminOnly: true
-      },
-      {
-        label: "Webhooks",
-        icon: Webhook,
-        href: "/engine/webhooks",
-        description: "Webhook configuration, event triggers",
-        keywords: ["webhooks", "events", "triggers"],
-        superAdminOnly: true
-      },
-      {
-        label: "Custom Connectors",
-        icon: Plug,
-        href: "/engine/connectors",
-        description: "Build custom integration connectors",
-        keywords: ["connectors", "custom", "integrations"],
-        developerOnly: true
       }
     ]
   },
@@ -398,34 +372,12 @@ export const navigationSections: NavigationSection[] = [
     order: 7,
     items: [
       {
-        label: "WytAI Agent",
+        label: "AI Management",
         icon: Brain,
-        href: "/engine/wytai",
-        description: "AI assistant, full-page interface, conversations",
-        keywords: ["ai", "assistant", "wytai", "chat", "gpt", "claude"]
-      },
-      {
-        label: "AI Models Configuration",
-        icon: Cpu,
-        href: "/engine/ai-config",
-        description: "Configure AI providers (OpenAI, Claude, Gemini)",
-        keywords: ["ai", "models", "openai", "claude", "gemini", "config"],
+        href: "/engine/ai",
+        description: "AI system management, models, settings",
+        keywords: ["ai", "management", "models", "settings"],
         superAdminOnly: true
-      },
-      {
-        label: "Automation Rules",
-        icon: Zap,
-        href: "/engine/automation",
-        description: "Create automation rules, triggers",
-        keywords: ["automation", "rules", "triggers", "workflows"]
-      },
-      {
-        label: "Workflow Builder",
-        icon: Workflow,
-        href: "/engine/workflows",
-        description: "Visual workflow builder for automation",
-        keywords: ["workflow", "builder", "automation", "visual"],
-        adminOnly: true
       }
     ]
   },
@@ -472,19 +424,43 @@ export const navigationSections: NavigationSection[] = [
         superAdminOnly: true
       },
       {
-        label: "Trash Management",
-        icon: Trash,
-        href: "/engine/trash",
-        description: "Deleted items, recovery, permanent deletion",
-        keywords: ["trash", "deleted", "recovery", "restore"],
+        label: "SEO Settings",
+        icon: Search,
+        href: "/engine/seo-settings",
+        description: "SEO configuration, meta tags, sitemap",
+        keywords: ["seo", "search", "optimization", "meta"],
         adminOnly: true
       },
       {
-        label: "Database Tools",
-        icon: Database,
-        href: "/engine/db-tools",
-        description: "Database management, queries, schema",
-        keywords: ["database", "tools", "queries", "schema"],
+        label: "Geo-Regulatory",
+        icon: Globe,
+        href: "/engine/geo-regulatory",
+        description: "Geographic and regulatory compliance settings",
+        keywords: ["geo", "regulatory", "compliance", "location"],
+        superAdminOnly: true
+      },
+      {
+        label: "Security",
+        icon: Lock,
+        href: "/engine/security",
+        description: "Security policies, authentication settings",
+        keywords: ["security", "policies", "authentication", "safety"],
+        superAdminOnly: true
+      },
+      {
+        label: "System Logs",
+        icon: FileText,
+        href: "/engine/system-logs",
+        description: "System logs, errors, warnings",
+        keywords: ["logs", "system", "errors", "warnings"],
+        superAdminOnly: true
+      },
+      {
+        label: "Advanced Logs",
+        icon: Terminal,
+        href: "/engine/logs",
+        description: "Advanced system logs viewer",
+        keywords: ["logs", "advanced", "system", "debug"],
         developerOnly: true
       }
     ]
@@ -507,18 +483,18 @@ export const navigationSections: NavigationSection[] = [
         keywords: ["devdoc", "documentation", "developer", "guides"]
       },
       {
+        label: "Help",
+        icon: HelpCircle,
+        href: "/engine/help",
+        description: "Quick help, support resources",
+        keywords: ["help", "quick", "support", "assistance"]
+      },
+      {
         label: "Help & Support",
         icon: HelpCircle,
         href: "/engine/help-support",
         description: "Support resources, FAQs, help center",
         keywords: ["help", "support", "faq", "assistance"]
-      },
-      {
-        label: "Knowledge Base",
-        icon: Lightbulb,
-        href: "/engine/knowledge-base",
-        description: "Articles, tutorials, best practices",
-        keywords: ["knowledge", "articles", "tutorials", "guides"]
       },
       {
         label: "Features Checklist",
@@ -554,38 +530,6 @@ export const navigationSections: NavigationSection[] = [
         href: "/engine/analytics",
         description: "Platform analytics, usage statistics",
         keywords: ["analytics", "stats", "metrics", "usage"]
-      },
-      {
-        label: "API Explorer",
-        icon: Terminal,
-        href: "/engine/api-explorer",
-        description: "Interactive API testing, documentation",
-        keywords: ["api", "explorer", "testing", "swagger"],
-        developerOnly: true
-      },
-      {
-        label: "Webhook Tester",
-        icon: Webhook,
-        href: "/engine/webhook-tester",
-        description: "Test webhooks, inspect payloads",
-        keywords: ["webhook", "tester", "payloads", "test"],
-        developerOnly: true
-      },
-      {
-        label: "Database Query Tool",
-        icon: Database,
-        href: "/engine/db-query",
-        description: "Execute SQL queries, inspect database",
-        keywords: ["database", "query", "sql", "inspect"],
-        developerOnly: true
-      },
-      {
-        label: "Log Viewer",
-        icon: FileText,
-        href: "/engine/logs",
-        description: "View application logs, error tracking",
-        keywords: ["logs", "errors", "tracking", "debugging"],
-        developerOnly: true
       }
     ]
   }

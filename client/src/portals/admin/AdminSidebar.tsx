@@ -3,40 +3,10 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { 
-  ChevronLeft,
-  LayoutDashboard,
-  Users,
-  Building,
-  Package,
-  Smartphone,
-  Network,
-  FileText,
-  BarChart3,
-  Settings,
-  Shield,
-  Database,
-  Globe,
-  Palette,
-  Images,
-  Plug,
-  CreditCard,
-  FileImage,
-  List,
-  Server,
-  Eye,
-  CheckSquare,
-  ClipboardCheck
-} from "lucide-react";
+import { ChevronLeft, ChevronDown, ChevronRight, Shield } from "lucide-react";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
-
-interface NavigationItem {
-  label: string;
-  icon: React.ElementType;
-  href: string;
-  active: boolean;
-  superAdminOnly?: boolean;
-}
+import { getFilteredNavigationSections, type NavigationSection } from "./navigation.config";
+import { useState } from "react";
 
 interface AdminSidebarProps {
   collapsed: boolean;
@@ -45,180 +15,34 @@ interface AdminSidebarProps {
 
 /**
  * AdminSidebar - Navigation sidebar for admin portal
- * Features: Admin-only navigation, system management tools, role-based access
+ * Features: Sectioned navigation, role-based filtering, search-ready
+ * Phase 1: Engine Panel Consolidation
  */
 export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSidebarProps) {
   const [location] = useLocation();
   const { adminUser } = useAdminAuth();
-
-  // Flat navigation items
-  const getNavigationItems = (): NavigationItem[] => {
-    const isSuperAdmin = adminUser?.isSuperAdmin;
-
-    const allItems: NavigationItem[] = [
-      { 
-        label: "Overview", 
-        icon: LayoutDashboard, 
-        href: "/engine", 
-        active: location === "/engine"
-      },
-      { 
-        label: "QA Testing Tracker", 
-        icon: ClipboardCheck, 
-        href: "/engine/qa-testing-tracker", 
-        active: location === "/engine/qa-testing-tracker",
-        superAdminOnly: true
-      },
-      { 
-        label: "All Users", 
-        icon: Users, 
-        href: "/engine/users", 
-        active: location === "/engine/users"
-      },
-      { 
-        label: "All Orgs", 
-        icon: Building, 
-        href: "/engine/tenants", 
-        active: location === "/engine/tenants"
-      },
-      { 
-        label: "All Entities", 
-        icon: Network, 
-        href: "/engine/entities", 
-        active: location === "/engine/entities"
-      },
-      { 
-        label: "DataSets", 
-        icon: Database, 
-        href: "/engine/datasets", 
-        active: location === "/engine/datasets"
-      },
-      { 
-        label: "Media", 
-        icon: Images, 
-        href: "/engine/media", 
-        active: location === "/engine/media"
-      },
-      { 
-        label: "Module Library", 
-        icon: Package, 
-        href: "/engine/modules", 
-        active: location === "/engine/modules"
-      },
-      { 
-        label: "Apps", 
-        icon: Smartphone, 
-        href: "/engine/apps", 
-        active: location === "/engine/apps"
-      },
-      { 
-        label: "CMS", 
-        icon: FileText, 
-        href: "/engine/cms", 
-        active: location === "/engine/cms"
-      },
-      { 
-        label: "Themes", 
-        icon: Palette, 
-        href: "/engine/themes", 
-        active: location === "/engine/themes"
-      },
-      { 
-        label: "Plans & Prices", 
-        icon: CreditCard, 
-        href: "/engine/plans-prices", 
-        active: location === "/engine/plans-prices"
-      },
-      { 
-        label: "Help & Support", 
-        icon: FileImage, 
-        href: "/engine/help-support", 
-        active: location === "/engine/help-support"
-      },
-      { 
-        label: "Finance", 
-        icon: CreditCard, 
-        href: "/engine/finance", 
-        active: location === "/engine/finance"
-      },
-      { 
-        label: "Analytics", 
-        icon: BarChart3, 
-        href: "/engine/analytics", 
-        active: location === "/engine/analytics"
-      },
-      { 
-        label: "System & Security", 
-        icon: Shield, 
-        href: "/engine/system-security", 
-        active: location === "/engine/system-security",
-        superAdminOnly: true
-      },
-      { 
-        label: "Integrations", 
-        icon: Plug, 
-        href: "/engine/integrations", 
-        active: location === "/engine/integrations",
-        superAdminOnly: true
-      },
-      { 
-        label: "Global Settings", 
-        icon: Settings, 
-        href: "/engine/global-settings", 
-        active: location === "/engine/global-settings",
-        superAdminOnly: true
-      },
-      { 
-        label: "Platform Hubs", 
-        icon: Building, 
-        href: "/engine/platform-hubs", 
-        active: location === "/engine/platform-hubs",
-        superAdminOnly: true
-      },
-      { 
-        label: "Roles & Permissions", 
-        icon: Shield, 
-        href: "/engine/roles-permissions", 
-        active: location === "/engine/roles-permissions",
-        superAdminOnly: true
-      },
-      { 
-        label: "Admin Users", 
-        icon: Users, 
-        href: "/engine/admin-users", 
-        active: location === "/engine/admin-users",
-        superAdminOnly: true
-      },
-      { 
-        label: "Backups", 
-        icon: Database, 
-        href: "/engine/backups", 
-        active: location === "/engine/backups",
-        superAdminOnly: true
-      },
-      { 
-        label: "Audit Logs", 
-        icon: Eye, 
-        href: "/engine/audit-logs", 
-        active: location === "/engine/audit-logs",
-        superAdminOnly: true
-      },
-      { 
-        label: "Features Checklist", 
-        icon: CheckSquare, 
-        href: "/engine/features-checklist", 
-        active: location === "/engine/features-checklist",
-        superAdminOnly: true
-      },
-    ];
-
-    // Filter items based on admin role
-    return isSuperAdmin 
-      ? allItems 
-      : allItems.filter(item => !item.superAdminOnly);
+  
+  // Track collapsed sections (only used when sidebar is expanded)
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  
+  const toggleSection = (sectionId: string) => {
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(sectionId)) {
+        next.delete(sectionId);
+      } else {
+        next.add(sectionId);
+      }
+      return next;
+    });
   };
 
-  const navigationItems = getNavigationItems();
+  // Get navigation sections filtered by user role
+  const navigationSections = getFilteredNavigationSections({
+    isSuperAdmin: adminUser?.isSuperAdmin,
+    isAdmin: true, // All engine admin users are admins
+    isDeveloper: adminUser?.role === 'Developer' || adminUser?.isSuperAdmin
+  });
 
   return (
     <div className={cn(
@@ -251,53 +75,70 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
           </Button>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation - Sectioned */}
         <ScrollArea className="flex-1 p-3">
-          <nav className="space-y-1">
-            {navigationItems.map((item) => (
-              <Link key={item.href} href={item.href}>
-                <Button
-                  variant={item.active ? "secondary" : "ghost"}
-                  className={cn(
-                    "w-full justify-start h-9 relative",
-                    collapsed ? "px-2" : "px-3",
-                    item.active && "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 border-r-2 border-red-600",
-                    "hover:bg-red-50 dark:hover:bg-red-950"
-                  )}
-                  data-testid={`admin-nav-${item.label.toLowerCase().replace(' ', '-')}`}
-                >
-                  <item.icon className={cn(
-                    "h-4 w-4 flex-shrink-0",
-                    collapsed ? "" : "mr-3",
-                    item.active ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400"
-                  )} />
-                  {!collapsed && (
-                    <span className="truncate text-sm">
-                      {item.label}
-                    </span>
-                  )}
-                </Button>
-              </Link>
-            ))}
-            {/* Developer Documentation Link */}
-            <Link href="/devdoc">
-              <Button
-                variant="ghost"
-                className="w-full justify-start h-9 px-3"
-                data-testid="admin-nav-dev-doc"
-              >
-                <FileText className={cn(
-                  "h-4 w-4 flex-shrink-0",
-                  collapsed ? "" : "mr-3",
-                  "text-gray-500 dark:text-gray-400"
-                )} />
+          <nav className="space-y-2">
+            {navigationSections.map((section) => (
+              <div key={section.id} className="space-y-1">
+                {/* Section Header (only show when sidebar is expanded) */}
                 {!collapsed && (
-                  <span className="truncate text-sm">
-                    Dev Doc
-                  </span>
+                  <div 
+                    className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded"
+                    onClick={() => toggleSection(section.id)}
+                  >
+                    <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+                      {section.title}
+                    </div>
+                    {collapsedSections.has(section.id) ? (
+                      <ChevronRight className="h-3 w-3 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="h-3 w-3 text-gray-400" />
+                    )}
+                  </div>
                 )}
-              </Button>
-            </Link>
+
+                {/* Section Items */}
+                {(!collapsed && !collapsedSections.has(section.id)) || collapsed ? (
+                  <div className={cn("space-y-1", collapsed && "border-b border-gray-200 dark:border-gray-700 pb-2 mb-2")}>
+                    {section.items.map((item) => {
+                      const isActive = location === item.href;
+                      
+                      return (
+                        <Link key={item.href} href={item.href}>
+                          <Button
+                            variant={isActive ? "secondary" : "ghost"}
+                            className={cn(
+                              "w-full justify-start h-9 relative",
+                              collapsed ? "px-2" : "px-3",
+                              isActive && "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 border-r-2 border-red-600",
+                              "hover:bg-red-50 dark:hover:bg-red-950"
+                            )}
+                            data-testid={`admin-nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                            title={collapsed ? item.label : undefined}
+                          >
+                            <item.icon className={cn(
+                              "h-4 w-4 flex-shrink-0",
+                              collapsed ? "" : "mr-3",
+                              isActive ? "text-red-600 dark:text-red-400" : "text-gray-500 dark:text-gray-400"
+                            )} />
+                            {!collapsed && (
+                              <span className="truncate text-sm">
+                                {item.label}
+                              </span>
+                            )}
+                            {!collapsed && item.badge && (
+                              <Badge className="ml-auto" variant="secondary">
+                                {item.badge}
+                              </Badge>
+                            )}
+                          </Button>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            ))}
           </nav>
         </ScrollArea>
 
