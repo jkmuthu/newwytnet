@@ -147,7 +147,20 @@ export default defineConfig({
               text: '📋 Project Requirements (Internal)',
               collapsed: true,
               items: [
-                { text: 'PRD Overview', link: '/en/prd/' }
+                { text: 'PRD Overview', link: '/en/prd/' },
+                { text: 'Self-Service Platform PRD', link: '/en/prd/self-service-platform' }
+              ]
+            },
+            {
+              text: '🚀 Self-Service Platform (Phase 1-3)',
+              collapsed: true,
+              items: [
+                { text: 'PRD: Self-Service Platform', link: '/en/prd/self-service-platform' },
+                { text: 'Architecture: WytBuilder', link: '/en/architecture/wytbuilder' },
+                { text: 'Architecture: WytAI Agent Full Page', link: '/en/architecture/wytai-agent' },
+                { text: 'Implementation: Engine Panel', link: '/en/implementation/engine-panel-consolidation' },
+                { text: 'Implementation: WytAI Full Page', link: '/en/implementation/wytai-full-page' },
+                { text: 'Implementation: WytBuilder', link: '/en/implementation/wytbuilder-implementation' }
               ]
             },
             {
@@ -226,6 +239,15 @@ export default defineConfig({
                 { text: 'Frontend கட்டமைப்பு', link: '/ta/architecture/frontend' },
                 { text: 'Backend கட்டமைப்பு', link: '/ta/architecture/backend' },
                 { text: 'RBAC அமைப்பு', link: '/ta/architecture/rbac' }
+              ]
+            },
+            {
+              text: '🚀 சுய-சேவை தளம் (கட்டம் 1-3)',
+              collapsed: true,
+              items: [
+                { text: 'PRD: சுய-சேவை தளம்', link: '/ta/prd/self-service-platform' },
+                { text: 'கட்டமைப்பு: WytBuilder', link: '/ta/architecture/wytbuilder' },
+                { text: 'கட்டமைப்பு: WytAI Agent முழு பக்கம்', link: '/ta/architecture/wytai-agent' }
               ]
             },
             {
