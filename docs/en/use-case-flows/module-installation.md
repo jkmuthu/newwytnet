@@ -1,5 +1,16 @@
 # Module Installation & Activation Flow
 
+:::warning PRODUCTION QUALITY REQUIREMENTS
+Module operations MUST include:
+- ✅ **Dependency Validation** - Check all required modules before installation
+- 🔒 **Permission Verification** - Only Super Admins can install, Hub Admins can activate
+- 📊 **Version Control** - Track module versions and prevent downgrades
+- ⚠️ **Rollback Support** - Enable safe rollback if activation fails
+- 🎯 **Hub Isolation** - Module activation isolated per hub
+
+See [Production Standards](/en/production-standards/) for complete requirements.
+:::
+
 ## Overview
 
 WytNet's **Module System** provides extensible platform features through a two-tier activation process: Super Admin installs modules at the platform level, then Hub Admins activate them for their specific hubs with context-based access control.

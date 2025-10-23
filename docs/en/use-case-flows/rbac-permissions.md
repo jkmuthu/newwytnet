@@ -12,6 +12,17 @@ WytNet's **Role-Based Access Control (RBAC)** system provides granular permissio
 - Resource-level access control
 - API route protection middleware
 
+:::warning PRODUCTION QUALITY REQUIREMENTS
+Every RBAC permission check MUST include:
+- ✅ **Permission Validation** - Verify user has required permissions before allowing access
+- 🔒 **Database-Driven Logic** - NO hardcoded role checks, read from database
+- 📊 **Audit Logging** - Log all permission checks and denials
+- ⚠️ **Graceful Denial** - Clear error messages when permission denied
+- 🎯 **Performance** - Cache permissions per session, refresh on role changes
+
+See [Production Standards](/en/production-standards/) for complete requirements.
+:::
+
 ---
 
 ## Permission Structure

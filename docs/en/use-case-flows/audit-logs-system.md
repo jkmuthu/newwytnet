@@ -1,5 +1,16 @@
 # Audit Logs System
 
+:::warning PRODUCTION QUALITY REQUIREMENTS
+Audit Logging MUST include:
+- ✅ **Comprehensive Coverage** - Log ALL admin actions (create, update, delete)
+- 🔒 **Tamper Protection** - Prevent log modification or deletion
+- 📊 **Structured Data** - Use consistent JSON format for details
+- ⚠️ **Performance** - Async logging to avoid blocking main operations
+- 🎯 **Retention Policy** - Archive old logs, maintain searchable history
+
+See [Production Standards](/en/production-standards/) for complete requirements.
+:::
+
 ## Overview
 
 WytNet's **Audit Logs System** provides comprehensive tracking of all administrative actions across the platform, enabling security monitoring, compliance, debugging, and accountability with filtering, pagination, search, and detailed activity timelines.

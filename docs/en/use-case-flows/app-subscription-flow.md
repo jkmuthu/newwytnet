@@ -1,5 +1,16 @@
 # App Subscription Flow
 
+:::warning PRODUCTION QUALITY REQUIREMENTS
+Subscription & Payment operations MUST include:
+- ✅ **Payment Verification** - Always verify payment with Razorpay before activation
+- 🔒 **Webhook Security** - Validate Razorpay webhook signatures
+- 📊 **Transaction Logging** - Log all payment attempts (success & failure)
+- ⚠️ **Idempotency** - Prevent duplicate subscriptions for same payment
+- 🎯 **Error Recovery** - Handle failed payments gracefully with retry options
+
+See [Production Standards](/en/production-standards/) for complete requirements.
+:::
+
 ## Overview
 
 WytNet's **App Subscription System** enables users to browse, subscribe to, and activate applications for personal (MyPanel) or organizational (OrgPanel) use with integrated Razorpay payment processing.

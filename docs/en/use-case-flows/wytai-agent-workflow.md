@@ -1,5 +1,16 @@
 # WytAI Agent Workflow
 
+:::warning PRODUCTION QUALITY REQUIREMENTS
+AI Agent operations MUST include:
+- ✅ **Input Sanitization** - Validate and sanitize all user inputs before sending to AI
+- 🔒 **API Key Security** - Never expose API keys, use environment variables
+- 📊 **Rate Limiting** - Enforce usage limits per user/session
+- ⚠️ **Error Handling** - Gracefully handle AI API failures with fallback responses
+- 🎯 **Cost Monitoring** - Track token usage and costs per request
+
+See [Production Standards](/en/production-standards/) for complete requirements.
+:::
+
 ## Overview
 
 **WytAI Agent** is an intelligent AI assistant embedded in the Engine Admin portal, offering conversational platform management with multi-model AI support, voice interaction, and comprehensive usage tracking.

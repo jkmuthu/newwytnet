@@ -67,6 +67,17 @@ flowchart TD
     style Error fill:#FF6B6B
 ```
 
+:::warning PRODUCTION QUALITY REQUIREMENTS
+Every step in this authentication flow MUST include:
+- ✅ **Input Validation** using Zod schemas
+- 🔒 **Security Checks** (CSRF, SQL injection prevention, XSS protection)
+- 📊 **Error Handling** with graceful fallbacks
+- ⚠️ **Logging** for audit and debugging
+- 🎯 **Performance** monitoring (response times, failure rates)
+
+See [Production Standards](/en/production-standards/) for complete requirements.
+:::
+
 ---
 
 ## Email OTP Authentication Flow
@@ -400,6 +411,224 @@ authUrl.searchParams.append('state', state);
   store: new PostgresStore({ pool: db })
 }
 ```
+
+---
+
+## Validation & Security Checkpoints
+
+### Step-by-Step Quality Gates
+
+#### 1. Email OTP Request (`POST /api/auth/send-otp`)
+
+**✅ Validation:**
+```typescript
+const sendOTPSchema = z.object({
+  email: z.string().email('Invalid email format').toLowerCase()
+});
+
+// Validate before processing
+const { email } = sendOTPSchema.parse(req.body);
+```
+
+**🔒 Security Checks:**
+- Rate limiting: Max 1 OTP per minute per email
+- Rate limiting: Max 5 OTP requests per hour per IP
+- Check for disposable email domains
+- Prevent email enumeration (same response for existing/new users)
+- Log all OTP requests for audit
+
+**📊 Error Handling:**
+```typescript
+try {
+  const validated = sendOTPSchema.parse(req.body);
+  // Process...
+} catch (error) {
+  if (error instanceof z.ZodError) {
+    return res.status(400).json({ 
+      error: 'Validation failed',
+      details: error.errors 
+    });
+  }
+  logger.error('OTP send error', { error, email: req.body.email });
+  return res.status(500).json({ error: 'Unable to send OTP' });
+}
+```
+
+**⚠️ Production Notes:**
+- Monitor OTP delivery success rate (target: >99%)
+- Alert if MSG91 API fails
+- Fallback to backup email provider if primary fails
+- Clean up expired OTP codes daily
+
+---
+
+#### 2. OTP Verification (`POST /api/auth/verify-otp`)
+
+**✅ Validation:**
+```typescript
+const verifyOTPSchema = z.object({
+  email: z.string().email().toLowerCase(),
+  otp: z.string().regex(/^\d{6}$/, 'OTP must be 6 digits')
+});
+```
+
+**🔒 Security Checks:**
+- Verify OTP hasn't been used
+- Check expiry (5 minutes max)
+- Rate limiting: Max 3 failed attempts before lockout
+- Lock account for 15 minutes after 3 failures
+- Verify OTP matches email
+- Mark OTP as used immediately after validation
+
+**📊 Error Handling:**
+```typescript
+// Check if OTP exists and is valid
+const otpRecord = await db
+  .select()
+  .from(otpCodes)
+  .where(
+    and(
+      eq(otpCodes.email, email),
+      eq(otpCodes.code, otp),
+      eq(otpCodes.used, false),
+      gt(otpCodes.expiresAt, new Date())
+    )
+  );
+
+if (otpRecord.length === 0) {
+  // Increment failed attempts
+  await incrementFailedAttempts(email);
+  
+  return res.status(400).json({ 
+    error: 'Invalid or expired OTP' 
+  });
+}
+```
+
+**⚠️ Production Notes:**
+- Monitor OTP verification success rate
+- Track average time to verify (user experience metric)
+- Alert on high failure rates (possible attack)
+
+---
+
+#### 3. Google OAuth Initiation (`GET /api/auth/google`)
+
+**✅ Validation:**
+- Verify GOOGLE_CLIENT_ID environment variable exists
+- Verify GOOGLE_CLIENT_SECRET environment variable exists
+- Validate callback URL configuration
+
+**🔒 Security Checks:**
+- Generate cryptographically secure state token
+- Store state token in session for verification
+- Use HTTPS redirect_uri only
+- Include nonce for replay attack prevention
+
+**📊 Error Handling:**
+```typescript
+if (!process.env.GOOGLE_CLIENT_ID) {
+  logger.error('Google OAuth not configured');
+  return res.status(500).json({ 
+    error: 'OAuth not available' 
+  });
+}
+```
+
+---
+
+#### 4. Google OAuth Callback (`GET /api/auth/google/callback`)
+
+**✅ Validation:**
+```typescript
+const callbackSchema = z.object({
+  code: z.string().min(1, 'Authorization code required'),
+  state: z.string().min(1, 'State token required')
+});
+```
+
+**🔒 Security Checks:**
+- **CRITICAL**: Verify state token matches session (CSRF protection)
+- Verify authorization code hasn't been used
+- Exchange code within 10 minutes of issue
+- Verify Google profile email is verified
+- Check if Google account is active
+
+**📊 Error Handling:**
+```typescript
+// Verify state token (CSRF protection)
+if (req.query.state !== req.session.oauthState) {
+  logger.warn('OAuth CSRF attempt', { 
+    ip: req.ip,
+    expected: req.session.oauthState,
+    received: req.query.state 
+  });
+  return res.status(403).json({ error: 'Invalid state token' });
+}
+
+// Delete state after verification
+delete req.session.oauthState;
+```
+
+**⚠️ Production Notes:**
+- Monitor OAuth success rate
+- Alert on state token mismatches (possible attack)
+- Track time from initiation to completion
+- Handle Google API rate limits gracefully
+
+---
+
+#### 5. Session Creation (All Methods)
+
+**✅ Validation:**
+- Verify user record exists in database
+- Verify user account is active
+- Verify user hasn't been banned
+
+**🔒 Security Checks:**
+- Generate unique session ID (crypto-random)
+- Store session server-side only (PostgreSQL)
+- Set httpOnly cookie (XSS protection)
+- Set secure flag in production (HTTPS only)
+- Set sameSite='lax' (CSRF protection)
+- Regenerate session ID after authentication
+
+**📊 Error Handling:**
+```typescript
+// Session creation with error handling
+try {
+  req.session.regenerate((err) => {
+    if (err) {
+      logger.error('Session regeneration failed', { userId, error: err });
+      return res.status(500).json({ error: 'Authentication failed' });
+    }
+    
+    // Set session data
+    req.session.userId = user.id;
+    req.session.email = user.email;
+    req.session.displayId = user.displayId;
+    
+    req.session.save((err) => {
+      if (err) {
+        logger.error('Session save failed', { userId, error: err });
+        return res.status(500).json({ error: 'Authentication failed' });
+      }
+      
+      res.json({ user, message: 'Authenticated successfully' });
+    });
+  });
+} catch (error) {
+  logger.error('Session creation error', { userId, error });
+  res.status(500).json({ error: 'Authentication failed' });
+}
+```
+
+**⚠️ Production Notes:**
+- Monitor session creation success rate
+- Alert on high session creation failures
+- Clean up expired sessions daily
+- Monitor session store size and performance
+- Track concurrent sessions per user
 
 ---
 

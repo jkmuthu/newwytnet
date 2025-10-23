@@ -1,5 +1,16 @@
 # Super Admin Panel Switching
 
+:::warning PRODUCTION QUALITY REQUIREMENTS
+Panel switching operations MUST include:
+- ✅ **Context Validation** - Verify user has access to requested panel
+- 🔒 **Session Integrity** - Single session, multiple contexts
+- 📊 **Permission Checks** - Validate panel-specific permissions
+- ⚠️ **Audit Logging** - Track all panel switches
+- 🎯 **State Management** - Maintain context across navigations
+
+See [Production Standards](/en/production-standards/) for complete requirements.
+:::
+
 ## Overview
 
 WytNet's **Triple Session Management System** allows Super Admins to seamlessly switch between three distinct admin contexts without losing their work or requiring re-authentication.

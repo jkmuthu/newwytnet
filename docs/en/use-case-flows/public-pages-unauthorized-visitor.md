@@ -1,5 +1,16 @@
 # Public Pages & Unauthorized Visitor Flow
 
+:::warning PRODUCTION QUALITY REQUIREMENTS
+Public page handling MUST include:
+- ✅ **Route Protection** - Clearly distinguish public vs protected routes
+- 🔒 **Return URL Security** - Validate and sanitize return URLs (prevent open redirect)
+- 📊 **Session Checks** - Efficient session validation without DB queries per request
+- ⚠️ **Graceful Redirects** - Preserve user intent with returnUrl parameter
+- 🎯 **Performance** - Cache public content, minimize auth checks
+
+See [Production Standards](/en/production-standards/) for complete requirements.
+:::
+
 ## Overview
 
 This use case documents how **unauthorized visitors** (non-authenticated users) interact with WytNet platform's public pages, encounter restricted content, and get redirected to authentication when trying to access protected resources.

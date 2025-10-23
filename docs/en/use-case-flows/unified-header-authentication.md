@@ -1,5 +1,16 @@
 # Unified Header Authentication Flow
 
+:::warning PRODUCTION QUALITY REQUIREMENTS
+Header authentication MUST include:
+- ✅ **Session Validation** - Check session on every page load
+- 🔒 **Secure Cookies** - httpOnly, secure, sameSite flags set correctly
+- 📊 **Modal State Management** - Proper cleanup on modal close
+- ⚠️ **Error Handling** - Show clear errors without exposing security details
+- 🎯 **UX Optimization** - Fast session checks (<100ms), smooth transitions
+
+See [Production Standards](/en/production-standards/) for complete requirements.
+:::
+
 ## Overview
 
 The **Unified Header** in WytNet provides a consistent authentication experience across all platform pages. It includes user registration, login, forgot password, and session management with support for multiple authentication methods.

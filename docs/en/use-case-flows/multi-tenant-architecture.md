@@ -20,6 +20,17 @@ Platform (WytNet)
 - Seamless tenant switching
 - Hub-level branding and configuration
 
+:::warning PRODUCTION QUALITY REQUIREMENTS
+Every tenant-aware operation MUST include:
+- ✅ **Tenant Isolation** - ALL queries filter by tenant_id
+- 🔒 **Row Level Security (RLS)** - PostgreSQL policies enforce data boundaries
+- 📊 **Cross-Tenant Prevention** - Verify no data leakage between tenants
+- ⚠️ **Audit Logging** - Track all cross-tenant access attempts
+- 🎯 **Database Indexes** - Index all tenant_id columns for performance
+
+See [Production Standards](/en/production-standards/) for complete requirements.
+:::
+
 ---
 
 ## Multi-Tenancy Hierarchy
