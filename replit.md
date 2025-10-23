@@ -37,7 +37,7 @@ Security measures include PostgreSQL Row Level Security, session-based authentic
 - **Global Platform Settings System**: Comprehensive configuration management via API and UI.
 - **Organizations Management API**: Full CRUD for organizations.
 - **Progressive Web App (PWA) Support**: Full PWA implementation including service worker, manifest, and push notifications.
-- **WytNet DevDoc (Developer Documentation System)**: Comprehensive bilingual (Tamil + English) technical documentation built with VitePress, featuring API reference, architecture docs, workflow diagrams, and implementation guides. Access is secured by password, Super Admin session, or API token for the Replit Agent.
+- **WytNet DevDoc (Developer Documentation System)**: Comprehensive bilingual (Tamil + English) technical documentation built with VitePress with **4-level RBAC** (Public, Developer, Internal, Admin) integrated with WytNet's permission system. Features API reference, architecture docs, workflow diagrams, implementation guides, **PRD (Project Requirements Documentation)**, **Chat History Archive**, and business strategy. Access managed through Engine Admin Panel with dual-layer authentication (WytPass + password backward compatibility).
 - **Features Checklist System**: Project management tool with a dual-testing workflow for tracking feature implementations, accessible in the Engine Admin portal.
 - **Content Architecture**: Features a robust system for WytApps (39 apps across 17 categories with flexible pricing), WytSuites (3 app bundles), WytModules (51 modules across 9 categories with various pricing models), and WytHubs (5 active hubs with multi-domain routing and hub-level RBAC).
 
