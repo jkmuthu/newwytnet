@@ -516,16 +516,16 @@ export const navigationSections: NavigationSection[] = [
   },
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 10. Developer Tools
+  // 10. Analytics & Insights
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   {
-    id: "developer-tools",
-    title: "🧪 Developer Tools",
-    icon: Terminal,
+    id: "analytics-insights",
+    title: "📊 Analytics & Insights",
+    icon: BarChart3,
     order: 10,
     items: [
       {
-        label: "Analytics",
+        label: "Platform Analytics",
         icon: BarChart3,
         href: "/engine/analytics",
         description: "Platform analytics, usage statistics",
