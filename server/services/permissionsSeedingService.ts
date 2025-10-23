@@ -20,6 +20,10 @@ const ENGINE_RESOURCES = [
   { key: "analytics", label: "Analytics", description: "View and manage analytics" },
   { key: "roles-permissions", label: "Roles & Permissions", description: "Manage roles and permissions" },
   { key: "system-security", label: "System & Security", description: "Manage system and security settings" },
+  { key: "devdoc-public", label: "DevDoc (Public)", description: "Access public documentation (Overview, Core Concepts)" },
+  { key: "devdoc-developer", label: "DevDoc (Developer)", description: "Access developer documentation (API Reference, Architecture)" },
+  { key: "devdoc-internal", label: "DevDoc (Internal)", description: "Access internal team documentation (Engine Workflows, Testing)" },
+  { key: "devdoc-admin", label: "DevDoc (Admin)", description: "Access admin documentation (Business Model, Strategy)" },
 ];
 
 // CRUD actions to seed
@@ -110,6 +114,7 @@ export async function seedDefaultEngineRoles() {
       scope: "engine" as const,
       isSystem: true,
       allPermissions: false,
+      permissionResources: ["devdoc-public", "devdoc-developer", "devdoc-internal"],
     },
     {
       name: "Viewer",
@@ -118,6 +123,7 @@ export async function seedDefaultEngineRoles() {
       scope: "engine" as const,
       isSystem: true,
       allPermissions: false,
+      permissionResources: ["devdoc-public"],
     },
     {
       name: "Developer",
@@ -126,7 +132,7 @@ export async function seedDefaultEngineRoles() {
       scope: "engine" as const,
       isSystem: true,
       allPermissions: false,
-      permissionResources: ["modules", "apps", "themes", "integrations"],
+      permissionResources: ["modules", "apps", "themes", "integrations", "devdoc-public", "devdoc-developer"],
     },
     {
       name: "Data Manager",
@@ -164,6 +170,7 @@ export async function seedDefaultEngineRoles() {
       isSystem: true,
       allPermissions: false,
       viewOnly: true,
+      permissionResources: ["devdoc-public"],
     },
   ];
   
