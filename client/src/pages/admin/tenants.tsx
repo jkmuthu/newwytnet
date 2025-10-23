@@ -35,7 +35,7 @@ interface Organization {
 
 
 export default function AdminTenants() {
-  const [orgStatusFilter, setOrgStatusFilter] = useState<'active' | 'inactive' | 'trash'>('active');
+  const [orgStatusFilter, setOrgStatusFilter] = useState<'active' | 'inactive' | 'trash' | 'settings'>('active');
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const [isOrgDetailOpen, setIsOrgDetailOpen] = useState(false);
   const { toast } = useToast();
@@ -113,7 +113,7 @@ export default function AdminTenants() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">Organization Management</h1>
+        <h1 className="text-3xl font-bold text-foreground">All Orgs</h1>
         <p className="text-muted-foreground">Manage all organizations and teams</p>
       </div>
 
@@ -141,11 +141,32 @@ export default function AdminTenants() {
               <TabsTrigger value="trash" data-testid="tab-orgs-trash">
                 Trash ({trashOrgsData?.count || 0})
               </TabsTrigger>
+              <TabsTrigger value="settings" data-testid="tab-orgs-settings">
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="settings" className="mt-6">
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Organization Settings</CardTitle>
+                    <CardDescription>Configure organization-wide settings and policies</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4 text-sm text-muted-foreground">
+                      <p>Organization settings configuration will be available here.</p>
+                      <p>This includes: default permissions, billing settings, team management policies, and more.</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
           </Tabs>
 
           {/* Trash View for deleted organizations */}
-          {orgStatusFilter === 'trash' ? (
+          {orgStatusFilter === 'settings' ? null : orgStatusFilter === 'trash' ? (
             <TrashView
               items={trashOrgsData?.tenants || []}
               isLoading={isLoadingTrash}
