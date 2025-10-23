@@ -24,9 +24,12 @@ const PATH_PERMISSION_MAP: Record<string, string[]> = {
   '/devdoc/en/workflows': ['devdoc-admin', 'devdoc-internal', 'devdoc-developer'],
   '/devdoc/en/use-case-flows': ['devdoc-admin', 'devdoc-internal', 'devdoc-developer'],
   '/devdoc/en/features': ['devdoc-admin', 'devdoc-internal', 'devdoc-developer'],
+  '/devdoc/en/prd': ['devdoc-admin', 'devdoc-internal'],  // Internal team + Super Admin
   '/devdoc/en/business': ['devdoc-admin'],  // Super Admin only
   '/devdoc/en/admin': ['devdoc-admin', 'devdoc-internal'],  // Internal team only
-  '/devdoc/en/project': ['devdoc-admin', 'devdoc-internal'],  // Internal team only
+  '/devdoc/en/project/chat-history': ['devdoc-admin'],  // Super Admin only
+  '/devdoc/en/project/features-checklist': ['devdoc-admin', 'devdoc-internal'],  // Internal team only
+  '/devdoc/en/project/documentation-status': ['devdoc-admin', 'devdoc-internal'],  // Internal team only
 };
 
 // Helper function to get user's DevDoc permissions

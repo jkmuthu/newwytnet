@@ -143,10 +143,32 @@ export default defineConfig({
               ]
             },
             {
+              text: '📋 Project Requirements (Internal)',
+              collapsed: true,
+              items: [
+                { text: 'PRD Overview', link: '/en/prd/' }
+              ]
+            },
+            {
               text: 'Project Management',
               items: [
                 { text: 'Features Checklist System', link: '/en/project/features-checklist' },
                 { text: 'Documentation Status', link: '/en/project/documentation-status' }
+              ]
+            },
+            {
+              text: '🔒 Chat History (Super Admin Only)',
+              collapsed: true,
+              items: [
+                { text: 'Conversation Archive', link: '/en/project/chat-history/' },
+                { text: 'Oct 23: DevDoc RBAC', link: '/en/project/chat-history/2025-10-23-devdoc-rbac' }
+              ]
+            },
+            {
+              text: '💼 Business Strategy (Super Admin Only)',
+              collapsed: true,
+              items: [
+                { text: 'Business Model & Roadmap', link: '/en/business/' }
               ]
             }
           ]
