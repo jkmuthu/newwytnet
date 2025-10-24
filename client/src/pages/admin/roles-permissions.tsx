@@ -605,9 +605,37 @@ function EditRoleDialog({
     description: role.description || "",
     isActive: role.isActive,
   });
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>(
-    role.permissions?.map((p) => p.id) || []
+
+  // Initialize selected permissions using the same structure as CreateRoleDialog
+  const initializePermissions = () => {
+    const permsByResource: Record<string, Set<string>> = {};
+    const rolePermIds = role.permissions?.map((p) => p.id) || [];
+    
+    Object.entries(groupedPermissions).forEach(([resource, perms]) => {
+      const resourcePerms = new Set<string>();
+      perms.forEach((perm) => {
+        if (rolePermIds.includes(perm.id)) {
+          resourcePerms.add(perm.id);
+        }
+      });
+      if (resourcePerms.size > 0) {
+        permsByResource[resource] = resourcePerms;
+      }
+    });
+    
+    return permsByResource;
+  };
+
+  const [selectedPermissions, setSelectedPermissions] = useState<Record<string, Set<string>>>(
+    initializePermissions()
   );
+
+  // Filter engine-scoped permissions
+  const engineResources = Object.entries(groupedPermissions).filter(([resource, perms]) => 
+    perms.some(p => p.scope === 'engine')
+  );
+
+  const actions = ['view', 'create', 'edit', 'delete'];
 
   const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -615,13 +643,81 @@ function EditRoleDialog({
   };
 
   const handleAssignPermissions = () => {
-    onAssignPermissions(selectedPermissions);
+    // Convert selected permissions to array of IDs
+    const permissionIds = Object.values(selectedPermissions)
+      .flatMap((actions) => Array.from(actions));
+    onAssignPermissions(permissionIds);
   };
 
-  const togglePermission = (permId: string) => {
-    setSelectedPermissions((prev) =>
-      prev.includes(permId) ? prev.filter((id) => id !== permId) : [...prev, permId]
+  const togglePermission = (resource: string, action: string, permId: string) => {
+    setSelectedPermissions((prev) => {
+      const resourcePerms = new Set(prev[resource] || []);
+      if (resourcePerms.has(permId)) {
+        resourcePerms.delete(permId);
+      } else {
+        resourcePerms.add(permId);
+      }
+      return {
+        ...prev,
+        [resource]: resourcePerms,
+      };
+    });
+  };
+
+  const isPermissionSelected = (resource: string, permId: string) => {
+    return selectedPermissions[resource]?.has(permId) || false;
+  };
+
+  // Select/deselect all permissions for a specific action
+  const toggleAllForAction = (action: string) => {
+    const allPermIdsForAction: { resource: string; permId: string }[] = [];
+    
+    // Collect all permission IDs for this action across all resources
+    engineResources.forEach(([resource, perms]) => {
+      const perm = perms.find(p => p.action === action && p.scope === 'engine');
+      if (perm) {
+        allPermIdsForAction.push({ resource, permId: perm.id });
+      }
+    });
+
+    // Check if all are currently selected
+    const allSelected = allPermIdsForAction.every(({ resource, permId }) => 
+      isPermissionSelected(resource, permId)
     );
+
+    // Toggle all
+    setSelectedPermissions((prev) => {
+      const updated = { ...prev };
+      allPermIdsForAction.forEach(({ resource, permId }) => {
+        if (!updated[resource]) {
+          updated[resource] = new Set();
+        }
+        if (allSelected) {
+          updated[resource].delete(permId);
+        } else {
+          updated[resource].add(permId);
+        }
+      });
+      return updated;
+    });
+  };
+
+  // Check if all permissions for an action are selected
+  const isAllSelectedForAction = (action: string) => {
+    let hasAny = false;
+    let allSelected = true;
+    
+    engineResources.forEach(([resource, perms]) => {
+      const perm = perms.find(p => p.action === action && p.scope === 'engine');
+      if (perm) {
+        hasAny = true;
+        if (!isPermissionSelected(resource, perm.id)) {
+          allSelected = false;
+        }
+      }
+    });
+    
+    return hasAny && allSelected;
   };
 
   return (
@@ -677,27 +773,90 @@ function EditRoleDialog({
             </form>
           </TabsContent>
           <TabsContent value="permissions" className="space-y-4">
-            <div className="space-y-4">
-              {Object.entries(groupedPermissions).map(([resource, perms]) => (
-                <div key={resource}>
-                  <h4 className="font-semibold mb-2 capitalize">{resource}</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    {perms.map((perm) => (
-                      <div key={perm.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`perm-${perm.id}`}
-                          checked={selectedPermissions.includes(perm.id)}
-                          onCheckedChange={() => togglePermission(perm.id)}
-                          data-testid={`checkbox-permission-${perm.id}`}
-                        />
-                        <Label htmlFor={`perm-${perm.id}`} className="text-sm">
-                          {perm.action}
-                        </Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+            <div>
+              <h3 className="text-sm font-semibold mb-3">Permissions Matrix</h3>
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[200px]">Sections</TableHead>
+                      <TableHead className="text-center w-[100px]">
+                        <div className="flex flex-col items-center gap-1">
+                          <span>View</span>
+                          <Checkbox
+                            checked={isAllSelectedForAction('view')}
+                            onCheckedChange={() => toggleAllForAction('view')}
+                            data-testid="checkbox-select-all-view-edit"
+                          />
+                        </div>
+                      </TableHead>
+                      <TableHead className="text-center w-[100px]">
+                        <div className="flex flex-col items-center gap-1">
+                          <span>Create</span>
+                          <Checkbox
+                            checked={isAllSelectedForAction('create')}
+                            onCheckedChange={() => toggleAllForAction('create')}
+                            data-testid="checkbox-select-all-create-edit"
+                          />
+                        </div>
+                      </TableHead>
+                      <TableHead className="text-center w-[100px]">
+                        <div className="flex flex-col items-center gap-1">
+                          <span>Edit</span>
+                          <Checkbox
+                            checked={isAllSelectedForAction('edit')}
+                            onCheckedChange={() => toggleAllForAction('edit')}
+                            data-testid="checkbox-select-all-edit-edit"
+                          />
+                        </div>
+                      </TableHead>
+                      <TableHead className="text-center w-[100px]">
+                        <div className="flex flex-col items-center gap-1">
+                          <span>Delete</span>
+                          <Checkbox
+                            checked={isAllSelectedForAction('delete')}
+                            onCheckedChange={() => toggleAllForAction('delete')}
+                            data-testid="checkbox-select-all-delete-edit"
+                          />
+                        </div>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {engineResources.map(([resource, perms]) => {
+                      // Group permissions by action for this resource
+                      const permsByAction = perms.reduce((acc, perm) => {
+                        if (perm.scope === 'engine') {
+                          acc[perm.action] = perm.id;
+                        }
+                        return acc;
+                      }, {} as Record<string, string>);
+
+                      return (
+                        <TableRow key={resource}>
+                          <TableCell className="font-medium">{getResourceLabel(resource)}</TableCell>
+                          {actions.map((action) => {
+                            const permId = permsByAction[action];
+                            return (
+                              <TableCell key={action} className="text-center">
+                                {permId ? (
+                                  <Checkbox
+                                    checked={isPermissionSelected(resource, permId)}
+                                    onCheckedChange={() => togglePermission(resource, action, permId)}
+                                    data-testid={`checkbox-edit-${resource}-${action}`}
+                                  />
+                                ) : (
+                                  <span className="text-muted-foreground">—</span>
+                                )}
+                              </TableCell>
+                            );
+                          })}
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
