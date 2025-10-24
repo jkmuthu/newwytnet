@@ -6891,6 +6891,64 @@ When suggesting improvements, format your response with suggestions in a structu
   //   ... old implementation ...
   // });
 
+  // Get all apps from registry
+  app.get('/api/admin/apps', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const allApps = await db
+        .select()
+        .from(appsRegistry)
+        .orderBy(appsRegistry.name);
+      
+      res.json({
+        success: true,
+        apps: allApps
+      });
+    } catch (error) {
+      console.error('Error fetching apps:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch apps'
+      });
+    }
+  });
+
+  // Get apps with pricing plan counts for pricing management
+  app.get('/api/admin/pricing/apps', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      // Get all apps from registry
+      const allApps = await db
+        .select()
+        .from(appsRegistry)
+        .orderBy(appsRegistry.name);
+      
+      // Get plan counts for each app
+      const appsWithPlanCounts = await Promise.all(
+        allApps.map(async (app) => {
+          const plans = await db
+            .select()
+            .from(pricingPlans)
+            .where(eq(pricingPlans.appId, app.id));
+          
+          return {
+            ...app,
+            planCount: plans.length
+          };
+        })
+      );
+      
+      res.json({
+        success: true,
+        apps: appsWithPlanCounts
+      });
+    } catch (error) {
+      console.error('Error fetching apps with pricing:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch apps with pricing'
+      });
+    }
+  });
+
   // Super Admin user management
   app.get('/api/admin/users', adminAuthMiddleware, async (req: any, res) => {
     try {
