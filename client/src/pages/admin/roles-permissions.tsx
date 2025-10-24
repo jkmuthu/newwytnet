@@ -177,20 +177,7 @@ export default function AdminRolesPermissions() {
         </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="roles" data-testid="tab-roles">
-            <ShieldCheck className="h-4 w-4 mr-2" />
-            Roles ({roles.length})
-          </TabsTrigger>
-          <TabsTrigger value="permissions" data-testid="tab-permissions">
-            <Key className="h-4 w-4 mr-2" />
-            Permissions ({permissions.length})
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Roles Tab */}
-        <TabsContent value="roles" className="space-y-4">
+      <div className="space-y-4">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -283,52 +270,7 @@ export default function AdminRolesPermissions() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* Permissions Tab */}
-        <TabsContent value="permissions" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>All Permissions</CardTitle>
-              <CardDescription>View all available permissions in the system</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {permissionsLoading ? (
-                <div className="text-center py-8">Loading permissions...</div>
-              ) : (
-                <div className="space-y-6">
-                  {Object.entries(groupedPermissions).map(([resource, perms]) => (
-                    <div key={resource}>
-                      <h3 className="font-semibold text-lg mb-3 capitalize">{resource}</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {perms.map((perm) => (
-                          <Card key={perm.id} className="p-3">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="text-xs">
-                                    {perm.action}
-                                  </Badge>
-                                  <span className="text-xs text-muted-foreground">
-                                    {perm.displayId}
-                                  </span>
-                                </div>
-                                <p className="text-sm mt-1 text-muted-foreground">
-                                  {perm.description || `${perm.action} ${perm.resource}`}
-                                </p>
-                              </div>
-                            </div>
-                          </Card>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      </div>
 
       {/* Create Role Dialog */}
       <CreateRoleDialog
@@ -406,6 +348,13 @@ function CreateRoleDialog({
   });
   const [selectedPermissions, setSelectedPermissions] = useState<Record<string, Set<string>>>({});
 
+  // Filter engine-scoped permissions
+  const engineResources = Object.entries(groupedPermissions).filter(([resource, perms]) => 
+    perms.some(p => p.scope === 'engine')
+  );
+
+  const actions = ['view', 'create', 'edit', 'delete'];
+
   const handleSubmit = async () => {
     // Convert selected permissions to array of IDs
     const permissionIds = Object.values(selectedPermissions)
@@ -438,12 +387,57 @@ function CreateRoleDialog({
     return selectedPermissions[resource]?.has(permId) || false;
   };
 
-  // Filter engine-scoped permissions
-  const engineResources = Object.entries(groupedPermissions).filter(([resource, perms]) => 
-    perms.some(p => p.scope === 'engine')
-  );
+  // Select/deselect all permissions for a specific action
+  const toggleAllForAction = (action: string) => {
+    const allPermIdsForAction: { resource: string; permId: string }[] = [];
+    
+    // Collect all permission IDs for this action across all resources
+    engineResources.forEach(([resource, perms]) => {
+      const perm = perms.find(p => p.action === action && p.scope === 'engine');
+      if (perm) {
+        allPermIdsForAction.push({ resource, permId: perm.id });
+      }
+    });
 
-  const actions = ['view', 'create', 'edit', 'delete'];
+    // Check if all are currently selected
+    const allSelected = allPermIdsForAction.every(({ resource, permId }) => 
+      isPermissionSelected(resource, permId)
+    );
+
+    // Toggle all
+    setSelectedPermissions((prev) => {
+      const updated = { ...prev };
+      allPermIdsForAction.forEach(({ resource, permId }) => {
+        if (!updated[resource]) {
+          updated[resource] = new Set();
+        }
+        if (allSelected) {
+          updated[resource].delete(permId);
+        } else {
+          updated[resource].add(permId);
+        }
+      });
+      return updated;
+    });
+  };
+
+  // Check if all permissions for an action are selected
+  const isAllSelectedForAction = (action: string) => {
+    let hasAny = false;
+    let allSelected = true;
+    
+    engineResources.forEach(([resource, perms]) => {
+      const perm = perms.find(p => p.action === action && p.scope === 'engine');
+      if (perm) {
+        hasAny = true;
+        if (!isPermissionSelected(resource, perm.id)) {
+          allSelected = false;
+        }
+      }
+    });
+    
+    return hasAny && allSelected;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -488,10 +482,46 @@ function CreateRoleDialog({
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[200px]">Sections</TableHead>
-                    <TableHead className="text-center w-[100px]">View</TableHead>
-                    <TableHead className="text-center w-[100px]">Create</TableHead>
-                    <TableHead className="text-center w-[100px]">Edit</TableHead>
-                    <TableHead className="text-center w-[100px]">Delete</TableHead>
+                    <TableHead className="text-center w-[100px]">
+                      <div className="flex flex-col items-center gap-1">
+                        <span>View</span>
+                        <Checkbox
+                          checked={isAllSelectedForAction('view')}
+                          onCheckedChange={() => toggleAllForAction('view')}
+                          data-testid="checkbox-select-all-view"
+                        />
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-center w-[100px]">
+                      <div className="flex flex-col items-center gap-1">
+                        <span>Create</span>
+                        <Checkbox
+                          checked={isAllSelectedForAction('create')}
+                          onCheckedChange={() => toggleAllForAction('create')}
+                          data-testid="checkbox-select-all-create"
+                        />
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-center w-[100px]">
+                      <div className="flex flex-col items-center gap-1">
+                        <span>Edit</span>
+                        <Checkbox
+                          checked={isAllSelectedForAction('edit')}
+                          onCheckedChange={() => toggleAllForAction('edit')}
+                          data-testid="checkbox-select-all-edit"
+                        />
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-center w-[100px]">
+                      <div className="flex flex-col items-center gap-1">
+                        <span>Delete</span>
+                        <Checkbox
+                          checked={isAllSelectedForAction('delete')}
+                          onCheckedChange={() => toggleAllForAction('delete')}
+                          data-testid="checkbox-select-all-delete"
+                        />
+                      </div>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
