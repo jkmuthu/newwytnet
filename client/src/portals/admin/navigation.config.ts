@@ -125,6 +125,20 @@ export const navigationSections: NavigationSection[] = [
         description: "System monitoring, metrics, alerts",
         keywords: ["monitor", "metrics", "alerts", "tracking"],
         superAdminOnly: true
+      },
+      {
+        label: "Global Search",
+        icon: Search,
+        href: "/engine/search",
+        description: "Search across all platform resources",
+        keywords: ["search", "find", "query", "lookup"]
+      },
+      {
+        label: "Notifications",
+        icon: Bell,
+        href: "/engine/notifications",
+        description: "System notifications, alerts, announcements",
+        keywords: ["notifications", "alerts", "announcements", "messages"]
       }
     ]
   },
@@ -153,7 +167,7 @@ export const navigationSections: NavigationSection[] = [
         keywords: ["organizations", "tenants", "companies"]
       },
       {
-        label: "Platform Hubs",
+        label: "All Hubs",
         icon: Network,
         href: "/engine/platform-hubs",
         description: "Hub management, domain routing, hub settings",
@@ -167,20 +181,6 @@ export const navigationSections: NavigationSection[] = [
         description: "RBAC management, role creation, permission assignment",
         keywords: ["roles", "permissions", "rbac", "access"],
         superAdminOnly: true
-      },
-      {
-        label: "Global Search",
-        icon: Search,
-        href: "/engine/search",
-        description: "Search across all platform resources",
-        keywords: ["search", "find", "query", "lookup"]
-      },
-      {
-        label: "Notifications",
-        icon: Bell,
-        href: "/engine/notifications",
-        description: "System notifications, alerts, announcements",
-        keywords: ["notifications", "alerts", "announcements", "messages"]
       }
     ]
   },
@@ -195,7 +195,7 @@ export const navigationSections: NavigationSection[] = [
     order: 3,
     items: [
       {
-        label: "Module Library",
+        label: "All Modules",
         icon: Package,
         href: "/engine/modules",
         description: "WytModules catalog, activation, configuration",
@@ -223,7 +223,7 @@ export const navigationSections: NavigationSection[] = [
         keywords: ["entities", "types", "custom"]
       },
       {
-        label: "DataSets",
+        label: "All Datasets",
         icon: Database,
         href: "/engine/datasets",
         description: "WytData management, global datasets",
