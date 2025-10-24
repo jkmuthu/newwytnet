@@ -103,30 +103,6 @@ export const navigationSections: NavigationSection[] = [
         keywords: ["dashboard", "overview", "metrics", "stats"]
       },
       {
-        label: "System Overview",
-        icon: Server,
-        href: "/engine/system-overview",
-        description: "System overview, resource usage, performance",
-        keywords: ["system", "overview", "resources", "performance"],
-        superAdminOnly: true
-      },
-      {
-        label: "System Status",
-        icon: Activity,
-        href: "/engine/system-status",
-        description: "Real-time system status, service health",
-        keywords: ["status", "health", "services", "realtime"],
-        superAdminOnly: true
-      },
-      {
-        label: "System Monitor",
-        icon: Activity,
-        href: "/engine/system-monitor",
-        description: "System monitoring, metrics, alerts",
-        keywords: ["monitor", "metrics", "alerts", "tracking"],
-        superAdminOnly: true
-      },
-      {
         label: "Global Search",
         icon: Search,
         href: "/engine/search",
@@ -411,14 +387,6 @@ export const navigationSections: NavigationSection[] = [
         superAdminOnly: true
       },
       {
-        label: "Security",
-        icon: Lock,
-        href: "/engine/security",
-        description: "Security policies, authentication settings",
-        keywords: ["security", "policies", "authentication", "safety"],
-        superAdminOnly: true
-      },
-      {
         label: "System Logs",
         icon: FileText,
         href: "/engine/system-logs",
@@ -452,13 +420,6 @@ export const navigationSections: NavigationSection[] = [
         href: "/devdoc",
         description: "Developer documentation, technical guides",
         keywords: ["devdoc", "documentation", "developer", "guides"]
-      },
-      {
-        label: "Help",
-        icon: HelpCircle,
-        href: "/engine/help",
-        description: "Quick help, support resources",
-        keywords: ["help", "quick", "support", "assistance"]
       },
       {
         label: "Help & Support",
