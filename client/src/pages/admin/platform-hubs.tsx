@@ -107,7 +107,7 @@ export default function AdminPlatformHubs() {
   const [selectedHub, setSelectedHub] = useState<PlatformHub | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [createHubOpen, setCreateHubOpen] = useState(false);
-  const [hubStatusFilter, setHubStatusFilter] = useState<'active' | 'trash'>('active');
+  const [activeTab, setActiveTab] = useState<'all-hubs' | 'trash' | 'configurations'>('all-hubs');
 
   // Fetch platform hubs
   const { data: hubsData, isLoading: hubsLoading } = useQuery<{ success: boolean; hubs: PlatformHub[] }>({
@@ -170,250 +170,268 @@ export default function AdminPlatformHubs() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground" data-testid="text-heading">
-            Platform Hubs
+            All Hubs
           </h1>
           <p className="text-muted-foreground">
             Manage all hubs, their settings, branding, SEO, and domains
           </p>
         </div>
-        <Button onClick={() => setCreateHubOpen(true)} data-testid="button-create-hub">
-          <Plus className="h-4 w-4 mr-2" />
-          Create Hub
-        </Button>
+        {activeTab === 'all-hubs' && (
+          <Button onClick={() => setCreateHubOpen(true)} data-testid="button-create-hub">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Hub
+          </Button>
+        )}
       </div>
 
-      {/* Global Settings Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Global Hub Settings
-          </CardTitle>
-          <CardDescription>
-            Configure platform-wide settings for all hubs
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 border rounded-lg">
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-primary" />
-                Total Hubs
-              </h3>
-              <p className="text-3xl font-bold">{hubs.length}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Active platform hubs
-              </p>
-            </div>
-            
-            <div className="p-4 border rounded-lg">
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
-                <Globe className="h-4 w-4 text-green-600" />
-                Verified Domains
-              </h3>
-              <p className="text-3xl font-bold">
-                {hubs.filter(h => h.customDomain && h.domainVerified).length}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Custom domains active
-              </p>
-            </div>
-            
-            <div className="p-4 border rounded-lg">
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
-                <Users className="h-4 w-4 text-blue-600" />
-                Hub Administrators
-              </h3>
-              <p className="text-3xl font-bold">
-                {hubs.reduce((sum, h) => sum + (h.adminCount || 0), 0)}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Total hub admins assigned
-              </p>
-            </div>
-          </div>
-          
-          <div className="mt-4 p-4 bg-muted/30 rounded-lg">
-            <h4 className="font-semibold mb-3">Platform-Wide Configuration</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Default Hub Status</span>
-                <Badge variant="default">Active</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Multi-Domain Routing</span>
-                <Badge variant="default">Enabled</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Custom Domain Support</span>
-                <Badge variant="default">Enabled</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Subdomain Routing</span>
-                <Badge variant="default">Enabled</Badge>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Main Tabs */}
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
+        <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
+          <TabsTrigger value="all-hubs" data-testid="tab-all-hubs">
+            <Building2 className="h-4 w-4 mr-2" />
+            All Hubs ({hubs.length})
+          </TabsTrigger>
+          <TabsTrigger value="trash" data-testid="tab-trash">
+            Trash ({trashHubsData?.count || 0})
+          </TabsTrigger>
+          <TabsTrigger value="configurations" data-testid="tab-configurations">
+            <Settings className="h-4 w-4 mr-2" />
+            Configurations
+          </TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>
-                {hubStatusFilter === 'trash' ? 'Trash' : 'All Hubs'} 
-                ({hubStatusFilter === 'trash' ? (trashHubsData?.count || 0) : hubs.length})
-              </CardTitle>
-              <CardDescription>
-                {hubStatusFilter === 'trash' 
-                  ? 'Deleted hubs - will be permanently removed after 90 days'
-                  : 'View and manage hub settings and administrators'
-                }
-              </CardDescription>
-            </div>
-            {hubStatusFilter === 'active' && (
-              <div className="relative w-64">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search hubs..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                  data-testid="input-search-hubs"
-                />
-              </div>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {/* Status Filter Tabs */}
-          <Tabs value={hubStatusFilter} onValueChange={(value) => setHubStatusFilter(value as any)} className="w-full">
-            <TabsList className="mb-4">
-              <TabsTrigger value="active" data-testid="tab-hubs-active">
-                Active ({hubs.length})
-              </TabsTrigger>
-              <TabsTrigger value="trash" data-testid="tab-hubs-trash">
-                Trash ({trashHubsData?.count || 0})
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          {/* Trash View for deleted hubs */}
-          {hubStatusFilter === 'trash' ? (
-            <TrashView
-              items={trashHubsData?.hubs || []}
-              isLoading={isLoadingTrash}
-              entityType="Hub"
-              onRestore={async (id: string) => { await restoreHubMutation.mutateAsync(id); }}
-              onPermanentDelete={async (id: string) => { await permanentlyDeleteHubMutation.mutateAsync(id); }}
-              renderItemName={(hub: PlatformHub) => hub.name}
-              renderItemDetails={(hub: PlatformHub) => (
-                <div className="text-sm text-muted-foreground">
-                  {hub.displayId && <span className="font-mono">{hub.displayId}</span>}
-                  {hub.slug && <span className="ml-2">• /{hub.slug}</span>}
-                  {hub.subdomain && <span className="ml-2">• {hub.subdomain}.wytnet.com</span>}
+        {/* All Hubs Tab */}
+        <TabsContent value="all-hubs" className="space-y-4 mt-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>All Hubs ({hubs.length})</CardTitle>
+                  <CardDescription>View and manage hub settings and administrators</CardDescription>
                 </div>
-              )}
-            />
-          ) : (
-            <>
+                <div className="relative w-64">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search hubs..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                    data-testid="input-search-hubs"
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
               {hubsLoading ? (
                 <div className="text-center py-8">Loading hubs...</div>
               ) : filteredHubs.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No hubs found</p>
+                  {searchTerm ? "No hubs match your search" : "No hubs created yet"}
                 </div>
               ) : (
                 <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Display ID</TableHead>
-                  <TableHead>Hub Name</TableHead>
-                  <TableHead>Access</TableHead>
-                  <TableHead>Domain</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Admins</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredHubs.map((hub) => (
-                  <TableRow key={hub.id} data-testid={`row-hub-${hub.id}`}>
-                    <TableCell>
-                      <Badge variant="outline">{hub.displayId}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{hub.name}</div>
-                        {hub.description && (
-                          <div className="text-sm text-muted-foreground truncate max-w-xs">
-                            {hub.description}
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Display ID</TableHead>
+                      <TableHead>Hub Name</TableHead>
+                      <TableHead>Access</TableHead>
+                      <TableHead>Domain</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Admins</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredHubs.map((hub) => (
+                      <TableRow key={hub.id} data-testid={`row-hub-${hub.id}`}>
+                        <TableCell>
+                          <Badge variant="outline">{hub.displayId}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{hub.name}</div>
+                            {hub.description && (
+                              <div className="text-sm text-muted-foreground truncate max-w-xs">
+                                {hub.description}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
-                          /{hub.slug}
-                        </code>
-                        <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
-                          {hub.subdomain}.wytnet.com
-                        </code>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {hub.customDomain ? (
-                        <div className="flex items-center gap-2">
-                          <code className="text-sm bg-primary/10 px-2 py-1 rounded">
-                            {hub.customDomain}
-                          </code>
-                          {hub.domainVerified ? (
-                            <Check className="h-4 w-4 text-green-600" />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                              /{hub.slug}
+                            </code>
+                            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                              {hub.subdomain}.wytnet.com
+                            </code>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {hub.customDomain ? (
+                            <div className="flex items-center gap-2">
+                              <code className="text-sm bg-primary/10 px-2 py-1 rounded">
+                                {hub.customDomain}
+                              </code>
+                              {hub.domainVerified ? (
+                                <Check className="h-4 w-4 text-green-600" />
+                              ) : (
+                                <AlertCircle className="h-4 w-4 text-amber-600" />
+                              )}
+                            </div>
                           ) : (
-                            <AlertCircle className="h-4 w-4 text-amber-600" />
+                            <span className="text-sm text-muted-foreground">No custom domain</span>
                           )}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">No custom domain</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={hub.status === "active" ? "default" : "secondary"}>
-                        {hub.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{hub.adminCount || 0}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedHub(hub);
-                          setSettingsOpen(true);
-                        }}
-                        data-testid={`button-settings-${hub.id}`}
-                      >
-                        <Settings className="h-3 w-3 mr-2" />
-                        Settings
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={hub.status === "active" ? "default" : "secondary"}>
+                            {hub.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{hub.adminCount || 0}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedHub(hub);
+                              setSettingsOpen(true);
+                            }}
+                            data-testid={`button-settings-${hub.id}`}
+                          >
+                            <Settings className="h-3 w-3 mr-2" />
+                            Settings
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
                 </Table>
               )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Trash Tab */}
+        <TabsContent value="trash" className="space-y-4 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Trash ({trashHubsData?.count || 0})</CardTitle>
+              <CardDescription>Deleted hubs - will be permanently removed after 90 days</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TrashView
+                items={trashHubsData?.hubs || []}
+                isLoading={isLoadingTrash}
+                entityType="Hub"
+                onRestore={async (id: string) => { await restoreHubMutation.mutateAsync(id); }}
+                onPermanentDelete={async (id: string) => { await permanentlyDeleteHubMutation.mutateAsync(id); }}
+                renderItemName={(hub: PlatformHub) => hub.name}
+                renderItemDetails={(hub: PlatformHub) => (
+                  <div className="text-sm text-muted-foreground">
+                    {hub.displayId && <span className="font-mono">{hub.displayId}</span>}
+                    {hub.slug && <span className="ml-2">• /{hub.slug}</span>}
+                    {hub.subdomain && <span className="ml-2">• {hub.subdomain}.wytnet.com</span>}
+                  </div>
+                )}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Configurations Tab */}
+        <TabsContent value="configurations" className="space-y-4 mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Hub Configurations
+              </CardTitle>
+              <CardDescription>
+                Configure platform-wide settings for all hubs
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 border rounded-lg">
+                  <h3 className="font-semibold mb-2 flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-primary" />
+                    Total Hubs
+                  </h3>
+                  <p className="text-3xl font-bold">{hubs.length}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Active platform hubs
+                  </p>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <h3 className="font-semibold mb-2 flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-green-600" />
+                    Verified Domains
+                  </h3>
+                  <p className="text-3xl font-bold">
+                    {hubs.filter(h => h.customDomain && h.domainVerified).length}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Custom domains active
+                  </p>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <h3 className="font-semibold mb-2 flex items-center gap-2">
+                    <Users className="h-4 w-4 text-blue-600" />
+                    Hub Administrators
+                  </h3>
+                  <p className="text-3xl font-bold">
+                    {hubs.reduce((sum, h) => sum + (h.adminCount || 0), 0)}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Total hub admins assigned
+                  </p>
+                </div>
+              </div>
+              
+              {/* Platform-Wide Configuration */}
+              <div className="p-4 bg-muted/30 rounded-lg space-y-4">
+                <h4 className="font-semibold">Platform-Wide Configuration</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Default Hub Status</span>
+                    <Badge variant="default">Active</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Multi-Domain Routing</span>
+                    <Badge variant="default">Enabled</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Custom Domain Support</span>
+                    <Badge variant="default">Enabled</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Subdomain Routing</span>
+                    <Badge variant="default">Enabled</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">SSL/TLS Certificates</span>
+                    <Badge variant="default">Auto-Managed</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Hub Creation</span>
+                    <Badge variant="default">Super Admin Only</Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Hub Settings Dialog */}
       {selectedHub && (
