@@ -36,7 +36,8 @@ import {
   Info,
   Eye,
   Ban,
-  BarChart3
+  BarChart3,
+  Clock
 } from "lucide-react";
 
 // Types based on schema
@@ -123,18 +124,40 @@ interface PlanColumnData {
   };
 }
 
+interface PlanHistoryRecord {
+  id: string;
+  field: string;
+  oldValue: string;
+  newValue: string;
+  editedAt: string;
+  editedBy: string;
+  userName: string;
+  userEmail: string;
+}
+
 export default function PlansAndPrices() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [fullViewApp, setFullViewApp] = useState<AppRegistry | null>(null);
   const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<PricingPlan | null>(null);
+  const [historyPlan, setHistoryPlan] = useState<PricingPlan | null>(null);
   const { toast } = useToast();
 
   // Fetch apps
   const { data: apps = [], isLoading: isLoadingApps } = useQuery<AppRegistry[]>({
     queryKey: ['/api/admin/pricing/apps'],
     select: (data: any) => data.apps || []
+  });
+
+  // Fetch plan edit history
+  const { data: planHistory, isLoading: isLoadingHistory } = useQuery<{
+    success: boolean;
+    history: PlanHistoryRecord[];
+    plan: { id: string; planName: string; appId: string };
+  }>({
+    queryKey: ['/api/admin/pricing-plans', historyPlan?.id, 'history'],
+    enabled: !!historyPlan?.id
   });
 
   // Filter apps
@@ -278,6 +301,7 @@ export default function PlansAndPrices() {
           onOpenChange={(open) => !open && setFullViewApp(null)}
           onCreatePlan={() => setIsCreatePlanOpen(true)}
           onEditPlan={(plan) => setEditingPlan(plan)}
+          onViewHistory={(plan) => setHistoryPlan(plan)}
         />
       )}
 
@@ -293,6 +317,13 @@ export default function PlansAndPrices() {
         appId={fullViewApp?.id}
         appName={fullViewApp?.name}
         plan={editingPlan}
+      />
+
+      {/* Plan Edit History Dialog */}
+      <PlanEditHistoryDialog
+        plan={historyPlan}
+        open={!!historyPlan}
+        onOpenChange={(open) => !open && setHistoryPlan(null)}
       />
     </div>
   );
@@ -639,6 +670,16 @@ function MatrixTable({ appId }: { appId: string }) {
                     <div className="flex items-center justify-center gap-2">
                       <span className="text-xl">{getPlanIcon(plan)}</span>
                       <span className="font-bold">{plan.planBatch || plan.planName}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => onViewHistory(plan)}
+                        title="View Edit History"
+                        data-testid={`button-view-history-${plan.id}`}
+                      >
+                        <Clock className="h-3 w-3" />
+                      </Button>
                     </div>
 
                     {/* Activate Plan Toggle */}
@@ -857,13 +898,15 @@ function FullViewDialog({
   open,
   onOpenChange,
   onCreatePlan,
-  onEditPlan
+  onEditPlan,
+  onViewHistory
 }: {
   app: AppRegistry;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreatePlan: () => void;
   onEditPlan: (plan: PricingPlan) => void;
+  onViewHistory: (plan: PricingPlan) => void;
 }) {
   const { toast } = useToast();
 
@@ -1580,6 +1623,131 @@ function PlanFormDialog({
             {(createMutation.isPending || updateMutation.isPending) ? 'Saving...' : (plan ? 'Update' : 'Create')} Plan
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Edit History Dialog Component
+function PlanEditHistoryDialog({
+  plan,
+  open,
+  onOpenChange
+}: {
+  plan: PricingPlan | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { data: historyData, isLoading } = useQuery<{
+    success: boolean;
+    history: PlanHistoryRecord[];
+    plan: { id: string; planName: string; appId: string };
+  }>({
+    queryKey: ['/api/admin/pricing-plans', plan?.id, 'history'],
+    enabled: !!plan?.id
+  });
+
+  const history = historyData?.history || [];
+
+  const formatValue = (value: string, field: string) => {
+    try {
+      // Try to parse as JSON for objects/arrays
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.join(', ');
+      }
+      if (typeof parsed === 'object') {
+        return JSON.stringify(parsed, null, 2);
+      }
+      return value;
+    } catch {
+      // Return as-is if not JSON
+      return value || '-';
+    }
+  };
+
+  const getFieldLabel = (field: string) => {
+    const labels: Record<string, string> = {
+      planName: 'Plan Name',
+      description: 'Description',
+      basePrice: 'Base Price',
+      isActive: 'Active Status',
+      isFeatured: 'Featured Status',
+      features: 'Features',
+      limits: 'Limits',
+      sortOrder: 'Sort Order'
+    };
+    return labels[field] || field;
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Edit History - {plan?.planName}
+          </DialogTitle>
+          <DialogDescription>
+            View all changes made to this pricing plan
+          </DialogDescription>
+        </DialogHeader>
+
+        <ScrollArea className="h-[500px] pr-4">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <p className="text-muted-foreground">Loading history...</p>
+            </div>
+          ) : history.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Clock className="h-12 w-12 text-muted-foreground mb-3" />
+              <p className="text-lg font-medium">No edit history</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                This pricing plan hasn't been modified yet
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {history.map((record) => (
+                <Card key={record.id}>
+                  <CardContent className="pt-4">
+                    <div className="space-y-3">
+                      {/* Header */}
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-medium">{getFieldLabel(record.field)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(record.editedAt).toLocaleString()} by {record.userName || record.userEmail}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Change Details */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Old Value</Label>
+                          <div className="mt-1 p-2 rounded bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900">
+                            <pre className="text-sm whitespace-pre-wrap break-words">
+                              {formatValue(record.oldValue, record.field)}
+                            </pre>
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">New Value</Label>
+                          <div className="mt-1 p-2 rounded bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900">
+                            <pre className="text-sm whitespace-pre-wrap break-words">
+                              {formatValue(record.newValue, record.field)}
+                            </pre>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
