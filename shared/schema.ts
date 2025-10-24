@@ -3052,6 +3052,19 @@ export const pricingPlans = pgTable("pricing_plans", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Pricing Plan Edit History - Track all changes to pricing plans
+export const pricingPlanEditHistory = pgTable("pricing_plan_edit_history", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  planId: uuid("plan_id").notNull().references(() => pricingPlans.id, { onDelete: 'cascade' }),
+  field: varchar("field", { length: 50 }).notNull(), // 'planName', 'basePrice', 'isActive', 'features', 'limits'
+  oldValue: text("old_value"),
+  newValue: text("new_value"),
+  editedBy: varchar("edited_by").notNull().references(() => users.id),
+  editedAt: timestamp("edited_at").defaultNow().notNull(),
+}, (table) => ({
+  planFieldIdx: index("pricing_plan_edit_field_idx").on(table.planId, table.field),
+}));
+
 // Pricing Plan Types - Multiple pricing models per plan
 export const pricingPlanTypes = pgTable("pricing_plan_types", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -3546,6 +3559,8 @@ export const insertAppRegistrySchema = createInsertSchema(appsRegistry).omit({ i
 export const selectAppRegistrySchema = createSelectSchema(appsRegistry);
 export const insertPricingPlanSchema = createInsertSchema(pricingPlans).omit({ id: true, createdAt: true, updatedAt: true });
 export const selectPricingPlanSchema = createSelectSchema(pricingPlans);
+export const insertPricingPlanEditHistorySchema = createInsertSchema(pricingPlanEditHistory).omit({ id: true });
+export const selectPricingPlanEditHistorySchema = createSelectSchema(pricingPlanEditHistory);
 export const insertPricingPlanTypeSchema = createInsertSchema(pricingPlanTypes).omit({ id: true, createdAt: true });
 export const selectPricingPlanTypeSchema = createSelectSchema(pricingPlanTypes);
 export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions).omit({ id: true, createdAt: true, updatedAt: true });
@@ -3564,6 +3579,8 @@ export type AppRegistry = typeof appsRegistry.$inferSelect;
 export type InsertAppRegistry = z.infer<typeof insertAppRegistrySchema>;
 export type PricingPlan = typeof pricingPlans.$inferSelect;
 export type InsertPricingPlan = z.infer<typeof insertPricingPlanSchema>;
+export type PricingPlanEditHistory = typeof pricingPlanEditHistory.$inferSelect;
+export type InsertPricingPlanEditHistory = z.infer<typeof insertPricingPlanEditHistorySchema>;
 export type PricingPlanType = typeof pricingPlanTypes.$inferSelect;
 export type InsertPricingPlanType = z.infer<typeof insertPricingPlanTypeSchema>;
 export type UserSubscription = typeof userSubscriptions.$inferSelect;
