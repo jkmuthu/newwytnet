@@ -110,6 +110,7 @@ import {
   type InsertAiChatConversation,
   appsRegistry,
   pricingPlans,
+  pricingPlanEditHistory,
   pricingPlanTypes,
   userSubscriptions,
   usageTracking,
@@ -6945,6 +6946,144 @@ When suggesting improvements, format your response with suggestions in a structu
       res.status(500).json({
         success: false,
         error: 'Failed to fetch apps with pricing'
+      });
+    }
+  });
+
+  // Get edit history for a pricing plan
+  app.get('/api/admin/pricing-plans/:planId/history', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { planId } = req.params;
+
+      // Verify plan exists
+      const [plan] = await db
+        .select()
+        .from(pricingPlans)
+        .where(eq(pricingPlans.id, planId))
+        .limit(1);
+
+      if (!plan) {
+        return res.status(404).json({
+          success: false,
+          error: 'Pricing plan not found'
+        });
+      }
+
+      // Get edit history with user information
+      const history = await db
+        .select({
+          id: pricingPlanEditHistory.id,
+          field: pricingPlanEditHistory.field,
+          oldValue: pricingPlanEditHistory.oldValue,
+          newValue: pricingPlanEditHistory.newValue,
+          editedAt: pricingPlanEditHistory.editedAt,
+          editedBy: pricingPlanEditHistory.editedBy,
+          userName: users.name,
+          userEmail: users.email
+        })
+        .from(pricingPlanEditHistory)
+        .leftJoin(users, eq(pricingPlanEditHistory.editedBy, users.id))
+        .where(eq(pricingPlanEditHistory.planId, planId))
+        .orderBy(desc(pricingPlanEditHistory.editedAt));
+
+      res.json({
+        success: true,
+        history,
+        plan: {
+          id: plan.id,
+          planName: plan.planName,
+          appId: plan.appId
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching pricing plan history:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch pricing plan history'
+      });
+    }
+  });
+
+  // Update pricing plan with history tracking
+  app.patch('/api/admin/pricing-plans/:planId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { planId } = req.params;
+      const updates = req.body;
+      const user = req.user;
+
+      if (!user?.id) {
+        return res.status(401).json({
+          success: false,
+          error: 'Not authenticated'
+        });
+      }
+
+      // Get current plan data
+      const [currentPlan] = await db
+        .select()
+        .from(pricingPlans)
+        .where(eq(pricingPlans.id, planId))
+        .limit(1);
+
+      if (!currentPlan) {
+        return res.status(404).json({
+          success: false,
+          error: 'Pricing plan not found'
+        });
+      }
+
+      // Track fields that can be updated with history
+      const trackableFields = ['planName', 'description', 'basePrice', 'isActive', 'isFeatured', 'features', 'limits', 'sortOrder'];
+      const historyRecords = [];
+
+      // Compare old vs new values and track changes
+      for (const field of trackableFields) {
+        if (updates[field] !== undefined) {
+          const oldValue = currentPlan[field as keyof typeof currentPlan];
+          const newValue = updates[field];
+
+          // Convert to string for comparison
+          const oldValueStr = typeof oldValue === 'object' ? JSON.stringify(oldValue) : String(oldValue || '');
+          const newValueStr = typeof newValue === 'object' ? JSON.stringify(newValue) : String(newValue || '');
+
+          if (oldValueStr !== newValueStr) {
+            historyRecords.push({
+              planId,
+              field,
+              oldValue: oldValueStr,
+              newValue: newValueStr,
+              editedBy: user.id
+            });
+          }
+        }
+      }
+
+      // Update the pricing plan
+      const [updatedPlan] = await db
+        .update(pricingPlans)
+        .set({
+          ...updates,
+          updatedAt: new Date()
+        })
+        .where(eq(pricingPlans.id, planId))
+        .returning();
+
+      // Insert history records
+      if (historyRecords.length > 0) {
+        await db.insert(pricingPlanEditHistory).values(historyRecords);
+      }
+
+      res.json({
+        success: true,
+        message: 'Pricing plan updated successfully',
+        plan: updatedPlan,
+        changesTracked: historyRecords.length
+      });
+    } catch (error) {
+      console.error('Error updating pricing plan:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update pricing plan'
       });
     }
   });
