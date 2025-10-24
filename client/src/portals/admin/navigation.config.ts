@@ -81,33 +81,25 @@ export interface NavigationSection {
 }
 
 /**
- * Phase 1 Target: 10 Logical Sections
- * 
- * Mapping existing items + adding new items for complete Self-Service Platform
+ * Optimized Navigation Structure
+ * 5 Main Groups: Overview | Core Management | CMS & Builders | Analytics & Insights | Settings
  */
 export const navigationSections: NavigationSection[] = [
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 1. Dashboard & Overview
+  // 1. Overview
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   {
-    id: "dashboard",
-    title: "📊 Dashboard & Overview",
+    id: "overview",
+    title: "📊 Overview",
     icon: LayoutDashboard,
     order: 1,
     items: [
       {
-        label: "Platform Dashboard",
+        label: "Dashboard",
         icon: LayoutDashboard,
         href: "/engine",
         description: "Platform overview, key metrics, recent activity",
         keywords: ["dashboard", "overview", "metrics", "stats"]
-      },
-      {
-        label: "Global Search",
-        icon: Search,
-        href: "/engine/search",
-        description: "Search across all platform resources",
-        keywords: ["search", "find", "query", "lookup"]
       },
       {
         label: "Notifications",
@@ -115,16 +107,23 @@ export const navigationSections: NavigationSection[] = [
         href: "/engine/notifications",
         description: "System notifications, alerts, announcements",
         keywords: ["notifications", "alerts", "announcements", "messages"]
+      },
+      {
+        label: "Global Search",
+        icon: Search,
+        href: "/engine/search",
+        description: "Search across all platform resources",
+        keywords: ["search", "find", "query", "lookup"]
       }
     ]
   },
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 2. Platform Management
+  // 2. Core Management
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   {
-    id: "platform-management",
-    title: "🏗️ Platform Management",
+    id: "core-management",
+    title: "🏗️ Core Management",
     icon: Building,
     order: 2,
     items: [
@@ -143,33 +142,19 @@ export const navigationSections: NavigationSection[] = [
         keywords: ["organizations", "tenants", "companies"]
       },
       {
-        label: "All Hubs",
+        label: "All Entities",
         icon: Network,
-        href: "/engine/platform-hubs",
-        description: "Hub management, domain routing, hub settings",
-        keywords: ["hubs", "domains", "routing"],
-        superAdminOnly: true
+        href: "/engine/entities",
+        description: "Entity type management, custom entities",
+        keywords: ["entities", "types", "custom"]
       },
       {
-        label: "Roles & Permissions",
-        icon: Shield,
-        href: "/engine/roles-permissions",
-        description: "RBAC management, role creation, permission assignment",
-        keywords: ["roles", "permissions", "rbac", "access"],
-        superAdminOnly: true
-      }
-    ]
-  },
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 3. Content & Builders
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  {
-    id: "content-builders",
-    title: "🔨 Content & Builders",
-    icon: Package,
-    order: 3,
-    items: [
+        label: "All Datasets",
+        icon: Database,
+        href: "/engine/datasets",
+        description: "WytData management, global datasets",
+        keywords: ["datasets", "data", "wytdata"]
+      },
       {
         label: "All Modules",
         icon: Package,
@@ -185,25 +170,31 @@ export const navigationSections: NavigationSection[] = [
         keywords: ["apps", "applications", "wytapps"]
       },
       {
-        label: "CMS",
+        label: "All Hubs",
+        icon: Network,
+        href: "/engine/platform-hubs",
+        description: "Hub management, domain routing, hub settings",
+        keywords: ["hubs", "domains", "routing"],
+        superAdminOnly: true
+      }
+    ]
+  },
+
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // 3. CMS & Builders
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  {
+    id: "cms-builders",
+    title: "🔨 CMS & Builders",
+    icon: Code,
+    order: 3,
+    items: [
+      {
+        label: "Pages & CMS",
         icon: FileText,
         href: "/engine/cms",
         description: "Content management system, pages, posts",
         keywords: ["cms", "content", "pages", "posts"]
-      },
-      {
-        label: "All Entities",
-        icon: Network,
-        href: "/engine/entities",
-        description: "Entity type management, custom entities",
-        keywords: ["entities", "types", "custom"]
-      },
-      {
-        label: "All Datasets",
-        icon: Database,
-        href: "/engine/datasets",
-        description: "WytData management, global datasets",
-        keywords: ["datasets", "data", "wytdata"]
       },
       {
         label: "App Builder",
@@ -212,75 +203,24 @@ export const navigationSections: NavigationSection[] = [
         description: "AI-powered application builder",
         keywords: ["app", "builder", "ai", "create", "generate"],
         superAdminOnly: true
-      }
-    ]
-  },
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 4. Business & Commerce
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  {
-    id: "business-commerce",
-    title: "💰 Business & Commerce",
-    icon: CreditCard,
-    order: 4,
-    items: [
-      {
-        label: "Plans & Prices",
-        icon: CreditCard,
-        href: "/engine/plans-prices",
-        description: "Pricing plans, subscription tiers",
-        keywords: ["plans", "pricing", "subscriptions"]
       },
       {
-        label: "Finance",
-        icon: BarChart3,
-        href: "/engine/finance",
-        description: "Financial overview, transactions, revenue",
-        keywords: ["finance", "revenue", "transactions"]
+        label: "API Library",
+        icon: Webhook,
+        href: "/engine/api-library",
+        description: "Third-party API management, white-label rebranding",
+        keywords: ["api", "library", "integrations", "rebrand", "wytmap"],
+        superAdminOnly: true
       },
       {
-        label: "WytPoints Management",
-        icon: CreditCard,
-        href: "/engine/wytpoints",
-        description: "WytPoints economy, rewards, transactions",
-        keywords: ["wytpoints", "rewards", "economy", "credits"]
-      },
-      {
-        label: "Billing",
-        icon: CreditCard,
-        href: "/engine/billing",
-        description: "Billing management, invoices, payment history",
-        keywords: ["billing", "invoices", "payments", "history"]
-      },
-      {
-        label: "Transactions",
-        icon: List,
-        href: "/engine/transactions",
-        description: "Transaction history, payment records",
-        keywords: ["transactions", "payments", "history", "records"]
-      }
-    ]
-  },
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 5. Design & Themes
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  {
-    id: "design-themes",
-    title: "🎨 Design & Themes",
-    icon: Palette,
-    order: 5,
-    items: [
-      {
-        label: "Themes",
+        label: "All Themes",
         icon: Palette,
         href: "/engine/themes",
         description: "Theme management, customization",
         keywords: ["themes", "design", "colors", "branding"]
       },
       {
-        label: "Media",
+        label: "Media Library",
         icon: Images,
         href: "/engine/media",
         description: "Media library, images, assets",
@@ -290,53 +230,53 @@ export const navigationSections: NavigationSection[] = [
   },
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 6. Integrations & APIs
+  // 4. Analytics & Insights
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   {
-    id: "integrations-apis",
-    title: "🔌 Integrations & APIs",
-    icon: Plug,
-    order: 6,
+    id: "analytics-insights",
+    title: "📊 Analytics & Insights",
+    icon: BarChart3,
+    order: 4,
     items: [
       {
-        label: "Integrations",
-        icon: Plug,
-        href: "/engine/integrations",
-        description: "Third-party integrations, services",
-        keywords: ["integrations", "services", "third-party"],
-        superAdminOnly: true
+        label: "Help & Support",
+        icon: HelpCircle,
+        href: "/engine/help-support",
+        description: "Support resources, FAQs, help center",
+        keywords: ["help", "support", "faq", "assistance"]
+      },
+      {
+        label: "Transactions",
+        icon: List,
+        href: "/engine/transactions",
+        description: "Transaction history, payment records",
+        keywords: ["transactions", "payments", "history", "records"]
+      },
+      {
+        label: "Analytics",
+        icon: BarChart3,
+        href: "/engine/analytics",
+        description: "Platform analytics, usage statistics",
+        keywords: ["analytics", "stats", "metrics", "usage"]
+      },
+      {
+        label: "DevDoc",
+        icon: Book,
+        href: "/devdoc",
+        description: "Developer documentation, technical guides",
+        keywords: ["devdoc", "documentation", "developer", "guides"]
       }
     ]
   },
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 7. AI & Automation
+  // 5. Settings
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   {
-    id: "ai-automation",
-    title: "🤖 AI & Automation",
-    icon: Brain,
-    order: 7,
-    items: [
-      {
-        label: "AI Management",
-        icon: Brain,
-        href: "/engine/ai",
-        description: "AI system management, models, settings",
-        keywords: ["ai", "management", "models", "settings"],
-        superAdminOnly: true
-      }
-    ]
-  },
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 8. System & Settings
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  {
-    id: "system-settings",
-    title: "⚙️ System & Settings",
+    id: "settings",
+    title: "⚙️ Settings",
     icon: Settings,
-    order: 8,
+    order: 5,
     items: [
       {
         label: "Global Settings",
@@ -344,6 +284,36 @@ export const navigationSections: NavigationSection[] = [
         href: "/engine/global-settings",
         description: "Platform-wide configuration, global settings",
         keywords: ["settings", "global", "configuration"],
+        superAdminOnly: true
+      },
+      {
+        label: "Pricing Plans",
+        icon: CreditCard,
+        href: "/engine/plans-prices",
+        description: "Pricing plans, subscription tiers",
+        keywords: ["plans", "pricing", "subscriptions"]
+      },
+      {
+        label: "Points Management",
+        icon: Zap,
+        href: "/engine/wytpoints",
+        description: "WytPoints economy, rewards, transactions",
+        keywords: ["wytpoints", "rewards", "economy", "credits"]
+      },
+      {
+        label: "Integrations",
+        icon: Plug,
+        href: "/engine/integrations",
+        description: "Third-party integrations, services",
+        keywords: ["integrations", "services", "third-party"],
+        superAdminOnly: true
+      },
+      {
+        label: "AI Management",
+        icon: Brain,
+        href: "/engine/ai",
+        description: "AI system management, models, settings",
+        keywords: ["ai", "management", "models", "settings"],
         superAdminOnly: true
       },
       {
@@ -355,19 +325,19 @@ export const navigationSections: NavigationSection[] = [
         superAdminOnly: true
       },
       {
-        label: "Audit Logs",
-        icon: Eye,
-        href: "/engine/audit-logs",
-        description: "Activity logs, audit trail, user actions",
-        keywords: ["audit", "logs", "activity", "trail"],
-        superAdminOnly: true
-      },
-      {
         label: "Backups",
         icon: Database,
         href: "/engine/backups",
         description: "Database backups, restore, scheduling",
         keywords: ["backup", "restore", "database"],
+        superAdminOnly: true
+      },
+      {
+        label: "Geo Regulatory",
+        icon: Globe,
+        href: "/engine/geo-regulatory",
+        description: "Geographic and regulatory compliance settings",
+        keywords: ["geo", "regulatory", "compliance", "location"],
         superAdminOnly: true
       },
       {
@@ -379,89 +349,20 @@ export const navigationSections: NavigationSection[] = [
         adminOnly: true
       },
       {
-        label: "Geo-Regulatory",
-        icon: Globe,
-        href: "/engine/geo-regulatory",
-        description: "Geographic and regulatory compliance settings",
-        keywords: ["geo", "regulatory", "compliance", "location"],
+        label: "Roles & Permissions",
+        icon: Shield,
+        href: "/engine/roles-permissions",
+        description: "RBAC management, role creation, permission assignment",
+        keywords: ["roles", "permissions", "rbac", "access"],
         superAdminOnly: true
       },
       {
-        label: "System Logs",
+        label: "All Logs",
         icon: FileText,
-        href: "/engine/system-logs",
-        description: "System logs, errors, warnings",
-        keywords: ["logs", "system", "errors", "warnings"],
+        href: "/engine/all-logs",
+        description: "Unified logs: Audit, System, and Advanced logs",
+        keywords: ["logs", "audit", "system", "advanced", "activity"],
         superAdminOnly: true
-      },
-      {
-        label: "Advanced Logs",
-        icon: Terminal,
-        href: "/engine/logs",
-        description: "Advanced system logs viewer",
-        keywords: ["logs", "advanced", "system", "debug"],
-        developerOnly: true
-      }
-    ]
-  },
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 9. Help & Documentation
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  {
-    id: "help-documentation",
-    title: "📚 Help & Documentation",
-    icon: HelpCircle,
-    order: 9,
-    items: [
-      {
-        label: "DevDoc Access",
-        icon: Book,
-        href: "/devdoc",
-        description: "Developer documentation, technical guides",
-        keywords: ["devdoc", "documentation", "developer", "guides"]
-      },
-      {
-        label: "Help & Support",
-        icon: HelpCircle,
-        href: "/engine/help-support",
-        description: "Support resources, FAQs, help center",
-        keywords: ["help", "support", "faq", "assistance"]
-      },
-      {
-        label: "Features Checklist",
-        icon: CheckSquare,
-        href: "/engine/features-checklist",
-        description: "Track feature implementation progress",
-        keywords: ["features", "checklist", "progress", "tracking"],
-        superAdminOnly: true
-      },
-      {
-        label: "QA Testing Tracker",
-        icon: ClipboardCheck,
-        href: "/engine/qa-testing-tracker",
-        description: "Quality assurance testing, test results",
-        keywords: ["qa", "testing", "quality", "tracker"],
-        superAdminOnly: true
-      }
-    ]
-  },
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 10. Analytics & Insights
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  {
-    id: "analytics-insights",
-    title: "📊 Analytics & Insights",
-    icon: BarChart3,
-    order: 10,
-    items: [
-      {
-        label: "Platform Analytics",
-        icon: BarChart3,
-        href: "/engine/analytics",
-        description: "Platform analytics, usage statistics",
-        keywords: ["analytics", "stats", "metrics", "usage"]
       }
     ]
   }
