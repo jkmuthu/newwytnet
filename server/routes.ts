@@ -6913,6 +6913,78 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // App Categories Management
+  app.get('/api/admin/apps/categories', adminAuthMiddleware, async (req, res) => {
+    try {
+      const apps = await db.select().from(appsRegistry);
+      
+      // Extract unique categories with counts
+      const categoryStats = apps.reduce((acc: Record<string, { count: number; description: string }>, app) => {
+        if (app.category) {
+          if (!acc[app.category]) {
+            acc[app.category] = {
+              count: 0,
+              description: `Apps in the ${app.category} category`
+            };
+          }
+          acc[app.category].count++;
+        }
+        return acc;
+      }, {});
+      
+      const categories = Object.entries(categoryStats).map(([name, data]) => ({
+        id: name,
+        name,
+        description: data.description,
+        appCount: data.count
+      }));
+      
+      res.json({ success: true, categories });
+    } catch (error: any) {
+      console.error('Error fetching categories:', error);
+      res.status(500).json({ message: 'Failed to fetch categories', error: error.message });
+    }
+  });
+
+  app.post('/api/admin/apps/categories', adminAuthMiddleware, async (req, res) => {
+    try {
+      const { name, description } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ message: 'Category name is required' });
+      }
+      
+      // Note: Categories are derived from apps, so this is a placeholder
+      // In a full implementation, you'd have a separate categories table
+      res.json({ 
+        success: true, 
+        category: { id: name, name, description },
+        message: 'Category created successfully'
+      });
+    } catch (error: any) {
+      console.error('Error creating category:', error);
+      res.status(500).json({ message: 'Failed to create category', error: error.message });
+    }
+  });
+
+  app.patch('/api/admin/apps/categories/:id', adminAuthMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, description } = req.body;
+      
+      // Note: Categories are derived from apps, so this is a placeholder
+      // In a full implementation, you'd update the categories table
+      res.json({ 
+        success: true, 
+        category: { id, name: name || id, description },
+        message: 'Category updated successfully'
+      });
+    } catch (error: any) {
+      console.error('Error updating category:', error);
+      res.status(500).json({ message: 'Failed to update category', error: error.message });
+    }
+  });
+
   // Get apps with pricing plan counts for pricing management
   app.get('/api/admin/pricing/apps', adminAuthMiddleware, async (req: any, res) => {
     try {

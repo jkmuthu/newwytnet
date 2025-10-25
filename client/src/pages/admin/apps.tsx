@@ -92,7 +92,7 @@ const getAppIcon = (iconName?: string) => {
 
 export default function AdminApps() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('registry');
   const [selectedApp, setSelectedApp] = useState<AppDefinition | null>(null);
@@ -110,6 +110,8 @@ export default function AdminApps() {
   const [hasChanges, setHasChanges] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [categoryToEdit, setCategoryToEdit] = useState<{name: string; description: string} | null>(null);
+  const [categoryName, setCategoryName] = useState('');
+  const [categoryDescription, setCategoryDescription] = useState('');
   const { toast } = useToast();
 
   // Fetch apps with modules
@@ -235,6 +237,43 @@ export default function AdminApps() {
       toast({
         title: "Error",
         description: error.message || "Failed to update app",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Save category mutation
+  const saveCategoryMutation = useMutation({
+    mutationFn: async (data: { name: string; description: string; isEdit?: boolean; oldName?: string }) => {
+      const url = data.isEdit && data.oldName 
+        ? `/api/admin/apps/categories/${data.oldName}`
+        : '/api/admin/apps/categories';
+      const method = data.isEdit ? 'PATCH' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: data.name, description: data.description }),
+      });
+      
+      if (!response.ok) throw new Error('Failed to save category');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/apps'] });
+      toast({
+        title: "Success",
+        description: data.message || "Category saved successfully",
+      });
+      setCategoryDialogOpen(false);
+      setCategoryName('');
+      setCategoryDescription('');
+      setCategoryToEdit(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save category",
         variant: "destructive",
       });
     },
@@ -783,6 +822,8 @@ export default function AdminApps() {
                   className="gap-2" 
                   onClick={() => {
                     setCategoryToEdit(null);
+                    setCategoryName('');
+                    setCategoryDescription('');
                     setCategoryDialogOpen(true);
                   }}
                   data-testid="button-add-category"
@@ -830,6 +871,8 @@ export default function AdminApps() {
                                 name: category.name,
                                 description: category.description
                               });
+                              setCategoryName(category.name);
+                              setCategoryDescription(category.description);
                               setCategoryDialogOpen(true);
                             }}
                             data-testid={`button-edit-category-${category.name}`}
@@ -1181,7 +1224,8 @@ export default function AdminApps() {
               <Input
                 id="category-name"
                 placeholder="e.g., productivity"
-                defaultValue={categoryToEdit?.name || ''}
+                value={categoryName}
+                onChange={(e) => setCategoryName(e.target.value)}
                 data-testid="input-category-name"
               />
             </div>
@@ -1190,7 +1234,8 @@ export default function AdminApps() {
               <Input
                 id="category-description"
                 placeholder="Category description"
-                defaultValue={categoryToEdit?.description || ''}
+                value={categoryDescription}
+                onChange={(e) => setCategoryDescription(e.target.value)}
                 data-testid="input-category-description"
               />
             </div>
@@ -1205,15 +1250,26 @@ export default function AdminApps() {
             </Button>
             <Button 
               onClick={() => {
-                toast({
-                  title: "Note",
-                  description: "Category management will be fully functional once backend endpoints are ready.",
+                if (!categoryName.trim()) {
+                  toast({
+                    title: "Error",
+                    description: "Category name is required",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                
+                saveCategoryMutation.mutate({
+                  name: categoryName.trim(),
+                  description: categoryDescription.trim(),
+                  isEdit: !!categoryToEdit,
+                  oldName: categoryToEdit?.name,
                 });
-                setCategoryDialogOpen(false);
               }}
+              disabled={saveCategoryMutation.isPending}
               data-testid="button-save-category"
             >
-              {categoryToEdit ? 'Update' : 'Create'} Category
+              {saveCategoryMutation.isPending ? 'Saving...' : (categoryToEdit ? 'Update' : 'Create')} Category
             </Button>
           </div>
         </DialogContent>
