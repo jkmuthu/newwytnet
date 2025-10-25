@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Network, Plus, Search, Tag, GitBranch, CheckCircle, Circle, Trash2, Edit } from "lucide-react";
+import { Network, Plus, Search, Tag, GitBranch, CheckCircle, Circle, Trash2, Edit, BarChart3, Settings as SettingsIcon, Database } from "lucide-react";
 
 interface EntityType {
   id: string;
@@ -36,6 +36,7 @@ interface Entity {
 
 export default function AdminEntities() {
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<string>("entities-list");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -104,120 +105,196 @@ export default function AdminEntities() {
         </Dialog>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Entities</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-total-entities">{entities.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Entity Types</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-entity-types">{entityTypes.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Verified Entities</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-verified-entities">
-              {entities.filter(e => e.isVerified).length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Tags</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-total-tags">
-              {entities.reduce((sum, e) => sum + (e.tagCount || 0), 0)}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Entity Types Overview */}
+      {/* Tabs */}
       <Card>
-        <CardHeader>
-          <CardTitle>Entity Types</CardTitle>
-          <CardDescription>Core entity types in the knowledge graph</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            {entityTypes.map((type) => (
-              <div
-                key={type.id}
-                className="p-3 border rounded-lg hover:border-purple-400 cursor-pointer transition-colors"
-                onClick={() => setSelectedType(type.id)}
-                data-testid={`card-entity-type-${type.slug}`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <Badge variant="outline" className={`bg-${type.color}-100 text-${type.color}-700`}>
-                    {type.name}
-                  </Badge>
-                  {type.isSystem && <CheckCircle className="h-3 w-3 text-green-600" />}
-                </div>
-                <div className="text-xs text-gray-500">{getEntityCountByType(type.id)} entities</div>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="entities-list" data-testid="tab-entities-list">
+              <Database className="h-4 w-4 mr-2" />
+              Entities List
+            </TabsTrigger>
+            <TabsTrigger value="entity-types" data-testid="tab-entity-types">
+              <Tag className="h-4 w-4 mr-2" />
+              Entity Types
+            </TabsTrigger>
+            <TabsTrigger value="analytics" data-testid="tab-analytics">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="settings" data-testid="tab-settings">
+              <SettingsIcon className="h-4 w-4 mr-2" />
+              Settings
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Entities List Tab */}
+          <TabsContent value="entities-list" className="space-y-4">
+            {/* Stats Overview */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600">Total Entities</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" data-testid="text-total-entities">{entities.length}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600">Entity Types</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" data-testid="text-entity-types">{entityTypes.length}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600">Verified Entities</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" data-testid="text-verified-entities">
+                    {entities.filter(e => e.isVerified).length}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-gray-600">Total Tags</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold" data-testid="text-total-tags">
+                    {entities.reduce((sum, e) => sum + (e.tagCount || 0), 0)}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Search & Filters */}
+            <div className="flex gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search entities by name or alias..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                  data-testid="input-search-entities"
+                />
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Search & Filters */}
-      <div className="flex gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search entities by name or alias..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-            data-testid="input-search-entities"
-          />
-        </div>
-        <Select value={selectedType} onValueChange={setSelectedType}>
-          <SelectTrigger className="w-[200px]" data-testid="select-entity-type-filter">
-            <SelectValue placeholder="All Types" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
-            {entityTypes.map((type) => (
-              <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Entities List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Entities</CardTitle>
-          <CardDescription>
-            {selectedType === "all" ? "All entities" : `${entityTypes.find(t => t.id === selectedType)?.name} entities`}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8 text-gray-500">Loading entities...</div>
-          ) : entities.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">No entities found</div>
-          ) : (
-            <div className="space-y-2">
-              {entities.map((entity) => (
-                <EntityCard key={entity.id} entity={entity} entityTypes={entityTypes} />
-              ))}
+              <Select value={selectedType} onValueChange={setSelectedType}>
+                <SelectTrigger className="w-[200px]" data-testid="select-entity-type-filter">
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {entityTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
-        </CardContent>
+
+            {/* Entities List */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Entities</CardTitle>
+                <CardDescription>
+                  {selectedType === "all" ? "All entities" : `${entityTypes.find(t => t.id === selectedType)?.name} entities`}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="text-center py-8 text-gray-500">Loading entities...</div>
+                ) : entities.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">No entities found</div>
+                ) : (
+                  <div className="space-y-2">
+                    {entities.map((entity) => (
+                      <EntityCard key={entity.id} entity={entity} entityTypes={entityTypes} />
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Entity Types Tab */}
+          <TabsContent value="entity-types" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Entity Types</CardTitle>
+                <CardDescription>Core entity types in the knowledge graph</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  {entityTypes.map((type) => (
+                    <div
+                      key={type.id}
+                      className="p-3 border rounded-lg hover:border-purple-400 cursor-pointer transition-colors"
+                      onClick={() => {
+                        setSelectedType(type.id);
+                        setActiveTab("entities-list");
+                      }}
+                      data-testid={`card-entity-type-${type.slug}`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className={`bg-${type.color}-100 text-${type.color}-700`}>
+                          {type.name}
+                        </Badge>
+                        {type.isSystem && <CheckCircle className="h-3 w-3 text-green-600" />}
+                      </div>
+                      <div className="text-xs text-gray-500">{getEntityCountByType(type.id)} entities</div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Analytics Tab */}
+          <TabsContent value="analytics" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Entity Analytics
+                </CardTitle>
+                <CardDescription>View insights and trends for your knowledge graph</CardDescription>
+              </CardHeader>
+              <CardContent className="py-12">
+                <div className="text-center text-muted-foreground">
+                  <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-semibold mb-2">Analytics Coming Soon</h3>
+                  <p className="text-sm">
+                    Entity analytics, relationship insights, and usage trends will be available here.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <SettingsIcon className="h-5 w-5" />
+                  Entity Configuration
+                </CardTitle>
+                <CardDescription>Configure entity settings and preferences</CardDescription>
+              </CardHeader>
+              <CardContent className="py-12">
+                <div className="text-center text-muted-foreground">
+                  <SettingsIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-lg font-semibold mb-2">Settings Coming Soon</h3>
+                  <p className="text-sm">
+                    Entity configuration options, validation rules, and system preferences will be available here.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </Card>
     </div>
   );
