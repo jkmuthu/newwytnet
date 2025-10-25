@@ -132,9 +132,10 @@ export default function ApiLibraryPage() {
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/api-library'] });
+      const synced = data?.synced || { modules: 0, apps: 0, datasets: 0 };
       toast({
         title: "Sync Complete",
-        description: `${data.message}. Modules: ${data.synced.modules}, Apps: ${data.synced.apps}, Datasets: ${data.synced.datasets}`,
+        description: `${data?.message || 'Sync completed'}. Modules: ${synced.modules}, Apps: ${synced.apps}, Datasets: ${synced.datasets}`,
       });
     },
     onError: (error: any) => {
