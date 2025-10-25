@@ -7331,8 +7331,9 @@ When suggesting improvements, format your response with suggestions in a structu
       }
 
       // Sync WytApps from apps
-      const apps = await db.select().from(apps as any).where(eq((apps as any).status, 'published'));
-      for (const app of apps) {
+      const appsTable = apps as any;
+      const appsList = await db.select().from(appsTable).where(eq(appsTable.status, 'published'));
+      for (const app of appsList) {
         const existing = await db.select().from(apiLibrary)
           .where(and(
             eq(apiLibrary.type, 'WytApp'),
