@@ -108,6 +108,8 @@ export default function AdminApps() {
     tenantSpecific: false,
   });
   const [hasChanges, setHasChanges] = useState(false);
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [categoryToEdit, setCategoryToEdit] = useState<{name: string; description: string} | null>(null);
   const { toast } = useToast();
 
   // Fetch apps with modules
@@ -165,6 +167,20 @@ export default function AdminApps() {
     app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     app.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Extract unique categories with counts
+  const categoryStats = apps.reduce((acc: Record<string, number>, app: AppDefinition) => {
+    if (app.category) {
+      acc[app.category] = (acc[app.category] || 0) + 1;
+    }
+    return acc;
+  }, {});
+
+  const categories = Object.entries(categoryStats).map(([name, count]) => ({
+    name,
+    count,
+    description: `Apps in the ${name} category`
+  }));
 
   // Create app mutation
   const createAppMutation = useMutation({
@@ -763,30 +779,70 @@ export default function AdminApps() {
                   <CardTitle>App Categories</CardTitle>
                   <CardDescription>Manage application categories for organization</CardDescription>
                 </div>
-                <Button className="gap-2" data-testid="button-add-category">
+                <Button 
+                  className="gap-2" 
+                  onClick={() => {
+                    setCategoryToEdit(null);
+                    setCategoryDialogOpen(true);
+                  }}
+                  data-testid="button-add-category"
+                >
                   <Plus className="h-4 w-4" />
                   Add Category
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Category Name</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>App Count</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                      No categories configured yet. Add your first category to organize apps.
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
+              {categories.length === 0 ? (
+                <div className="text-center text-muted-foreground py-8">
+                  No categories configured yet. Add your first category to organize apps.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Category Name</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>App Count</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {categories.map((category) => (
+                      <TableRow key={category.name} data-testid={`row-category-${category.name}`}>
+                        <TableCell>
+                          <div className="font-medium capitalize">
+                            {category.name.replace(/-/g, ' ')}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {category.description}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{category.count}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setCategoryToEdit({
+                                name: category.name,
+                                description: category.description
+                              });
+                              setCategoryDialogOpen(true);
+                            }}
+                            data-testid={`button-edit-category-${category.name}`}
+                          >
+                            <Settings className="h-3 w-3 mr-1" />
+                            Edit
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1105,6 +1161,59 @@ export default function AdminApps() {
               data-testid="button-save-app"
             >
               {updateAppMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Category Management Dialog */}
+      <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{categoryToEdit ? 'Edit Category' : 'Add Category'}</DialogTitle>
+            <DialogDescription>
+              {categoryToEdit ? 'Update category details' : 'Create a new app category'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="category-name">Category Name</Label>
+              <Input
+                id="category-name"
+                placeholder="e.g., productivity"
+                defaultValue={categoryToEdit?.name || ''}
+                data-testid="input-category-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category-description">Description</Label>
+              <Input
+                id="category-description"
+                placeholder="Category description"
+                defaultValue={categoryToEdit?.description || ''}
+                data-testid="input-category-description"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setCategoryDialogOpen(false)}
+              data-testid="button-cancel-category"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                toast({
+                  title: "Note",
+                  description: "Category management will be fully functional once backend endpoints are ready.",
+                });
+                setCategoryDialogOpen(false);
+              }}
+              data-testid="button-save-category"
+            >
+              {categoryToEdit ? 'Update' : 'Create'} Category
             </Button>
           </div>
         </DialogContent>
