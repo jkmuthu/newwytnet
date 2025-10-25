@@ -6986,6 +6986,77 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // Seed apps registry with sample WytApps
+  app.post('/api/admin/pricing/apps/seed', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const sampleApps = [
+        { name: 'AI App Builder', slug: 'ai-app-builder', description: 'Build applications using AI-powered natural language interface', icon: '🤖', category: 'ai-tools' },
+        { name: 'AI Directory', slug: 'ai-directory', description: 'Curated directory of AI tools, resources, and services', icon: '🧠', category: 'ai-tools' },
+        { name: 'Currency Converter', slug: 'currency-converter', description: 'Universal Conversion Utilities - Currency exchange and unit conversion with real-time data', icon: '🧮', category: 'utilities' },
+        { name: 'DiscAssesser', slug: 'disc-assesser', description: 'DISC Assessment & Testing Platform - Comprehensive personality analysis', icon: '📋', category: 'assessment' },
+        { name: 'QR Code Generator', slug: 'qr-generator', description: 'Generate custom QR codes for links, text, and data', icon: '📱', category: 'utilities' },
+        { name: 'Invoice Generator', slug: 'invoice-generator', description: 'Create professional invoices and receipts', icon: '🧾', category: 'business' },
+        { name: 'Expense Tracker', slug: 'expense-tracker', description: 'Track expenses and manage budgets', icon: '💰', category: 'finance' },
+        { name: 'Document Scanner', slug: 'doc-scanner', description: 'Scan and digitize documents with OCR', icon: '📄', category: 'productivity' },
+        { name: 'PDF Tools', slug: 'pdf-tools', description: 'Merge, split, and edit PDF files', icon: '📑', category: 'productivity' },
+        { name: 'Calendar Planner', slug: 'calendar-planner', description: 'Schedule and manage events', icon: '📅', category: 'productivity' },
+        { name: 'Task Manager', slug: 'task-manager', description: 'Organize tasks and projects', icon: '✅', category: 'productivity' },
+        { name: 'Notes App', slug: 'notes-app', description: 'Quick notes and reminders', icon: '📝', category: 'productivity' },
+        { name: 'Email Marketing', slug: 'email-marketing', description: 'Send marketing campaigns', icon: '📧', category: 'marketing' },
+        { name: 'Social Media Manager', slug: 'social-media', description: 'Manage social media posts', icon: '📱', category: 'marketing' },
+        { name: 'Analytics Dashboard', slug: 'analytics', description: 'Track website analytics', icon: '📊', category: 'analytics' },
+        { name: 'Form Builder', slug: 'form-builder', description: 'Create custom forms', icon: '📋', category: 'productivity' },
+        { name: 'Survey Tool', slug: 'survey-tool', description: 'Create and analyze surveys', icon: '📋', category: 'assessment' },
+        { name: 'CRM System', slug: 'crm-system', description: 'Customer relationship management', icon: '👥', category: 'business' },
+        { name: 'Inventory Manager', slug: 'inventory', description: 'Track inventory and stock', icon: '📦', category: 'business' },
+        { name: 'Time Tracker', slug: 'time-tracker', description: 'Track work hours', icon: '⏱️', category: 'productivity' },
+        { name: 'Project Manager', slug: 'project-manager', description: 'Manage projects and teams', icon: '📊', category: 'productivity' },
+        { name: 'File Storage', slug: 'file-storage', description: 'Cloud file storage', icon: '☁️', category: 'storage' },
+        { name: 'Password Manager', slug: 'password-manager', description: 'Secure password storage', icon: '🔐', category: 'security' },
+        { name: 'URL Shortener', slug: 'url-shortener', description: 'Create short links', icon: '🔗', category: 'utilities' },
+        { name: 'Image Editor', slug: 'image-editor', description: 'Edit and enhance images', icon: '🖼️', category: 'media' },
+        { name: 'Video Converter', slug: 'video-converter', description: 'Convert video formats', icon: '🎬', category: 'media' },
+        { name: 'Audio Recorder', slug: 'audio-recorder', description: 'Record and edit audio', icon: '🎙️', category: 'media' },
+        { name: 'Barcode Scanner', slug: 'barcode-scanner', description: 'Scan product barcodes', icon: '📱', category: 'utilities' }
+      ];
+
+      let inserted = 0;
+      let updated = 0;
+
+      for (const appData of sampleApps) {
+        const existing = await db
+          .select()
+          .from(appsRegistry)
+          .where(eq(appsRegistry.slug, appData.slug))
+          .limit(1);
+
+        if (existing.length === 0) {
+          await db.insert(appsRegistry).values(appData);
+          inserted++;
+        } else {
+          await db
+            .update(appsRegistry)
+            .set({ ...appData, updatedAt: new Date() })
+            .where(eq(appsRegistry.slug, appData.slug));
+          updated++;
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Apps seeded successfully: ${inserted} new, ${updated} updated`,
+        inserted,
+        updated
+      });
+    } catch (error) {
+      console.error('Error seeding apps:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to seed apps'
+      });
+    }
+  });
+
   // Get apps with pricing plan counts for pricing management
   app.get('/api/admin/pricing/apps', adminAuthMiddleware, async (req: any, res) => {
     try {
