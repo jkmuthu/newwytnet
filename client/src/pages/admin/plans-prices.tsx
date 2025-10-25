@@ -970,9 +970,12 @@ function FullViewDialog({
         </DialogHeader>
 
         <Tabs defaultValue="matrix" className="mt-4">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="matrix" data-testid="tab-features-plans-matrix">
-              Features & Plans
+              Features & Plans Matrix
+            </TabsTrigger>
+            <TabsTrigger value="plans" data-testid="tab-pricing-plans">
+              Pricing Plans
             </TabsTrigger>
             <TabsTrigger value="analytics" data-testid="tab-analytics">
               Analytics
@@ -984,8 +987,8 @@ function FullViewDialog({
             <MatrixTable appId={app.id} />
           </TabsContent>
 
-          {/* Tab 2: Old Pricing Plans (kept for reference, can be removed later) */}
-          <TabsContent value="old-plans" className="mt-4">
+          {/* Tab 2: Pricing Plans List */}
+          <TabsContent value="plans" className="mt-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold">All Pricing Plans</h3>
               <Button onClick={onCreatePlan} data-testid="button-create-plan-tab">
@@ -1001,9 +1004,8 @@ function FullViewDialog({
                 </div>
               ) : plans.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
-                  <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">No Pricing Plans</p>
-                  <p className="text-sm mt-2">Create your first pricing plan</p>
+                  <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium">No pricing plans found for this app. Please create plans first.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-4">
@@ -1065,6 +1067,26 @@ function FullViewDialog({
                           </div>
                         )}
 
+                        {/* Features */}
+                        {plan.features && plan.features.length > 0 && (
+                          <div>
+                            <div className="text-sm text-muted-foreground mb-2">Features</div>
+                            <div className="space-y-1">
+                              {plan.features.slice(0, 3).map((feature, idx) => (
+                                <div key={idx} className="flex items-center gap-2 text-sm">
+                                  <CheckCircle2 className="h-3 w-3 text-green-500" />
+                                  <span>{feature}</span>
+                                </div>
+                              ))}
+                              {plan.features.length > 3 && (
+                                <p className="text-xs text-muted-foreground pl-5">
+                                  +{plan.features.length - 3} more features
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Status */}
                         <div className="flex gap-2">
                           {plan.isActive ? (
@@ -1086,75 +1108,22 @@ function FullViewDialog({
                             variant="ghost"
                             size="sm"
                             onClick={() => onEditPlan(plan)}
+                            data-testid={`button-edit-plan-${plan.id}`}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              if (confirm('Are you sure you want to delete this pricing plan?')) {
-                                deletePlanMutation.mutate(plan.id);
-                              }
-                            }}
+                            onClick={() => onViewHistory(plan)}
+                            data-testid={`button-history-plan-${plan.id}`}
                           >
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                            <Clock className="h-4 w-4" />
                           </Button>
                         </div>
                       </CardContent>
                     </Card>
                   ))}
-                </div>
-              )}
-            </ScrollArea>
-          </TabsContent>
-
-          {/* Tab 2: Features for Plans */}
-          <TabsContent value="features" className="mt-4">
-            <ScrollArea className="h-[400px]">
-              {isLoadingFeatures ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  Loading features...
-                </div>
-              ) : features.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">No Features</p>
-                  <p className="text-sm mt-2">This app doesn't have any features configured</p>
-                </div>
-              ) : (
-                <div className="space-y-4 pr-4">
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>
-                      Feature mapping for plans coming soon. This will allow you to assign specific features to different pricing plans.
-                    </AlertDescription>
-                  </Alert>
-                  
-                  <div className="grid gap-3">
-                    {features.map((feature) => (
-                      <Card key={feature.id}>
-                        <CardContent className="pt-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-semibold">{feature.name}</h4>
-                              {feature.description && (
-                                <p className="text-sm text-muted-foreground mt-1">{feature.description}</p>
-                              )}
-                              <div className="flex gap-2 mt-2">
-                                <Badge variant="outline">{feature.featureKey}</Badge>
-                                {feature.hasQuota && (
-                                  <Badge variant="secondary">
-                                    Quota: {feature.defaultQuota} {feature.quotaUnit}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
                 </div>
               )}
             </ScrollArea>

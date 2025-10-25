@@ -309,14 +309,6 @@ export const navigationSections: NavigationSection[] = [
         superAdminOnly: true
       },
       {
-        label: "AI Management",
-        icon: Brain,
-        href: "/engine/ai",
-        description: "AI system management, models, settings",
-        keywords: ["ai", "management", "models", "settings"],
-        superAdminOnly: true
-      },
-      {
         label: "System & Security",
         icon: Shield,
         href: "/engine/system-security",
