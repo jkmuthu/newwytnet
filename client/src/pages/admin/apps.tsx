@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -20,7 +20,8 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
   Search, Plus, Layers, Package, Building2, 
   Info, FileText, Route as RouteIcon, Settings, 
-  Shield, Globe, History, CheckCircle2, Grid, List 
+  Shield, Globe, History, CheckCircle2, Grid, List,
+  Brain, Calculator, FileSignature, QrCode, Users, Grid3x3, Bot
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -66,6 +67,29 @@ const createAppSchema = z.object({
 
 type CreateAppForm = z.infer<typeof createAppSchema>;
 
+// Helper function to map icon names to actual Lucide icons
+const getAppIcon = (iconName?: string) => {
+  if (!iconName) return <Layers className="h-5 w-5 text-muted-foreground" />;
+  
+  const iconMap: Record<string, JSX.Element> = {
+    'brain': <Brain className="h-5 w-5 text-purple-600" />,
+    'calculator': <Calculator className="h-5 w-5 text-blue-600" />,
+    'file-signature': <FileSignature className="h-5 w-5 text-green-600" />,
+    'QR': <QrCode className="h-5 w-5 text-gray-600" />,
+    'users': <Users className="h-5 w-5 text-orange-600" />,
+    'grid-3×3': <Grid3x3 className="h-5 w-5 text-teal-600" />,
+    'clipboard-check': <Package className="h-5 w-5 text-indigo-600" />,
+  };
+  
+  // If it's a known icon name, return the mapped icon
+  if (iconMap[iconName]) {
+    return iconMap[iconName];
+  }
+  
+  // Otherwise, treat it as an emoji
+  return <span className="text-xl" role="img" aria-label="app icon">{iconName}</span>;
+};
+
 export default function AdminApps() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -83,6 +107,7 @@ export default function AdminApps() {
     hubOnly: false,
     tenantSpecific: false,
   });
+  const [hasChanges, setHasChanges] = useState(false);
   const { toast } = useToast();
 
   // Fetch apps with modules
@@ -170,6 +195,35 @@ export default function AdminApps() {
     },
   });
 
+  // Update app mutation
+  const updateAppMutation = useMutation({
+    mutationFn: async (data: { id: string; route?: string; contexts?: string[]; restrictions?: string[] }) => {
+      const response = await fetch(`/api/admin/apps/${data.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to update app');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/apps'] });
+      toast({
+        title: "Success",
+        description: "App updated successfully",
+      });
+      setShowAppDetails(false);
+      setHasChanges(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update app",
+        variant: "destructive",
+      });
+    },
+  });
+
   const form = useForm<CreateAppForm>({
     resolver: zodResolver(createAppSchema),
     defaultValues: {
@@ -189,6 +243,27 @@ export default function AdminApps() {
     createAppMutation.mutate(data);
   };
 
+  // Save app changes handler
+  const handleSaveAppChanges = () => {
+    if (!selectedApp) return;
+    
+    const contexts: string[] = [];
+    if (editedContexts.hub) contexts.push('hub');
+    if (editedContexts.app) contexts.push('app');
+    
+    const restrictions: string[] = [];
+    if (accessRestrictions.engineOnly) restrictions.push('engine_only');
+    if (accessRestrictions.hubOnly) restrictions.push('hub_only');
+    if (accessRestrictions.tenantSpecific) restrictions.push('tenant_specific');
+    
+    updateAppMutation.mutate({
+      id: selectedApp.id,
+      route: editedRoute,
+      contexts,
+      restrictions,
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -201,10 +276,14 @@ export default function AdminApps() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+        <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
           <TabsTrigger value="registry" className="gap-2" data-testid="tab-registry">
             <Layers className="h-4 w-4" />
             Apps Registry ({apps.length})
+          </TabsTrigger>
+          <TabsTrigger value="categories" className="gap-2" data-testid="tab-categories">
+            <Package className="h-4 w-4" />
+            Categories
           </TabsTrigger>
           <TabsTrigger value="trash" className="gap-2" data-testid="tab-apps-trash">
             <Package className="h-4 w-4" />
@@ -460,11 +539,7 @@ export default function AdminApps() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <CardTitle className="flex items-center gap-2">
-                            {app.icon && (
-                              <span className="text-2xl" role="img" aria-label="app icon">
-                                {app.icon}
-                              </span>
-                            )}
+                            {getAppIcon(app.icon)}
                             {app.name}
                           </CardTitle>
                           {app.isActive && <CheckCircle2 className="h-4 w-4 text-green-600" />}
@@ -609,11 +684,7 @@ export default function AdminApps() {
                     <TableRow key={app.id} data-testid={`row-app-${app.id}`}>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {app.icon && (
-                            <span className="text-xl" role="img" aria-label="app icon">
-                              {app.icon}
-                            </span>
-                          )}
+                          {getAppIcon(app.icon)}
                           <div>
                             <div className="font-medium flex items-center gap-2">
                               {app.name}
@@ -683,6 +754,43 @@ export default function AdminApps() {
           )}
         </TabsContent>
 
+        {/* App Categories Tab */}
+        <TabsContent value="categories" className="space-y-6 mt-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>App Categories</CardTitle>
+                  <CardDescription>Manage application categories for organization</CardDescription>
+                </div>
+                <Button className="gap-2" data-testid="button-add-category">
+                  <Plus className="h-4 w-4" />
+                  Add Category
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Category Name</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>App Count</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                      No categories configured yet. Add your first category to organize apps.
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* Trash Tab */}
         <TabsContent value="trash" className="mt-6">
           <TrashView
@@ -719,6 +827,7 @@ export default function AdminApps() {
               hubOnly: selectedApp.restrictedTo?.includes('hub_only') || false,
               tenantSpecific: selectedApp.restrictedTo?.includes('tenant_specific') || false,
             });
+            setHasChanges(false);
           }
         }}
       >
@@ -800,7 +909,10 @@ export default function AdminApps() {
                   <Input
                     id="app-route"
                     value={editedRoute}
-                    onChange={(e) => setEditedRoute(e.target.value)}
+                    onChange={(e) => {
+                      setEditedRoute(e.target.value);
+                      setHasChanges(true);
+                    }}
                     placeholder="/app-path"
                     className="font-mono"
                     data-testid="input-app-route"
@@ -824,9 +936,10 @@ export default function AdminApps() {
                     <Checkbox
                       id="context-hub"
                       checked={editedContexts.hub}
-                      onCheckedChange={(checked) => 
-                        setEditedContexts(prev => ({ ...prev, hub: checked as boolean }))
-                      }
+                      onCheckedChange={(checked) => {
+                        setEditedContexts(prev => ({ ...prev, hub: checked as boolean }));
+                        setHasChanges(true);
+                      }}
                       data-testid="checkbox-context-hub"
                     />
                     <Label htmlFor="context-hub" className="text-sm font-normal cursor-pointer flex items-center gap-2">
@@ -839,9 +952,10 @@ export default function AdminApps() {
                     <Checkbox
                       id="context-app"
                       checked={editedContexts.app}
-                      onCheckedChange={(checked) => 
-                        setEditedContexts(prev => ({ ...prev, app: checked as boolean }))
-                      }
+                      onCheckedChange={(checked) => {
+                        setEditedContexts(prev => ({ ...prev, app: checked as boolean }));
+                        setHasChanges(true);
+                      }}
                       data-testid="checkbox-context-app"
                     />
                     <Label htmlFor="context-app" className="text-sm font-normal cursor-pointer flex items-center gap-2">
@@ -868,9 +982,10 @@ export default function AdminApps() {
                     <Checkbox
                       id="restriction-engine"
                       checked={accessRestrictions.engineOnly}
-                      onCheckedChange={(checked) => 
-                        setAccessRestrictions(prev => ({ ...prev, engineOnly: checked as boolean }))
-                      }
+                      onCheckedChange={(checked) => {
+                        setAccessRestrictions(prev => ({ ...prev, engineOnly: checked as boolean }));
+                        setHasChanges(true);
+                      }}
                       data-testid="checkbox-restriction-engine"
                     />
                     <Label htmlFor="restriction-engine" className="text-sm font-normal cursor-pointer flex items-center gap-2">
@@ -883,9 +998,10 @@ export default function AdminApps() {
                     <Checkbox
                       id="restriction-hub"
                       checked={accessRestrictions.hubOnly}
-                      onCheckedChange={(checked) => 
-                        setAccessRestrictions(prev => ({ ...prev, hubOnly: checked as boolean }))
-                      }
+                      onCheckedChange={(checked) => {
+                        setAccessRestrictions(prev => ({ ...prev, hubOnly: checked as boolean }));
+                        setHasChanges(true);
+                      }}
                       data-testid="checkbox-restriction-hub"
                     />
                     <Label htmlFor="restriction-hub" className="text-sm font-normal cursor-pointer flex items-center gap-2">
@@ -898,9 +1014,10 @@ export default function AdminApps() {
                     <Checkbox
                       id="restriction-tenant"
                       checked={accessRestrictions.tenantSpecific}
-                      onCheckedChange={(checked) => 
-                        setAccessRestrictions(prev => ({ ...prev, tenantSpecific: checked as boolean }))
-                      }
+                      onCheckedChange={(checked) => {
+                        setAccessRestrictions(prev => ({ ...prev, tenantSpecific: checked as boolean }));
+                        setHasChanges(true);
+                      }}
                       data-testid="checkbox-restriction-tenant"
                     />
                     <Label htmlFor="restriction-tenant" className="text-sm font-normal cursor-pointer flex items-center gap-2">
@@ -974,6 +1091,22 @@ export default function AdminApps() {
               </div>
             </ScrollArea>
           )}
+          <div className="flex justify-end gap-3 pt-4 border-t mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowAppDetails(false)}
+              data-testid="button-cancel-details"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveAppChanges}
+              disabled={!hasChanges || updateAppMutation.isPending}
+              data-testid="button-save-app"
+            >
+              {updateAppMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
