@@ -23,11 +23,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2, Database, ChevronRight, Globe, Building, Star, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, Edit, Trash2, Database, ChevronRight, Globe, Building, Star, ChevronUp, ChevronDown, Grid, List } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { DatasetCollection, DatasetItem } from "@shared/schema";
 
 export default function AdminDatasetManagement() {
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedCollection, setSelectedCollection] = useState<DatasetCollection | null>(null);
   const [isCollectionDialogOpen, setIsCollectionDialogOpen] = useState(false);
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
@@ -276,16 +277,36 @@ export default function AdminDatasetManagement() {
             Manage reference data collections (Countries, Languages, Currencies, etc.)
           </p>
         </div>
-        <Button 
-          onClick={() => {
-            setEditingCollection(null);
-            setIsCollectionDialogOpen(true);
-          }}
-          data-testid="button-add-collection"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Collection
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex gap-2 border rounded-lg p-1">
+            <Button
+              variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              data-testid="view-grid"
+            >
+              <Grid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              data-testid="view-list"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button 
+            onClick={() => {
+              setEditingCollection(null);
+              setIsCollectionDialogOpen(true);
+            }}
+            data-testid="button-add-collection"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Collection
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -295,10 +316,10 @@ export default function AdminDatasetManagement() {
             <CardTitle>Collections</CardTitle>
             <CardDescription>Available dataset collections</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className={viewMode === 'list' ? '' : 'space-y-2'}>
             {collectionsLoading ? (
               <p className="text-sm text-gray-500">Loading collections...</p>
-            ) : (
+            ) : viewMode === 'grid' ? (
               collectionsData?.collections.map((collection) => (
                 <div
                   key={collection.id}
@@ -331,6 +352,59 @@ export default function AdminDatasetManagement() {
                   )}
                 </div>
               ))
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Key</TableHead>
+                      <TableHead>Scope</TableHead>
+                      <TableHead className="text-right">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {collectionsData?.collections.map((collection) => (
+                      <TableRow
+                        key={collection.id}
+                        onClick={() => setSelectedCollection(collection)}
+                        className={`cursor-pointer transition-colors ${
+                          selectedCollection?.id === collection.id 
+                            ? 'bg-blue-50 dark:bg-blue-900/20' 
+                            : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                        }`}
+                        data-testid={`collection-${collection.key}`}
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">{(collection.metadata as any)?.icon || '📊'}</span>
+                            <span className="font-medium">{collection.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">{collection.key}</TableCell>
+                        <TableCell>
+                          {collection.scope === 'global' ? (
+                            <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                              <Globe className="h-3 w-3" />
+                              Global
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="flex items-center gap-1 w-fit">
+                              <Building className="h-3 w-3" />
+                              Tenant
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {isImmutable(collection) && (
+                            <Badge variant="secondary">Protected</Badge>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

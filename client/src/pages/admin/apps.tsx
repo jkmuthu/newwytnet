@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,7 +20,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
   Search, Plus, Layers, Package, Bot, Building2, 
   Info, FileText, Route as RouteIcon, Settings, 
-  Shield, Globe, History, CheckCircle2 
+  Shield, Globe, History, CheckCircle2, Grid, List 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AdminAppBuilder from "./app-builder";
@@ -69,6 +70,7 @@ type CreateAppForm = z.infer<typeof createAppSchema>;
 
 export default function AdminApps() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('registry');
   const [selectedApp, setSelectedApp] = useState<AppDefinition | null>(null);
@@ -408,20 +410,40 @@ export default function AdminApps() {
           {/* Search */}
           <Card>
             <CardContent className="pt-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search apps..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                  data-testid="input-search-apps"
-                />
+              <div className="flex items-center gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search apps..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                    data-testid="input-search-apps"
+                  />
+                </div>
+                <div className="flex gap-2 border rounded-lg p-1">
+                  <Button
+                    variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('grid')}
+                    data-testid="view-grid"
+                  >
+                    <Grid className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('list')}
+                    data-testid="view-list"
+                  >
+                    <List className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Apps Grid */}
+          {/* Apps Grid/List */}
           {isLoading ? (
             <div className="text-center py-12 text-muted-foreground">Loading apps...</div>
           ) : filteredApps.length === 0 ? (
@@ -432,7 +454,7 @@ export default function AdminApps() {
                 <p className="text-sm text-muted-foreground/60 mt-1">Create your first app to get started</p>
               </CardContent>
             </Card>
-          ) : (
+          ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredApps.map((app: AppDefinition) => (
                 <Card key={app.id} className={cn(
@@ -575,6 +597,95 @@ export default function AdminApps() {
                 </Card>
               ))}
             </div>
+          ) : (
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>App Name</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Version</TableHead>
+                    <TableHead>Module Count</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredApps.map((app: AppDefinition) => (
+                    <TableRow key={app.id} data-testid={`row-app-${app.id}`}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {app.icon && (
+                            <span className="text-xl" role="img" aria-label="app icon">
+                              {app.icon}
+                            </span>
+                          )}
+                          <div>
+                            <div className="font-medium flex items-center gap-2">
+                              {app.name}
+                              {app.isActive && <CheckCircle2 className="h-3 w-3 text-green-600" />}
+                            </div>
+                            {app.contexts && app.contexts.length > 0 && (
+                              <div className="flex gap-1 mt-1">
+                                {app.contexts.map(context => (
+                                  <Badge key={context} variant="outline" className="text-xs">
+                                    {context}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-md">
+                        <div className="truncate text-sm text-muted-foreground">
+                          {app.description || "No description"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {app.category && (
+                          <Badge variant="secondary" data-testid={`list-badge-category-${app.id}`}>
+                            {app.category}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {app.version && (
+                          <Badge variant="outline" className="text-xs" data-testid={`list-badge-version-${app.id}`}>
+                            v{app.version}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Package className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">{app.moduleCount || 0}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedApp(app);
+                            setShowAppDetails(true);
+                            setEditedRoute(app.route || '');
+                            setEditedContexts({
+                              hub: app.contexts?.includes('hub') || false,
+                              app: app.contexts?.includes('app') || false,
+                            });
+                          }}
+                          data-testid={`list-button-view-details-${app.id}`}
+                        >
+                          <Info className="h-3 w-3 mr-1" />
+                          Details
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
           )}
         </TabsContent>
 
