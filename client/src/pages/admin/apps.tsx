@@ -250,20 +250,13 @@ export default function AdminApps() {
         : '/api/admin/apps/categories';
       const method = data.isEdit ? 'PATCH' : 'POST';
       
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: data.name, description: data.description }),
-      });
-      
-      if (!response.ok) throw new Error('Failed to save category');
-      return response.json();
+      return apiRequest(method, url, { name: data.name, description: data.description });
     },
-    onSuccess: (data) => {
+    onSuccess: (response: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/apps'] });
       toast({
         title: "Success",
-        description: data.message || "Category saved successfully",
+        description: response.message || "Category saved successfully",
       });
       setCategoryDialogOpen(false);
       setCategoryName('');
