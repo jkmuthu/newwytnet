@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +30,8 @@ import {
   BarChart3,
   Map,
   Headphones,
-  Users
+  Users,
+  TestTube
 } from "lucide-react";
 
 interface Integration {
@@ -51,6 +53,9 @@ interface Integration {
 export default function AdminIntegrations() {
   const [selectedIntegration, setSelectedIntegration] = useState<Integration | null>(null);
   const [configData, setConfigData] = useState<Record<string, string>>({});
+  const [testDialogOpen, setTestDialogOpen] = useState(false);
+  const [testPrompt, setTestPrompt] = useState("");
+  const [testResult, setTestResult] = useState("");
   const { toast } = useToast();
 
   const { data: integrationsData, isLoading } = useQuery({
@@ -83,6 +88,46 @@ export default function AdminIntegrations() {
       toast({
         title: "Error",
         description: "Failed to configure integration",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest(`/api/admin/integrations/${id}/toggle`, 'POST');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/integrations'] });
+      toast({
+        title: "Success",
+        description: "Integration status updated",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update integration status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const testAIMutation = useMutation({
+    mutationFn: async (data: { model: string; prompt: string }) => {
+      return await apiRequest('/api/admin/ai/test', 'POST', data);
+    },
+    onSuccess: (data: any) => {
+      setTestResult(data.response || 'Test completed successfully');
+      toast({
+        title: "AI Test Successful",
+        description: "Model responded correctly",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "AI Test Failed",
+        description: "Failed to get response from AI model",
         variant: "destructive",
       });
     },
@@ -130,6 +175,22 @@ export default function AdminIntegrations() {
       configureIntegrationMutation.mutate({
         id: selectedIntegration.id,
         credentials: configData,
+      });
+    }
+  };
+
+  const handleTest = (integration: Integration) => {
+    setSelectedIntegration(integration);
+    setTestDialogOpen(true);
+    setTestPrompt("Hello, please respond with a brief greeting.");
+    setTestResult("");
+  };
+
+  const runTest = () => {
+    if (selectedIntegration && testPrompt) {
+      testAIMutation.mutate({
+        model: selectedIntegration.slug,
+        prompt: testPrompt,
       });
     }
   };
@@ -200,15 +261,37 @@ export default function AdminIntegrations() {
                               <ExternalLink className="h-3 w-3" />
                             </Button>
                           )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleConfigure(integration)}
-                            data-testid={`button-configure-${integration.slug}`}
-                          >
-                            <Settings className="h-3 w-3 mr-1" />
-                            {integration.is_configured ? 'Update' : 'Configure'}
-                          </Button>
+                          {integration.category === 'ai-ml' && integration.is_active ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleTest(integration)}
+                                data-testid={`button-test-${integration.slug}`}
+                              >
+                                <TestTube className="h-3 w-3 mr-1" />
+                                Test
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => toggleActiveMutation.mutate(integration.id)}
+                                data-testid={`button-deactivate-${integration.slug}`}
+                              >
+                                Deactivate
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleConfigure(integration)}
+                              data-testid={`button-configure-${integration.slug}`}
+                            >
+                              <Settings className="h-3 w-3 mr-1" />
+                              {integration.is_configured ? 'Update' : 'Configure'}
+                            </Button>
+                          )}
                         </div>
                       </div>
 
@@ -271,6 +354,51 @@ export default function AdminIntegrations() {
               data-testid="button-save-config"
             >
               {configureIntegrationMutation.isPending ? "Saving..." : "Save Configuration"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Test {selectedIntegration?.name}</DialogTitle>
+            <DialogDescription>
+              Send a test prompt to verify the AI integration is working correctly
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="test-prompt">Test Prompt</Label>
+              <Textarea
+                id="test-prompt"
+                value={testPrompt}
+                onChange={(e) => setTestPrompt(e.target.value)}
+                placeholder="Enter a test prompt..."
+                rows={4}
+                data-testid="textarea-test-prompt"
+              />
+            </div>
+            {testResult && (
+              <div className="space-y-2">
+                <Label>Response</Label>
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm whitespace-pre-wrap">{testResult}</p>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTestDialogOpen(false)} data-testid="button-cancel-test">
+              Close
+            </Button>
+            <Button 
+              onClick={runTest} 
+              disabled={testAIMutation.isPending || !testPrompt}
+              data-testid="button-run-test"
+            >
+              <TestTube className="h-4 w-4 mr-2" />
+              {testAIMutation.isPending ? "Testing..." : "Run Test"}
             </Button>
           </DialogFooter>
         </DialogContent>

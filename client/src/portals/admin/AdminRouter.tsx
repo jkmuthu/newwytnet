@@ -51,7 +51,6 @@ import AdminSearch from "@/pages/admin/search";
 import AdminNotifications from "@/pages/admin/notifications";
 import AdminIntegrations from "@/pages/admin/integrations";
 import AdminSystemLogsReal from "@/pages/admin/system-logs-real";
-import AdminAIManagement from "@/pages/admin/ai-management";
 import FeaturesChecklistPage from "@/pages/admin/features-checklist";
 import QATestingTrackerPage from "@/pages/admin/qa-testing-tracker";
 import ApiLibraryPage from "@/pages/admin/api-library";
@@ -125,7 +124,6 @@ export default function AdminRouter() {
           <Route path="/engine/wytpoints" component={AdminWytPoints} />
           <Route path="/engine/system-overview" component={AdminSystemOverview} />
           <Route path="/engine/logs" component={AdminSystemLogsReal} />
-          <Route path="/engine/ai" component={AdminAIManagement} />
 
           {/* 404 fallback for engine routes */}
           <Route>
