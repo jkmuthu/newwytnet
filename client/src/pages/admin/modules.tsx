@@ -22,8 +22,7 @@ import {
   Link2, AlertTriangle, Code, Info, CheckCircle2, FileText, Settings, Shield, Route
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AdminDetailWorkspace } from "@/components/admin/AdminDetailWorkspace";
-import { AIAssistantChat } from "@/components/admin/AIAssistantChat";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ModuleEndpoint {
   path: string;
@@ -501,244 +500,220 @@ export default function AdminModuleLibrary() {
           </DialogHeader>
           
           {selectedModule && (
-            <AdminDetailWorkspace
-              leftContent={
-                <div className="space-y-6">
-              {/* Metadata */}
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Category</p>
-                  <Badge className={getCategoryColor(selectedModule.category)}>
-                    {selectedModule.category.replace('_', ' ')}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Status</p>
-                  <Badge className={getStatusColor(selectedModule.status)}>
-                    {selectedModule.status}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Version</p>
-                  <Badge variant="outline">v{selectedModule.version}</Badge>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Changelog */}
-              {selectedModule.changelog && (
-                <>
+            <ScrollArea className="h-[600px] pr-4">
+              <div className="space-y-6">
+                {/* Metadata */}
+                <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <h4 className="font-medium mb-3 flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      Changelog
-                    </h4>
-                    <div className="bg-muted/50 rounded-lg p-4">
-                      <p className="text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-                        {selectedModule.changelog}
-                      </p>
-                    </div>
+                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Category</p>
+                    <Badge className={getCategoryColor(selectedModule.category)}>
+                      {selectedModule.category.replace('_', ' ')}
+                    </Badge>
                   </div>
-                  <Separator />
-                </>
-              )}
-
-              {/* Route Editor */}
-              <div>
-                <h4 className="font-medium mb-3 flex items-center gap-2">
-                  <Route className="h-4 w-4" />
-                  Module Route
-                </h4>
-                <div className="space-y-2">
-                  <Label htmlFor="module-route" className="text-sm text-gray-600 dark:text-gray-400">
-                    URL Path/Route
-                  </Label>
-                  <Input
-                    id="module-route"
-                    value={editedRoute}
-                    onChange={(e) => setEditedRoute(e.target.value)}
-                    placeholder="/module-path"
-                    className="font-mono"
-                    data-testid="input-module-route"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Define the URL route where this module is accessible
-                  </p>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Context Restrictions */}
-              <div>
-                <h4 className="font-medium mb-3 flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  Context Restrictions
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="engine-only"
-                      checked={contextRestrictions.engineOnly}
-                      onCheckedChange={(checked) => 
-                        setContextRestrictions(prev => ({ ...prev, engineOnly: checked as boolean }))
-                      }
-                      data-testid="checkbox-engine-only"
-                    />
-                    <Label htmlFor="engine-only" className="text-sm font-normal cursor-pointer flex items-center gap-2">
-                      <Globe className="h-3 w-3" />
-                      Engine Only
-                    </Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="hub-only"
-                      checked={contextRestrictions.hubOnly}
-                      onCheckedChange={(checked) => 
-                        setContextRestrictions(prev => ({ ...prev, hubOnly: checked as boolean }))
-                      }
-                      data-testid="checkbox-hub-only"
-                    />
-                    <Label htmlFor="hub-only" className="text-sm font-normal cursor-pointer flex items-center gap-2">
-                      <Building2 className="h-3 w-3" />
-                      Hub Only
-                    </Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="app-only"
-                      checked={contextRestrictions.appOnly}
-                      onCheckedChange={(checked) => 
-                        setContextRestrictions(prev => ({ ...prev, appOnly: checked as boolean }))
-                      }
-                      data-testid="checkbox-app-only"
-                    />
-                    <Label htmlFor="app-only" className="text-sm font-normal cursor-pointer flex items-center gap-2">
-                      <Layers className="h-3 w-3" />
-                      App Only
-                    </Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="game-only"
-                      checked={contextRestrictions.gameOnly}
-                      onCheckedChange={(checked) => 
-                        setContextRestrictions(prev => ({ ...prev, gameOnly: checked as boolean }))
-                      }
-                      data-testid="checkbox-game-only"
-                    />
-                    <Label htmlFor="game-only" className="text-sm font-normal cursor-pointer flex items-center gap-2">
-                      <Gamepad2 className="h-3 w-3" />
-                      Game Only
-                    </Label>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Access Restrictions */}
-              {selectedModule.restrictedTo && selectedModule.restrictedTo.length > 0 && (
-                <>
                   <div>
-                    <h4 className="font-medium mb-3 flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      Access Restrictions
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedModule.restrictedTo.map((restriction, idx) => (
-                        <Badge 
-                          key={idx} 
-                          variant="secondary" 
-                          className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100"
-                          data-testid={`badge-restriction-${idx}`}
-                        >
-                          <Shield className="h-3 w-3 mr-1" />
-                          {restriction}
-                        </Badge>
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      This module is restricted to specific user roles or permissions
-                    </p>
+                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Status</p>
+                    <Badge className={getStatusColor(selectedModule.status)}>
+                      {selectedModule.status}
+                    </Badge>
                   </div>
-                  <Separator />
-                </>
-              )}
+                  <div>
+                    <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Version</p>
+                    <Badge variant="outline">v{selectedModule.version}</Badge>
+                  </div>
+                </div>
 
-              {/* Dependencies */}
-              {selectedModule.dependencies.length > 0 && (
+                <Separator />
+
+                {/* Changelog */}
+                {selectedModule.changelog && (
+                  <>
+                    <div>
+                      <h4 className="font-medium mb-3 flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Changelog
+                      </h4>
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <p className="text-sm whitespace-pre-wrap text-gray-700 dark:text-gray-300">
+                          {selectedModule.changelog}
+                        </p>
+                      </div>
+                    </div>
+                    <Separator />
+                  </>
+                )}
+
+                {/* Route Editor */}
                 <div>
                   <h4 className="font-medium mb-3 flex items-center gap-2">
-                    <Link2 className="h-4 w-4" />
-                    Dependencies
+                    <Route className="h-4 w-4" />
+                    Module Route
                   </h4>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedModule.dependencies.map(dep => (
-                      <Badge key={dep} variant="outline">{dep}</Badge>
-                    ))}
+                  <div className="space-y-2">
+                    <Label htmlFor="module-route" className="text-sm text-gray-600 dark:text-gray-400">
+                      URL Path/Route
+                    </Label>
+                    <Input
+                      id="module-route"
+                      value={editedRoute}
+                      onChange={(e) => setEditedRoute(e.target.value)}
+                      placeholder="/module-path"
+                      className="font-mono"
+                      data-testid="input-module-route"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Define the URL route where this module is accessible
+                    </p>
                   </div>
                 </div>
-              )}
 
-              {/* API Endpoints */}
-              {selectedModule.apiEndpoints.length > 0 && (
-                <>
-                  <Separator />
+                <Separator />
+
+                {/* Context Restrictions */}
+                <div>
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    Context Restrictions
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="engine-only"
+                        checked={contextRestrictions.engineOnly}
+                        onCheckedChange={(checked) => 
+                          setContextRestrictions(prev => ({ ...prev, engineOnly: checked as boolean }))
+                        }
+                        data-testid="checkbox-engine-only"
+                      />
+                      <Label htmlFor="engine-only" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                        <Globe className="h-3 w-3" />
+                        Engine Only
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="hub-only"
+                        checked={contextRestrictions.hubOnly}
+                        onCheckedChange={(checked) => 
+                          setContextRestrictions(prev => ({ ...prev, hubOnly: checked as boolean }))
+                        }
+                        data-testid="checkbox-hub-only"
+                      />
+                      <Label htmlFor="hub-only" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                        <Building2 className="h-3 w-3" />
+                        Hub Only
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="app-only"
+                        checked={contextRestrictions.appOnly}
+                        onCheckedChange={(checked) => 
+                          setContextRestrictions(prev => ({ ...prev, appOnly: checked as boolean }))
+                        }
+                        data-testid="checkbox-app-only"
+                      />
+                      <Label htmlFor="app-only" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                        <Layers className="h-3 w-3" />
+                        App Only
+                      </Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="game-only"
+                        checked={contextRestrictions.gameOnly}
+                        onCheckedChange={(checked) => 
+                          setContextRestrictions(prev => ({ ...prev, gameOnly: checked as boolean }))
+                        }
+                        data-testid="checkbox-game-only"
+                      />
+                      <Label htmlFor="game-only" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                        <Gamepad2 className="h-3 w-3" />
+                        Game Only
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Access Restrictions */}
+                {selectedModule.restrictedTo && selectedModule.restrictedTo.length > 0 && (
+                  <>
+                    <div>
+                      <h4 className="font-medium mb-3 flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        Access Restrictions
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedModule.restrictedTo.map((restriction, idx) => (
+                          <Badge 
+                            key={idx} 
+                            variant="secondary" 
+                            className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100"
+                            data-testid={`badge-restriction-${idx}`}
+                          >
+                            <Shield className="h-3 w-3 mr-1" />
+                            {restriction}
+                          </Badge>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        This module is restricted to specific user roles or permissions
+                      </p>
+                    </div>
+                    <Separator />
+                  </>
+                )}
+
+                {/* Dependencies */}
+                {selectedModule.dependencies.length > 0 && (
                   <div>
                     <h4 className="font-medium mb-3 flex items-center gap-2">
-                      <Code className="h-4 w-4" />
-                      API Endpoints ({selectedModule.apiEndpoints.length})
+                      <Link2 className="h-4 w-4" />
+                      Dependencies
                     </h4>
-                    <div className="space-y-2">
-                      {selectedModule.apiEndpoints.map((endpoint, idx) => (
-                        <div key={idx} className="border rounded-lg p-3 bg-muted/30">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline" className="font-mono text-xs">
-                              {endpoint.method}
-                            </Badge>
-                            <code className="text-sm font-mono text-gray-700 dark:text-gray-300">
-                              {endpoint.path}
-                            </code>
-                          </div>
-                          <p className="text-xs text-gray-600 dark:text-gray-400">
-                            {endpoint.description}
-                          </p>
-                        </div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedModule.dependencies.map(dep => (
+                        <Badge key={dep} variant="outline">{dep}</Badge>
                       ))}
                     </div>
                   </div>
-                </>
-              )}
-                </div>
-              }
-              rightContent={
-                <AIAssistantChat
-                  resourceType="module"
-                  resourceId={selectedModule.id}
-                  resourceName={selectedModule.name}
-                  onApplySuggestions={(suggestions) => {
-                    if (suggestions.route) setEditedRoute(suggestions.route);
-                    if (suggestions.restrictions) {
-                      setContextRestrictions({
-                        engineOnly: suggestions.restrictions.includes('engine'),
-                        hubOnly: suggestions.restrictions.includes('hub'),
-                        appOnly: suggestions.restrictions.includes('app'),
-                        gameOnly: suggestions.restrictions.includes('game'),
-                      });
-                    }
-                    toast({
-                      title: "Suggestions Applied",
-                      description: "AI suggestions have been applied. Review and save changes.",
-                    });
-                  }}
-                />
-              }
-            />
+                )}
+
+                {/* API Endpoints */}
+                {selectedModule.apiEndpoints.length > 0 && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h4 className="font-medium mb-3 flex items-center gap-2">
+                        <Code className="h-4 w-4" />
+                        API Endpoints ({selectedModule.apiEndpoints.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {selectedModule.apiEndpoints.map((endpoint, idx) => (
+                          <div key={idx} className="border rounded-lg p-3 bg-muted/30">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge variant="outline" className="font-mono text-xs">
+                                {endpoint.method}
+                              </Badge>
+                              <code className="text-sm font-mono text-gray-700 dark:text-gray-300">
+                                {endpoint.path}
+                              </code>
+                            </div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              {endpoint.description}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </ScrollArea>
           )}
         </DialogContent>
       </Dialog>

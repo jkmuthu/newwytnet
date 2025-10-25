@@ -24,8 +24,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import AdminAppBuilder from "./app-builder";
-import { AdminDetailWorkspace } from "@/components/admin/AdminDetailWorkspace";
-import { AIAssistantChat } from "@/components/admin/AIAssistantChat";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { TrashView } from "@/components/shared/TrashView";
 
 // App interface with new fields
@@ -748,9 +747,8 @@ export default function AdminApps() {
           </DialogHeader>
           
           {selectedApp && (
-            <AdminDetailWorkspace
-              leftContent={
-                <div className="space-y-6">
+            <ScrollArea className="h-[calc(85vh-120px)] pr-4">
+              <div className="space-y-6">
               {/* Metadata */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
@@ -983,36 +981,8 @@ export default function AdminApps() {
                   </div>
                 </>
               )}
-                </div>
-              }
-              rightContent={
-                <AIAssistantChat
-                  resourceType="app"
-                  resourceId={selectedApp.id}
-                  resourceName={selectedApp.name}
-                  onApplySuggestions={(suggestions) => {
-                    if (suggestions.route) setEditedRoute(suggestions.route);
-                    if (suggestions.contexts) {
-                      setEditedContexts({
-                        hub: suggestions.contexts.includes('hub'),
-                        app: suggestions.contexts.includes('app'),
-                      });
-                    }
-                    if (suggestions.restrictions) {
-                      setAccessRestrictions({
-                        engineOnly: suggestions.restrictions.includes('engine_only'),
-                        hubOnly: suggestions.restrictions.includes('hub_only'),
-                        tenantSpecific: suggestions.restrictions.includes('tenant_specific'),
-                      });
-                    }
-                    toast({
-                      title: "Suggestions Applied",
-                      description: "AI suggestions have been applied. Review and save changes.",
-                    });
-                  }}
-                />
-              }
-            />
+              </div>
+            </ScrollArea>
           )}
         </DialogContent>
       </Dialog>
