@@ -23,12 +23,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2, Database, ChevronRight, Globe, Building, Star, ChevronUp, ChevronDown, Grid, List } from "lucide-react";
+import { Plus, Edit, Trash2, Database, ChevronRight, Globe, Building, Star, ChevronUp, ChevronDown, Grid, List, Eye, Shield, ShieldOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { DatasetCollection, DatasetItem } from "@shared/schema";
 
 export default function AdminDatasetManagement() {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [selectedCollection, setSelectedCollection] = useState<DatasetCollection | null>(null);
   const [isCollectionDialogOpen, setIsCollectionDialogOpen] = useState(false);
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
@@ -353,57 +353,85 @@ export default function AdminDatasetManagement() {
                 </div>
               ))
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Key</TableHead>
-                      <TableHead>Scope</TableHead>
-                      <TableHead className="text-right">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {collectionsData?.collections.map((collection) => (
-                      <TableRow
-                        key={collection.id}
+              <div className="space-y-1">
+                {collectionsData?.collections.map((collection) => (
+                  <div
+                    key={collection.id}
+                    className={`
+                      flex items-center justify-between p-3 rounded-md border transition-colors
+                      ${selectedCollection?.id === collection.id 
+                        ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700' 
+                        : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                      }
+                    `}
+                    data-testid={`collection-${collection.key}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-base">{(collection.metadata as any)?.icon || '📊'}</span>
+                        <h3 className="font-semibold text-sm">{collection.name}</h3>
+                        {isImmutable(collection) && (
+                          <Badge variant="secondary" className="text-xs">
+                            <Shield className="h-3 w-3 mr-1" />
+                            Protected
+                          </Badge>
+                        )}
+                        {collection.scope === 'global' && (
+                          <Badge variant="outline" className="text-xs">
+                            <Globe className="h-3 w-3 mr-1" />
+                            Global
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1">
+                        {collection.description || 'No description available'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 ml-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setSelectedCollection(collection)}
-                        className={`cursor-pointer transition-colors ${
-                          selectedCollection?.id === collection.id 
-                            ? 'bg-blue-50 dark:bg-blue-900/20' 
-                            : 'hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
-                        data-testid={`collection-${collection.key}`}
+                        data-testid={`button-view-items-${collection.key}`}
+                        className="shrink-0"
                       >
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">{(collection.metadata as any)?.icon || '📊'}</span>
-                            <span className="font-medium">{collection.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-mono text-sm">{collection.key}</TableCell>
-                        <TableCell>
-                          {collection.scope === 'global' ? (
-                            <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                              <Globe className="h-3 w-3" />
-                              Global
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                              <Building className="h-3 w-3" />
-                              Tenant
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {isImmutable(collection) && (
-                            <Badge variant="secondary">Protected</Badge>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        <Eye className="h-3 w-3 mr-1" />
+                        View Items
+                      </Button>
+                      {!isImmutable(collection) && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCollection(collection);
+                              setIsCollectionDialogOpen(true);
+                            }}
+                            data-testid={`button-edit-${collection.key}`}
+                            className="shrink-0"
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm('Are you sure you want to delete this collection?')) {
+                                deleteCollectionMutation.mutate(collection.id);
+                              }
+                            }}
+                            data-testid={`button-delete-${collection.key}`}
+                            className="shrink-0"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </CardContent>

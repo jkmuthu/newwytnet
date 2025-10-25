@@ -18,12 +18,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
-  Search, Plus, Layers, Package, Bot, Building2, 
+  Search, Plus, Layers, Package, Building2, 
   Info, FileText, Route as RouteIcon, Settings, 
   Shield, Globe, History, CheckCircle2, Grid, List 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import AdminAppBuilder from "./app-builder";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TrashView } from "@/components/shared/TrashView";
 
@@ -202,14 +201,10 @@ export default function AdminApps() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
+        <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
           <TabsTrigger value="registry" className="gap-2" data-testid="tab-registry">
             <Layers className="h-4 w-4" />
             Apps Registry ({apps.length})
-          </TabsTrigger>
-          <TabsTrigger value="ai-builder" className="gap-2" data-testid="tab-ai-builder">
-            <Bot className="h-4 w-4" />
-            AI Builder
           </TabsTrigger>
           <TabsTrigger value="trash" className="gap-2" data-testid="tab-apps-trash">
             <Package className="h-4 w-4" />
@@ -686,11 +681,6 @@ export default function AdminApps() {
               </Table>
             </Card>
           )}
-        </TabsContent>
-
-        {/* AI Builder Tab */}
-        <TabsContent value="ai-builder" className="mt-6">
-          <AdminAppBuilder />
         </TabsContent>
 
         {/* Trash Tab */}
