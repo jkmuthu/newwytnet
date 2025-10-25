@@ -250,7 +250,7 @@ export default function AdminApps() {
         : '/api/admin/apps/categories';
       const method = data.isEdit ? 'PATCH' : 'POST';
       
-      return apiRequest(method, url, { name: data.name, description: data.description });
+      return apiRequest(url, method, { name: data.name, description: data.description });
     },
     onSuccess: (response: any) => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/apps'] });
