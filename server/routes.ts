@@ -7304,11 +7304,11 @@ When suggesting improvements, format your response with suggestions in a structu
           description: module.description || '',
           type: 'WytModule',
           category: module.category || 'platform',
-          endpoint: module.route || `/api/module/${module.key}`,
+          endpoint: module.route || `/api/module/${module.id}`,
           method: 'GET',
           authType: 'WytPass',
-          documentationUrl: `/devdoc/modules/${module.key}`,
-          pricingModel: module.pricingModel || 'free',
+          documentationUrl: `/devdoc/modules/${module.id}`,
+          pricingModel: module.pricing || 'free',
           version: module.version || '1.0.0',
           status: module.status,
           isActive: true,
@@ -7323,7 +7323,7 @@ When suggesting improvements, format your response with suggestions in a structu
         } else {
           const count = await db.select({ count: sql<number>`count(*)::int` }).from(apiLibrary);
           const displayId = `API${String(count[0].count + 1).padStart(5, '0')}`;
-          const slug = module.key;
+          const slug = module.id;
           // @ts-ignore
           await db.insert(apiLibrary).values({ ...apiData, displayId, slug, createdBy: userId });
           synced.modules++;
@@ -7380,15 +7380,16 @@ When suggesting improvements, format your response with suggestions in a structu
             eq(apiLibrary.sourceId, dataset.id)
           ));
 
+        const datasetKey = (dataset as any).key;
         const apiData = {
           name: dataset.name,
           description: dataset.description || '',
           type: 'WytDataset',
           category: 'data',
-          endpoint: `/api/datasets/${dataset.key}`,
+          endpoint: `/api/datasets/${datasetKey}`,
           method: 'GET',
           authType: 'API Key',
-          documentationUrl: `/devdoc/datasets/${dataset.key}`,
+          documentationUrl: `/devdoc/datasets/${datasetKey}`,
           pricingModel: 'free',
           version: '1.0.0',
           status: 'active',
@@ -7404,7 +7405,7 @@ When suggesting improvements, format your response with suggestions in a structu
         } else {
           const count = await db.select({ count: sql<number>`count(*)::int` }).from(apiLibrary);
           const displayId = `API${String(count[0].count + 1).padStart(5, '0')}`;
-          const slug = dataset.key;
+          const slug = datasetKey;
           // @ts-ignore
           await db.insert(apiLibrary).values({ ...apiData, displayId, slug, createdBy: userId });
           synced.datasets++;
