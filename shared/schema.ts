@@ -4223,3 +4223,66 @@ export type QATestItem = typeof qaTestItems.$inferSelect;
 export type InsertQATestItem = z.infer<typeof insertQATestItemSchema>;
 export type UpdateQATestItem = z.infer<typeof updateQATestItemSchema>;
 export type MarkJKMTested = z.infer<typeof markJKMTestedSchema>;
+
+// =======================
+// API Library - White-label API Management
+// =======================
+
+export const apiLibrary = pgTable("api_library", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // API00001
+  
+  // API Details
+  name: varchar("name", { length: 255 }).notNull(), // e.g., "WytMap"
+  originalName: varchar("original_name", { length: 255 }), // e.g., "Mappls"
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  
+  // Type and Source
+  type: varchar("type", { length: 50 }).notNull(), // 'wytmodule', 'wytapp', 'wytdataset', 'thirdparty'
+  sourceId: varchar("source_id", { length: 255 }), // ID of the source module/app/dataset
+  isWhiteLabeled: boolean("is_white_labeled").default(false),
+  
+  // API Configuration
+  baseUrl: varchar("base_url", { length: 500 }),
+  version: varchar("version", { length: 20 }).default('1.0.0'),
+  authType: varchar("auth_type", { length: 50 }), // 'api_key', 'oauth', 'bearer', 'none'
+  endpoints: jsonb("endpoints").default([]), // [{method: 'GET', path: '/api/route', description: '...'}]
+  
+  // Documentation
+  docsUrl: varchar("docs_url", { length: 500 }),
+  docsContent: jsonb("docs_content").default({}),
+  category: varchar("category", { length: 100 }),
+  tags: jsonb("tags").default([]),
+  
+  // Usage & Status
+  status: varchar("status", { length: 20 }).notNull().default('active'), // 'active', 'inactive', 'deprecated'
+  isPublic: boolean("is_public").default(true),
+  usageCount: integer("usage_count").default(0),
+  
+  // Metadata
+  icon: varchar("icon", { length: 255 }),
+  logoUrl: varchar("logo_url", { length: 500 }),
+  websiteUrl: varchar("website_url", { length: 500 }),
+  
+  createdBy: varchar("created_by"),
+  updatedBy: varchar("updated_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_api_library_type").on(table.type),
+  index("idx_api_library_status").on(table.status),
+  index("idx_api_library_display_id").on(table.displayId),
+]);
+
+// Zod schemas for API Library
+export const insertApiLibrarySchema = createInsertSchema(apiLibrary).omit({
+  id: true,
+  displayId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const selectApiLibrarySchema = createSelectSchema(apiLibrary);
+export type InsertApiLibrary = z.infer<typeof insertApiLibrarySchema>;
+export type SelectApiLibrary = typeof apiLibrary.$inferSelect;

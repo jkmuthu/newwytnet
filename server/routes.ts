@@ -134,7 +134,8 @@ import {
   notifications,
   insertNotificationSchema,
   type Notification,
-  type InsertNotification
+  type InsertNotification,
+  apiLibrary
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -7157,6 +7158,129 @@ When suggesting improvements, format your response with suggestions in a structu
         success: false,
         error: 'Failed to update pricing plan'
       });
+    }
+  });
+
+  // ==================== API LIBRARY MANAGEMENT ====================
+
+  // Get all API Library entries
+  app.get('/api/admin/api-library', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const entries = await db
+        .select()
+        .from(apiLibrary)
+        .orderBy(apiLibrary.createdAt);
+      
+      res.json({ success: true, entries });
+    } catch (error: any) {
+      console.error('Error fetching API library:', error);
+      res.status(500).json({ message: 'Failed to fetch API library', error: error.message });
+    }
+  });
+
+  // Get API Library entry by ID
+  app.get('/api/admin/api-library/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const [entry] = await db
+        .select()
+        .from(apiLibrary)
+        .where(eq(apiLibrary.id, id));
+      
+      if (!entry) {
+        return res.status(404).json({ message: 'API not found' });
+      }
+      
+      res.json({ success: true, entry });
+    } catch (error: any) {
+      console.error('Error fetching API:', error);
+      res.status(500).json({ message: 'Failed to fetch API', error: error.message });
+    }
+  });
+
+  // Create new API Library entry
+  app.post('/api/admin/api-library', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const data = req.body;
+      
+      // Generate display ID
+      const count = await db.select({ count: sql<number>`count(*)::int` }).from(apiLibrary);
+      const displayId = `API${String(count[0].count + 1).padStart(5, '0')}`;
+      
+      // Generate slug if not provided
+      const slug = data.slug || data.name.toLowerCase().replace(/\s+/g, '-');
+      
+      const [entry] = await db.insert(apiLibrary).values({
+        ...data,
+        displayId,
+        slug,
+        createdBy: req.principal?.user?.id || req.user?.id,
+        updatedBy: req.principal?.user?.id || req.user?.id,
+      }).returning();
+      
+      res.json({ success: true, entry, message: 'API added successfully' });
+    } catch (error: any) {
+      console.error('Error creating API:', error);
+      res.status(500).json({ message: 'Failed to create API', error: error.message });
+    }
+  });
+
+  // Update API Library entry
+  app.patch('/api/admin/api-library/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const data = req.body;
+      
+      const [entry] = await db
+        .update(apiLibrary)
+        .set({
+          ...data,
+          updatedBy: req.principal?.user?.id || req.user?.id,
+          updatedAt: new Date(),
+        })
+        .where(eq(apiLibrary.id, id))
+        .returning();
+      
+      if (!entry) {
+        return res.status(404).json({ message: 'API not found' });
+      }
+      
+      res.json({ success: true, entry, message: 'API updated successfully' });
+    } catch (error: any) {
+      console.error('Error updating API:', error);
+      res.status(500).json({ message: 'Failed to update API', error: error.message });
+    }
+  });
+
+  // Delete API Library entry
+  app.delete('/api/admin/api-library/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      await db.delete(apiLibrary).where(eq(apiLibrary.id, id));
+      
+      res.json({ success: true, message: 'API deleted successfully' });
+    } catch (error: any) {
+      console.error('Error deleting API:', error);
+      res.status(500).json({ message: 'Failed to delete API', error: error.message });
+    }
+  });
+
+  // Get API Library entries by type
+  app.get('/api/admin/api-library/type/:type', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { type } = req.params;
+      
+      const entries = await db
+        .select()
+        .from(apiLibrary)
+        .where(eq(apiLibrary.type, type))
+        .orderBy(apiLibrary.createdAt);
+      
+      res.json({ success: true, entries });
+    } catch (error: any) {
+      console.error('Error fetching APIs by type:', error);
+      res.status(500).json({ message: 'Failed to fetch APIs', error: error.message });
     }
   });
 
