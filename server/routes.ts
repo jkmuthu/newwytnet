@@ -7284,6 +7284,145 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // Sync API Library from Modules, Apps, and Datasets
+  app.post('/api/admin/api-library/sync', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const userId = req.principal?.user?.id || req.user?.id;
+      let synced = { modules: 0, apps: 0, datasets: 0, total: 0 };
+
+      // Sync WytModules from platform_modules
+      const modules = await db.select().from(platformModules).where(eq(platformModules.status, 'active'));
+      for (const module of modules) {
+        const existing = await db.select().from(apiLibrary)
+          .where(and(
+            eq(apiLibrary.type, 'WytModule'),
+            eq(apiLibrary.sourceId, module.id)
+          ));
+
+        const apiData = {
+          name: module.name,
+          description: module.description || '',
+          type: 'WytModule',
+          category: module.category || 'platform',
+          endpoint: module.route || `/api/module/${module.key}`,
+          method: 'GET',
+          authType: 'WytPass',
+          documentationUrl: `/devdoc/modules/${module.key}`,
+          pricingModel: module.pricingModel || 'free',
+          version: module.version || '1.0.0',
+          status: module.status,
+          isActive: true,
+          sourceId: module.id,
+          updatedBy: userId,
+          updatedAt: new Date(),
+        };
+
+        if (existing.length > 0) {
+          // @ts-ignore
+          await db.update(apiLibrary).set(apiData).where(eq(apiLibrary.id, existing[0].id));
+        } else {
+          const count = await db.select({ count: sql<number>`count(*)::int` }).from(apiLibrary);
+          const displayId = `API${String(count[0].count + 1).padStart(5, '0')}`;
+          const slug = module.key;
+          // @ts-ignore
+          await db.insert(apiLibrary).values({ ...apiData, displayId, slug, createdBy: userId });
+          synced.modules++;
+        }
+      }
+
+      // Sync WytApps from apps
+      const apps = await db.select().from(apps as any).where(eq((apps as any).status, 'published'));
+      for (const app of apps) {
+        const existing = await db.select().from(apiLibrary)
+          .where(and(
+            eq(apiLibrary.type, 'WytApp'),
+            eq(apiLibrary.sourceId, app.id)
+          ));
+
+        const apiData = {
+          name: app.name,
+          description: app.description || '',
+          type: 'WytApp',
+          category: Array.isArray(app.categories) && app.categories.length > 0 ? app.categories[0] : 'general',
+          endpoint: app.route || `/api/app/${app.key}`,
+          method: 'GET',
+          authType: 'WytPass',
+          documentationUrl: `/devdoc/apps/${app.key}`,
+          pricingModel: app.pricing?.model || 'free',
+          version: app.version || '1.0.0',
+          status: app.status,
+          isActive: true,
+          sourceId: app.id,
+          updatedBy: userId,
+          updatedAt: new Date(),
+        };
+
+        if (existing.length > 0) {
+          // @ts-ignore
+          await db.update(apiLibrary).set(apiData).where(eq(apiLibrary.id, existing[0].id));
+        } else {
+          const count = await db.select({ count: sql<number>`count(*)::int` }).from(apiLibrary);
+          const displayId = `API${String(count[0].count + 1).padStart(5, '0')}`;
+          const slug = app.key;
+          // @ts-ignore
+          await db.insert(apiLibrary).values({ ...apiData, displayId, slug, createdBy: userId });
+          synced.apps++;
+        }
+      }
+
+      // Sync WytDatasets from dataset_collections
+      const datasets = await db.select().from(datasetCollections).where(eq(datasetCollections.scope, 'global'));
+      for (const dataset of datasets) {
+        const existing = await db.select().from(apiLibrary)
+          .where(and(
+            eq(apiLibrary.type, 'WytDataset'),
+            eq(apiLibrary.sourceId, dataset.id)
+          ));
+
+        const apiData = {
+          name: dataset.name,
+          description: dataset.description || '',
+          type: 'WytDataset',
+          category: 'data',
+          endpoint: `/api/datasets/${dataset.key}`,
+          method: 'GET',
+          authType: 'API Key',
+          documentationUrl: `/devdoc/datasets/${dataset.key}`,
+          pricingModel: 'free',
+          version: '1.0.0',
+          status: 'active',
+          isActive: true,
+          sourceId: dataset.id,
+          updatedBy: userId,
+          updatedAt: new Date(),
+        };
+
+        if (existing.length > 0) {
+          // @ts-ignore
+          await db.update(apiLibrary).set(apiData).where(eq(apiLibrary.id, existing[0].id));
+        } else {
+          const count = await db.select({ count: sql<number>`count(*)::int` }).from(apiLibrary);
+          const displayId = `API${String(count[0].count + 1).padStart(5, '0')}`;
+          const slug = dataset.key;
+          // @ts-ignore
+          await db.insert(apiLibrary).values({ ...apiData, displayId, slug, createdBy: userId });
+          synced.datasets++;
+        }
+      }
+
+      synced.total = synced.modules + synced.apps + synced.datasets;
+
+      res.json({
+        success: true,
+        message: `Synced ${synced.total} APIs successfully`,
+        synced
+      });
+    } catch (error: any) {
+      console.error('Error syncing API library:', error);
+      res.status(500).json({ message: 'Failed to sync API library', error: error.message });
+    }
+  });
+
   // Super Admin user management
   app.get('/api/admin/users', adminAuthMiddleware, async (req: any, res) => {
     try {

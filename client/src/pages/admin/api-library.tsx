@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Webhook, Edit, Trash2, ExternalLink, Eye, Package, Database, Code } from "lucide-react";
+import { Plus, Webhook, Edit, Trash2, ExternalLink, Eye, Package, Database, Code, RefreshCw } from "lucide-react";
 
 interface ApiEntry {
   id: string;
@@ -120,6 +120,27 @@ export default function ApiLibraryPage() {
       toast({
         title: "Error",
         description: error.message || "Failed to delete API",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Sync mutation
+  const syncMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('/api/admin/api-library/sync', 'POST');
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/api-library'] });
+      toast({
+        title: "Sync Complete",
+        description: `${data.message}. Modules: ${data.synced.modules}, Apps: ${data.synced.apps}, Datasets: ${data.synced.datasets}`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to sync APIs",
         variant: "destructive",
       });
     },
@@ -258,6 +279,16 @@ export default function ApiLibraryPage() {
             Manage WytNet APIs and third-party integrations with white-labeling
           </p>
         </div>
+        <Button 
+          onClick={() => syncMutation.mutate()} 
+          disabled={syncMutation.isPending}
+          className="gap-2" 
+          variant="outline"
+          data-testid="button-sync-apis"
+        >
+          <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
+          {syncMutation.isPending ? 'Syncing...' : 'Sync from Modules, Apps & Datasets'}
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6" data-testid="tabs-api-types">
