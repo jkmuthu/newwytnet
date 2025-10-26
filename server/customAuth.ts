@@ -579,75 +579,13 @@ export const optionalAuth: RequestHandler = async (req, res, next) => {
   next();
 };
 
-// Enhanced auth middleware for admin routes - checks all admin session patterns
+// Admin auth middleware - checks for WytPass principal session
 export const adminAuthMiddleware: RequestHandler = async (req, res, next) => {
   try {
-    console.log('DEBUG: adminAuthMiddleware called');
-    
-    // Method 1: Check unified session structure (new pattern)
-    const sessionUser = req.session?.user;
-    console.log('DEBUG: sessionUser exists:', !!sessionUser);
-    
-    if (sessionUser?.isSuperAdmin) {
-      console.log('DEBUG: Found unified session with isSuperAdmin');
-      (req as AuthenticatedRequest).user = {
-        id: sessionUser.id,
-        tenantId: sessionUser.tenantId || 'admin_tenant',
-        role: sessionUser.role || 'super_admin',
-        isSuperAdmin: sessionUser.isSuperAdmin,
-        provider: (sessionUser.provider as any) || 'unified',
-        claims: { sub: sessionUser.id }
-      };
-      console.log('DEBUG: Setting req.user from unified session:', (req as AuthenticatedRequest).user);
-      return next();
-    }
-
-    // Method 2: Check WhatsApp-based super admin session (legacy pattern)
-    const whatsappUserId = req.session?.whatsappUserId;
-    const superAdminAuth = req.session?.superAdminAuth;
-    const whatsappNumber = req.session?.whatsappNumber;
-    
-    console.log('DEBUG: WhatsApp session - userId:', !!whatsappUserId, 'superAuth:', !!superAdminAuth);
-    
-    if (whatsappUserId && superAdminAuth) {
-      console.log('DEBUG: Found WhatsApp super admin session');
-      try {
-        // Verify this is actually a super admin user - use unified users table
-        const adminUser = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, whatsappUserId))
-          .limit(1);
-
-        if (adminUser.length > 0) {
-          const user = adminUser[0];
-          const isSuperAdmin = Boolean(user.isSuperAdmin || user.whatsappNumber === '+919345228184');
-          
-          if (isSuperAdmin) {
-            (req as AuthenticatedRequest).user = {
-              id: user.id,
-              tenantId: user.tenantId || 'admin_tenant',
-              role: user.role || 'super_admin',
-              isSuperAdmin: true,
-              provider: 'whatsapp',
-              claims: { sub: user.id }
-            };
-            console.log('DEBUG: Setting req.user from WhatsApp session:', (req as AuthenticatedRequest).user);
-            return next();
-          }
-        }
-      } catch (dbError) {
-        console.error('DEBUG: Database error checking WhatsApp admin:', dbError);
-      }
-    }
-
-    // Method 3: Check WytPass Principal session (from admin-auth.ts)
+    // Check WytPass Principal session (unified authentication system)
     const wytpassPrincipal = (req.session as any)?.wytpassPrincipal;
     
-    console.log('DEBUG: WytPass principal session exists:', !!wytpassPrincipal);
-    
-    if (wytpassPrincipal) {
-      console.log('DEBUG: Found wytpassPrincipal session');
+    if (wytpassPrincipal && wytpassPrincipal.isSuperAdmin) {
       // Attach the full WytPass principal to the request
       (req as any).principal = wytpassPrincipal;
       
@@ -656,36 +594,14 @@ export const adminAuthMiddleware: RequestHandler = async (req, res, next) => {
         id: wytpassPrincipal.id,
         tenantId: wytpassPrincipal.tenantId || 'admin_tenant',
         role: wytpassPrincipal.role || 'super_admin',
-        isSuperAdmin: wytpassPrincipal.isSuperAdmin || false,
+        isSuperAdmin: wytpassPrincipal.isSuperAdmin,
         provider: 'admin',
         claims: { sub: wytpassPrincipal.id }
       };
-      console.log('DEBUG: Setting req.principal from wytpassPrincipal');
-      return next();
-    }
-
-    // Method 4: Check legacy admin session structure
-    const adminUserId = req.session?.adminUserId;
-    const adminRole = req.session?.adminRole;
-    
-    console.log('DEBUG: Legacy admin session - userId:', !!adminUserId, 'role:', adminRole);
-    
-    if (adminUserId && adminRole) {
-      console.log('DEBUG: Found legacy admin session');
-      (req as AuthenticatedRequest).user = {
-        id: adminUserId,
-        tenantId: 'admin_tenant',
-        role: adminRole,
-        isSuperAdmin: true,
-        provider: 'legacy',
-        claims: { sub: adminUserId }
-      };
-      console.log('DEBUG: Setting req.user from legacy session:', (req as AuthenticatedRequest).user);
       return next();
     }
 
     // No valid admin session found
-    console.log('DEBUG: No valid admin session found');
     return res.status(401).json({
       success: false,
       error: 'Authentication required'
@@ -703,15 +619,10 @@ export const adminAuthMiddleware: RequestHandler = async (req, res, next) => {
 // Hub Admin authentication middleware - checks for hub admin sessions
 export const hubAdminAuthMiddleware: RequestHandler = async (req, res, next) => {
   try {
-    console.log('DEBUG: hubAdminAuthMiddleware called');
-    
     // Check for hubAdminPrincipal session
     const hubAdminPrincipal = (req.session as any)?.hubAdminPrincipal;
     
-    console.log('DEBUG: Hub admin principal session exists:', !!hubAdminPrincipal);
-    
     if (hubAdminPrincipal) {
-      console.log('DEBUG: Found hubAdminPrincipal session');
       (req as AuthenticatedRequest).user = {
         id: hubAdminPrincipal.id,
         tenantId: hubAdminPrincipal.tenantId || 'wytnet_hub',
@@ -720,12 +631,10 @@ export const hubAdminAuthMiddleware: RequestHandler = async (req, res, next) => 
         provider: 'hub_admin',
         claims: { sub: hubAdminPrincipal.id }
       };
-      console.log('DEBUG: Setting req.user from hubAdminPrincipal:', (req as AuthenticatedRequest).user);
       return next();
     }
 
     // No valid hub admin session found
-    console.log('DEBUG: No valid hub admin session found');
     return res.status(401).json({
       success: false,
       error: 'Hub admin authentication required'
