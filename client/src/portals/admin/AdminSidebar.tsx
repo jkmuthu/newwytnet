@@ -56,7 +56,7 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
             <div className="flex items-center space-x-2">
               <Shield className="h-5 w-5 text-red-600" />
               <span className="font-semibold text-red-700 dark:text-red-300">
-                Admin Panel
+                Engine Panel
               </span>
             </div>
           )}
@@ -142,17 +142,7 @@ export default function AdminSidebar({ collapsed, onToggleCollapse }: AdminSideb
           </nav>
         </ScrollArea>
 
-        {/* Admin status footer */}
-        {!collapsed && (
-          <div className="p-4 border-t border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950">
-            <div className="text-xs text-red-600 dark:text-red-400 font-medium">
-              {adminUser?.isSuperAdmin ? '🦸‍♂️ Super Admin Portal' : '👨‍💼 Admin Portal'}
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Role: {adminUser?.role || 'admin'}
-            </div>
-          </div>
-        )}
+        
       </div>
     </div>
   );

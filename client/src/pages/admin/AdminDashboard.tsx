@@ -132,7 +132,7 @@ export default function AdminDashboard() {
     <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Engine Dashboard</h1>
           <p className="text-gray-500 dark:text-gray-400">
             Monitor and manage your WytNet platform
           </p>

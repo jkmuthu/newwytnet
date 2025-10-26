@@ -12,8 +12,8 @@ interface AdminHeaderProps {
 }
 
 /**
- * AdminHeader - Header for admin portal
- * Features: Admin branding, system monitoring, admin profile management
+ * AdminHeader - Header for Engine admin portal
+ * Features: Engine branding, system monitoring, admin profile management
  */
 export default function AdminHeader({ 
   onToggleSidebar,
