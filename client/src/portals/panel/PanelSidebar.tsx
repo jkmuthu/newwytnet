@@ -20,7 +20,8 @@ import {
   Shield,
   ShoppingCart,
   Package,
-  Award
+  Award,
+  Wallet // Import Wallet icon
 } from "lucide-react";
 import type { WorkspaceContext } from "./PanelLayout";
 
@@ -56,7 +57,7 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
   });
 
   const installedAppsCount = (myAppsData as any)?.apps?.length || 0;
-  const appsCountBadge = installedAppsCount > 99 ? '99+' : installedAppsCount.toString();
+  const appsCountBadge = installedAppsData > 99 ? '99+' : installedAppsData.toString();
 
   // Navigation items based on workspace context
   const getNavigationItems = () => {
@@ -188,7 +189,7 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               </span>
             </div>
           )}
-          
+
           <Button
             variant="ghost"
             size="sm"
