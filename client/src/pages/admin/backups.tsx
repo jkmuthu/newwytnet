@@ -227,7 +227,7 @@ export default function AdminBackups() {
             <FileArchive className="h-8 w-8 text-green-500" />
             <div>
               <p className="text-sm font-medium">Application Files</p>
-              <p className="text-xs text-muted-foreground">Server, client, and config files</p>
+              <p className="text-xs text-muted-foreground">Server, client, configs & uploaded assets</p>
             </div>
           </div>
           <div className="flex items-center gap-3 p-4 border rounded-lg">

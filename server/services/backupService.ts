@@ -37,6 +37,7 @@ interface BackupMetadata {
   databaseName: string;
   databaseSize?: string;
   filesCount: number;
+  assetsCount?: number;
   tablesCount?: number;
   credentialsIncluded: boolean;
   backupDate: string;
@@ -177,6 +178,7 @@ async function archiveApplicationFiles(outputPath: string): Promise<number> {
       'server',
       'client/src',
       'shared',
+      'attached_assets', // Include user-uploaded files
       'package.json',
       'tsconfig.json',
       'vite.config.ts',
@@ -276,10 +278,23 @@ export async function createFullBackup(createdBy: string): Promise<string> {
     const stats = fs.statSync(finalBackupPath);
     const fileSize = stats.size;
 
+    // 6.5. Count attached assets
+    let assetsCount = 0;
+    try {
+      const assetsPath = path.join(process.cwd(), 'attached_assets');
+      if (fs.existsSync(assetsPath)) {
+        const { stdout } = await execAsync(`find attached_assets -type f 2>/dev/null | wc -l`);
+        assetsCount = parseInt(stdout.trim()) || 0;
+      }
+    } catch (error) {
+      console.log('Could not count attached assets');
+    }
+
     // 7. Create backup record in database
     const metadata: BackupMetadata = {
       databaseName: process.env.PGDATABASE || 'unknown',
       filesCount,
+      assetsCount,
       credentialsIncluded: true,
       backupDate: new Date().toISOString(),
     };
