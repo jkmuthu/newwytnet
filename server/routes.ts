@@ -1089,9 +1089,8 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const allApps = await db
         .select()
-        .from(apps)
-        .where(isNull(apps.deletedAt))
-        .orderBy(apps.createdAt);
+        .from(appsRegistry)
+        .orderBy(appsRegistry.name);
 
       // Get module counts for each app
       const appsWithModules = await Promise.all(
@@ -7114,27 +7113,6 @@ When suggesting improvements, format your response with suggestions in a structu
   // app.get('/api/admin/dashboard', adminAuthMiddleware, async (req: any, res) => {
   //   ... old implementation ...
   // });
-
-  // Get all apps from registry
-  app.get('/api/admin/apps', adminAuthMiddleware, async (req: any, res) => {
-    try {
-      const allApps = await db
-        .select()
-        .from(appsRegistry)
-        .orderBy(appsRegistry.name);
-
-      res.json({
-        success: true,
-        apps: allApps
-      });
-    } catch (error) {
-      console.error('Error fetching apps:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch apps'
-      });
-    }
-  });
 
   // App Categories Management
   app.get('/api/admin/apps/categories', adminAuthMiddleware, async (req, res) => {
