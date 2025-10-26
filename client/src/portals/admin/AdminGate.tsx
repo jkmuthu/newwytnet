@@ -1,5 +1,5 @@
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
-import AdminLogin from "@/pages/admin/AdminLogin";
+import SuperAdminLogin from "@/pages/SuperAdminLogin";
 import { Loader2 } from "lucide-react";
 
 /**
@@ -20,7 +20,7 @@ export default function AdminGate({ children }: { children: React.ReactNode }) {
 
   // Not authenticated: show login form
   if (!isAdminAuthenticated) {
-    return <AdminLogin />;
+    return <SuperAdminLogin />;
   }
 
   // Authenticated: show admin content

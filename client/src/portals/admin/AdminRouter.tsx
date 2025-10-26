@@ -38,7 +38,6 @@ import AdminPlatformHubs from "@/pages/admin/platform-hubs";
 import AdminAdminUsers from "@/pages/admin/admin-users";
 import AdminBackups from "@/pages/admin/backups";
 import AdminAuditLogs from "@/pages/admin/audit-logs";
-import AdminSystemLogs from "@/pages/admin/system-logs";
 import AdminSystemMonitor from "@/pages/admin/system-monitor";
 import AdminSystemStatus from "@/pages/admin/system-status";
 import AdminSecurity from "@/pages/admin/security";
@@ -113,7 +112,7 @@ export default function AdminRouter() {
           <Route path="/engine/admin-users" component={AdminAdminUsers} />
           <Route path="/engine/backups" component={AdminBackups} />
           <Route path="/engine/audit-logs" component={AdminAuditLogs} />
-          <Route path="/engine/system-logs" component={AdminSystemLogs} />
+          <Route path="/engine/system-logs" component={AdminSystemLogsReal} />
           <Route path="/engine/system-monitor" component={AdminSystemMonitor} />
           <Route path="/engine/system-status" component={AdminSystemStatus} />
           <Route path="/engine/security" component={AdminSecurity} />
