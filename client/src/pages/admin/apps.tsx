@@ -21,7 +21,8 @@ import {
   Search, Plus, Layers, Package, Building2, 
   Info, FileText, Route as RouteIcon, Settings, 
   Shield, Globe, History, CheckCircle2, Grid, List,
-  Brain, Calculator, FileSignature, QrCode, Users, Grid3x3, Bot
+  Brain, Calculator, FileSignature, QrCode, Users, Grid3x3, Bot,
+  Edit2, Save, X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -698,7 +699,8 @@ export default function AdminApps() {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            window.open(`/engine/apps/${app.id}`, '_blank');
+                            setSelectedApp(app);
+                            setShowAppDetails(true);
                           }}
                           data-testid={`button-view-details-${app.id}`}
                         >
@@ -799,7 +801,8 @@ export default function AdminApps() {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            window.open(`/engine/apps/${app.id}`, '_blank');
+                            setSelectedApp(app);
+                            setShowAppDetails(true);
                           }}
                           data-testid={`list-button-view-details-${app.id}`}
                         >
@@ -933,21 +936,59 @@ export default function AdminApps() {
               tenantSpecific: selectedApp.restrictedTo?.includes('tenant_specific') || false,
             });
             setHasChanges(false);
+            setIsEditMode(false);
           }
         }}
       >
         <DialogContent className="max-w-6xl max-h-[85vh]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              {selectedApp?.name}
-              {selectedApp?.version && (
-                <Badge variant="outline" className="ml-2" data-testid="dialog-version-badge">
-                  v{selectedApp.version}
-                </Badge>
-              )}
-            </DialogTitle>
-            <DialogDescription>{selectedApp?.description || "No description available"}</DialogDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  {selectedApp?.name}
+                  {selectedApp?.version && (
+                    <Badge variant="outline" className="ml-2" data-testid="dialog-version-badge">
+                      v{selectedApp.version}
+                    </Badge>
+                  )}
+                </DialogTitle>
+                <DialogDescription>{selectedApp?.description || "No description available"}</DialogDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                {isEditMode ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditMode(false)}
+                      data-testid="button-cancel-edit-mode"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveAppChanges}
+                      disabled={!hasChanges || updateAppMutation.isPending}
+                      data-testid="button-save-edit-mode"
+                    >
+                      <Save className="h-4 w-4 mr-1" />
+                      {updateAppMutation.isPending ? "Saving..." : "Save"}
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={() => setIsEditMode(true)}
+                    data-testid="button-edit-mode"
+                  >
+                    <Edit2 className="h-4 w-4 mr-1" />
+                    Edit
+                  </Button>
+                )}
+              </div>
+            </div>
           </DialogHeader>
 
           {selectedApp && (
@@ -1013,13 +1054,16 @@ export default function AdminApps() {
                   </Label>
                   <Input
                     id="app-route"
-                    value={editedRoute}
+                    value={isEditMode ? editedRoute : (selectedApp?.route || '')}
                     onChange={(e) => {
-                      setEditedRoute(e.target.value);
-                      setHasChanges(true);
+                      if (isEditMode) {
+                        setEditedRoute(e.target.value);
+                        setHasChanges(true);
+                      }
                     }}
                     placeholder="/app-path"
                     className="font-mono"
+                    disabled={!isEditMode}
                     data-testid="input-app-route"
                   />
                   <p className="text-xs text-muted-foreground">
@@ -1040,11 +1084,14 @@ export default function AdminApps() {
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="context-hub"
-                      checked={editedContexts.hub}
+                      checked={isEditMode ? editedContexts.hub : (selectedApp?.contexts?.includes('hub') || false)}
                       onCheckedChange={(checked) => {
-                        setEditedContexts(prev => ({ ...prev, hub: checked as boolean }));
-                        setHasChanges(true);
+                        if (isEditMode) {
+                          setEditedContexts(prev => ({ ...prev, hub: checked as boolean }));
+                          setHasChanges(true);
+                        }
                       }}
+                      disabled={!isEditMode}
                       data-testid="checkbox-context-hub"
                     />
                     <Label htmlFor="context-hub" className="text-sm font-normal cursor-pointer flex items-center gap-2">
@@ -1056,11 +1103,14 @@ export default function AdminApps() {
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="context-app"
-                      checked={editedContexts.app}
+                      checked={isEditMode ? editedContexts.app : (selectedApp?.contexts?.includes('app') || false)}
                       onCheckedChange={(checked) => {
-                        setEditedContexts(prev => ({ ...prev, app: checked as boolean }));
-                        setHasChanges(true);
+                        if (isEditMode) {
+                          setEditedContexts(prev => ({ ...prev, app: checked as boolean }));
+                          setHasChanges(true);
+                        }
                       }}
+                      disabled={!isEditMode}
                       data-testid="checkbox-context-app"
                     />
                     <Label htmlFor="context-app" className="text-sm font-normal cursor-pointer flex items-center gap-2">
@@ -1086,11 +1136,14 @@ export default function AdminApps() {
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="restriction-engine"
-                      checked={accessRestrictions.engineOnly}
+                      checked={isEditMode ? accessRestrictions.engineOnly : (selectedApp?.restrictedTo?.includes('engine_only') || false)}
                       onCheckedChange={(checked) => {
-                        setAccessRestrictions(prev => ({ ...prev, engineOnly: checked as boolean }));
-                        setHasChanges(true);
+                        if (isEditMode) {
+                          setAccessRestrictions(prev => ({ ...prev, engineOnly: checked as boolean }));
+                          setHasChanges(true);
+                        }
                       }}
+                      disabled={!isEditMode}
                       data-testid="checkbox-restriction-engine"
                     />
                     <Label htmlFor="restriction-engine" className="text-sm font-normal cursor-pointer flex items-center gap-2">
@@ -1102,11 +1155,14 @@ export default function AdminApps() {
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="restriction-hub"
-                      checked={accessRestrictions.hubOnly}
+                      checked={isEditMode ? accessRestrictions.hubOnly : (selectedApp?.restrictedTo?.includes('hub_only') || false)}
                       onCheckedChange={(checked) => {
-                        setAccessRestrictions(prev => ({ ...prev, hubOnly: checked as boolean }));
-                        setHasChanges(true);
+                        if (isEditMode) {
+                          setAccessRestrictions(prev => ({ ...prev, hubOnly: checked as boolean }));
+                          setHasChanges(true);
+                        }
                       }}
+                      disabled={!isEditMode}
                       data-testid="checkbox-restriction-hub"
                     />
                     <Label htmlFor="restriction-hub" className="text-sm font-normal cursor-pointer flex items-center gap-2">
@@ -1118,11 +1174,14 @@ export default function AdminApps() {
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="restriction-tenant"
-                      checked={accessRestrictions.tenantSpecific}
+                      checked={isEditMode ? accessRestrictions.tenantSpecific : (selectedApp?.restrictedTo?.includes('tenant_specific') || false)}
                       onCheckedChange={(checked) => {
-                        setAccessRestrictions(prev => ({ ...prev, tenantSpecific: checked as boolean }));
-                        setHasChanges(true);
+                        if (isEditMode) {
+                          setAccessRestrictions(prev => ({ ...prev, tenantSpecific: checked as boolean }));
+                          setHasChanges(true);
+                        }
                       }}
+                      disabled={!isEditMode}
                       data-testid="checkbox-restriction-tenant"
                     />
                     <Label htmlFor="restriction-tenant" className="text-sm font-normal cursor-pointer flex items-center gap-2">
@@ -1196,22 +1255,7 @@ export default function AdminApps() {
               </div>
             </ScrollArea>
           )}
-          <div className="flex justify-end gap-3 pt-4 border-t mt-4">
-            <Button 
-              variant="outline" 
-              onClick={() => setShowAppDetails(false)}
-              data-testid="button-cancel-details"
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSaveAppChanges}
-              disabled={!hasChanges || updateAppMutation.isPending}
-              data-testid="button-save-app"
-            >
-              {updateAppMutation.isPending ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
+          
         </DialogContent>
       </Dialog>
 
