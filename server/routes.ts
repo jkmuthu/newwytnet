@@ -135,7 +135,8 @@ import {
   insertNotificationSchema,
   type Notification,
   type InsertNotification,
-  apiLibrary
+  apiLibrary,
+  appModules
 } from "@shared/schema";
 import { WytIDService } from "@packages/wytid/service";
 import { WytIDEntityType, WytIDProofType, createEntitySchema, createProofSchema, transferEntitySchema } from "@packages/wytid/types";
@@ -159,7 +160,7 @@ import {
   insertTrademarkSearchSchema
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql, gte, lte, like, or, ilike, not, asc, inArray } from "drizzle-orm";
+import { eq, desc, and, sql, gte, lte, like, or, ilike, not, asc, inArray, isNull } from "drizzle-orm";
 import { aiService } from "./services/aiService";
 import rolesRouter from "./routes/roles";
 import platformHubsRouter from "./routes/platform-hubs";
@@ -176,6 +177,7 @@ import { setupFeaturesChecklistRoutes } from "./routes/features-checklist";
 import { setupQATestingTrackerRoutes } from "./routes/qa-testing-tracker";
 import { rateLimiters } from "./middleware/rateLimiter";
 import { requireAuth } from "./wytpass-identity";
+import { whatsappAuthService } from "./services/whatsappAuthService";
 
 // Trademark analysis functions now imported from services/trademarkAnalysis.ts
 
@@ -1019,6 +1021,91 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.status(500).json({ message: "Failed to create app" });
     }
   });
+
+  // Get single app details
+  app.get('/api/admin/apps/:id', adminAuthMiddleware, async (req, res) => {
+    try {
+      const appId = req.params.id;
+
+      const appWithModules = await db
+        .select({
+          id: apps.id,
+          name: apps.name,
+          slug: apps.slug,
+          description: apps.description,
+          icon: apps.icon,
+          category: apps.category,
+          version: apps.version,
+          route: apps.route,
+          contexts: apps.contexts,
+          versionHistory: apps.versionHistory,
+          changelog: apps.changelog,
+          restrictedTo: apps.restrictedTo,
+          isActive: apps.isActive,
+          createdAt: apps.createdAt,
+          updatedAt: apps.updatedAt,
+          deletedAt: apps.deletedAt,
+        })
+        .from(apps)
+        .where(and(
+          eq(apps.id, appId),
+          isNull(apps.deletedAt)
+        ))
+        .limit(1);
+
+      if (appWithModules.length === 0) {
+        return res.status(404).json({ message: 'App not found' });
+      }
+
+      const app = appWithModules[0];
+
+      // Get app modules
+      const appModulesData = await db
+        .select({
+          moduleId: appModules.moduleId,
+          name: platformModules.name,
+          isRequired: appModules.isRequired,
+          installOrder: appModules.installOrder,
+        })
+        .from(appModules)
+        .innerJoin(platformModules, eq(appModules.moduleId, platformModules.id))
+        .where(eq(appModules.appId, app.id));
+
+      const result = {
+        ...app,
+        moduleCount: appModulesData.length,
+        modules: appModulesData,
+      };
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error fetching app:', error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Get all apps with modules
+  app.get('/api/admin/apps', adminAuthMiddleware, async (req, res) => {
+    try {
+      const allApps = await db
+        .select()
+        .from(apps)
+        .where(isNull(apps.deletedAt))
+        .orderBy(apps.createdAt);
+
+      res.json({
+        success: true,
+        apps: allApps
+      });
+    } catch (error) {
+      console.error('Error fetching apps:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch apps'
+      });
+    }
+  });
+
 
   // Hubs CRUD
   app.get('/api/hubs', isAuthenticated, async (req: any, res) => {
@@ -2999,7 +3086,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       for (const dup of duplicates.rows) {
         const dupName = dup.name as string;
-        
+
         // Get all apps with this name
         const matchingApps = await db
           .select()
@@ -3009,7 +3096,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
         if (matchingApps.length > 1) {
           const removeApps = matchingApps.slice(1); // Remove all except oldest
-          
+
           for (const removeApp of removeApps) {
             await db.delete(apps).where(eq(apps.id, removeApp.id));
             removedCount++;
@@ -5630,8 +5717,7 @@ When suggesting improvements, format your response with suggestions in a structu
     } catch (error: any) {
       console.error('Error creating relationship:', error);
       if (error.name === 'ZodError') {
-        return res.status(400).json({ success: false, error: 'Validation error', details: error.errors });
-      }
+        return res.status(400).json({ success: false, error: 'Validation error', details: error.errors });      }
       res.status(500).json({ success: false, error: 'Failed to create relationship' });
     }
   });
@@ -6958,7 +7044,7 @@ When suggesting improvements, format your response with suggestions in a structu
         .select()
         .from(appsRegistry)
         .orderBy(appsRegistry.name);
-      
+
       res.json({
         success: true,
         apps: allApps
@@ -6976,7 +7062,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/admin/apps/categories', adminAuthMiddleware, async (req, res) => {
     try {
       const apps = await db.select().from(appsRegistry);
-      
+
       // Extract unique categories with counts
       const categoryStats = apps.reduce((acc: Record<string, { count: number; description: string }>, app) => {
         if (app.category) {
@@ -6990,14 +7076,14 @@ When suggesting improvements, format your response with suggestions in a structu
         }
         return acc;
       }, {});
-      
+
       const categories = Object.entries(categoryStats).map(([name, data]) => ({
         id: name,
         name,
         description: data.description,
         appCount: data.count
       }));
-      
+
       res.json({ success: true, categories });
     } catch (error: any) {
       console.error('Error fetching categories:', error);
@@ -7008,11 +7094,11 @@ When suggesting improvements, format your response with suggestions in a structu
   app.post('/api/admin/apps/categories', adminAuthMiddleware, async (req, res) => {
     try {
       const { name, description } = req.body;
-      
+
       if (!name) {
         return res.status(400).json({ message: 'Category name is required' });
       }
-      
+
       // Note: Categories are derived from apps, so this is a placeholder
       // In a full implementation, you'd have a separate categories table
       res.json({ 
@@ -7030,7 +7116,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const { id } = req.params;
       const { name, description } = req.body;
-      
+
       // Note: Categories are derived from apps, so this is a placeholder
       // In a full implementation, you'd update the categories table
       res.json({ 
@@ -7123,7 +7209,7 @@ When suggesting improvements, format your response with suggestions in a structu
         .select()
         .from(appsRegistry)
         .orderBy(appsRegistry.name);
-      
+
       // Get plan counts for each app
       const appsWithPlanCounts = await Promise.all(
         allApps.map(async (app) => {
@@ -7131,14 +7217,14 @@ When suggesting improvements, format your response with suggestions in a structu
             .select()
             .from(pricingPlans)
             .where(eq(pricingPlans.appId, app.id));
-          
+
           return {
             ...app,
             planCount: plans.length
           };
         })
       );
-      
+
       res.json({
         success: true,
         apps: appsWithPlanCounts
@@ -7299,7 +7385,7 @@ When suggesting improvements, format your response with suggestions in a structu
         .select()
         .from(apiLibrary)
         .orderBy(apiLibrary.createdAt);
-      
+
       res.json({ success: true, entries });
     } catch (error: any) {
       console.error('Error fetching API library:', error);
@@ -7315,11 +7401,11 @@ When suggesting improvements, format your response with suggestions in a structu
         .select()
         .from(apiLibrary)
         .where(eq(apiLibrary.id, id));
-      
+
       if (!entry) {
         return res.status(404).json({ message: 'API not found' });
       }
-      
+
       res.json({ success: true, entry });
     } catch (error: any) {
       console.error('Error fetching API:', error);
@@ -7331,14 +7417,14 @@ When suggesting improvements, format your response with suggestions in a structu
   app.post('/api/admin/api-library', adminAuthMiddleware, async (req: any, res) => {
     try {
       const data = req.body;
-      
+
       // Generate display ID
       const count = await db.select({ count: sql<number>`count(*)::int` }).from(apiLibrary);
       const displayId = `API${String(count[0].count + 1).padStart(5, '0')}`;
-      
+
       // Generate slug if not provided
       const slug = data.slug || data.name.toLowerCase().replace(/\s+/g, '-');
-      
+
       const [entry] = await db.insert(apiLibrary).values({
         ...data,
         displayId,
@@ -7346,7 +7432,7 @@ When suggesting improvements, format your response with suggestions in a structu
         createdBy: req.principal?.user?.id || req.user?.id,
         updatedBy: req.principal?.user?.id || req.user?.id,
       }).returning();
-      
+
       res.json({ success: true, entry, message: 'API added successfully' });
     } catch (error: any) {
       console.error('Error creating API:', error);
@@ -7359,7 +7445,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const { id } = req.params;
       const data = req.body;
-      
+
       const [entry] = await db
         .update(apiLibrary)
         .set({
@@ -7369,11 +7455,11 @@ When suggesting improvements, format your response with suggestions in a structu
         })
         .where(eq(apiLibrary.id, id))
         .returning();
-      
+
       if (!entry) {
         return res.status(404).json({ message: 'API not found' });
       }
-      
+
       res.json({ success: true, entry, message: 'API updated successfully' });
     } catch (error: any) {
       console.error('Error updating API:', error);
@@ -7385,9 +7471,9 @@ When suggesting improvements, format your response with suggestions in a structu
   app.delete('/api/admin/api-library/:id', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
-      
+
       await db.delete(apiLibrary).where(eq(apiLibrary.id, id));
-      
+
       res.json({ success: true, message: 'API deleted successfully' });
     } catch (error: any) {
       console.error('Error deleting API:', error);
@@ -7399,13 +7485,13 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/admin/api-library/type/:type', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { type } = req.params;
-      
+
       const entries = await db
         .select()
         .from(apiLibrary)
         .where(eq(apiLibrary.type, type))
         .orderBy(apiLibrary.createdAt);
-      
+
       res.json({ success: true, entries });
     } catch (error: any) {
       console.error('Error fetching APIs by type:', error);
@@ -8944,7 +9030,7 @@ When suggesting improvements, format your response with suggestions in a structu
   });
 
   // Verify payment and mark assessment as paid
-  app.post('/api/payments/disc/verify', async (req, res) => {
+  app.post('/api/payments/disc/verify',async (req, res) => {
     try {
       const { razorpay_payment_id, razorpay_order_id, razorpay_signature, sessionId } = req.body;
 

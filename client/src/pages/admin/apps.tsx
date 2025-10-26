@@ -114,6 +114,7 @@ export default function AdminApps() {
   const [categoryToEdit, setCategoryToEdit] = useState<{name: string; description: string} | null>(null);
   const [categoryName, setCategoryName] = useState('');
   const [categoryDescription, setCategoryDescription] = useState('');
+  const [isEditMode, setIsEditMode] = useState(false);
   const { toast } = useToast();
 
   // Fetch apps with modules
@@ -697,18 +698,7 @@ export default function AdminApps() {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            setSelectedApp(app);
-                            setShowAppDetails(true);
-                            setEditedRoute(app.route || '');
-                            setEditedContexts({
-                              hub: app.contexts?.includes('hub') || false,
-                              app: app.contexts?.includes('app') || false,
-                            });
-                            setAccessRestrictions({
-                              engineOnly: app.restrictedTo?.includes('engine_only') || false,
-                              hubOnly: app.restrictedTo?.includes('hub_only') || false,
-                              tenantSpecific: app.restrictedTo?.includes('tenant_specific') || false,
-                            });
+                            window.open(`/engine/apps/${app.id}`, '_blank');
                           }}
                           data-testid={`button-view-details-${app.id}`}
                         >
@@ -731,7 +721,6 @@ export default function AdminApps() {
                     <TableHead>Category</TableHead>
                     <TableHead>Version</TableHead>
                     <TableHead>Module Count</TableHead>
-                    <TableHead>Created</TableHead>
                     <TableHead>Updated</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -785,13 +774,24 @@ export default function AdminApps() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-xs text-muted-foreground">
-                          {app.createdAt ? new Date(app.createdAt).toLocaleDateString() : '-'}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-xs text-muted-foreground">
-                          {app.updatedAt ? new Date(app.updatedAt).toLocaleDateString() : '-'}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">
+                            {app.updatedAt ? new Date(app.updatedAt).toLocaleDateString() : '-'}
+                          </span>
+                          {app.versionHistory && app.versionHistory.length > 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => {
+                                setSelectedApp(app);
+                                setShowAppDetails(true);
+                              }}
+                              data-testid={`list-button-history-${app.id}`}
+                            >
+                              <History className="h-3 w-3 text-blue-600" />
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -799,13 +799,7 @@ export default function AdminApps() {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            setSelectedApp(app);
-                            setShowAppDetails(true);
-                            setEditedRoute(app.route || '');
-                            setEditedContexts({
-                              hub: app.contexts?.includes('hub') || false,
-                              app: app.contexts?.includes('app') || false,
-                            });
+                            window.open(`/engine/apps/${app.id}`, '_blank');
                           }}
                           data-testid={`list-button-view-details-${app.id}`}
                         >
