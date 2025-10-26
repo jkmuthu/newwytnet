@@ -2412,8 +2412,8 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       let results;
       if (shouldUseMockService()) {
-        const { mockSearchService } = await import('./services/mockSearchService');
-        results = await mockSearchService.globalSearch(q, {
+        const { pgSearchService } = await import('./services/pgSearchService');
+        results = await pgSearchService.globalSearch(q, {
           limit: parseInt(limit),
           offset: parseInt(offset),
           filter: filter as string,
@@ -2742,9 +2742,9 @@ export async function registerRoutes(app: Express): Promise<void> {
       const stats: Record<string, any> = {};
 
       if (shouldUseMockService()) {
-        const { mockSearchService } = await import('./services/mockSearchService');
+        const { pgSearchService } = await import('./services/pgSearchService');
         for (const [key, indexName] of Object.entries(SEARCH_INDEXES)) {
-          stats[key] = await mockSearchService.getIndexStats(indexName as any);
+          stats[key] = await pgSearchService.getIndexStats(indexName as any);
         }
       } else {
         const { searchService } = await import('./services/searchService');
@@ -2767,8 +2767,8 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       let isHealthy;
       if (shouldUseMockService()) {
-        const { mockSearchService } = await import('./services/mockSearchService');
-        isHealthy = await mockSearchService.isHealthy();
+        const { pgSearchService } = await import('./services/pgSearchService');
+        isHealthy = await pgSearchService.isHealthy();
       } else {
         const { searchService } = await import('./services/searchService');
         isHealthy = await searchService.isHealthy();
@@ -2776,7 +2776,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       res.json({ 
         status: isHealthy ? 'healthy' : 'unhealthy',
-        service: shouldUseMockService() ? 'mock' : 'meilisearch',
+        service: shouldUseMockService() ? 'postgresql' : 'meilisearch',
         timestamp: new Date().toISOString()
       });
     } catch (error) {
