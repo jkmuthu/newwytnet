@@ -55,6 +55,7 @@ import AdminSystemLogsReal from "@/pages/admin/system-logs-real";
 import FeaturesChecklistPage from "@/pages/admin/features-checklist";
 import QATestingTrackerPage from "@/pages/admin/qa-testing-tracker";
 import ApiLibraryPage from "@/pages/admin/api-library";
+import AllLogsPage from '@/pages/admin/all-logs';
 
 /**
  * AdminRouter (now EngineRouter) - Handles all Engine admin routes
@@ -101,6 +102,8 @@ export default function AdminRouter() {
           <Route path="/engine/billing" component={AdminBillingPage} />
           <Route path="/engine/transactions" component={AdminTransactions} />
           <Route path="/engine/analytics" component={AdminAnalytics} />
+          <Route path="/engine/all-logs" element={<AllLogsPage />} />
+
 
           {/* System & Config Routes */}
           <Route path="/engine/system-security" component={AdminSystemSecurity} />

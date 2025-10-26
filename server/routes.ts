@@ -860,6 +860,67 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Export audit logs as CSV
+  app.get('/api/admin/audit-logs/export', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { auditLogService } = await import('./services/auditLogService');
+
+      const {
+        userId,
+        action,
+        resource,
+        startDate,
+        endDate,
+        search,
+        format = 'csv',
+      } = req.query;
+
+      const filters = {
+        userId: userId as string | undefined,
+        action: action as string | undefined,
+        resource: resource as string | undefined,
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+        search: search as string | undefined,
+        limit: 10000, // Max export limit
+        offset: 0,
+      };
+
+      const logs = await auditLogService.getLogs(filters);
+
+      if (format === 'csv') {
+        // Generate CSV
+        const headers = ['Timestamp', 'Action', 'Resource', 'Resource ID', 'User', 'IP Address', 'Details'];
+        const rows = logs.map(log => [
+          new Date(log.createdAt).toISOString(),
+          log.action,
+          log.resource,
+          log.resourceId || '',
+          log.userId || 'System',
+          log.ipAddress || '',
+          JSON.stringify(log.details || {}),
+        ]);
+
+        const csv = [
+          headers.join(','),
+          ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        ].join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="audit-logs-${new Date().toISOString().split('T')[0]}.csv"`);
+        res.send(csv);
+      } else {
+        // JSON format
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="audit-logs-${new Date().toISOString().split('T')[0]}.json"`);
+        res.json(logs);
+      }
+    } catch (error: any) {
+      console.error('Error exporting audit logs:', error);
+      res.status(500).json({ error: 'Failed to export audit logs' });
+    }
+  });
+
   // Admin Pages CRUD - For Engine Admin Panel
   app.get('/api/admin/pages', async (req, res) => {
     try {

@@ -332,7 +332,7 @@ export const navigationSections: NavigationSection[] = [
         keywords: ["geo", "regulatory", "compliance", "location"],
         superAdminOnly: true
       },
-      
+
       {
         label: "Roles & Permissions",
         icon: Shield,
@@ -369,17 +369,17 @@ export function getAllNavigationItems(): NavigationItem[] {
  */
 export function searchNavigationItems(query: string): NavigationItem[] {
   if (!query.trim()) return [];
-  
+
   const lowerQuery = query.toLowerCase();
   const allItems = getAllNavigationItems();
-  
+
   return allItems.filter(item => {
     const matchesLabel = item.label.toLowerCase().includes(lowerQuery);
     const matchesDescription = item.description?.toLowerCase().includes(lowerQuery);
     const matchesKeywords = item.keywords?.some(keyword => 
       keyword.toLowerCase().includes(lowerQuery)
     );
-    
+
     return matchesLabel || matchesDescription || matchesKeywords;
   });
 }
@@ -397,12 +397,12 @@ export function getFilteredNavigationSections(userRole: {
     items: section.items.filter(item => {
       // Super admin sees everything
       if (userRole.isSuperAdmin) return true;
-      
+
       // Filter based on role restrictions
       if (item.superAdminOnly) return false;
       if (item.developerOnly && !userRole.isDeveloper) return false;
       if (item.adminOnly && !userRole.isAdmin && !userRole.isSuperAdmin) return false;
-      
+
       return true;
     })
   })).filter(section => section.items.length > 0);
@@ -415,30 +415,30 @@ export function getBreadcrumbs(path: string): { label: string; href: string }[] 
   const breadcrumbs: { label: string; href: string }[] = [
     { label: "Dashboard", href: "/engine" }
   ];
-  
+
   // Find matching navigation item
   const allItems = getAllNavigationItems();
   const matchedItem = allItems.find(item => item.href === path);
-  
+
   if (matchedItem && path !== "/engine") {
     // Find the section
     const section = navigationSections.find(s => 
       s.items.some(i => i.href === path)
     );
-    
+
     if (section) {
       breadcrumbs.push({
         label: section.title.replace(/^[^\s]+\s/, ''), // Remove emoji
         href: section.items[0].href // Link to first item in section
       });
     }
-    
+
     breadcrumbs.push({
       label: matchedItem.label,
       href: matchedItem.href
     });
   }
-  
+
   return breadcrumbs;
 }
 
