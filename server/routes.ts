@@ -4078,62 +4078,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Initialize default modules on startup
   initializeDefaultModules();
 
-  // Initialize sample apps if none exist
-  async function initializeSampleApps() {
-    try {
-      const existingApps = await db.select().from(apps).limit(1);
-
-      if (existingApps.length === 0) {
-        console.log('🚀 Initializing sample apps...');
-
-        const sampleApps = [
-          {
-            id: 'wytqrc-app',
-            name: 'WytQRC',
-            slug: 'wytqrc',
-            description: 'QR Code Generator and Scanner',
-            icon: 'qr-code',
-            category: 'utilities',
-            version: '1.0.0',
-            route: '/app/qr-generator',
-            contexts: ['app', 'hub'],
-            isActive: true,
-          },
-          {
-            id: 'disc-assessment-app',
-            name: 'DISC Assessment',
-            slug: 'disc-assessment',
-            description: 'Personality assessment and testing platform',
-            icon: 'clipboard-check',
-            category: 'productivity',
-            version: '1.0.0',
-            route: '/app/assessment',
-            contexts: ['app', 'hub'],
-            isActive: true,
-          },
-          {
-            id: 'ai-directory-app',
-            name: 'AI Directory',
-            slug: 'ai-directory',
-            description: 'Curated directory of AI tools and resources',
-            icon: 'brain',
-            category: 'ai',
-            version: '1.0.0',
-            route: '/app/ai-directory',
-            contexts: ['app', 'hub'],
-            isActive: true,
-          }
-        ];
-
-        await db.insert(apps).values(sampleApps);
-        console.log(`✅ Initialized ${sampleApps.length} sample apps`);
-      }
-    } catch (error) {
-      console.error('❌ Failed to initialize sample apps:', error);
-    }
-  }
-
-  initializeSampleApps();
+  // Sample apps initialization disabled - using apps_registry table instead
+  // The apps_registry table already contains 52 properly configured apps
+  // The apps table is for user-created/custom apps, not sample data
 
   // Reset platform modules (for development)
   app.post('/api/platform-modules/reset', async (req, res) => {
