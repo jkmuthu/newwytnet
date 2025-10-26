@@ -64,7 +64,9 @@ export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuth
   const { data: contextsData, isLoading: contextsLoading } = useQuery<ContextsResponse>({
     queryKey: ["/api/auth/contexts"],
     retry: false,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false, // Prevent excessive refetching
+    staleTime: 5 * 60 * 1000, // Consider fresh for 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
   const contexts = contextsData?.contexts || [];
