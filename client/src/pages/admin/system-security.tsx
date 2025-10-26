@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminSystemOverview from "./system-overview";
-import AdminSystemLogs from "./system-logs";
+import AdminSystemLogs from "./system-logs-real";
 import AdminSystemMonitor from "./system-monitor";
 import AdminSystemStatus from "./system-status";
 import AdminSecurity from "./security";
