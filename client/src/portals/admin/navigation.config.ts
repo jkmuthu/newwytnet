@@ -332,14 +332,7 @@ export const navigationSections: NavigationSection[] = [
         keywords: ["geo", "regulatory", "compliance", "location"],
         superAdminOnly: true
       },
-      {
-        label: "SEO Settings",
-        icon: Search,
-        href: "/engine/seo-settings",
-        description: "SEO configuration, meta tags, sitemap",
-        keywords: ["seo", "search", "optimization", "meta"],
-        adminOnly: true
-      },
+      
       {
         label: "Roles & Permissions",
         icon: Shield,

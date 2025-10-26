@@ -17,7 +17,7 @@ import AdminCMS from "@/pages/admin/cms";
 import AdminSystemOverview from "@/pages/admin/system-overview";
 import AdminSystemSecurity from "@/pages/admin/system-security";
 import AdminFinance from "@/pages/admin/finance";
-import AdminSeoSettings from "@/pages/admin/seo-settings";
+// import AdminSeoSettings from "@/pages/admin/seo-settings"; // Removed this import
 import AppManagement from "@/pages/admin/AppManagement";
 import AdminWytPoints from "@/pages/admin/wytpoints";
 import AdminDatasetManagement from "@/pages/admin/dataset-management-improved";
@@ -107,7 +107,7 @@ export default function AdminRouter() {
           <Route path="/engine/platform-hubs" component={AdminPlatformHubs} />
           <Route path="/engine/integrations" component={AdminIntegrations} />
           <Route path="/engine/geo-regulatory" component={AdminGeoRegulatory} />
-          <Route path="/engine/seo-settings" component={AdminSeoSettings} />
+          {/* <Route path="/engine/seo-settings" component={AdminSeoSettings} /> Removed this route */}
           <Route path="/engine/global-settings" component={AdminGlobalSettingsReal} />
           <Route path="/engine/roles-permissions" component={AdminRolesPermissions} />
           <Route path="/engine/admin-users" component={AdminAdminUsers} />

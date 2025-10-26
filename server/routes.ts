@@ -4015,7 +4015,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             order: 14
           },
 
-          // WYTHUBS (Hub services with /h/ routes)  
+          // WYTAPPS (Direct user-facing applications)
           {
             id: 'ai-directory-hub',
             name: 'AI Directory Hub',
@@ -4147,10 +4147,10 @@ export async function registerRoutes(app: Express): Promise<void> {
   async function initializeSampleApps() {
     try {
       const existingApps = await db.select().from(apps).limit(1);
-      
+
       if (existingApps.length === 0) {
         console.log('🚀 Initializing sample apps...');
-        
+
         const sampleApps = [
           {
             id: 'wytqrc-app',
@@ -5043,6 +5043,8 @@ When suggesting improvements, format your response with suggestions in a structu
     updateGeoRegulatoryRuleSchema
   } = await import("@shared/schema");
 
+  const { ENTITY_TYPES_CATALOG } = await import("./entity-types-catalog");
+
   // Get all geo-regulatory rules (with optional filters + pagination)
   app.get('/api/geo-regulatory/rules', adminAuthMiddleware, async (req: any, res) => {
     try {
@@ -5480,8 +5482,6 @@ When suggesting improvements, format your response with suggestions in a structu
     createEntityTagSchema
   } = await import("@shared/schema");
 
-  const { ENTITY_TYPES_CATALOG } = await import("./entity-types-catalog");
-
   // Entity Types - CRUD APIs
 
   // GET all entity types
@@ -5562,7 +5562,6 @@ When suggesting improvements, format your response with suggestions in a structu
   app.delete('/api/entities/types/:typeId', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { typeId } = req.params;
-
       // Check if system type
       const [type] = await db.select().from(entityTypes).where(eq(entityTypes.id, typeId));
       if (type?.isSystem) {
@@ -5613,7 +5612,7 @@ When suggesting improvements, format your response with suggestions in a structu
       }
 
       const results = await query
-        .orderBy(desc(entities.tagCount), desc(entities.createdAt))
+        .orderBy(desc(entities.isVerified), desc(entities.tagCount), desc(entities.createdAt))
         .limit(limitNum)
         .offset(offset);
 
@@ -5909,7 +5908,7 @@ When suggesting improvements, format your response with suggestions in a structu
       }
 
       const results = await query
-        .orderBy(desc(entities.isVerified), desc(entities.tagCount))
+        .orderBy(desc(entities.isVerified), desc(entities.tagCount), desc(entities.createdAt))
         .limit(limitNum);
 
       // Get filtered count
@@ -8156,95 +8155,44 @@ When suggesting improvements, format your response with suggestions in a structu
   // SEO Settings endpoints
 
   // Get SEO settings
-  app.get('/api/admin/seo-settings', isAuthenticated, async (req: any, res) => {
-    try {
-      const user = req.user;
-
-      if (!user) {
-        return res.status(401).json({
-          success: false,
-          error: 'Authentication required'
-        });
-      }
-
-      // Get current SEO settings for the tenant
-      const settings = await db
-        .select()
-        .from(seoSettings)
-        .where(eq(seoSettings.tenantId, user.tenantId))
-        .limit(1);
-
-      // Return settings or empty object if none exist
-      const currentSettings = settings[0] || null;
-
-      res.json(currentSettings);
-    } catch (error) {
-      console.error('Error fetching SEO settings:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to fetch SEO settings'
-      });
-    }
-  });
+  // This endpoint was removed as per the user request.
+  // app.get('/api/admin/seo-settings', isAuthenticated, async (req: any, res) => {
+  //   try {
+  //     const user = req.user;
+  //     if (!user) {
+  //       return res.status(401).json({ success: false, error: 'Authentication required' });
+  //     }
+  //     const settings = await db.select().from(seoSettings).where(eq(seoSettings.tenantId, user.tenantId)).limit(1);
+  //     const currentSettings = settings[0] || null;
+  //     res.json(currentSettings);
+  //   } catch (error) {
+  //     console.error('Error fetching SEO settings:', error);
+  //     res.status(500).json({ success: false, error: 'Failed to fetch SEO settings' });
+  //   }
+  // });
 
   // Update SEO settings
-  app.put('/api/admin/seo-settings', isAuthenticated, async (req: any, res) => {
-    try {
-      const user = req.user;
-
-      if (!user) {
-        return res.status(401).json({
-          success: false,
-          error: 'Authentication required'
-        });
-      }
-
-      // Validate request body
-      const validatedData = insertSeoSettingSchema.partial().parse(req.body);
-
-      // Check if settings already exist
-      const existingSettings = await db
-        .select()
-        .from(seoSettings)
-        .where(eq(seoSettings.tenantId, user.tenantId))
-        .limit(1);
-
-      let updatedSettings;
-
-      if (existingSettings.length > 0) {
-        // Update existing settings
-        updatedSettings = await db
-          .update(seoSettings)
-          .set({
-            ...validatedData,
-            updatedAt: new Date()
-          })
-          .where(eq(seoSettings.tenantId, user.tenantId))
-          .returning();
-      } else {
-        // Create new settings
-        updatedSettings = await db
-          .insert(seoSettings)
-          .values({
-            tenantId: user.tenantId,
-            ...validatedData
-          })
-          .returning();
-      }
-
-      res.json({
-        success: true,
-        data: updatedSettings[0],
-        message: 'SEO settings updated successfully'
-      });
-    } catch (error) {
-      console.error('Error updating SEO settings:', error);
-      res.status(500).json({
-        success: false,
-        error: error.message || 'Failed to update SEO settings'
-      });
-    }
-  });
+  // This endpoint was removed as per the user request.
+  // app.put('/api/admin/seo-settings', isAuthenticated, async (req: any, res) => {
+  //   try {
+  //     const user = req.user;
+  //     if (!user) {
+  //       return res.status(401).json({ success: false, error: 'Authentication required' });
+  //     }
+  //     const validatedData = insertSeoSettingSchema.partial().parse(req.body);
+  //     const existingSettings = await db.select().from(seoSettings).where(eq(seoSettings.tenantId, user.tenantId)).limit(1);
+  //     let updatedSettings;
+  //     if (existingSettings.length > 0) {
+  //       [updatedSettings] = await db.update(seoSettings).set({ ...validatedData, updatedAt: new Date() }).where(eq(seoSettings.tenantId, user.tenantId)).returning();
+  //     } else {
+  //       [updatedSettings] = await db.insert(seoSettings).values({ tenantId: user.tenantId, ...validatedData }).returning();
+  //     }
+  //     res.json({ success: true, data: updatedSettings[0], message: 'SEO settings updated successfully' });
+  //   } catch (error) {
+  //     console.error('Error updating SEO settings:', error);
+  //     res.status(500).json({ success: false, error: error.message || 'Failed to update SEO settings' });
+  //   }
+  // });
 
   // API Integrations endpoints for Super Admin
 
