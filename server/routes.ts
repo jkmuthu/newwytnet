@@ -1093,9 +1093,30 @@ export async function registerRoutes(app: Express): Promise<void> {
         .where(isNull(apps.deletedAt))
         .orderBy(apps.createdAt);
 
+      // Get module counts for each app
+      const appsWithModules = await Promise.all(
+        allApps.map(async (app) => {
+          const modules = await db
+            .select({
+              moduleId: appModules.moduleId,
+              name: platformModules.name,
+              isRequired: appModules.isRequired,
+            })
+            .from(appModules)
+            .innerJoin(platformModules, eq(appModules.moduleId, platformModules.id))
+            .where(eq(appModules.appId, app.id));
+
+          return {
+            ...app,
+            moduleCount: modules.length,
+            modules: modules
+          };
+        })
+      );
+
       res.json({
         success: true,
-        apps: allApps
+        apps: appsWithModules
       });
     } catch (error) {
       console.error('Error fetching apps:', error);
@@ -4122,6 +4143,63 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // Initialize default modules on startup
   initializeDefaultModules();
+
+  // Initialize sample apps if none exist
+  async function initializeSampleApps() {
+    try {
+      const existingApps = await db.select().from(apps).limit(1);
+      
+      if (existingApps.length === 0) {
+        console.log('🚀 Initializing sample apps...');
+        
+        const sampleApps = [
+          {
+            id: 'wytqrc-app',
+            name: 'WytQRC',
+            slug: 'wytqrc',
+            description: 'QR Code Generator and Scanner',
+            icon: 'qr-code',
+            category: 'utilities',
+            version: '1.0.0',
+            route: '/app/qr-generator',
+            contexts: ['app', 'hub'],
+            isActive: true,
+          },
+          {
+            id: 'disc-assessment-app',
+            name: 'DISC Assessment',
+            slug: 'disc-assessment',
+            description: 'Personality assessment and testing platform',
+            icon: 'clipboard-check',
+            category: 'productivity',
+            version: '1.0.0',
+            route: '/app/assessment',
+            contexts: ['app', 'hub'],
+            isActive: true,
+          },
+          {
+            id: 'ai-directory-app',
+            name: 'AI Directory',
+            slug: 'ai-directory',
+            description: 'Curated directory of AI tools and resources',
+            icon: 'brain',
+            category: 'ai',
+            version: '1.0.0',
+            route: '/app/ai-directory',
+            contexts: ['app', 'hub'],
+            isActive: true,
+          }
+        ];
+
+        await db.insert(apps).values(sampleApps);
+        console.log(`✅ Initialized ${sampleApps.length} sample apps`);
+      }
+    } catch (error) {
+      console.error('❌ Failed to initialize sample apps:', error);
+    }
+  }
+
+  initializeSampleApps();
 
   // Reset platform modules (for development)
   app.post('/api/platform-modules/reset', async (req, res) => {
