@@ -17,8 +17,6 @@ import AdminCMS from "@/pages/admin/cms";
 import AdminSystemOverview from "@/pages/admin/system-overview";
 import AdminSystemSecurity from "@/pages/admin/system-security";
 import AdminFinance from "@/pages/admin/finance";
-// import AdminSeoSettings from "@/pages/admin/seo-settings"; // Removed this import
-import AppManagement from "@/pages/admin/AppManagement";
 import AdminWytPoints from "@/pages/admin/wytpoints";
 import AdminDatasetManagement from "@/pages/admin/dataset-management-improved";
 import AdminEntities from "@/pages/admin/entities";
@@ -77,7 +75,6 @@ export default function AdminRouter() {
           <Route path="/engine/account" component={AdminAccount} />
           <Route path="/engine/search" component={AdminSearch} />
           <Route path="/engine/notifications" component={AdminNotifications} />
-          <Route path="/engine/help" component={AdminHelpSupport} />
 
           {/* Data Management Routes */}
           <Route path="/engine/users" component={AdminUsers} />
