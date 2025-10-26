@@ -201,6 +201,8 @@ export async function registerRoutes(app: Express): Promise<void> {
   await setupReplitAuth(app); // Social auth (Google, Facebook, etc.)
 
   // Initialize services
+  // WytID Service: Using 'mock' anchoring (local proof generation) until blockchain integration is implemented
+  // All WytID data is stored in PostgreSQL - 'mock' refers to the anchoring provider, not the data storage
   const wytidService = new WytIDService('mock');
   const assessmentService = new AssessmentService();
 
