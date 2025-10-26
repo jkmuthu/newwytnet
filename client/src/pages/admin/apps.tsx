@@ -50,6 +50,8 @@ interface AppDefinition {
   deletedAt: string | null;
   deletedBy: string | null;
   deleteReason: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Form schema for creating new app
@@ -70,7 +72,7 @@ type CreateAppForm = z.infer<typeof createAppSchema>;
 // Helper function to map icon names to actual Lucide icons
 const getAppIcon = (iconName?: string) => {
   if (!iconName) return <Layers className="h-5 w-5 text-muted-foreground" />;
-  
+
   const iconMap: Record<string, JSX.Element> = {
     'brain': <Brain className="h-5 w-5 text-purple-600" />,
     'calculator': <Calculator className="h-5 w-5 text-blue-600" />,
@@ -80,12 +82,12 @@ const getAppIcon = (iconName?: string) => {
     'grid-3×3': <Grid3x3 className="h-5 w-5 text-teal-600" />,
     'clipboard-check': <Package className="h-5 w-5 text-indigo-600" />,
   };
-  
+
   // If it's a known icon name, return the mapped icon
   if (iconMap[iconName]) {
     return iconMap[iconName];
   }
-  
+
   // Otherwise, treat it as an emoji
   return <span className="text-xl" role="img" aria-label="app icon">{iconName}</span>;
 };
@@ -249,7 +251,7 @@ export default function AdminApps() {
         ? `/api/admin/apps/categories/${data.oldName}`
         : '/api/admin/apps/categories';
       const method = data.isEdit ? 'PATCH' : 'POST';
-      
+
       return apiRequest(url, method, { name: data.name, description: data.description });
     },
     onSuccess: (response: any) => {
@@ -294,16 +296,16 @@ export default function AdminApps() {
   // Save app changes handler
   const handleSaveAppChanges = () => {
     if (!selectedApp) return;
-    
+
     const contexts: string[] = [];
     if (editedContexts.hub) contexts.push('hub');
     if (editedContexts.app) contexts.push('app');
-    
+
     const restrictions: string[] = [];
     if (accessRestrictions.engineOnly) restrictions.push('engine_only');
     if (accessRestrictions.hubOnly) restrictions.push('hub_only');
     if (accessRestrictions.tenantSpecific) restrictions.push('tenant_specific');
-    
+
     updateAppMutation.mutate({
       id: selectedApp.id,
       route: editedRoute,
@@ -372,7 +374,7 @@ export default function AdminApps() {
                         </FormItem>
                       )}
                     />
-                    
+
                     <FormField
                       control={form.control}
                       name="slug"
@@ -702,6 +704,11 @@ export default function AdminApps() {
                               hub: app.contexts?.includes('hub') || false,
                               app: app.contexts?.includes('app') || false,
                             });
+                            setAccessRestrictions({
+                              engineOnly: app.restrictedTo?.includes('engine_only') || false,
+                              hubOnly: app.restrictedTo?.includes('hub_only') || false,
+                              tenantSpecific: app.restrictedTo?.includes('tenant_specific') || false,
+                            });
                           }}
                           data-testid={`button-view-details-${app.id}`}
                         >
@@ -724,6 +731,8 @@ export default function AdminApps() {
                     <TableHead>Category</TableHead>
                     <TableHead>Version</TableHead>
                     <TableHead>Module Count</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Updated</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -773,6 +782,16 @@ export default function AdminApps() {
                         <div className="flex items-center gap-2">
                           <Package className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">{app.moduleCount || 0}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-xs text-muted-foreground">
+                          {app.createdAt ? new Date(app.createdAt).toLocaleDateString() : '-'}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-xs text-muted-foreground">
+                          {app.updatedAt ? new Date(app.updatedAt).toLocaleDateString() : '-'}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -936,7 +955,7 @@ export default function AdminApps() {
             </DialogTitle>
             <DialogDescription>{selectedApp?.description || "No description available"}</DialogDescription>
           </DialogHeader>
-          
+
           {selectedApp && (
             <ScrollArea className="h-[calc(85vh-120px)] pr-4">
               <div className="space-y-6">
@@ -1039,7 +1058,7 @@ export default function AdminApps() {
                       Hub Context
                     </Label>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="context-app"
@@ -1085,7 +1104,7 @@ export default function AdminApps() {
                       Engine Only
                     </Label>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="restriction-hub"
@@ -1101,7 +1120,7 @@ export default function AdminApps() {
                       Hub Only
                     </Label>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="restriction-tenant"
@@ -1251,7 +1270,7 @@ export default function AdminApps() {
                   });
                   return;
                 }
-                
+
                 saveCategoryMutation.mutate({
                   name: categoryName.trim(),
                   description: categoryDescription.trim(),

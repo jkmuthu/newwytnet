@@ -2974,6 +2974,64 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Cleanup duplicate apps (Super Admin only)
+  app.post('/api/admin/apps/cleanup-duplicates', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const user = req.user;
+
+      // Check if user is super admin
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Only super admin can cleanup duplicate apps'
+        });
+      }
+
+      // Find and remove duplicates
+      const duplicates = await db.execute(sql`
+        SELECT name, COUNT(*) as count
+        FROM ${apps}
+        GROUP BY LOWER(name)
+        HAVING COUNT(*) > 1
+      `);
+
+      let removedCount = 0;
+
+      for (const dup of duplicates.rows) {
+        const dupName = dup.name as string;
+        
+        // Get all apps with this name
+        const matchingApps = await db
+          .select()
+          .from(apps)
+          .where(sql`LOWER(${apps.name}) = LOWER(${dupName})`)
+          .orderBy(apps.createdAt); // Oldest first
+
+        if (matchingApps.length > 1) {
+          const removeApps = matchingApps.slice(1); // Remove all except oldest
+          
+          for (const removeApp of removeApps) {
+            await db.delete(apps).where(eq(apps.id, removeApp.id));
+            removedCount++;
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `Removed ${removedCount} duplicate app(s)`,
+        duplicatesFound: duplicates.rows.length,
+        removedCount
+      });
+    } catch (error) {
+      console.error('Error cleaning up duplicate apps:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to cleanup duplicate apps'
+      });
+    }
+  });
+
   // Admin Analytics API Routes  
   app.get('/api/admin/platform-stats', async (req, res) => {
     try {
