@@ -291,6 +291,19 @@ export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuth
                   <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Switch Panel
                   </p>
+                  
+                  {/* Go Home */}
+                  <div className="space-y-1 mb-2">
+                    <Link
+                      href="/"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Home className="h-4 w-4" />
+                      <span>Go Home</span>
+                    </Link>
+                  </div>
+                  
                   <div className="space-y-1">
                     {contexts.map((context, index) => (
                       <button
@@ -388,6 +401,17 @@ export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuth
             Switch Panel
           </p>
         </div>
+        
+        {/* Go Home */}
+        <Link href="/">
+          <DropdownMenuItem className="cursor-pointer" data-testid="menu-item-go-home">
+            <Home className="h-4 w-4 mr-2" />
+            Go Home
+          </DropdownMenuItem>
+        </Link>
+        
+        <DropdownMenuSeparator />
+        
         {contexts.map((context, index) => (
           <DropdownMenuItem
             key={index}
