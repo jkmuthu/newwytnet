@@ -6743,7 +6743,7 @@ When suggesting improvements, format your response with suggestions in a structu
   // ========================================
 
   // Get single app from registry (for lifecycle management)
-  app.get('/api/apps/registry/:id', requireAdmin, async (req, res) => {
+  app.get('/api/apps/registry/:id', adminAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
 
@@ -6774,7 +6774,7 @@ When suggesting improvements, format your response with suggestions in a structu
   });
 
   // Update app lifecycle status (for lifecycle workflow)
-  app.put('/api/apps/registry/:id', requireAdmin, async (req, res) => {
+  app.put('/api/apps/registry/:id', adminAuthMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const updateData = req.body;
