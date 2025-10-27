@@ -91,9 +91,12 @@ export default function AdminRouter() {
           {/* Platform Management Routes */}
           <Route path="/engine/app-builder" component={AdminAppBuilder} />
           <Route path="/engine/modules" component={AdminModules} />
-          <Route path="/engine/apps" component={AdminApps} />
+          
+          {/* Apps routes - most specific first */}
           <Route path="/engine/apps/:id/lifecycle" component={AppLifecycle} />
           <Route path="/engine/apps/:id" component={AppDetailPage} />
+          <Route path="/engine/apps" component={AdminApps} />
+          
           <Route path="/engine/api-library" component={ApiLibraryPage} />
           <Route path="/engine/cms" component={AdminCMS} />
           <Route path="/engine/themes" component={AdminThemes} />
