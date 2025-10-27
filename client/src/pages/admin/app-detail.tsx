@@ -41,9 +41,9 @@ interface AppDefinition {
 }
 
 export default function AppDetailPage() {
-  const [, params] = useRoute("/engine/apps/:id");
+  const [, params] = useRoute("/engine/apps/:slug");
   const [, navigate] = useLocation();
-  const appId = params?.id;
+  const appSlug = params?.slug;
   
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedRoute, setEditedRoute] = useState('');
@@ -60,8 +60,8 @@ export default function AppDetailPage() {
 
   // Fetch app details
   const { data: appData, isLoading } = useQuery({
-    queryKey: [`/api/admin/apps/${appId}`],
-    enabled: !!appId,
+    queryKey: [`/api/apps/registry/slug/${appSlug}`],
+    enabled: !!appSlug,
   });
 
   const app: AppDefinition | undefined = appData as AppDefinition;
@@ -78,7 +78,7 @@ export default function AppDetailPage() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/admin/apps/${appId}`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/apps/registry/slug/${appSlug}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/apps'] });
       toast({
         title: "Success",
@@ -216,7 +216,7 @@ export default function AppDetailPage() {
               <>
                 <Button 
                   variant="outline"
-                  onClick={() => navigate(`/engine/apps/${app.id}/lifecycle`)}
+                  onClick={() => navigate(`/engine/apps/${appSlug}/lifecycle`)}
                   data-testid="button-lifecycle"
                 >
                   <Workflow className="h-4 w-4 mr-2" />

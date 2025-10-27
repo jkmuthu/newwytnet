@@ -700,7 +700,7 @@ export default function AdminApps() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => navigate(`/engine/apps/${app.id}`)}
+                          onClick={() => navigate(`/engine/apps/${app.slug || app.id}`)}
                           data-testid={`button-view-details-${app.id}`}
                         >
                           <Info className="h-3 w-3 mr-1" />
@@ -799,7 +799,7 @@ export default function AdminApps() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => navigate(`/engine/apps/${app.id}`)}
+                          onClick={() => navigate(`/engine/apps/${app.slug || app.id}`)}
                           data-testid={`list-button-view-details-${app.id}`}
                         >
                           <Info className="h-3 w-3 mr-1" />

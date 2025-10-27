@@ -52,15 +52,15 @@ interface App {
 }
 
 export default function AppLifecycle() {
-  const [, params] = useRoute("/engine/apps/:id/lifecycle");
-  const appId = params?.id;
+  const [, params] = useRoute("/engine/apps/:slug/lifecycle");
+  const appSlug = params?.slug;
   const { toast } = useToast();
   const [activeStep, setActiveStep] = useState(0);
 
   // Fetch app details
   const { data: appData, isLoading } = useQuery<{ app: App }>({
-    queryKey: ['/api/apps/registry', appId],
-    enabled: !!appId,
+    queryKey: ['/api/apps/registry/slug', appSlug],
+    enabled: !!appSlug,
   });
 
   const app = appData?.app;
@@ -68,10 +68,10 @@ export default function AppLifecycle() {
   // Update app mutation
   const updateAppMutation = useMutation({
     mutationFn: async (data: Partial<App>) => {
-      return apiRequest(`/api/apps/registry/${appId}`, 'PUT', data);
+      return apiRequest(`/api/apps/registry/slug/${appSlug}`, 'PUT', data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/apps/registry', appId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/apps/registry/slug', appSlug] });
       toast({
         title: "Success",
         description: "App updated successfully",

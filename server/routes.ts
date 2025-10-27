@@ -6742,15 +6742,15 @@ When suggesting improvements, format your response with suggestions in a structu
   // APPS REGISTRY - Lifecycle Management
   // ========================================
 
-  // Get single app from registry (for lifecycle management)
-  app.get('/api/apps/registry/:id', adminAuthMiddleware, async (req, res) => {
+  // Get single app from registry by slug (for lifecycle management)
+  app.get('/api/apps/registry/slug/:slug', adminAuthMiddleware, async (req, res) => {
     try {
-      const { id } = req.params;
+      const { slug } = req.params;
 
       const [app] = await db
         .select()
         .from(appsRegistry)
-        .where(eq(appsRegistry.id, id))
+        .where(eq(appsRegistry.slug, slug))
         .limit(1);
 
       if (!app) {
@@ -6760,10 +6760,7 @@ When suggesting improvements, format your response with suggestions in a structu
         });
       }
 
-      res.json({
-        success: true,
-        app
-      });
+      res.json(app);
     } catch (error) {
       console.error('Error fetching app:', error);
       res.status(500).json({
@@ -6773,10 +6770,10 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Update app lifecycle status (for lifecycle workflow)
-  app.put('/api/apps/registry/:id', adminAuthMiddleware, async (req, res) => {
+  // Update app lifecycle status by slug (for lifecycle workflow)
+  app.put('/api/apps/registry/slug/:slug', adminAuthMiddleware, async (req, res) => {
     try {
-      const { id } = req.params;
+      const { slug } = req.params;
       const updateData = req.body;
 
       // Update the app
@@ -6786,7 +6783,7 @@ When suggesting improvements, format your response with suggestions in a structu
           ...updateData,
           updatedAt: new Date()
         })
-        .where(eq(appsRegistry.id, id))
+        .where(eq(appsRegistry.slug, slug))
         .returning();
 
       if (!updatedApp) {
