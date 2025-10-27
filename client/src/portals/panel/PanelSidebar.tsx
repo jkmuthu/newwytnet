@@ -57,7 +57,7 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
   });
 
   const installedAppsCount = (myAppsData as any)?.apps?.length || 0;
-  const appsCountBadge = installedAppsData > 99 ? '99+' : installedAppsData.toString();
+  const appsCountBadge = installedAppsCount > 99 ? '99+' : installedAppsCount.toString();
 
   // Navigation items based on workspace context
   const getNavigationItems = () => {
