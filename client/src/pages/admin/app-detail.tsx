@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
   Package, FileText, RouteIcon, Settings, Shield, 
-  History, ArrowLeft, Edit2, Save, X, Building2, Layers, Globe
+  History, ArrowLeft, Edit2, Save, X, Building2, Layers, Globe, Workflow
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -213,10 +213,20 @@ export default function AppDetailPage() {
                 </Button>
               </>
             ) : (
-              <Button onClick={handleEnterEditMode}>
-                <Edit2 className="h-4 w-4 mr-2" />
-                Edit
-              </Button>
+              <>
+                <Button 
+                  variant="outline"
+                  onClick={() => navigate(`/engine/apps/${app.id}/lifecycle`)}
+                  data-testid="button-lifecycle"
+                >
+                  <Workflow className="h-4 w-4 mr-2" />
+                  Lifecycle
+                </Button>
+                <Button onClick={handleEnterEditMode}>
+                  <Edit2 className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              </>
             )}
           </div>
         </div>
