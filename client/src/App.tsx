@@ -84,12 +84,7 @@ function PortalRouter() {
         {/* Dev Documentation */}
         <Route path="/dev-docs" component={DevDocumentation} />
 
-        {/* Root redirect to engine */}
-        <Route path="/">
-          {() => <Redirect to="/engine" />}
-        </Route>
-
-        {/* Public Portal - All other routes: /features, /pricing, /login, tools, etc. */}
+        {/* Public Portal - All routes including root: /, /features, /pricing, /login, tools, etc. */}
         <Route>
           {(params) => <PublicRouter />}
         </Route>

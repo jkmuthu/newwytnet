@@ -1,10 +1,10 @@
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
-import SuperAdminLogin from "@/pages/SuperAdminLogin";
+import WytPassLoginForm from "@/components/auth/WytPassLoginForm";
 import { Loader2 } from "lucide-react";
 
 /**
- * AdminGate - Guards admin routes and shows login form when not authenticated
- * Simplified enterprise pattern: /admin shows login OR dashboard based on auth state
+ * AdminGate - Guards admin routes and shows unified WytPass login when not authenticated
+ * Simplified enterprise pattern: /engine shows login OR dashboard based on auth state
  */
 export default function AdminGate({ children }: { children: React.ReactNode }) {
   const { isAdminAuthenticated, isLoading } = useAdminAuth();
@@ -18,9 +18,9 @@ export default function AdminGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Not authenticated: show login form
+  // Not authenticated: show unified WytPass login form
   if (!isAdminAuthenticated) {
-    return <SuperAdminLogin />;
+    return <WytPassLoginForm />;
   }
 
   // Authenticated: show admin content
