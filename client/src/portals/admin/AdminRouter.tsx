@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import AdminLayout from "./AdminLayout";
 import AdminGate from "./AdminGate";
 import { useQuery } from "@tanstack/react-query";
@@ -67,6 +67,11 @@ export default function AdminRouter() {
         <Switch>
           {/* Main engine dashboard */}
           <Route path="/engine" component={AdminDashboard} />
+          
+          {/* Redirect /engine/dashboard to /engine */}
+          <Route path="/engine/dashboard">
+            {() => <Redirect to="/engine" />}
+          </Route>
 
           {/* Admin Profile & Settings */}
           <Route path="/engine/profile" component={AdminProfile} />
