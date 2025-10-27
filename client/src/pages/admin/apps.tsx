@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,6 +95,7 @@ const getAppIcon = (iconName?: string) => {
 };
 
 export default function AdminApps() {
+  const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -698,10 +700,7 @@ export default function AdminApps() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            setSelectedApp(app);
-                            setShowAppDetails(true);
-                          }}
+                          onClick={() => navigate(`/engine/apps/${app.id}`)}
                           data-testid={`button-view-details-${app.id}`}
                         >
                           <Info className="h-3 w-3 mr-1" />
@@ -800,10 +799,7 @@ export default function AdminApps() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            setSelectedApp(app);
-                            setShowAppDetails(true);
-                          }}
+                          onClick={() => navigate(`/engine/apps/${app.id}`)}
                           data-testid={`list-button-view-details-${app.id}`}
                         >
                           <Info className="h-3 w-3 mr-1" />
