@@ -98,7 +98,7 @@ export default function AdminRouter() {
           <Route path="/engine/billing" component={AdminBillingPage} />
           <Route path="/engine/transactions" component={AdminTransactions} />
           <Route path="/engine/analytics" component={AdminAnalytics} />
-          <Route path="/engine/all-logs" element={<AllLogsPage />} />
+          <Route path="/engine/all-logs" component={AllLogsPage} />
 
 
           {/* System & Config Routes */}

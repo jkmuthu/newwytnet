@@ -1,10 +1,10 @@
 import { useHubAdminAuth } from "@/contexts/HubAdminAuthContext";
-import HubAdminLogin from "@/pages/hub-admin/HubAdminLogin";
+import WytPassLoginForm from "@/components/auth/WytPassLoginForm";
 import { Loader2 } from "lucide-react";
 
 /**
- * HubAdminGate - Guards hub admin routes and shows login form when not authenticated
- * For WytNet.com Hub administrators only
+ * HubAdminGate - Guards hub admin routes and shows unified WytPass login when not authenticated
+ * For WytNet.com Hub administrators
  */
 export default function HubAdminGate({ children }: { children: React.ReactNode }) {
   const { isHubAdminAuthenticated, isLoading } = useHubAdminAuth();
@@ -18,9 +18,9 @@ export default function HubAdminGate({ children }: { children: React.ReactNode }
     );
   }
 
-  // Not authenticated: show login form
+  // Not authenticated: show unified WytPass login form
   if (!isHubAdminAuthenticated) {
-    return <HubAdminLogin />;
+    return <WytPassLoginForm />;
   }
 
   // Authenticated: show hub admin content
