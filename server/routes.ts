@@ -6738,6 +6738,78 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // ========================================
+  // APPS REGISTRY - Lifecycle Management
+  // ========================================
+
+  // Get single app from registry (for lifecycle management)
+  app.get('/api/apps/registry/:id', requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const [app] = await db
+        .select()
+        .from(appsRegistry)
+        .where(eq(appsRegistry.id, id))
+        .limit(1);
+
+      if (!app) {
+        return res.status(404).json({
+          success: false,
+          error: 'App not found'
+        });
+      }
+
+      res.json({
+        success: true,
+        app
+      });
+    } catch (error) {
+      console.error('Error fetching app:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch app'
+      });
+    }
+  });
+
+  // Update app lifecycle status (for lifecycle workflow)
+  app.put('/api/apps/registry/:id', requireAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+
+      // Update the app
+      const [updatedApp] = await db
+        .update(appsRegistry)
+        .set({
+          ...updateData,
+          updatedAt: new Date()
+        })
+        .where(eq(appsRegistry.id, id))
+        .returning();
+
+      if (!updatedApp) {
+        return res.status(404).json({
+          success: false,
+          error: 'App not found'
+        });
+      }
+
+      res.json({
+        success: true,
+        app: updatedApp,
+        message: 'App updated successfully'
+      });
+    } catch (error) {
+      console.error('Error updating app:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update app'
+      });
+    }
+  });
+
   // =============================================================================
   // SOCIAL AUTHENTICATION ROUTES
   // =============================================================================
