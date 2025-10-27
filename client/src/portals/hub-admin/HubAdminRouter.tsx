@@ -35,18 +35,70 @@ function HubAdminDashboard() {
 }
 
 /**
- * HubAdminRouter - Routes for WytNet.com Hub Admin portal
- * Routes: /admin, /admin/* (Hub content management)
+ * HubAdminRouter - Routes for Hub Admin portal
+ * Supports both URL patterns:
+ * - /admin/* (Default hub - WytNet.com)
+ * - /:hubSlug/admin/* (Hub-specific routes, e.g., /wytnet/admin, /ownernet/admin)
  */
 export default function HubAdminRouter() {
   return (
     <HubAdminGate>
       <HubAdminLayout>
         <Switch>
-          {/* Dashboard */}
+          {/* Hub-Specific Routes: /:hubSlug/admin/* */}
+          <Route path="/:hubSlug/admin" component={HubAdminDashboard} />
+          <Route path="/:hubSlug/admin/cms">
+            {() => (
+              <div className="text-center py-12">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">CMS Content</h2>
+                <p className="text-gray-600 dark:text-gray-400 mt-2">Hub content management coming soon</p>
+              </div>
+            )}
+          </Route>
+          <Route path="/:hubSlug/admin/media" component={MediaLibrary} />
+          <Route path="/:hubSlug/admin/apps">
+            {() => (
+              <div className="text-center py-12">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Hub Apps</h2>
+                <p className="text-gray-600 dark:text-gray-400 mt-2">Hub app management coming soon</p>
+              </div>
+            )}
+          </Route>
+          <Route path="/:hubSlug/admin/themes">
+            {() => (
+              <div className="text-center py-12">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Themes</h2>
+                <p className="text-gray-600 dark:text-gray-400 mt-2">Hub theme management coming soon</p>
+              </div>
+            )}
+          </Route>
+          <Route path="/:hubSlug/admin/analytics">
+            {() => (
+              <div className="text-center py-12">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Hub Analytics</h2>
+                <p className="text-gray-600 dark:text-gray-400 mt-2">Hub analytics coming soon</p>
+              </div>
+            )}
+          </Route>
+          <Route path="/:hubSlug/admin/settings">
+            {() => (
+              <div className="text-center py-12">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Hub Settings</h2>
+                <p className="text-gray-600 dark:text-gray-400 mt-2">Hub settings coming soon</p>
+              </div>
+            )}
+          </Route>
+          <Route path="/:hubSlug/admin/seo">
+            {() => (
+              <div className="text-center py-12">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">SEO Settings</h2>
+                <p className="text-gray-600 dark:text-gray-400 mt-2">Hub SEO settings coming soon</p>
+              </div>
+            )}
+          </Route>
+
+          {/* Default Routes: /admin/* (WytNet.com - default hub) */}
           <Route path="/admin" component={HubAdminDashboard} />
-          
-          {/* Content Management - Coming soon */}
           <Route path="/admin/cms">
             {() => (
               <div className="text-center py-12">
@@ -55,9 +107,7 @@ export default function HubAdminRouter() {
               </div>
             )}
           </Route>
-          
           <Route path="/admin/media" component={MediaLibrary} />
-          
           <Route path="/admin/apps">
             {() => (
               <div className="text-center py-12">
@@ -66,7 +116,6 @@ export default function HubAdminRouter() {
               </div>
             )}
           </Route>
-          
           <Route path="/admin/themes">
             {() => (
               <div className="text-center py-12">
@@ -75,7 +124,6 @@ export default function HubAdminRouter() {
               </div>
             )}
           </Route>
-          
           <Route path="/admin/analytics">
             {() => (
               <div className="text-center py-12">
@@ -84,7 +132,6 @@ export default function HubAdminRouter() {
               </div>
             )}
           </Route>
-          
           <Route path="/admin/settings">
             {() => (
               <div className="text-center py-12">
@@ -93,7 +140,6 @@ export default function HubAdminRouter() {
               </div>
             )}
           </Route>
-          
           <Route path="/admin/seo">
             {() => (
               <div className="text-center py-12">

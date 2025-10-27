@@ -51,7 +51,7 @@ function PortalRouter() {
         <Route path="/engine" component={EngineRouter} />
         <Route path="/engine/:rest*" component={EngineRouter} />
         
-        {/* Hub Admin Portal - Routes: /admin, /admin/* (WytNet.com Hub Admin) */}
+        {/* Hub Admin Portal - Routes: /admin, /admin/* (Default Hub Admin - WytNet.com) */}
         <Route path="/admin" component={HubAdminRouter} />
         <Route path="/admin/:rest*" component={HubAdminRouter} />
 
@@ -83,6 +83,10 @@ function PortalRouter() {
 
         {/* Dev Documentation */}
         <Route path="/dev-docs" component={DevDocumentation} />
+
+        {/* Hub-Specific Admin Routes: /:hubSlug/admin/* (e.g., /wytnet/admin, /ownernet/admin) */}
+        <Route path="/:hubSlug/admin" component={HubAdminRouter} />
+        <Route path="/:hubSlug/admin/:rest*" component={HubAdminRouter} />
 
         {/* Public Portal - All routes including root: /, /features, /pricing, /login, tools, etc. */}
         <Route>
