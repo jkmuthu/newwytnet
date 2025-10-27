@@ -174,7 +174,7 @@ export default function MyWytApps() {
         </div>
 {isInstalled ? (
           <div className="flex gap-2">
-            <Link href={`/mypanel/wytapps/${app.id}`} className="flex-1">
+            <Link href={app.route || `/mypanel/wytapps/${app.id}`} className="flex-1">
               <Button className="w-full" data-testid={`button-open-${app.id}`}>
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Open

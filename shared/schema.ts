@@ -3013,6 +3013,24 @@ export const appsRegistry = pgTable("apps_registry", {
   description: text("description"),
   icon: varchar("icon", { length: 500 }),
   category: varchar("category", { length: 100 }), // 'productivity', 'utility', 'ai', etc.
+  
+  // App Lifecycle Management
+  route: varchar("route", { length: 255 }), // App route/URL (e.g., /assessment)
+  status: varchar("status", { length: 20 }).notNull().default('draft'), // draft, configured, validated, tested, priced, active, private, public
+  
+  // Lifecycle Workflow State
+  configStatus: varchar("config_status", { length: 20 }).default('pending'), // pending, completed
+  validationStatus: varchar("validation_status", { length: 20 }).default('pending'), // pending, passed, failed
+  testStatus: varchar("test_status", { length: 20 }).default('pending'), // pending, passed, failed
+  pricingStatus: varchar("pricing_status", { length: 20 }).default('pending'), // pending, configured
+  activationStatus: varchar("activation_status", { length: 20 }).default('inactive'), // inactive, active
+  visibility: varchar("visibility", { length: 20 }).default('private'), // private, public
+  
+  // Configuration Data
+  configData: jsonb("config_data").default({}), // App-specific configuration
+  validationResults: jsonb("validation_results").default({}), // Validation test results
+  testResults: jsonb("test_results").default({}), // Testing results and logs
+  
   isActive: boolean("is_active").default(true),
   metadata: jsonb("metadata").default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
