@@ -93,8 +93,12 @@ export default function AdminRouter() {
           <Route path="/engine/modules" component={AdminModules} />
           
           {/* Apps routes - most specific first */}
-          <Route path="/engine/apps/:slug/lifecycle" component={AppLifecycle} />
-          <Route path="/engine/apps/:slug" component={AppDetailPage} />
+          <Route path="/engine/apps/:slug/lifecycle">
+            {(params) => <AppLifecycle params={params} />}
+          </Route>
+          <Route path="/engine/apps/:slug">
+            {(params) => <AppDetailPage params={params} />}
+          </Route>
           <Route path="/engine/apps" component={AdminApps} />
           
           <Route path="/engine/api-library" component={ApiLibraryPage} />
