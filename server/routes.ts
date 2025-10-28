@@ -1157,6 +1157,62 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Update app
+  app.put('/api/admin/apps/:id', adminAuthMiddleware, async (req, res) => {
+    try {
+      const appId = req.params.id;
+      const updateData = req.body;
+
+      // Store wizard data in configData
+      const configData = {
+        visibilityMode: updateData.visibilityMode,
+        selectedHubs: updateData.selectedHubs,
+        accessPanels: updateData.accessPanels,
+        features: updateData.features,
+        pricingModel: updateData.pricingModel,
+        pricingDetails: updateData.pricingDetails,
+        version: updateData.version,
+        changelog: updateData.changelog,
+      };
+
+      // Update app in registry
+      await db
+        .update(appsRegistry)
+        .set({
+          name: updateData.name,
+          slug: updateData.slug,
+          description: updateData.description,
+          icon: updateData.icon,
+          category: updateData.category,
+          configData: configData as any,
+          updatedAt: new Date(),
+        })
+        .where(eq(appsRegistry.id, appId));
+
+      // Handle module updates if provided
+      if (updateData.moduleIds && Array.isArray(updateData.moduleIds)) {
+        // Remove existing modules
+        await db.delete(appModules).where(eq(appModules.appId, appId));
+
+        // Add new modules
+        if (updateData.moduleIds.length > 0) {
+          await db.insert(appModules).values(
+            updateData.moduleIds.map((moduleId: string) => ({
+              appId,
+              moduleId,
+              isRequired: false,
+            }))
+          );
+        }
+      }
+
+      res.json({ success: true, message: "App updated successfully" });
+    } catch (error: any) {
+      console.error('Error updating app:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
   // Get all apps with modules
   app.get('/api/admin/apps', adminAuthMiddleware, async (req, res) => {
     try {
