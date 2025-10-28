@@ -28,6 +28,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TrashView } from "@/components/shared/TrashView";
+import { WytAppWizard } from "@/components/admin/WytAppWizard";
 
 // App interface with new fields
 interface AppDefinition {
@@ -119,7 +120,10 @@ export default function AdminApps() {
   const [categoryName, setCategoryName] = useState('');
   const [categoryDescription, setCategoryDescription] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
-  const { toast } = useToast();
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardMode, setWizardMode] = useState<'create' | 'update'>('create');
+  const [wizardAppId, setWizardAppId] = useState<string | undefined>();
+  const { toast} = useToast();
 
   // Fetch apps with modules
   const { data: appsData, isLoading } = useQuery({
@@ -348,13 +352,27 @@ export default function AdminApps() {
 
         {/* Apps Registry Tab */}
         <TabsContent value="registry" className="space-y-6 mt-6">
-          {/* Create App Button */}
-          <div className="flex justify-end">
+          {/* Create App Button - Opens Wizard */}
+          <div className="flex justify-end gap-2">
+            <Button
+              className="gap-2"
+              onClick={() => {
+                setWizardMode('create');
+                setWizardAppId(undefined);
+                setWizardOpen(true);
+              }}
+              data-testid="button-create-app"
+            >
+              <Plus className="h-4 w-4" />
+              Create App with Wizard
+            </Button>
+            
+            {/* Legacy Create Dialog - Hidden for now */}
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="gap-2" data-testid="button-create-app">
+                <Button variant="outline" className="gap-2" data-testid="button-create-app-legacy">
                   <Plus className="h-4 w-4" />
-                  Create App
+                  Legacy Create
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
@@ -1321,6 +1339,14 @@ export default function AdminApps() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* WytApp Wizard */}
+      <WytAppWizard
+        open={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        appId={wizardAppId}
+        mode={wizardMode}
+      />
     </div>
   );
 }

@@ -151,14 +151,19 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
         ? "/api/admin/apps"
         : `/api/admin/apps/${appId}`;
       
-      return apiRequest(endpoint, {
-        method: mode === "create" ? "POST" : "PUT",
+      const method = mode === "create" ? "POST" : "PUT";
+      
+      return await fetch(endpoint, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           ...data,
           wizardCompleted: currentStep === 6,
           wizardStep: currentStep,
         }),
-      });
+      }).then((res) => res.json());
     },
     onSuccess: () => {
       toast({
@@ -734,7 +739,7 @@ function Screen3Modules({ form }: { form: any }) {
           <FormItem>
             <FormLabel>Select Modules</FormLabel>
             <div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
-              {modules?.modules?.map((module: any) => (
+              {Array.isArray(modules) && modules.map((module: any) => (
                 <div key={module.id} className="flex items-center space-x-2">
                   <Checkbox
                     checked={field.value?.includes(module.id)}
