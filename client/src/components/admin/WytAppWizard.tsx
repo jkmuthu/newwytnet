@@ -155,13 +155,37 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
   // Load existing app data if editing
   const { data: existingApp, isLoading: isLoadingApp } = useQuery<ExistingAppData>({
     queryKey: ["/api/admin/apps", appId],
-    enabled: !!appId && mode === "update",
+    enabled: !!appId && mode === "update" && open,
   });
+
+  // Reset wizard state when dialog closes or appId changes
+  useEffect(() => {
+    if (!open) {
+      // Reset form and step when dialog closes
+      setCurrentStep(1);
+      form.reset({
+        name: "",
+        slug: "",
+        description: "",
+        icon: "Package",
+        category: "",
+        visibilityMode: "engine_only",
+        selectedHubs: [],
+        accessPanels: [],
+        moduleIds: [],
+        features: [],
+        pricingModel: "free",
+        version: "1.0.0",
+        changelog: "",
+      });
+    }
+  }, [open]);
 
   // Populate form with existing app data when in update mode
   useEffect(() => {
-    if (existingApp && mode === "update") {
+    if (existingApp && mode === "update" && open) {
       console.log("Loading existing app data:", existingApp);
+      setCurrentStep(1); // Reset to first step
       form.reset({
         name: existingApp.name || "",
         slug: existingApp.slug || "",
@@ -176,10 +200,10 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
         pricingModel: (existingApp.pricingModel as any) || "free",
         pricingDetails: existingApp.pricingDetails,
         version: existingApp.version || "1.0.0",
-        changelog: "",
+        changelog: existingApp.changelog || "",
       });
     }
-  }, [existingApp, mode]);
+  }, [existingApp, mode, appId, open]);
 
   // Auto-generate slug from name
   const handleNameChange = (name: string) => {
@@ -199,30 +223,32 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
       
       const method = mode === "create" ? "POST" : "PUT";
       
-      return await fetch(endpoint, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...data,
-          wizardCompleted: currentStep === 6,
-          wizardStep: currentStep,
-        }),
-      }).then((res) => res.json());
+      const payload = {
+        ...data,
+        wizardCompleted: currentStep === 6,
+        wizardStep: currentStep,
+      };
+      
+      console.log(`Saving app (${method} ${endpoint}):`, payload);
+      
+      return await apiRequest(endpoint, method, payload);
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
+      console.log("Save successful:", response);
       toast({
         title: mode === "create" ? "App Created" : "App Updated",
         description: `WytApp ${mode === "create" ? "created" : "updated"} successfully!`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/apps"] });
-      onClose();
+      if (mode === "create" || currentStep === 6) {
+        onClose();
+      }
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
+      console.error("Save error:", error);
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to save app",
         variant: "destructive",
       });
     },
