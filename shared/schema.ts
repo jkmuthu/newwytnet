@@ -3051,6 +3051,11 @@ export const appsRegistry = pgTable("apps_registry", {
   metadata: jsonb("metadata").default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  
+  // Soft delete support for trash/recovery system
+  deletedAt: timestamp("deleted_at"),
+  deletedBy: varchar("deleted_by"),
+  deleteReason: text("delete_reason"),
 });
 
 // Pricing Plans - Main pricing configuration per app
