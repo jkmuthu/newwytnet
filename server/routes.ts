@@ -1215,6 +1215,9 @@ export async function registerRoutes(app: Express): Promise<void> {
         )
       );
 
+      // Get admin ID safely
+      const adminId = req.admin?.id || req.user?.id || 'system';
+
       // Soft delete apps
       const deletedCount = await Promise.all(
         appsToDelete.map(async (app) => {
@@ -1222,7 +1225,7 @@ export async function registerRoutes(app: Express): Promise<void> {
             .update(appsRegistry)
             .set({
               deletedAt: new Date(),
-              deletedBy: req.admin.id,
+              deletedBy: adminId,
               deleteReason: 'Bulk cleanup - preparing for wizard migration'
             })
             .where(eq(appsRegistry.id, app.id));
