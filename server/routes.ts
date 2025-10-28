@@ -923,6 +923,43 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // File upload endpoint for admin
+  const upload = multer({ storage: multer.memoryStorage() });
+  
+  app.post('/api/admin/upload', adminAuthMiddleware, upload.single('file'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file provided' });
+      }
+
+      const directory = req.body.directory || 'uploads';
+      const fileName = `${Date.now()}-${req.file.originalname}`;
+      const filePath = `${directory}/${fileName}`;
+
+      // Upload to object storage
+      await objectStorageClient.uploadFile(
+        req.file.buffer,
+        filePath,
+        {
+          contentType: req.file.mimetype,
+          isPublic: true,
+        }
+      );
+
+      const url = await objectStorageClient.getPublicUrl(filePath);
+
+      res.json({ 
+        success: true, 
+        url,
+        fileName,
+        filePath
+      });
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      res.status(500).json({ error: 'Upload failed' });
+    }
+  });
+
   // Admin Pages CRUD - For Engine Admin Panel
   app.get('/api/admin/pages', async (req, res) => {
     try {

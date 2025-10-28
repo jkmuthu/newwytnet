@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { ImageUploadCrop } from "./ImageUploadCrop";
 import {
   Dialog,
   DialogContent,
@@ -66,7 +67,9 @@ const wizardSchema = z.object({
     .min(1, "Slug is required")
     .regex(/^[a-z0-9-]+$/, "Slug must be lowercase with hyphens only"),
   description: z.string().optional(),
-  icon: z.string().optional(),
+  icon: z.string().optional(), // Icon image URL
+  image: z.string().optional(), // App logo/image URL
+  banner: z.string().optional(), // Banner image URL
   category: z.string().optional(),
 
   // Screen 2: Visibility & Access Control
@@ -139,7 +142,9 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
       name: "",
       slug: "",
       description: "",
-      icon: "Package",
+      icon: "",
+      image: "",
+      banner: "",
       category: "",
       visibilityMode: "engine_only",
       selectedHubs: [],
@@ -167,7 +172,9 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
         name: "",
         slug: "",
         description: "",
-        icon: "Package",
+        icon: "",
+        image: "",
+        banner: "",
         category: "",
         visibilityMode: "engine_only",
         selectedHubs: [],
@@ -190,7 +197,9 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
         name: existingApp.name || "",
         slug: existingApp.slug || "",
         description: existingApp.description || "",
-        icon: existingApp.icon || "Package",
+        icon: existingApp.icon || "",
+        image: (existingApp as any).image || "",
+        banner: (existingApp as any).banner || "",
         category: existingApp.category || "",
         visibilityMode: (existingApp.visibilityMode as any) || "engine_only",
         selectedHubs: existingApp.selectedHubs || [],
