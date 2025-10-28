@@ -297,6 +297,7 @@ export const apps = pgTable("apps", {
   displayId: varchar("display_id", { length: 20 }).unique(), // AP0001
   tenantId: uuid("tenant_id").references(() => tenants.id),
   key: varchar("key", { length: 100 }).notNull().unique(),
+  slug: varchar("slug", { length: 100 }).unique(), // URL-friendly identifier for routing
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   version: varchar("version", { length: 20 }).notNull(),
@@ -311,11 +312,26 @@ export const apps = pgTable("apps", {
   route: varchar("route", { length: 255 }), // App route/URL
   contexts: jsonb("contexts").default(['hub', 'app']), // Where app can be activated
   
+  // Wizard: Visibility & Access Control
+  visibilityMode: varchar("visibility_mode", { length: 50 }).default('engine_only'), // 'engine_only', 'wytnet_hub', 'all_hubs', 'selected_hubs', 'public'
+  selectedHubs: jsonb("selected_hubs").default([]), // Hub IDs when visibility_mode = 'selected_hubs'
+  accessPanels: jsonb("access_panels").default([]), // ['user_panel', 'org_panel']
+  customRoutes: jsonb("custom_routes").default({}), // { hub_route: '/custom', user_panel_route: '/my-custom' }
+  
+  // Wizard: Features & Pricing
+  features: jsonb("features").default([]), // [{ name: 'Feature 1', description: '...', enabled: true }]
+  pricingModel: varchar("pricing_model", { length: 50 }).default('free'), // 'free', 'one_time', 'subscription', 'custom'
+  pricingDetails: jsonb("pricing_details").default({}), // Model-specific pricing data
+  
+  // Wizard: State Management
+  wizardCompleted: boolean("wizard_completed").default(false),
+  wizardStep: integer("wizard_step").default(1), // Current wizard step (1-6)
+  
   // Version Control & History
   versionHistory: jsonb("version_history").default([]), // [{ version: '1.0.0', changes: '...', date: '...' }]
   changelog: text("changelog"), // Latest version changelog
   
-  // Access Restrictions - Granular control
+  // Access Restrictions - Granular control (deprecated - use visibilityMode instead)
   restrictedTo: jsonb("restricted_to").default([]), // ['engine-only', 'hub-only', 'specific-tenant']
   
   // Soft delete support for trash/recovery system
