@@ -62,6 +62,8 @@ import AllLogsPage from '@/pages/admin/all-logs';
  * but conceptually this is the Engine administration interface
  */
 export default function AdminRouter() {
+  console.log('[AdminRouter] Rendering, current path:', window.location.pathname);
+  
   return (
     <AdminGate>
       <AdminLayout>
@@ -94,7 +96,12 @@ export default function AdminRouter() {
           
           {/* Apps routes - most specific first */}
           <Route path="/engine/apps/:slug/lifecycle" component={AppLifecycle} />
-          <Route path="/engine/apps/:slug" component={AppDetailPage} />
+          <Route path="/engine/apps/:slug">
+            {(params) => {
+              console.log('[AdminRouter] Matched /engine/apps/:slug with params:', params);
+              return <AppDetailPage />;
+            }}
+          </Route>
           <Route path="/engine/apps" component={AdminApps} />
           
           <Route path="/engine/api-library" component={ApiLibraryPage} />

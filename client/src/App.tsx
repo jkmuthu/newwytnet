@@ -44,12 +44,26 @@ function PortalRouter() {
     setShowWizard(false);
   }, [user]);
 
+  useEffect(() => {
+    console.log('[PortalRouter] Current path:', window.location.pathname);
+  }, []);
+
   return (
     <>
       <Switch>
         {/* Engine Portal - Routes: /engine, /engine/* (Super Admin Panel) */}
-        <Route path="/engine" component={EngineRouter} />
-        <Route path="/engine/:rest*" component={EngineRouter} />
+        <Route path="/engine">
+          {() => {
+            console.log('[PortalRouter] Matched /engine route');
+            return <EngineRouter />;
+          }}
+        </Route>
+        <Route path="/engine/:rest*">
+          {(params) => {
+            console.log('[PortalRouter] Matched /engine/:rest* route with params:', params);
+            return <EngineRouter />;
+          }}
+        </Route>
         
         {/* Hub Admin Portal - Routes: /admin, /admin/* (Default Hub Admin - WytNet.com) */}
         <Route path="/admin" component={HubAdminRouter} />

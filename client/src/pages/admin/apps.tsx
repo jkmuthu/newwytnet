@@ -32,6 +32,7 @@ import { TrashView } from "@/components/shared/TrashView";
 // App interface with new fields
 interface AppDefinition {
   id: string;
+  slug?: string;
   name: string;
   description?: string;
   icon?: string;
