@@ -353,64 +353,7 @@ export default function AdminApps() {
         {/* Apps Registry Tab */}
         <TabsContent value="registry" className="space-y-6 mt-6">
           {/* Action Buttons */}
-          <div className="flex justify-between items-center">
-            <Button
-              variant="destructive"
-              onClick={async () => {
-                if (!confirm('This will delete all apps EXCEPT: WytPass, WytPanel, WytWall, WytQRC, WytAssesser, WytBuilder, AI Directory, WytAI Agent.\n\nAre you sure you want to continue?')) {
-                  return;
-                }
-                
-                try {
-                  const response = await fetch('/api/admin/apps/bulk-cleanup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      keepAppNames: [
-                        'WytPass',
-                        'WytPanel', 
-                        'WytWall',
-                        'WytQRC',
-                        'QR Code',
-                        'WytAssesser',
-                        'DiscAssesser',
-                        'WytBuilder',
-                        'App Builder',
-                        'AI Directory',
-                        'WytAI Agent'
-                      ]
-                    })
-                  });
-                  
-                  const result = await response.json();
-                  
-                  if (result.success) {
-                    toast({
-                      title: "Cleanup Complete",
-                      description: `Kept ${result.kept} apps, deleted ${result.deleted} apps`,
-                    });
-                    queryClient.invalidateQueries({ queryKey: ['/api/admin/apps'] });
-                  } else {
-                    toast({
-                      title: "Cleanup Failed",
-                      description: result.error,
-                      variant: "destructive"
-                    });
-                  }
-                } catch (error: any) {
-                  toast({
-                    title: "Error",
-                    description: error.message,
-                    variant: "destructive"
-                  });
-                }
-              }}
-              data-testid="button-bulk-cleanup"
-            >
-              <X className="h-4 w-4 mr-1" />
-              Cleanup Apps (Keep 8)
-            </Button>
-            
+          <div className="flex justify-end items-center">
             <div className="flex gap-2">
               <Button
                 className="gap-2"
@@ -775,15 +718,30 @@ export default function AdminApps() {
                         <Badge variant={app.isActive ? "default" : "secondary"} data-testid={`badge-status-${app.id}`}>
                           {app.isActive ? "Active" : "Inactive"}
                         </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/engine/apps/${app.slug || app.id}`)}
-                          data-testid={`button-view-details-${app.id}`}
-                        >
-                          <Info className="h-3 w-3 mr-1" />
-                          Details
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setWizardMode('update');
+                              setWizardAppId(app.id);
+                              setWizardOpen(true);
+                            }}
+                            data-testid={`button-update-${app.id}`}
+                          >
+                            <Edit2 className="h-3 w-3 mr-1" />
+                            Update
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/engine/apps/${app.slug || app.id}`)}
+                            data-testid={`button-view-details-${app.id}`}
+                          >
+                            <Info className="h-3 w-3 mr-1" />
+                            Details
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -874,15 +832,30 @@ export default function AdminApps() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/engine/apps/${app.slug || app.id}`)}
-                          data-testid={`list-button-view-details-${app.id}`}
-                        >
-                          <Info className="h-3 w-3 mr-1" />
-                          Details
-                        </Button>
+                        <div className="flex gap-1 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setWizardMode('update');
+                              setWizardAppId(app.id);
+                              setWizardOpen(true);
+                            }}
+                            data-testid={`list-button-update-${app.id}`}
+                          >
+                            <Edit2 className="h-3 w-3 mr-1" />
+                            Update
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => navigate(`/engine/apps/${app.slug || app.id}`)}
+                            data-testid={`list-button-view-details-${app.id}`}
+                          >
+                            <Info className="h-3 w-3 mr-1" />
+                            Details
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
