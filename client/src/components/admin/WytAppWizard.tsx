@@ -99,6 +99,29 @@ const wizardSchema = z.object({
 
 type WizardFormData = z.infer<typeof wizardSchema>;
 
+// Type for existing app data from API
+interface ExistingAppData {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  icon?: string;
+  category?: string;
+  visibilityMode?: string;
+  selectedHubs?: string[];
+  accessPanels?: string[];
+  moduleIds?: string[];
+  features?: Array<{ name: string; description?: string; enabled: boolean }>;
+  pricingModel?: string;
+  pricingDetails?: {
+    amount?: number;
+    currency?: string;
+    interval?: string;
+  };
+  version?: string;
+  [key: string]: any;
+}
+
 interface WytAppWizardProps {
   open: boolean;
   onClose: () => void;
@@ -130,7 +153,7 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
   });
 
   // Load existing app data if editing
-  const { data: existingApp, isLoading: isLoadingApp } = useQuery({
+  const { data: existingApp, isLoading: isLoadingApp } = useQuery<ExistingAppData>({
     queryKey: ["/api/admin/apps", appId],
     enabled: !!appId && mode === "update",
   });
@@ -138,24 +161,25 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
   // Populate form with existing app data when in update mode
   useEffect(() => {
     if (existingApp && mode === "update") {
+      console.log("Loading existing app data:", existingApp);
       form.reset({
         name: existingApp.name || "",
         slug: existingApp.slug || "",
         description: existingApp.description || "",
         icon: existingApp.icon || "Package",
         category: existingApp.category || "",
-        visibilityMode: existingApp.visibilityMode || "engine_only",
+        visibilityMode: (existingApp.visibilityMode as any) || "engine_only",
         selectedHubs: existingApp.selectedHubs || [],
         accessPanels: existingApp.accessPanels || [],
         moduleIds: existingApp.moduleIds || [],
         features: existingApp.features || [],
-        pricingModel: existingApp.pricingModel || "free",
+        pricingModel: (existingApp.pricingModel as any) || "free",
         pricingDetails: existingApp.pricingDetails,
         version: existingApp.version || "1.0.0",
         changelog: "",
       });
     }
-  }, [existingApp, mode, form]);
+  }, [existingApp, mode]);
 
   // Auto-generate slug from name
   const handleNameChange = (name: string) => {
