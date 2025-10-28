@@ -1153,6 +1153,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const allApps = await db
         .select()
         .from(appsRegistry)
+        .where(isNull(appsRegistry.deletedAt))
         .orderBy(appsRegistry.name);
 
       // Get module counts for each app
