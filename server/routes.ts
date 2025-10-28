@@ -1189,6 +1189,62 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Bulk cleanup apps - Keep only specified apps, soft-delete all others
+  app.post('/api/admin/apps/bulk-cleanup', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { keepAppNames } = req.body;
+      
+      if (!Array.isArray(keepAppNames) || keepAppNames.length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'keepAppNames array is required'
+        });
+      }
+
+      // Get all apps
+      const allApps = await db
+        .select()
+        .from(appsRegistry)
+        .where(isNull(appsRegistry.deletedAt));
+
+      // Filter apps to delete (those not in keepAppNames list)
+      const appsToDelete = allApps.filter(app => 
+        !keepAppNames.some(keepName => 
+          app.name.toLowerCase().includes(keepName.toLowerCase()) ||
+          keepName.toLowerCase().includes(app.name.toLowerCase())
+        )
+      );
+
+      // Soft delete apps
+      const deletedCount = await Promise.all(
+        appsToDelete.map(async (app) => {
+          await db
+            .update(appsRegistry)
+            .set({
+              deletedAt: new Date(),
+              deletedBy: req.admin.id,
+              deleteReason: 'Bulk cleanup - preparing for wizard migration'
+            })
+            .where(eq(appsRegistry.id, app.id));
+          return app.name;
+        })
+      );
+
+      res.json({
+        success: true,
+        message: `Successfully deleted ${deletedCount.length} apps`,
+        kept: allApps.length - deletedCount.length,
+        deleted: deletedCount.length,
+        deletedApps: deletedCount
+      });
+    } catch (error: any) {
+      console.error('Error during bulk cleanup:', error);
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
 
   // Hubs CRUD
   app.get('/api/hubs', isAuthenticated, async (req: any, res) => {

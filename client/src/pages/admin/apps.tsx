@@ -352,23 +352,81 @@ export default function AdminApps() {
 
         {/* Apps Registry Tab */}
         <TabsContent value="registry" className="space-y-6 mt-6">
-          {/* Create App Button - Opens Wizard */}
-          <div className="flex justify-end gap-2">
+          {/* Action Buttons */}
+          <div className="flex justify-between items-center">
             <Button
-              className="gap-2"
-              onClick={() => {
-                setWizardMode('create');
-                setWizardAppId(undefined);
-                setWizardOpen(true);
+              variant="destructive"
+              onClick={async () => {
+                if (!confirm('This will delete all apps EXCEPT: WytPass, WytPanel, WytWall, WytQRC, WytAssesser, WytBuilder, AI Directory, WytAI Agent.\n\nAre you sure you want to continue?')) {
+                  return;
+                }
+                
+                try {
+                  const response = await fetch('/api/admin/apps/bulk-cleanup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      keepAppNames: [
+                        'WytPass',
+                        'WytPanel', 
+                        'WytWall',
+                        'WytQRC',
+                        'QR Code',
+                        'WytAssesser',
+                        'DiscAssesser',
+                        'WytBuilder',
+                        'App Builder',
+                        'AI Directory',
+                        'WytAI Agent'
+                      ]
+                    })
+                  });
+                  
+                  const result = await response.json();
+                  
+                  if (result.success) {
+                    toast({
+                      title: "Cleanup Complete",
+                      description: `Kept ${result.kept} apps, deleted ${result.deleted} apps`,
+                    });
+                    queryClient.invalidateQueries({ queryKey: ['/api/admin/apps'] });
+                  } else {
+                    toast({
+                      title: "Cleanup Failed",
+                      description: result.error,
+                      variant: "destructive"
+                    });
+                  }
+                } catch (error: any) {
+                  toast({
+                    title: "Error",
+                    description: error.message,
+                    variant: "destructive"
+                  });
+                }
               }}
-              data-testid="button-create-app"
+              data-testid="button-bulk-cleanup"
             >
-              <Plus className="h-4 w-4" />
-              Create App with Wizard
+              <X className="h-4 w-4 mr-1" />
+              Cleanup Apps (Keep 8)
             </Button>
             
-            {/* Legacy Create Dialog - Hidden for now */}
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+            <div className="flex gap-2">
+              <Button
+                className="gap-2"
+                onClick={() => {
+                  setWizardMode('create');
+                  setWizardAppId(undefined);
+                  setWizardOpen(true);
+                }}
+                data-testid="button-create-app"
+              >
+                <Plus className="h-4 w-4" />
+                Create App with Wizard
+              </Button>
+              
+              {/* Legacy Create Dialog - Hidden for now */}
+              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="gap-2" data-testid="button-create-app-legacy">
                   <Plus className="h-4 w-4" />
@@ -551,6 +609,7 @@ export default function AdminApps() {
                 </Form>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
           {/* Search */}
