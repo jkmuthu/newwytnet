@@ -51,10 +51,9 @@ interface App {
   testResults: any;
 }
 
-export default function AppLifecycle(props: { params?: { slug?: string } }) {
-  // Try to get slug from props (passed by Route render function) or useRoute hook
-  const [, routeParams] = useRoute("/engine/apps/:slug/lifecycle");
-  const appSlug = props.params?.slug || routeParams?.slug;
+export default function AppLifecycle() {
+  const [match, params] = useRoute("/engine/apps/:slug/lifecycle");
+  const appSlug = params?.slug;
   const { toast } = useToast();
   const [activeStep, setActiveStep] = useState(0);
 

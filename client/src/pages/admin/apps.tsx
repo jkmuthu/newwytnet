@@ -700,11 +700,7 @@ export default function AdminApps() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            const targetPath = `/engine/apps/${app.slug || app.id}`;
-                            console.log('Navigating to:', targetPath, 'App:', app.name, 'Slug:', app.slug);
-                            navigate(targetPath);
-                          }}
+                          onClick={() => navigate(`/engine/apps/${app.slug || app.id}`)}
                           data-testid={`button-view-details-${app.id}`}
                         >
                           <Info className="h-3 w-3 mr-1" />
@@ -803,11 +799,7 @@ export default function AdminApps() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            const targetPath = `/engine/apps/${app.slug || app.id}`;
-                            console.log('Navigating to:', targetPath, 'App:', app.name, 'Slug:', app.slug);
-                            navigate(targetPath);
-                          }}
+                          onClick={() => navigate(`/engine/apps/${app.slug || app.id}`)}
                           data-testid={`list-button-view-details-${app.id}`}
                         >
                           <Info className="h-3 w-3 mr-1" />

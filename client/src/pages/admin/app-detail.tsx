@@ -40,12 +40,10 @@ interface AppDefinition {
   updatedAt: string;
 }
 
-export default function AppDetailPage(props: { params?: { slug?: string } }) {
+export default function AppDetailPage() {
   const [, navigate] = useLocation();
-  
-  // Try to get slug from props (passed by Route render function) or useRoute hook
-  const [, routeParams] = useRoute("/engine/apps/:slug");
-  const appSlug = props.params?.slug || routeParams?.slug;
+  const [match, params] = useRoute("/engine/apps/:slug");
+  const appSlug = params?.slug;
   
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedRoute, setEditedRoute] = useState('');
