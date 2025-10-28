@@ -1092,27 +1092,25 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       const appWithModules = await db
         .select({
-          id: apps.id,
-          name: apps.name,
-          slug: apps.slug,
-          description: apps.description,
-          icon: apps.icon,
-          category: apps.category,
-          version: apps.version,
-          route: apps.route,
-          contexts: apps.contexts,
-          versionHistory: apps.versionHistory,
-          changelog: apps.changelog,
-          restrictedTo: apps.restrictedTo,
-          isActive: apps.isActive,
-          createdAt: apps.createdAt,
-          updatedAt: apps.updatedAt,
-          deletedAt: apps.deletedAt,
+          id: appsRegistry.id,
+          name: appsRegistry.name,
+          slug: appsRegistry.slug,
+          description: appsRegistry.description,
+          icon: appsRegistry.icon,
+          category: appsRegistry.category,
+          route: appsRegistry.route,
+          status: appsRegistry.status,
+          isActive: appsRegistry.isActive,
+          configData: appsRegistry.configData,
+          metadata: appsRegistry.metadata,
+          createdAt: appsRegistry.createdAt,
+          updatedAt: appsRegistry.updatedAt,
+          deletedAt: appsRegistry.deletedAt,
         })
-        .from(apps)
+        .from(appsRegistry)
         .where(and(
-          eq(apps.id, appId),
-          isNull(apps.deletedAt)
+          eq(appsRegistry.id, appId),
+          isNull(appsRegistry.deletedAt)
         ))
         .limit(1);
 
@@ -1134,10 +1132,23 @@ export async function registerRoutes(app: Express): Promise<void> {
         .innerJoin(platformModules, eq(appModules.moduleId, platformModules.id))
         .where(eq(appModules.appId, app.id));
 
+      // Extract wizard fields from configData
+      const configData = (app.configData as any) || {};
+      
       const result = {
         ...app,
         moduleCount: appModulesData.length,
         modules: appModulesData,
+        moduleIds: appModulesData.map((m: any) => m.moduleId),
+        // Wizard fields from configData
+        visibilityMode: configData.visibilityMode || 'engine_only',
+        selectedHubs: configData.selectedHubs || [],
+        accessPanels: configData.accessPanels || [],
+        features: configData.features || [],
+        pricingModel: configData.pricingModel || 'free',
+        pricingDetails: configData.pricingDetails || {},
+        version: configData.version || '1.0.0',
+        changelog: configData.changelog || '',
       };
 
       res.json(result);

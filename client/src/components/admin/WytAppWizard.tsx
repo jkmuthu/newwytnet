@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -130,10 +130,32 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
   });
 
   // Load existing app data if editing
-  const { data: existingApp } = useQuery({
-    queryKey: ["/api/apps/registry", appId],
+  const { data: existingApp, isLoading: isLoadingApp } = useQuery({
+    queryKey: ["/api/admin/apps", appId],
     enabled: !!appId && mode === "update",
   });
+
+  // Populate form with existing app data when in update mode
+  useEffect(() => {
+    if (existingApp && mode === "update") {
+      form.reset({
+        name: existingApp.name || "",
+        slug: existingApp.slug || "",
+        description: existingApp.description || "",
+        icon: existingApp.icon || "Package",
+        category: existingApp.category || "",
+        visibilityMode: existingApp.visibilityMode || "engine_only",
+        selectedHubs: existingApp.selectedHubs || [],
+        accessPanels: existingApp.accessPanels || [],
+        moduleIds: existingApp.moduleIds || [],
+        features: existingApp.features || [],
+        pricingModel: existingApp.pricingModel || "free",
+        pricingDetails: existingApp.pricingDetails,
+        version: existingApp.version || "1.0.0",
+        changelog: "",
+      });
+    }
+  }, [existingApp, mode, form]);
 
   // Auto-generate slug from name
   const handleNameChange = (name: string) => {
