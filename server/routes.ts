@@ -1126,7 +1126,6 @@ export async function registerRoutes(app: Express): Promise<void> {
           moduleId: appModules.moduleId,
           name: platformModules.name,
           isRequired: appModules.isRequired,
-          installOrder: appModules.installOrder,
         })
         .from(appModules)
         .innerJoin(platformModules, eq(appModules.moduleId, platformModules.id))
