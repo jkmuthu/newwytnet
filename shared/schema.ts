@@ -2851,15 +2851,58 @@ export const wytLifeApplications = pgTable("wyt_life_applications", {
 // DATASET MANAGEMENT SYSTEM
 // ========================================
 
+// Dataset Hubs - Logical grouping of related datasets
+export const datasetHubs = pgTable("dataset_hubs", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key", { length: 100 }).notNull().unique(), // e.g., 'geo', 'localization', 'business'
+  name: varchar("name", { length: 255 }).notNull(), // e.g., 'Geographic Data', 'Localization'
+  description: text("description"),
+  icon: varchar("icon", { length: 10 }).default('📊'), // Emoji or icon identifier
+  sortOrder: integer("sort_order").default(0),
+  isActive: boolean("is_active").default(true),
+  metadata: jsonb("metadata").default({}), // { color: '#3B82F6', category: 'reference' }
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Data Sources - External APIs for syncing datasets
+export const dataSources = pgTable("data_sources", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key", { length: 100 }).notNull().unique(), // e.g., 'rest_countries_api', 'geonames_api'
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  baseUrl: varchar("base_url", { length: 500 }).notNull(), // API endpoint base URL
+  apiType: varchar("api_type", { length: 50 }).default('rest'), // 'rest', 'graphql', 'soap', 'scraper'
+  authType: varchar("auth_type", { length: 50 }).default('none'), // 'none', 'api_key', 'oauth', 'basic'
+  authConfig: jsonb("auth_config").default({}), // { headerName: 'X-API-Key', envVar: 'GEONAMES_API_KEY' }
+  isActive: boolean("is_active").default(true),
+  isFree: boolean("is_free").default(true),
+  rateLimitPerHour: integer("rate_limit_per_hour").default(100),
+  metadata: jsonb("metadata").default({}), // { documentation: 'https://...', refreshInterval: 'weekly' }
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Dataset Collections - Reference data collections (Countries, Languages, etc.)
 export const datasetCollections = pgTable("dataset_collections", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  hubId: uuid("hub_id").references(() => datasetHubs.id), // Link to parent hub
+  dataSourceId: uuid("data_source_id").references(() => dataSources.id), // External data source
   key: varchar("key", { length: 100 }).notNull().unique(), // e.g., 'countries', 'languages', 'currencies'
   name: varchar("name", { length: 255 }).notNull(), // Display name
   description: text("description"),
   scope: varchar("scope", { length: 20 }).notNull().default('global'), // 'global' or 'tenant'
   tenantId: uuid("tenant_id").references(() => tenants.id),
-  metadata: jsonb("metadata").default({}), // { immutable: true, icon: '🌍', category: 'system' }
+  
+  // Sync configuration
+  syncEnabled: boolean("sync_enabled").default(false),
+  syncFrequency: varchar("sync_frequency", { length: 50 }).default('manual'), // 'manual', 'hourly', 'daily', 'weekly', 'monthly'
+  lastSyncedAt: timestamp("last_synced_at"),
+  lastSyncStatus: varchar("last_sync_status", { length: 50 }).default('never'), // 'never', 'success', 'failed', 'in_progress'
+  lastSyncError: text("last_sync_error"),
+  syncCount: integer("sync_count").default(0),
+  
+  metadata: jsonb("metadata").default({}), // { immutable: true, icon: '🌍', dataMapping: {...} }
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -2868,14 +2911,16 @@ export const datasetCollections = pgTable("dataset_collections", {
 export const datasetItems = pgTable("dataset_items", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   collectionId: uuid("collection_id").notNull().references(() => datasetCollections.id, { onDelete: 'cascade' }),
+  parentId: uuid("parent_id"), // For hierarchical data (e.g., state -> country, city -> state)
   code: varchar("code", { length: 100 }).notNull(), // ISO code or unique identifier
   label: varchar("label", { length: 255 }).notNull(), // Display label
   locale: varchar("locale", { length: 10 }).default('en'), // Language/locale for label
   isDefault: boolean("is_default").default(false),
   sortOrder: integer("sort_order").default(0),
-  metadata: jsonb("metadata").default({}), // Additional properties (phonePrefix, symbol, etc.)
+  metadata: jsonb("metadata").default({}), // Additional properties (phonePrefix, symbol, countryCode, etc.)
   tenantId: uuid("tenant_id").references(() => tenants.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
   uniqueCodePerCollection: unique().on(table.collectionId, table.code, table.locale),
 }));
@@ -3542,9 +3587,13 @@ export type OrganizationMember = typeof organizationMembers.$inferSelect;
 export type InsertOrganizationMember = typeof organizationMembers.$inferInsert;
 
 // Dataset Management schema exports
+export const insertDatasetHubSchema = createInsertSchema(datasetHubs).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectDatasetHubSchema = createSelectSchema(datasetHubs);
+export const insertDataSourceSchema = createInsertSchema(dataSources).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectDataSourceSchema = createSelectSchema(dataSources);
 export const insertDatasetCollectionSchema = createInsertSchema(datasetCollections).omit({ id: true, createdAt: true, updatedAt: true });
 export const selectDatasetCollectionSchema = createSelectSchema(datasetCollections);
-export const insertDatasetItemSchema = createInsertSchema(datasetItems).omit({ id: true, createdAt: true });
+export const insertDatasetItemSchema = createInsertSchema(datasetItems).omit({ id: true, createdAt: true, updatedAt: true });
 export const selectDatasetItemSchema = createSelectSchema(datasetItems);
 
 // Module Activation schema exports
@@ -3564,6 +3613,10 @@ export type AppModuleActivation = typeof appModuleActivations.$inferSelect;
 export type InsertAppModuleActivation = z.infer<typeof insertAppModuleActivationSchema>;
 
 // Dataset Management type exports
+export type DatasetHub = typeof datasetHubs.$inferSelect;
+export type InsertDatasetHub = z.infer<typeof insertDatasetHubSchema>;
+export type DataSource = typeof dataSources.$inferSelect;
+export type InsertDataSource = z.infer<typeof insertDataSourceSchema>;
 export type DatasetCollection = typeof datasetCollections.$inferSelect;
 export type InsertDatasetCollection = z.infer<typeof insertDatasetCollectionSchema>;
 export type DatasetItem = typeof datasetItems.$inferSelect;
