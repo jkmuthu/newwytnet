@@ -49,7 +49,7 @@ VALUES
   (gen_random_uuid(), 'exchange_rates', 'Exchange Rates API', 'Real-time and historical currency exchange rates', 'https://api.exchangerate-api.com/v4', 'rest', 'api_key', '{"headerName": "apikey", "envVar": "EXCHANGE_RATES_API_KEY"}', true, false, 1500, '{"documentation": "https://www.exchangerate-api.com/docs", "refreshInterval": "daily", "paidTier": "Pro"}'),
   
   -- Language & Localization
-  (gen_random_uuid(), 'google_translate', 'Google Translate API', 'Language detection and translation', 'https://translation.googleapis.com/language/translate/v2', 'rest', 'api_key', '{"paramName": "key", "envVar": "GOOGLE_TRANSLATE_API_KEY"}', false, false, 500, '{"documentation": "https://cloud.google.com/translate/docs", "refreshInterval": "monthly", "paidOnly": true"}'),
+  (gen_random_uuid(), 'google_translate', 'Google Translate API', 'Language detection and translation', 'https://translation.googleapis.com/language/translate/v2', 'rest', 'api_key', '{"paramName": "key", "envVar": "GOOGLE_TRANSLATE_API_KEY"}', false, false, 500, '{"documentation": "https://cloud.google.com/translate/docs", "refreshInterval": "monthly", "paidOnly": true}'),
   
   -- Timezone Data
   (gen_random_uuid(), 'timezonedb', 'TimezoneDB API', 'Timezone information and conversions', 'http://api.timezonedb.com/v2.1', 'rest', 'api_key', '{"paramName": "key", "envVar": "TIMEZONEDB_API_KEY"}', true, true, 1000, '{"documentation": "https://timezonedb.com/api", "refreshInterval": "quarterly"}'),
