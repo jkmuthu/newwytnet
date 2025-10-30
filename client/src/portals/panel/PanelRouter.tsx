@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Switch, Route, Redirect, useLocation } from "wouter";
 import PanelLayout from "./PanelLayout";
+import AppPanelRouter from "./AppPanelRouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -1849,6 +1850,11 @@ export default function PanelRouter() {
       <Route path="/orgpanel/wytapps" component={MyPanelWytApps} />
       <Route path="/orgpanel/team" component={OrgPanelMembers} />
       <Route path="/orgpanel/profile" component={OrgPanelSettings} />
+
+      {/* App Panel routes - App-specific features */}
+      <Route path="/apppanel/:rest*">
+        <AppPanelRouter />
+      </Route>
 
         {/* 404 fallback for panel routes */}
         <Route>

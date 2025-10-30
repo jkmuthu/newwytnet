@@ -10,13 +10,15 @@ interface PanelLayoutProps {
   children: ReactNode;
 }
 
-export type WorkspaceType = 'personal' | 'organization';
+export type WorkspaceType = 'personal' | 'organization' | 'app';
 
 export interface WorkspaceContext {
   type: WorkspaceType;
   id: string;
   name: string;
   orgId?: string;
+  appSlug?: string;
+  appName?: string;
 }
 
 /**
@@ -39,7 +41,27 @@ export default function PanelLayout({ children }: PanelLayoutProps) {
     // Normalize location path (ensure leading slash)
     const normalizedPath = location.startsWith('/') ? location : `/${location}`;
     
-    if (normalizedPath.includes('/orgpanel')) {
+    // Check for App Panel first (most specific)
+    if (normalizedPath.includes('/apppanel/')) {
+      // Extract app slug from URL: /apppanel/wytduty -> wytduty
+      const appSlug = normalizedPath.split('/apppanel/')[1]?.split('/')[0] || '';
+      const appNameMap: Record<string, string> = {
+        'wytduty': 'WytDuty',
+        'wytqrc': 'WytQRC',
+        'wytassesser': 'WytAssesser',
+        'wytbuilder': 'WytBuilder',
+        'wytlife': 'WytLife',
+        // Add more apps as needed
+      };
+      
+      setCurrentWorkspace({
+        type: 'app',
+        id: `app-${appSlug}`,
+        name: appNameMap[appSlug] || 'App Panel',
+        appSlug,
+        appName: appNameMap[appSlug]
+      });
+    } else if (normalizedPath.includes('/orgpanel')) {
       setCurrentWorkspace({
         type: 'organization',
         id: 'org',

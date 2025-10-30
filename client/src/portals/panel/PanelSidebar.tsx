@@ -61,7 +61,40 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
 
   // Navigation items based on workspace context
   const getNavigationItems = () => {
-    if (currentWorkspace.type === 'personal') {
+    if (currentWorkspace.type === 'app') {
+      // AppPanel Navigation - App-specific menus
+      const appSlug = currentWorkspace.appSlug || '';
+      
+      // Define app-specific navigation
+      const appNavigations: Record<string, any[]> = {
+        'wytduty': [
+          { label: "Dashboard", icon: Home, href: `/apppanel/wytduty`, active: location === `/apppanel/wytduty` || location === `/apppanel/wytduty/dashboard` },
+          { label: "My Duties", icon: FileText, href: `/apppanel/wytduty/my-duties`, active: location === `/apppanel/wytduty/my-duties` },
+          { label: "Assigned Duties", icon: Package, href: `/apppanel/wytduty/assigned`, active: location === `/apppanel/wytduty/assigned` },
+          { label: "Calendar", icon: Calendar, href: `/apppanel/wytduty/calendar`, active: location === `/apppanel/wytduty/calendar` },
+          { label: "Settings", icon: Settings, href: `/apppanel/wytduty/settings`, active: location === `/apppanel/wytduty/settings` },
+        ],
+        'wytqrc': [
+          { label: "Dashboard", icon: Home, href: `/apppanel/wytqrc`, active: location === `/apppanel/wytqrc` },
+          { label: "Generate QR", icon: Package, href: `/apppanel/wytqrc/generate`, active: location === `/apppanel/wytqrc/generate` },
+          { label: "My QR Codes", icon: FolderOpen, href: `/apppanel/wytqrc/my-codes`, active: location === `/apppanel/wytqrc/my-codes` },
+          { label: "Settings", icon: Settings, href: `/apppanel/wytqrc/settings`, active: location === `/apppanel/wytqrc/settings` },
+        ],
+        // Add more app navigations as needed
+      };
+      
+      const items = appNavigations[appSlug] || [
+        { label: "Dashboard", icon: Home, href: `/apppanel/${appSlug}`, active: location === `/apppanel/${appSlug}` },
+        { label: "Settings", icon: Settings, href: `/apppanel/${appSlug}/settings`, active: location === `/apppanel/${appSlug}/settings` },
+      ];
+      
+      return [
+        {
+          section: currentWorkspace.appName || "App Panel",
+          items
+        }
+      ];
+    } else if (currentWorkspace.type === 'personal') {
       // MyPanel Navigation
       return [
         {
@@ -149,7 +182,9 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
           {!collapsed && (
             <div className="flex items-center space-x-2">
-              {currentWorkspace.type === 'personal' ? (
+              {currentWorkspace.type === 'app' ? (
+                <Package className="h-5 w-5 text-purple-600" />
+              ) : currentWorkspace.type === 'personal' ? (
                 <User className="h-5 w-5 text-blue-600" />
               ) : (
                 <Building className="h-5 w-5 text-green-600" />
@@ -235,7 +270,8 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
         {!collapsed && (
           <div className="p-4 border-t border-gray-200 dark:border-gray-800">
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              {currentWorkspace.type === 'personal' ? 'Personal Workspace' : 'Organization Workspace'}
+              {currentWorkspace.type === 'app' ? `${currentWorkspace.appName} App` : 
+               currentWorkspace.type === 'personal' ? 'Personal Workspace' : 'Organization Workspace'}
             </div>
           </div>
         )}

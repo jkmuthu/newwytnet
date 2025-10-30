@@ -173,22 +173,30 @@ export default function MyWytApps() {
           ))}
         </div>
 {isInstalled ? (
-          <div className="flex gap-2">
-            <Link href={app.route || `/mypanel/wytapps/${app.id}`} className="flex-1">
-              <Button className="w-full" data-testid={`button-open-${app.id}`}>
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Open
+          <div className="space-y-2">
+            <Link href={`/apppanel/${app.id}`} className="block">
+              <Button className="w-full" variant="default" data-testid={`button-switch-${app.id}`}>
+                <Package className="h-4 w-4 mr-2" />
+                Switch to App
               </Button>
             </Link>
-            <Button
-              variant="outline"
-              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-              onClick={() => setAppToRemove({ slug: app.id, name: app.name })}
-              disabled={uninstallMutation.isPending}
-              data-testid={`button-remove-${app.id}`}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-2">
+              <Link href={app.route || `/mypanel/wytapps/${app.id}`} className="flex-1">
+                <Button variant="outline" className="w-full" data-testid={`button-open-${app.id}`}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Quick View
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                onClick={() => setAppToRemove({ slug: app.id, name: app.name })}
+                disabled={uninstallMutation.isPending}
+                data-testid={`button-remove-${app.id}`}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         ) : (
           <Button
