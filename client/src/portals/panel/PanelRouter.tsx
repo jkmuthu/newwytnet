@@ -1623,6 +1623,171 @@ function MyPanelWytGames() {
   );
 }
 
+function OrgPanelWytWall() {
+  const [activeTab, setActiveTab] = useState("matches");
+  const [postType, setPostType] = useState<"all" | "need" | "offer">("all");
+  const [defaultPostType, setDefaultPostType] = useState<"need" | "offer">("need");
+  
+  const { data: postsData, isLoading } = useQuery({
+    queryKey: ['/api/wytwall/org-posts', postType !== "all" ? postType : undefined],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (postType !== "all") {
+        params.set('postType', postType);
+      }
+      return await fetch(`/api/wytwall/org-posts?${params.toString()}`).then(r => r.json());
+    },
+  });
+
+  const { data: matchesData, isLoading: matchesLoading } = useQuery({
+    queryKey: ['/api/bucket-list/org-public'],
+    enabled: activeTab === "matches",
+  });
+
+  const posts = (postsData as any)?.posts || [];
+  const bucketMatches = (matchesData as any)?.items || [];
+  
+  const needsCount = posts.filter((p: any) => p.postType === 'need').length;
+  const offersCount = posts.filter((p: any) => p.postType === 'offer').length;
+  
+  const filteredPosts = postType === "all" ? posts : posts.filter((p: any) => p.postType === postType);
+  
+  return (
+    <div className="p-6 space-y-6">
+      <Card className="relative overflow-hidden border-0 shadow-2xl rounded-2xl">
+        <div className="absolute inset-0 bg-gradient-to-r from-green-600 via-teal-600 to-cyan-600"></div>
+        <CardContent className="relative p-6">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center">
+              <Package className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">Our WytWall</h1>
+              <p className="text-white/90 text-sm">Organization needs & offers stream</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Tabs defaultValue="matches" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="matches" data-testid="tab-org-matches">Matches</TabsTrigger>
+          <TabsTrigger value="posts" data-testid="tab-org-posts">Posts</TabsTrigger>
+          <TabsTrigger value="add-post" data-testid="tab-org-add-post">Add Post</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="matches" className="mt-6 space-y-4">
+          {matchesLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="p-6">
+                  <div className="h-24 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
+                </Card>
+              ))}
+            </div>
+          ) : bucketMatches.length === 0 ? (
+            <Card className="p-12 text-center">
+              <div className="w-24 h-24 bg-gradient-to-br from-green-100 to-teal-100 dark:from-green-900/20 dark:to-teal-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Package className="h-12 w-12 text-green-500" />
+              </div>
+              <h3 className="text-lg font-medium mb-2">No Matches Found</h3>
+              <p className="text-muted-foreground mb-4">
+                No matching opportunities found yet. Check back later!
+              </p>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {bucketMatches.map((match: any) => (
+                <Card key={match.id} className="p-6 hover:shadow-lg transition-shadow border-l-4 border-l-green-500">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Match</Badge>
+                        {match.category && <Badge variant="outline">{match.category}</Badge>}
+                      </div>
+                      <h3 className="font-semibold text-lg mb-2">{match.title}</h3>
+                      {match.description && <p className="text-muted-foreground text-sm">{match.description}</p>}
+                    </div>
+                    <Button size="sm" variant="outline">Connect</Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="posts" className="mt-6 space-y-4">
+          <div className="flex gap-2 mb-4">
+            <Button variant={postType === "all" ? "default" : "outline"} onClick={() => setPostType("all")} size="sm">
+              All ({posts.length})
+            </Button>
+            <Button variant={postType === "need" ? "default" : "outline"} onClick={() => setPostType("need")} size="sm">
+              Needs ({needsCount})
+            </Button>
+            <Button variant={postType === "offer" ? "default" : "outline"} onClick={() => setPostType("offer")} size="sm">
+              Offers ({offersCount})
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="p-6">
+                  <div className="h-24 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
+                </Card>
+              ))}
+            </div>
+          ) : filteredPosts.length === 0 ? (
+            <Card className="p-12 text-center">
+              <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Package className="h-12 w-12 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium mb-2">No posts yet</h3>
+              <p className="text-muted-foreground mb-4">Start by posting your first organizational {postType === "all" ? "need or offer" : postType}</p>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {filteredPosts.map((post: any) => (
+                <Card key={post.id} className="p-6 hover:shadow-lg transition-shadow">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge className={post.postType === 'need' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'}>
+                          {post.postType === 'need' ? 'Need' : 'Offer'}
+                        </Badge>
+                        <Badge variant="outline">{post.category || 'Other'}</Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(post.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-muted-foreground text-sm">{post.description}</p>
+                    </div>
+                    <Button size="sm" variant="outline">View Details</Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="add-post" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Create Organization Post</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <WytWallPostForm 
+                defaultPostType={defaultPostType}
+                onSuccess={() => setActiveTab("posts")}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
 function OrgPanelDuties() {
   return (
     <div className="p-6">
@@ -1679,14 +1844,11 @@ export default function PanelRouter() {
       {/* Organization Panel routes - Team/organization features */}
       <Route path="/orgpanel" component={OrgPanelDashboard} />
       <Route path="/orgpanel/dashboard" component={OrgPanelDashboard} />
-      <Route path="/orgpanel/wytwall" component={OrgPanelDashboard} />
-      <Route path="/orgpanel/posts" component={MyPosts} />
-      <Route path="/orgpanel/duties" component={OrgPanelDuties} />
+      <Route path="/orgpanel/wytwall" component={OrgPanelWytWall} />
+      <Route path="/orgpanel/posts" component={OrgPanelWytWall} />
       <Route path="/orgpanel/wytapps" component={MyPanelWytApps} />
-      <Route path="/orgpanel/wallet" component={MyWallet} />
       <Route path="/orgpanel/team" component={OrgPanelMembers} />
       <Route path="/orgpanel/profile" component={OrgPanelSettings} />
-      <Route path="/orgpanel/account" component={OrgPanelSettings} />
 
         {/* 404 fallback for panel routes */}
         <Route>

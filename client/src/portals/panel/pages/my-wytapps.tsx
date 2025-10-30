@@ -217,10 +217,10 @@ export default function MyWytApps() {
       <Tabs defaultValue="my-apps" className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2">
           <TabsTrigger value="my-apps" data-testid="tab-my-apps">
-            My Apps ({myApps.length})
+            Added Apps ({myApps.length})
           </TabsTrigger>
           <TabsTrigger value="available" data-testid="tab-available">
-            Available ({availableApps.length})
+            Available Apps ({availableApps.length})
           </TabsTrigger>
         </TabsList>
 
