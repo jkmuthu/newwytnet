@@ -320,29 +320,6 @@ export default function Home() {
         </CardContent>
       </Card>
 
-      {/* Explore AI Directory WytApp */}
-      <Card className="bg-gradient-to-br from-blue-500 to-cyan-600 border-0 shadow-xl hover:scale-105 transition-all rounded-2xl overflow-hidden cursor-pointer" onClick={() => navigate('/ai-directory')}>
-        <CardContent className="p-6">
-          <div className="flex items-start gap-3 mb-4">
-            <div className="h-12 w-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center flex-shrink-0">
-              <BarChart3 className="h-6 w-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-white mb-1">Explore AI Directory WytApp</h3>
-              <p className="text-sm text-white/90">Discover AI tools and resources</p>
-            </div>
-          </div>
-          <Button
-            onClick={(e) => { e.stopPropagation(); navigate('/ai-directory'); }}
-            className="w-full bg-white/90 hover:bg-white text-blue-600 font-bold shadow-lg rounded-xl"
-            data-testid="button-ai-directory"
-          >
-            Browse AI Directory
-            <ArrowRight className="h-4 w-4 ml-2" />
-          </Button>
-        </CardContent>
-      </Card>
-
       {/* Create QR Codes Using WytQRC App */}
       <Card className="bg-gradient-to-br from-emerald-500 to-teal-600 border-0 shadow-xl hover:scale-105 transition-all rounded-2xl overflow-hidden cursor-pointer" onClick={() => navigate('/qr-generator')}>
         <CardContent className="p-6">

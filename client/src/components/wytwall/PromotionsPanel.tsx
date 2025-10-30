@@ -63,29 +63,6 @@ export default function PromotionsPanel({ isAuthenticated }: PromotionsPanelProp
           </Card>
         )}
 
-        {/* Explore Ai Directory from WytHubs */}
-        <Card className="bg-gradient-to-br from-blue-500 to-cyan-600 border-0 shadow-lg hover:scale-105 transition-all rounded-xl overflow-hidden cursor-pointer" onClick={() => navigate('/ai-directory')}>
-          <CardContent className="p-4">
-            <div className="flex items-start gap-2 mb-3">
-              <div className="h-9 w-9 bg-white/20 backdrop-blur-xl rounded-lg flex items-center justify-center flex-shrink-0">
-                <BarChart3 className="h-4 w-4 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-bold text-white mb-0.5">Explore Ai Directory from WytHubs</h3>
-                <p className="text-xs text-white/90">Discover AI tools and resources</p>
-              </div>
-            </div>
-            <Button
-              onClick={(e) => { e.stopPropagation(); navigate('/ai-directory'); }}
-              className="w-full bg-white/90 hover:bg-white text-blue-600 font-semibold shadow-lg rounded-lg h-8 text-xs"
-              data-testid="button-ai-directory"
-            >
-              Browse All Apps
-              <ArrowRight className="h-3 w-3 ml-1" />
-            </Button>
-          </CardContent>
-        </Card>
-
         {/* Create QR Codes Using WytQRC App */}
         <Card className="bg-gradient-to-br from-emerald-500 to-teal-600 border-0 shadow-lg hover:scale-105 transition-all rounded-xl overflow-hidden cursor-pointer" onClick={() => navigate('/qr-generator')}>
           <CardContent className="p-4">

@@ -23,11 +23,11 @@ export const bottomNavItems = [
     activeRoutes: ['/wytlife']
   },
   { 
-    icon: Bot, 
-    label: 'AI Directory', 
-    href: '/ai-directory', 
+    icon: QrCode, 
+    label: 'Tools', 
+    href: '/qr-generator', 
     badge: null,
-    activeRoutes: ['/ai-directory', '/qr-generator', '/assessment']
+    activeRoutes: ['/qr-generator', '/assessment', '/wytai-trademark']
   }
 ];
 
@@ -39,5 +39,4 @@ export const sidebarNavItems = [
 export const wytAppsItems = [
   { icon: QrCode, label: 'QR Generator', href: '/qr-generator' },
   { icon: Activity, label: 'DISC Assessment', href: '/assessment' },
-  { icon: Bot, label: 'AI Directory', href: '/ai-directory' },
 ];

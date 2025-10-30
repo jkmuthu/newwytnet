@@ -33,7 +33,6 @@ import MyAccountPage from "@/pages/account/MyAccountPage";
 // Tool pages
 import Assessment from "@/pages/assessment";
 import QRGenerator from "@/pages/qr-generator";
-import AIDirectory from "@/pages/ai-directory";
 import WytAiTrademark from "@/pages/wytai-trademark";
 import TMNumbering from "@/pages/tm-numbering";
 import RealBro from "@/pages/realbro";
@@ -142,10 +141,8 @@ export default function PublicRouter() {
       </Route>
 
       {/* Tool routes */}
-      <Route path="/tools" component={AIDirectory} />
       <Route path="/assessment" component={Assessment} />
       <Route path="/qr-generator" component={QRGenerator} />
-      <Route path="/ai-directory" component={AIDirectory} />
       <Route path="/wytai-trademark" component={WytAiTrademark} />
       <Route path="/tm-numbering" component={TMNumbering} />
       <Route path="/realbro" component={RealBro} />
