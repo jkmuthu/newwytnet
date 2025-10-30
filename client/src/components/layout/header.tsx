@@ -214,11 +214,6 @@ export default function Header({ onMenuClick }: HeaderProps) {
                     <span>Home</span>
                   </Link>
                   
-                  <Link href="/ai-directory" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
-                    <Bot className="h-5 w-5" />
-                    <span>AI Directory</span>
-                  </Link>
-                  
                   <Link href="/qr-generator" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
                     <QrCode className="h-5 w-5" />
                     <span>QR Generator</span>

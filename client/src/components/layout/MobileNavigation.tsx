@@ -36,7 +36,6 @@ export default function MobileNavigation() {
   const [profileOpen, setProfileOpen] = useState(false);
 
   const publicNavItems = [
-    { icon: Bot, label: 'AI Directory', href: '/ai-directory', badge: 'LIVE' },
     { icon: QrCode, label: 'QR Generator', href: '/qr-generator', badge: 'LIVE' },
     { icon: Activity, label: 'DISC Assessment', href: '/assessment', badge: 'LIVE' },
     { icon: Smartphone, label: 'Install App', href: '/mobile-app', badge: null },

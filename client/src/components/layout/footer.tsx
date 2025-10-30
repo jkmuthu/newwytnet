@@ -17,7 +17,6 @@ export default function Footer() {
   ];
 
   const wytAppsLinks = [
-    { label: "AI Directory", href: "/ai-directory" },
     { label: "WytLife", href: "/wytlife" },
     { label: "QR Generator", href: "/qr-generator" },
     { label: "DISC Assessment", href: "/assessment" },
