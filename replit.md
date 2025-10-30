@@ -14,6 +14,33 @@ Focus: Fully white-label multi-tenant SaaS platform with identity validation.
 ## Frontend Architecture
 The frontend uses React 18, TypeScript, Vite, Tailwind CSS, and shadcn/ui. Wouter handles routing, and TanStack Query manages server state. It supports component-based builders for modules, CMS, applications, and hubs, with a mobile-first responsive design, animated gradients, and glassmorphism elements.
 
+## Routing Architecture
+The application uses a clear separation between public marketing pages and authenticated functional pages:
+
+### Public Routes (Marketing & Information)
+- `/` - WytNet Hub homepage
+- `/wytapps` - WytApps marketplace listing
+- `/app/:id` - Individual app marketing pages with features, pricing, and "Add to Panel" button
+- `/features`, `/pricing`, `/about` - Platform information pages
+
+### Authenticated Panel Routes (Functional Workspaces)
+- `/mypanel/*` - Personal workspace (My Panel) with user-specific features
+- `/orgpanel/*` - Organization workspace (Org Panel) with team collaboration features
+- `/apppanel/:appSlug/*` - **App Panel** - Immersive app-specific workspaces with dedicated navigation
+  - Example: `/apppanel/wytduty` - WytDuty app with dashboard, tasks, calendar, settings
+  - Each app has its own navigation menu and features when "switched to"
+  - Maintains unified header while providing app-focused sidebar navigation
+
+### Admin Routes (Platform Management)
+- `/engine/*` - Engine Admin (Super Admin Panel for platform infrastructure)
+- `/admin/*` - Hub Admin (WytNet.com hub content management)
+
+### Key Routing Principles
+1. **Public routes** show marketing information and allow users to discover and add apps to their panels
+2. **Panel routes** require authentication and provide functional app workspaces
+3. **App Panel** provides immersive, app-specific experiences while maintaining platform consistency
+4. Users "switch to app" from My WytApps to enter dedicated app workspaces at `/apppanel/:appSlug`
+
 ## Backend Architecture
 The backend is an Express.js application with TypeScript, providing RESTful APIs. WytPass OAuth (Google, Email OTP, Email/Password) provides session-based authentication, with RBAC and tenant isolation enforced at the database level.
 
@@ -27,6 +54,7 @@ The system is organized into self-contained packages (`kernel`, `builder`, `cms`
 Security measures include PostgreSQL Row Level Security, session-based authentication with httpOnly cookies, role-based access control, CSRF protection, and Zod schema validation. A unified WytPass authentication system enables single-session access across authorized panels (WytNet, Engine Admin, Hub Admin, MyPanel, OrgPanel) with seamless switching.
 
 ## Key Features & Implementations
+- **App Panel System**: Immersive app-specific workspaces accessible at `/apppanel/:appSlug` routes. Users can "Switch to App" from My WytApps to enter dedicated app environments with app-specific navigation, dashboard, and features while maintaining the unified platform header. Each app gets its own sidebar navigation and workspace context (personal, organization, or app-specific).
 - **AI App Builder**: OpenAI-powered tool for natural language app creation (admin-only).
 - **White-label API Proxy Gateway**: Unifies third-party service integration.
 - **Enhanced Module & App Management System**: Includes version control, edit history, custom route management, and context-based access control.
