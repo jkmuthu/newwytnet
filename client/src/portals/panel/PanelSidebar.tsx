@@ -75,15 +75,9 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
             },
             { 
               label: "My WytWall", 
-              icon: Home, 
+              icon: MessageSquare, 
               href: "/mypanel/wytwall", 
-              active: location === "/mypanel/wytwall" 
-            },
-            { 
-              label: "My Posts", 
-              icon: Package, 
-              href: "/mypanel/posts", 
-              active: location === "/mypanel/posts" 
+              active: location === "/mypanel/wytwall" || location === "/mypanel/posts"
             },
             { 
               label: "My WytApps", 
@@ -91,12 +85,6 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               href: "/mypanel/wytapps", 
               active: location === "/mypanel/wytapps" || location.startsWith("/mypanel/wytapps/"),
               badge: installedAppsCount > 0 ? { content: appsCountBadge, tone: 'default' as const } : undefined
-            },
-            { 
-              label: "My WytGames", 
-              icon: Calendar, 
-              href: "/mypanel/wytgames", 
-              active: location === "/mypanel/wytgames" 
             },
             { 
               label: "My Profile", 
@@ -121,21 +109,9 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
             },
             { 
               label: "Our WytWall", 
-              icon: Building, 
+              icon: MessageSquare, 
               href: "/orgpanel/wytwall", 
-              active: location === "/orgpanel/wytwall" 
-            },
-            { 
-              label: "Our Posts", 
-              icon: Package, 
-              href: "/orgpanel/posts", 
-              active: location === "/orgpanel/posts" 
-            },
-            { 
-              label: "Our Duties", 
-              icon: FileText, 
-              href: "/orgpanel/duties", 
-              active: location === "/orgpanel/duties" 
+              active: location === "/orgpanel/wytwall" || location === "/orgpanel/posts"
             },
             { 
               label: "Our WytApps", 
@@ -144,20 +120,14 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               active: location === "/orgpanel/wytapps" 
             },
             { 
-              label: "Our WytWallet", 
-              icon: CreditCard, 
-              href: "/orgpanel/wallet", 
-              active: location === "/orgpanel/wallet" 
-            },
-            { 
               label: "Our Team", 
               icon: Users, 
               href: "/orgpanel/team", 
               active: location === "/orgpanel/team" 
             },
             { 
-              label: "Our Profile", 
-              icon: User, 
+              label: "Our Org Profile", 
+              icon: Building, 
               href: "/orgpanel/profile", 
               active: location === "/orgpanel/profile" 
             },

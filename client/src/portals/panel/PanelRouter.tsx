@@ -238,10 +238,11 @@ function MyPanelDashboard() {
   );
 }
 
-// My WytWall - Personal Needs/Offers Stream
+// My WytWall - Personal Needs/Offers Stream with Tabs
 function MyPanelWytWall() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
+  const [activeTab, setActiveTab] = useState("matches");
   const [postType, setPostType] = useState<"all" | "need" | "offer" | "wytmatch">("all");
   const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
   const [defaultPostType, setDefaultPostType] = useState<"need" | "offer">("need");
@@ -283,73 +284,28 @@ function MyPanelWytWall() {
       <Card className="relative overflow-hidden border-0 shadow-2xl rounded-2xl">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600"></div>
         <CardContent className="relative p-6">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center">
-                <Package className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white">My WytWall</h1>
-                <p className="text-white/90 text-sm">Your personal needs & offers stream</p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center">
+              <Package className="h-6 w-6 text-white" />
             </div>
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => handleOpenPostDialog('need')}
-                className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-xl"
-                data-testid="button-post-need"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Post Need
-              </Button>
-              <Button 
-                onClick={() => handleOpenPostDialog('offer')}
-                className="bg-white/20 hover:bg-white/30 text-white backdrop-blur-xl"
-                data-testid="button-post-offer"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Post Offer
-              </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-white">My WytWall</h1>
+              <p className="text-white/90 text-sm">Your personal needs & offers stream</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Filter Tabs */}
-      <div className="flex gap-2">
-        <Button
-          variant={postType === "all" ? "default" : "outline"}
-          onClick={() => setPostType("all")}
-          className="rounded-full"
-          data-testid="filter-all"
-        >
-          All Posts ({posts.length})
-        </Button>
-        <Button
-          variant={postType === "need" ? "default" : "outline"}
-          onClick={() => setPostType("need")}
-          className="rounded-full"
-          data-testid="filter-needs"
-        >
-          Needs ({needsCount})
-        </Button>
-        <Button
-          variant={postType === "offer" ? "default" : "outline"}
-          onClick={() => setPostType("offer")}
-          className="rounded-full"
-          data-testid="filter-offers"
-        >
-          Offers ({offersCount})
-        </Button>
-        <Button
-          variant={postType === "wytmatch" ? "default" : "outline"}
-          onClick={() => setPostType("wytmatch")}
-          className="rounded-full"
-          data-testid="filter-wytmatch"
-        >
-          WytMatch ({bucketMatches.length})
-        </Button>
-      </div>
+      {/* Tabs Navigation */}
+      <Tabs defaultValue="matches" value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="matches">Matches</TabsTrigger>
+          <TabsTrigger value="posts">Posts</TabsTrigger>
+          <TabsTrigger value="add-post">Add Post</TabsTrigger>
+        </TabsList>
+
+        {/* Matches Tab */}
+        <TabsContent value="matches" className="space-y-4">
 
       {/* Posts Stream or WytMatch */}
       {postType === "wytmatch" ? (
