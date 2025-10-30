@@ -266,6 +266,16 @@ function WytDutySettings() {
 }
 
 function GenericAppDashboard({ appName }: { appName: string }) {
+  // Convert slug to display name (e.g., 'expense-calculator' -> 'Expense Calculator')
+  const slugToDisplayName = (slug: string): string => {
+    return slug
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+  
+  const displayName = slugToDisplayName(appName);
+  
   return (
     <div className="space-y-6">
       <Card className="relative overflow-hidden border-0 shadow-2xl rounded-2xl">
@@ -276,7 +286,7 @@ function GenericAppDashboard({ appName }: { appName: string }) {
               <Package className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white">{appName}</h1>
+              <h1 className="text-2xl font-bold text-white">{displayName}</h1>
               <p className="text-white/90 text-sm">App dashboard and features</p>
             </div>
           </div>
@@ -288,8 +298,53 @@ function GenericAppDashboard({ appName }: { appName: string }) {
           <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium mb-2">App Panel Active</h3>
           <p className="text-gray-600 dark:text-gray-400">
-            You are now in {appName} app panel. App-specific features will be implemented here.
+            You are now in {displayName} app panel. App-specific features will be implemented here.
           </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function GenericAppSettings({ appName }: { appName: string }) {
+  // Convert slug to display name
+  const slugToDisplayName = (slug: string): string => {
+    return slug
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+  
+  const displayName = slugToDisplayName(appName);
+  
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">{displayName} Settings</h1>
+        <p className="text-gray-600 dark:text-gray-400">Configure your {displayName} preferences</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>App Settings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Notifications</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Manage notification preferences</p>
+              </div>
+              <Button variant="outline" size="sm">Configure</Button>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Data Management</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Export or delete your data</p>
+              </div>
+              <Button variant="outline" size="sm">Manage</Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -307,16 +362,13 @@ export default function AppPanelRouter() {
       <Route path="/apppanel/wytduty/calendar" component={WytDutyCalendar} />
       <Route path="/apppanel/wytduty/settings" component={WytDutySettings} />
 
-      {/* Generic routes for other apps */}
-      <Route path="/apppanel/wytqrc">
-        <GenericAppDashboard appName="WytQRC" />
+      {/* Generic app routes - Must come after specific app routes */}
+      {/* Settings route for all apps */}
+      <Route path="/apppanel/:appSlug/settings">
+        {(params) => <GenericAppSettings appName={params.appSlug || 'App'} />}
       </Route>
-      <Route path="/apppanel/wytassesser">
-        <GenericAppDashboard appName="WytAssesser" />
-      </Route>
-      <Route path="/apppanel/wytbuilder">
-        <GenericAppDashboard appName="WytBuilder" />
-      </Route>
+      
+      {/* Dashboard/default route for all apps */}
       <Route path="/apppanel/:appSlug">
         {(params) => <GenericAppDashboard appName={params.appSlug || 'App'} />}
       </Route>

@@ -45,21 +45,36 @@ export default function PanelLayout({ children }: PanelLayoutProps) {
     if (normalizedPath.includes('/apppanel/')) {
       // Extract app slug from URL: /apppanel/wytduty -> wytduty
       const appSlug = normalizedPath.split('/apppanel/')[1]?.split('/')[0] || '';
+      
+      // Convert slug to display name (e.g., 'expense-calculator' -> 'Expense Calculator')
+      const slugToDisplayName = (slug: string): string => {
+        return slug
+          .split('-')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+      };
+      
       const appNameMap: Record<string, string> = {
         'wytduty': 'WytDuty',
         'wytqrc': 'WytQRC',
         'wytassesser': 'WytAssesser',
         'wytbuilder': 'WytBuilder',
         'wytlife': 'WytLife',
-        // Add more apps as needed
+        'assessment': 'Assessment',
+        'wytwall': 'WytWall',
+        'qr-generator': 'QR Generator',
+        'ai-directory': 'AI Directory',
+        // Fallback to auto-generated name from slug
       };
+      
+      const appDisplayName = appNameMap[appSlug] || slugToDisplayName(appSlug);
       
       setCurrentWorkspace({
         type: 'app',
         id: `app-${appSlug}`,
-        name: appNameMap[appSlug] || 'App Panel',
+        name: appDisplayName,
         appSlug,
-        appName: appNameMap[appSlug]
+        appName: appDisplayName
       });
     } else if (normalizedPath.includes('/orgpanel')) {
       setCurrentWorkspace({
