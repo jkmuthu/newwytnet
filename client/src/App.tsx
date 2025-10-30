@@ -29,8 +29,8 @@ import DevDocumentation from "@/pages/dev-documentation";
  * Routes are separated into distinct portals:
  * - /engine/* = Engine Admin (Super Admin Panel for platform infrastructure)
  * - /admin/* = Hub Admin (WytNet.com hub content management)
- * - /mypanel/*, /orgpanel/* = User/Org Panel
- * - / = WytNet Hub (First Hub built on Engine)
+ * - /mypanel/*, /orgpanel/*, /apppanel/* = User/Org/App Panels (Authenticated)
+ * - / = WytNet Hub (First Hub built on Engine) - Public marketing pages
  */
 function PortalRouter() {
   const [showWizard, setShowWizard] = useState(false);
@@ -55,11 +55,13 @@ function PortalRouter() {
         <Route path="/admin" component={HubAdminRouter} />
         <Route path="/admin/:rest*" component={HubAdminRouter} />
 
-        {/* Panel Portal - MyPanel and OrgPanel Routes */}
+        {/* Panel Portal - MyPanel, OrgPanel, and AppPanel Routes */}
         <Route path="/mypanel" component={PanelRouter} />
         <Route path="/mypanel/:rest*" component={PanelRouter} />
         <Route path="/orgpanel" component={PanelRouter} />
         <Route path="/orgpanel/:rest*" component={PanelRouter} />
+        <Route path="/apppanel" component={PanelRouter} />
+        <Route path="/apppanel/:rest*" component={PanelRouter} />
 
         {/* Legacy panel routes - redirect to new structure */}
         <Route path="/panel" component={PanelRouter} />
