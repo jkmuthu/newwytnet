@@ -69,7 +69,23 @@ export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuth
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
-  const contexts = contextsData?.contexts || [];
+  // Sort contexts in the desired order: My Panel, Org Panel, Hub Admins, Engine Admin
+  const sortContexts = (contexts: Context[]) => {
+    const priority: Record<string, number> = {
+      'user': 1,           // My Panel
+      'org': 2,            // Org Panel  
+      'hub_admin': 3,      // Hub Admin panels
+      'engine_admin': 4    // Engine Admin
+    };
+    
+    return [...contexts].sort((a, b) => {
+      const priorityA = priority[a.type] || 99;
+      const priorityB = priority[b.type] || 99;
+      return priorityA - priorityB;
+    });
+  };
+
+  const contexts = sortContexts(contextsData?.contexts || []);
   const activeContext = contexts.find(c => c.active);
   const hasAuth = contexts.length > 0;
 
