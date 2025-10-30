@@ -38,16 +38,15 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
       active: location === "/wytlife"
     },
     {
-      href: "/ai-directory", 
-      icon: Bot,
-      label: "AI Directory",
-      active: location === "/ai-directory" || location === "/qr-generator" || location === "/assessment"
+      href: "/qr-generator", 
+      icon: QrCode,
+      label: "Tools",
+      active: location === "/qr-generator" || location === "/assessment" || location === "/wytai-trademark"
     }
   ];
 
   // Sidebar items for mobile menu
   const sidebarItems = [
-    { icon: Bot, label: 'AI Directory', href: '/ai-directory' },
     { icon: QrCode, label: 'QR Generator', href: '/qr-generator' },
     { icon: Activity, label: 'DISC Assessment', href: '/assessment' },
     { icon: Grid3x3, label: 'Other WytApps', href: '/wytapps' },
