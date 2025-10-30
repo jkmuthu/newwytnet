@@ -285,62 +285,53 @@ export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuth
                 </>
               )}
 
-              {/* Panel Switcher (only if authenticated with multiple contexts) */}
+              {/* Panel Switcher */}
               {contexts.length > 0 && (
-                <>
-                  <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Switch Panel
-                  </p>
-                  
+                <div className="space-y-1">
                   {/* Go Home */}
-                  <div className="space-y-1 mb-2">
-                    <Link
-                      href="/"
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <Home className="h-4 w-4" />
-                      <span>Go Home</span>
-                    </Link>
-                  </div>
+                  <Link
+                    href="/"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Home className="h-4 w-4" />
+                    <span>Go Home</span>
+                  </Link>
                   
-                  <div className="space-y-1">
-                    {contexts.map((context, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handlePanelSwitch(context.path)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                          context.active
-                            ? 'bg-purple-50 dark:bg-purple-950/30 text-purple-900 dark:text-purple-100'
-                            : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                        }`}
-                        data-testid={`button-switch-${context.hubKey || context.type}`}
-                      >
-                        {getIcon(context.icon, context.active)}
-                        <div className="flex-1 text-left">
-                          <p className="font-medium">{context.name}</p>
-                          <p className="text-xs text-muted-foreground">{context.user.role}</p>
-                        </div>
-                        {context.active && (
-                          <CheckCircle2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+                  {/* My Panel, Org Panel, Hub Admin, Engine Admin */}
+                  {contexts.map((context, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handlePanelSwitch(context.path)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                        context.active
+                          ? 'bg-purple-50 dark:bg-purple-950/30 text-purple-900 dark:text-purple-100'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
+                      data-testid={`button-switch-${context.hubKey || context.type}`}
+                    >
+                      {getIcon(context.icon, context.active)}
+                      <div className="flex-1 text-left">
+                        <p className="font-medium">{context.name}</p>
+                        <p className="text-xs text-muted-foreground">{context.user.role}</p>
+                      </div>
+                      {context.active && (
+                        <CheckCircle2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                      )}
+                    </button>
+                  ))}
 
-            {/* My Account */}
-            <div className="p-2 border-t">
-              <Link
-                href="/account"
-                className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <UserCircle className="h-4 w-4" />
-                <span>My Account</span>
-              </Link>
+                  {/* My Account */}
+                  <Link
+                    href="/account"
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <UserCircle className="h-4 w-4" />
+                    <span>My Account</span>
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Logout */}
@@ -394,13 +385,6 @@ export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuth
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-
-        {/* Panel Switcher */}
-        <div className="px-2 py-1.5">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-            Switch Panel
-          </p>
-        </div>
         
         {/* Go Home */}
         <Link href="/">
@@ -410,8 +394,7 @@ export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuth
           </DropdownMenuItem>
         </Link>
         
-        <DropdownMenuSeparator />
-        
+        {/* Panel Switcher - My Panel, Org Panel, Hub Admins, Engine Admin */}
         {contexts.map((context, index) => (
           <DropdownMenuItem
             key={index}
@@ -431,8 +414,6 @@ export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuth
             )}
           </DropdownMenuItem>
         ))}
-
-        <DropdownMenuSeparator />
 
         {/* My Account */}
         <Link href="/account">
