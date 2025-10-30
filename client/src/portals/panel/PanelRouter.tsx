@@ -243,26 +243,24 @@ function MyPanelWytWall() {
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("matches");
-  const [postType, setPostType] = useState<"all" | "need" | "offer" | "wytmatch">("all");
-  const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
+  const [postType, setPostType] = useState<"all" | "need" | "offer">("all");
   const [defaultPostType, setDefaultPostType] = useState<"need" | "offer">("need");
   
   const { data: postsData, isLoading } = useQuery({
-    queryKey: ['/api/wytwall/my-posts', postType !== "all" && postType !== "wytmatch" ? postType : undefined],
+    queryKey: ['/api/wytwall/my-posts', postType !== "all" ? postType : undefined],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (postType !== "all" && postType !== "wytmatch") {
+      if (postType !== "all") {
         params.set('postType', postType);
       }
       return await fetch(`/api/wytwall/my-posts?${params.toString()}`).then(r => r.json());
     },
-    enabled: postType !== "wytmatch",
   });
 
-  // Fetch PUBLIC bucket list items from OTHER users for WytMatch tab
+  // Fetch PUBLIC bucket list items from OTHER users for Matches tab
   const { data: matchesData, isLoading: matchesLoading } = useQuery({
     queryKey: ['/api/bucket-list/public'],
-    enabled: postType === "wytmatch",
+    enabled: activeTab === "matches",
   });
 
   const posts = (postsData as any)?.posts || [];
@@ -271,11 +269,6 @@ function MyPanelWytWall() {
   const needsCount = posts.filter((p: any) => p.postType === 'need').length;
   const offersCount = posts.filter((p: any) => p.postType === 'offer').length;
   
-  const handleOpenPostDialog = (type: "need" | "offer") => {
-    setDefaultPostType(type);
-    setIsPostDialogOpen(true);
-  };
-
   const filteredPosts = postType === "all" ? posts : posts.filter((p: any) => p.postType === postType);
   
   return (
@@ -299,139 +292,161 @@ function MyPanelWytWall() {
       {/* Tabs Navigation */}
       <Tabs defaultValue="matches" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="matches">Matches</TabsTrigger>
-          <TabsTrigger value="posts">Posts</TabsTrigger>
-          <TabsTrigger value="add-post">Add Post</TabsTrigger>
+          <TabsTrigger value="matches" data-testid="tab-matches">Matches</TabsTrigger>
+          <TabsTrigger value="posts" data-testid="tab-posts">Posts</TabsTrigger>
+          <TabsTrigger value="add-post" data-testid="tab-add-post">Add Post</TabsTrigger>
         </TabsList>
 
-        {/* Matches Tab */}
-        <TabsContent value="matches" className="space-y-4">
-
-      {/* Posts Stream or WytMatch */}
-      {postType === "wytmatch" ? (
-        matchesLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="p-6">
-                <div className="h-24 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
-              </Card>
-            ))}
-          </div>
-        ) : bucketMatches.length === 0 ? (
-          <Card className="p-12 text-center">
-            <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Package className="h-12 w-12 text-purple-500" />
+        {/* Matches Tab Content */}
+        <TabsContent value="matches" className="mt-6 space-y-4">
+          {matchesLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="p-6">
+                  <div className="h-24 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
+                </Card>
+              ))}
             </div>
-            <h3 className="text-lg font-medium mb-2">No Matches Found</h3>
-            <p className="text-muted-foreground mb-4">
-              No other users have shared public bucket list items yet. Check back later to discover opportunities!
-            </p>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 rounded-lg mb-4">
-              <p className="text-sm text-purple-900 dark:text-purple-100">
-                <strong>WytMatch:</strong> Discover other users' needs and goals - your skills could be their solution!
+          ) : bucketMatches.length === 0 ? (
+            <Card className="p-12 text-center">
+              <div className="w-24 h-24 bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Package className="h-12 w-12 text-purple-500" />
+              </div>
+              <h3 className="text-lg font-medium mb-2">No Matches Found</h3>
+              <p className="text-muted-foreground mb-4">
+                No other users have shared public bucket list items yet. Check back later to discover opportunities!
               </p>
-            </div>
-            {bucketMatches.map((match: any) => (
-              <Card key={match.id} className="p-6 hover:shadow-lg transition-shadow border-l-4 border-l-purple-500" data-testid={`match-card-${match.id}`}>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                        Bucket List Match
-                      </Badge>
-                      {match.category && <Badge variant="outline">{match.category}</Badge>}
-                      {match.isDone && (
-                        <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                          Completed
-                        </span>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 rounded-lg">
+                <p className="text-sm text-purple-900 dark:text-purple-100">
+                  <strong>WytMatch:</strong> Discover other users' needs and goals - your skills could be their solution!
+                </p>
+              </div>
+              {bucketMatches.map((match: any) => (
+                <Card key={match.id} className="p-6 hover:shadow-lg transition-shadow border-l-4 border-l-purple-500" data-testid={`match-card-${match.id}`}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                          Bucket List Match
+                        </Badge>
+                        {match.category && <Badge variant="outline">{match.category}</Badge>}
+                        {match.isDone && (
+                          <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                            Completed
+                          </span>
+                        )}
+                      </div>
+                      <h3 className={`font-semibold text-lg mb-2 ${match.isDone ? 'line-through text-muted-foreground' : ''}`}>
+                        {match.title}
+                      </h3>
+                      {match.description && (
+                        <p className="text-muted-foreground text-sm mb-2">{match.description}</p>
+                      )}
+                      {match.targetDate && (
+                        <div className="text-xs text-muted-foreground">
+                          Target: {new Date(match.targetDate).toLocaleDateString()}
+                        </div>
                       )}
                     </div>
-                    <h3 className={`font-semibold text-lg mb-2 ${match.isDone ? 'line-through text-muted-foreground' : ''}`}>
-                      {match.title}
-                    </h3>
-                    {match.description && (
-                      <p className="text-muted-foreground text-sm mb-2">{match.description}</p>
-                    )}
-                    {match.targetDate && (
-                      <div className="text-xs text-muted-foreground">
-                        Target: {new Date(match.targetDate).toLocaleDateString()}
-                      </div>
-                    )}
+                    <Button size="sm" variant="outline" data-testid={`button-connect-${match.id}`}>
+                      <Package className="h-4 w-4 mr-2" />
+                      Connect
+                    </Button>
                   </div>
-                  <Button size="sm" variant="outline" data-testid={`button-connect-${match.id}`}>
-                    <Package className="h-4 w-4 mr-2" />
-                    Connect
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )
-      ) : isLoading ? (
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="p-6">
-              <div className="h-24 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
-            </Card>
-          ))}
-        </div>
-      ) : filteredPosts.length === 0 ? (
-        <Card className="p-12 text-center">
-          <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Package className="h-12 w-12 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium mb-2">No {postType === "all" ? "posts" : postType === "need" ? "needs" : "offers"} yet</h3>
-          <p className="text-muted-foreground mb-4">Start by posting your first {postType === "all" ? "need or offer" : postType === "need" ? "need" : "offer"}</p>
-          <div className="flex gap-2 justify-center">
-            <Button onClick={() => handleOpenPostDialog('need')}>
-              <Plus className="h-4 w-4 mr-2" />
-              Post Need
-            </Button>
-            <Button onClick={() => handleOpenPostDialog('offer')} variant="outline">
-              <Plus className="h-4 w-4 mr-2" />
-              Post Offer
-            </Button>
-          </div>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {filteredPosts.map((post: any) => (
-            <Card key={post.id} className="p-6 hover:shadow-lg transition-shadow" data-testid={`post-card-${post.id}`}>
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Badge className={post.postType === 'need' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}>
-                      {post.postType === 'need' ? 'Need' : 'Offer'}
-                    </Badge>
-                    <Badge variant="outline">{post.category || 'Other'}</Badge>
-                    <span className="text-sm text-muted-foreground">
-                      {new Date(post.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className="text-muted-foreground text-sm">{post.description}</p>
-                </div>
-                <Button size="sm" variant="outline" data-testid={`button-view-${post.id}`}>View Details</Button>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
-      {/* Post Creation Dialog */}
-      <Dialog open={isPostDialogOpen} onOpenChange={setIsPostDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Create a Post</DialogTitle>
-          </DialogHeader>
-          <WytWallPostForm 
-            defaultPostType={defaultPostType}
-            onSuccess={() => setIsPostDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
+        {/* Posts Tab Content */}
+        <TabsContent value="posts" className="mt-6 space-y-4">
+          <div className="flex gap-2 mb-4">
+            <Button
+              variant={postType === "all" ? "default" : "outline"}
+              onClick={() => setPostType("all")}
+              size="sm"
+              data-testid="filter-all"
+            >
+              All ({posts.length})
+            </Button>
+            <Button
+              variant={postType === "need" ? "default" : "outline"}
+              onClick={() => setPostType("need")}
+              size="sm"
+              data-testid="filter-needs"
+            >
+              Needs ({needsCount})
+            </Button>
+            <Button
+              variant={postType === "offer" ? "default" : "outline"}
+              onClick={() => setPostType("offer")}
+              size="sm"
+              data-testid="filter-offers"
+            >
+              Offers ({offersCount})
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="p-6">
+                  <div className="h-24 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
+                </Card>
+              ))}
+            </div>
+          ) : filteredPosts.length === 0 ? (
+            <Card className="p-12 text-center">
+              <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Package className="h-12 w-12 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium mb-2">No {postType === "all" ? "posts" : postType === "need" ? "needs" : "offers"} yet</h3>
+              <p className="text-muted-foreground mb-4">Start by posting your first {postType === "all" ? "need or offer" : postType}</p>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {filteredPosts.map((post: any) => (
+                <Card key={post.id} className="p-6 hover:shadow-lg transition-shadow" data-testid={`post-card-${post.id}`}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge className={post.postType === 'need' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'}>
+                          {post.postType === 'need' ? 'Need' : 'Offer'}
+                        </Badge>
+                        <Badge variant="outline">{post.category || 'Other'}</Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {new Date(post.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-muted-foreground text-sm">{post.description}</p>
+                    </div>
+                    <Button size="sm" variant="outline" data-testid={`button-view-${post.id}`}>View Details</Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Add Post Tab Content */}
+        <TabsContent value="add-post" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Create a New Post</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <WytWallPostForm 
+                defaultPostType={defaultPostType}
+                onSuccess={() => setActiveTab("posts")}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
