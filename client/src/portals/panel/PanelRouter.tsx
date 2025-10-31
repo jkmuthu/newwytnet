@@ -1852,9 +1852,7 @@ export default function PanelRouter() {
       <Route path="/orgpanel/profile" component={OrgPanelSettings} />
 
       {/* App Panel routes - App-specific features */}
-      <Route path="/apppanel/:rest*">
-        <AppPanelRouter />
-      </Route>
+      <Route path="/apppanel/:rest*" component={AppPanelRouter} />
 
         {/* 404 fallback for panel routes */}
         <Route>
