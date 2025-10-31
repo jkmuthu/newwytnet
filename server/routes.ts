@@ -364,32 +364,20 @@ export async function registerRoutes(app: Express): Promise<void> {
         }
       }
 
-      // 3. Regular User Access - all authenticated users get WytNet panel
-      const wytnetHub = await db
-        .select()
-        .from(platformHubs)
-        .where(eq(platformHubs.slug, 'wytnet'))
-        .limit(1);
-
-      if (wytnetHub.length > 0 && wytnetHub[0].status === 'active') {
-        // Only add if not already added as hub admin
-        const alreadyAddedAsAdmin = contexts.some(c => c.hubKey === 'wytnet' && c.type === 'hub_admin');
-        if (!alreadyAddedAsAdmin) {
-          contexts.push({
-            type: 'user',
-            name: 'WytNet',
-            path: '/dashboard',
-            icon: 'Home',
-            hubKey: 'wytnet',
-            user: {
-              name: principal.name,
-              email: principal.email,
-              role: 'User'
-            },
-            active: currentPath.includes('/dashboard') && !currentPath.includes('/admin') && !currentPath.includes('/engine')
-          });
-        }
-      }
+      // 3. Regular User Access - all authenticated users get WytPanel (My Panel)
+      // This is available to ALL authenticated users unconditionally
+      contexts.push({
+        type: 'user',
+        name: 'WytPanel',
+        path: '/mypanel',
+        icon: 'User',
+        user: {
+          name: principal.name,
+          email: principal.email,
+          role: 'User'
+        },
+        active: currentPath.includes('/mypanel')
+      });
 
       res.json({
         contexts,
