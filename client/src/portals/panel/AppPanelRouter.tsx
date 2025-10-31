@@ -354,21 +354,25 @@ function GenericAppSettings({ appName }: { appName: string }) {
 export default function AppPanelRouter() {
   return (
     <Switch>
-      {/* WytDuty App Routes */}
-      <Route path="/apppanel/wytduty" component={WytDutyDashboard} />
-      <Route path="/apppanel/wytduty/dashboard" component={WytDutyDashboard} />
-      <Route path="/apppanel/wytduty/my-duties" component={WytDutyMyDuties} />
-      <Route path="/apppanel/wytduty/assigned" component={WytDutyAssigned} />
-      <Route path="/apppanel/wytduty/calendar" component={WytDutyCalendar} />
+      {/* WytDuty App Routes - Use full paths */}
       <Route path="/apppanel/wytduty/settings" component={WytDutySettings} />
+      <Route path="/apppanel/wytduty/calendar" component={WytDutyCalendar} />
+      <Route path="/apppanel/wytduty/assigned" component={WytDutyAssigned} />
+      <Route path="/apppanel/wytduty/my-duties" component={WytDutyMyDuties} />
+      <Route path="/apppanel/wytduty/dashboard" component={WytDutyDashboard} />
+      <Route path="/apppanel/wytduty" component={WytDutyDashboard} />
 
       {/* Generic app routes - Must come after specific app routes */}
-      {/* Settings route for all apps */}
+      {/* Settings route for all apps - Most specific first */}
       <Route path="/apppanel/:appSlug/settings">
         {(params) => <GenericAppSettings appName={params.appSlug || 'App'} />}
       </Route>
       
       {/* Dashboard/default route for all apps */}
+      <Route path="/apppanel/:appSlug/dashboard">
+        {(params) => <GenericAppDashboard appName={params.appSlug || 'App'} />}
+      </Route>
+      
       <Route path="/apppanel/:appSlug">
         {(params) => <GenericAppDashboard appName={params.appSlug || 'App'} />}
       </Route>
