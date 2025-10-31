@@ -234,10 +234,10 @@ export default function AdminDatasetManagementImproved() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Database className="h-8 w-8" />
-            Dataset Management
+            All Datasets
           </h1>
           <p className="text-muted-foreground mt-2">
-            Manage reference data collections (Countries, Languages, Currencies, etc.)
+            WytData Management: Global reference datasets (Countries, Cities, Languages, Currencies, Industries, etc.)
           </p>
         </div>
       </div>
@@ -246,20 +246,20 @@ export default function AdminDatasetManagementImproved() {
         <TabsList>
           <TabsTrigger value="collections" data-testid="tab-collections">
             <Database className="h-4 w-4 mr-2" />
-            Collections List
+            All Collections
           </TabsTrigger>
           <TabsTrigger value="items" data-testid="tab-items" disabled={!selectedCollection}>
             <Globe className="h-4 w-4 mr-2" />
-            Items View
+            Collection Items
             {selectedCollection && <Badge variant="secondary" className="ml-2">{selectedCollection.name}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="settings" data-testid="tab-settings">
             <SettingsIcon className="h-4 w-4 mr-2" />
-            Settings
+            Dataset Settings
           </TabsTrigger>
           <TabsTrigger value="import-export" data-testid="tab-import-export">
             <Upload className="h-4 w-4 mr-2" />
-            Import/Export
+            Import/Export Data
           </TabsTrigger>
         </TabsList>
 
@@ -270,7 +270,7 @@ export default function AdminDatasetManagementImproved() {
                 <div>
                   <CardTitle>All Collections</CardTitle>
                   <CardDescription>
-                    Available dataset collections
+                    Available dataset collections - WytData global reference data
                     {collectionsData && <Badge variant="secondary" className="ml-2">{collectionsData.collections.length} total</Badge>}
                   </CardDescription>
                 </div>
