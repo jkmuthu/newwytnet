@@ -351,6 +351,62 @@ function AddTrademarkForm({ onSuccess, niceClasses }: { onSuccess: () => void; n
     applicationDate: '',
     registrationDate: '',
   });
+  const [isFetching, setIsFetching] = useState(false);
+  const [isFetched, setIsFetched] = useState(false);
+
+  // Fetch trademark details by TM Number
+  const handleFetchDetails = async () => {
+    if (!/^\d{7}$/.test(formData.tmNumber)) {
+      toast({
+        title: "Invalid TM Number",
+        description: "Please enter a valid 7-digit TM Number",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsFetching(true);
+    try {
+      const response = await fetch(`/api/trademarks/${formData.tmNumber}`, {
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Trademark not found');
+      }
+
+      const data = await response.json();
+      const tm = data.trademark;
+
+      // Auto-populate form with fetched data
+      setFormData({
+        tmNumber: tm.tmNumber || formData.tmNumber,
+        brandName: tm.brandName || '',
+        owner: tm.owner || '',
+        ownerAddress: tm.ownerAddress || '',
+        office: tm.office || '',
+        status: tm.status || 'Filed',
+        classes: tm.classes || [],
+        goodsServices: tm.goodsServices || '',
+        applicationDate: tm.applicationDate ? new Date(tm.applicationDate).toISOString().split('T')[0] : '',
+        registrationDate: tm.registrationDate ? new Date(tm.registrationDate).toISOString().split('T')[0] : '',
+      });
+
+      setIsFetched(true);
+      toast({
+        title: "Success",
+        description: "Trademark details fetched successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Not Found",
+        description: "Trademark not found in database. You can add it manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   const addMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -377,7 +433,7 @@ function AddTrademarkForm({ onSuccess, niceClasses }: { onSuccess: () => void; n
       });
       onSuccess();
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast({
         title: "Error",
         description: error.message || "Failed to add trademark",
@@ -414,17 +470,47 @@ function AddTrademarkForm({ onSuccess, niceClasses }: { onSuccess: () => void; n
       <div className="space-y-4">
         <div>
           <Label htmlFor="tmNumber">TM Number (Application Number) *</Label>
-          <Input
-            id="tmNumber"
-            placeholder="1234567"
-            value={formData.tmNumber}
-            onChange={(e) => setFormData({ ...formData, tmNumber: e.target.value })}
-            required
-            pattern="\d{7}"
-            maxLength={7}
-            data-testid="input-tm-number"
-          />
-          <p className="text-xs text-gray-500 mt-1">7-digit application number</p>
+          <div className="flex gap-2">
+            <Input
+              id="tmNumber"
+              placeholder="1234567"
+              value={formData.tmNumber}
+              onChange={(e) => {
+                setFormData({ ...formData, tmNumber: e.target.value });
+                setIsFetched(false);
+              }}
+              required
+              pattern="\d{7}"
+              maxLength={7}
+              data-testid="input-tm-number"
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleFetchDetails}
+              disabled={isFetching || formData.tmNumber.length !== 7}
+              data-testid="button-fetch-details"
+            >
+              {isFetching ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Fetching...
+                </>
+              ) : (
+                <>
+                  <Search className="h-4 w-4 mr-2" />
+                  Fetch
+                </>
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            {isFetched 
+              ? "✓ Details fetched successfully. You can edit before saving." 
+              : "Enter 7-digit TM Number and click Fetch to auto-fill all details"
+            }
+          </p>
         </div>
 
         <div>
