@@ -293,11 +293,11 @@ export default function AdminDatasetManagementImproved() {
                     <div className="flex items-center gap-2 pb-2 border-b">
                       <Globe className="h-5 w-5 text-blue-600" />
                       <h3 className="font-semibold text-lg">Geographic & Location Data</h3>
-                      <Badge variant="outline" className="ml-auto">Master Dataset</Badge>
+                      <Badge variant="outline" className="ml-auto">Unified Dataset</Badge>
                     </div>
                     <div className="space-y-2">
                       {collectionsData?.collections
-                        .filter(c => ['countries', 'states', 'cities', 'timezones'].includes(c.key))
+                        .filter(c => ['global_locations', 'countries', 'states', 'cities', 'timezones'].includes(c.key))
                         .map((collection) => (
                           <div
                             key={collection.id}
@@ -382,15 +382,17 @@ export default function AdminDatasetManagementImproved() {
                   </div>
 
                   {/* India-Specific Data */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 pb-2 border-b">
-                      <span className="text-xl">🇮🇳</span>
-                      <h3 className="font-semibold text-lg">India-Specific Data</h3>
-                    </div>
-                    <div className="space-y-2">
-                      {collectionsData?.collections
-                        .filter(c => ['india_states', 'india_cities', 'gst_state_codes'].includes(c.key))
-                        .map((collection) => (
+                  {collectionsData?.collections.filter(c => ['india_states', 'india_cities', 'gst_state_codes', 'india-states', 'india-cities'].includes(c.key)).length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 pb-2 border-b">
+                        <span className="text-xl">🇮🇳</span>
+                        <h3 className="font-semibold text-lg">India-Specific Data (Legacy)</h3>
+                        <Badge variant="secondary" className="text-xs">Migrated to Global Locations</Badge>
+                      </div>
+                      <div className="space-y-2">
+                        {collectionsData?.collections
+                          .filter(c => ['india_states', 'india_cities', 'gst_state_codes', 'india-states', 'india-cities'].includes(c.key))
+                          .map((collection) => (
                           <div
                             key={collection.id}
                             className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent hover:border-primary transition-all cursor-pointer group"
@@ -424,8 +426,9 @@ export default function AdminDatasetManagementImproved() {
                             </Button>
                           </div>
                         ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Business & Industry Data */}
                   <div className="space-y-3">
@@ -474,10 +477,10 @@ export default function AdminDatasetManagementImproved() {
                   </div>
 
                   {/* Other Collections */}
-                  {(collectionsData?.collections?.filter(c => 
-                    !['countries', 'states', 'cities', 'timezones', 'languages', 'currencies', 
-                      'india_states', 'india_cities', 'gst_state_codes', 'industries', 'company_sizes', 'job_roles'].includes(c.key)
-                  ).length || 0) > 0 && (
+                  {((collectionsData?.collections?.filter(c => 
+                    !['global_locations', 'countries', 'states', 'cities', 'timezones', 'languages', 'currencies', 
+                      'india_states', 'india_cities', 'india-states', 'india-cities', 'gst_state_codes', 'industries', 'company_sizes', 'job_roles'].includes(c.key)
+                  ).length) || 0) > 0 && (
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 pb-2 border-b">
                         <Database className="h-5 w-5 text-gray-600" />
@@ -485,8 +488,8 @@ export default function AdminDatasetManagementImproved() {
                       </div>
                       <div className="space-y-2">
                         {collectionsData?.collections
-                          .filter(c => !['countries', 'states', 'cities', 'timezones', 'languages', 'currencies', 
-                            'india_states', 'india_cities', 'gst_state_codes', 'industries', 'company_sizes', 'job_roles'].includes(c.key))
+                          .filter(c => !['global_locations', 'countries', 'states', 'cities', 'timezones', 'languages', 'currencies', 
+                            'india_states', 'india_cities', 'india-states', 'india-cities', 'gst_state_codes', 'industries', 'company_sizes', 'job_roles'].includes(c.key))
                           .map((collection) => (
                             <div
                               key={collection.id}
