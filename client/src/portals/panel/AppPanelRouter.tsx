@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import WytApiPage from "./pages/wytapi";
+import AppPanelHome from "./pages/app-panel-home";
 
 function WytDutyDashboard() {
   return (
@@ -355,6 +356,9 @@ function GenericAppSettings({ appName }: { appName: string }) {
 export default function AppPanelRouter() {
   return (
     <Switch>
+      {/* App Panel Home - Shows all added apps */}
+      <Route path="/apppanel" component={AppPanelHome} />
+
       {/* WytApi App Routes */}
       <Route path="/apppanel/wytapi" component={WytApiPage} />
 
