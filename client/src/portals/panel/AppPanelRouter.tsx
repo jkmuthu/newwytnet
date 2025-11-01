@@ -14,6 +14,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { useState } from "react";
+import WytApiPage from "./pages/wytapi";
 
 function WytDutyDashboard() {
   return (
@@ -354,6 +355,9 @@ function GenericAppSettings({ appName }: { appName: string }) {
 export default function AppPanelRouter() {
   return (
     <Switch>
+      {/* WytApi App Routes */}
+      <Route path="/apppanel/wytapi" component={WytApiPage} />
+
       {/* WytDuty App Routes - Use full paths */}
       <Route path="/apppanel/wytduty/settings" component={WytDutySettings} />
       <Route path="/apppanel/wytduty/calendar" component={WytDutyCalendar} />
