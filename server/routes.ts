@@ -6664,9 +6664,9 @@ When suggesting improvements, format your response with suggestions in a structu
 
       let query = db
         .select()
-        .from(platformModules)
-        .where(eq(platformModules.status, 'enabled'))
-        .orderBy(platformModules.order, platformModules.name);
+        .from(appsRegistry)
+        .where(eq(appsRegistry.isActive, true))
+        .orderBy(appsRegistry.name);
 
       const apps = await query;
 
@@ -6674,11 +6674,6 @@ When suggesting improvements, format your response with suggestions in a structu
       let filteredApps = apps;
       if (category) {
         filteredApps = apps.filter((app: any) => app.category === category);
-      }
-
-      // Filter by pricing if provided
-      if (pricing) {
-        filteredApps = filteredApps.filter((app: any) => app.pricing === pricing);
       }
 
       res.json({
@@ -6712,10 +6707,10 @@ When suggesting improvements, format your response with suggestions in a structu
       const userApps = await db
         .select({
           installation: userAppInstallations,
-          app: platformModules
+          app: appsRegistry
         })
         .from(userAppInstallations)
-        .innerJoin(platformModules, eq(userAppInstallations.appSlug, platformModules.id))
+        .innerJoin(appsRegistry, eq(userAppInstallations.appSlug, appsRegistry.slug))
         .where(eq(userAppInstallations.userId, userId));
 
       res.json({
@@ -6728,6 +6723,45 @@ When suggesting improvements, format your response with suggestions in a structu
       res.status(500).json({
         success: false,
         error: 'Failed to fetch user apps'
+      });
+    }
+  });
+
+  // Get user's added apps for panel (same as my-apps but with different structure)
+  app.get('/api/panel/apps/added', async (req: any, res) => {
+    try {
+      // Check if user is authenticated (Passport or custom session)
+      if (!req.user && !req.session?.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      // Get user ID from either Passport or custom session
+      const userId = req.user?.id || req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const userApps = await db
+        .select()
+        .from(userAppInstallations)
+        .innerJoin(appsRegistry, eq(userAppInstallations.appSlug, appsRegistry.slug))
+        .where(eq(userAppInstallations.userId, userId));
+
+      const apps = userApps.map((item: any) => ({
+        ...item.apps_registry,
+        installedAt: item.user_app_installations.installedAt
+      }));
+
+      res.json({
+        success: true,
+        apps,
+        total: apps.length
+      });
+    } catch (error) {
+      console.error('Error fetching user added apps:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch added apps'
       });
     }
   });
@@ -6755,11 +6789,11 @@ When suggesting improvements, format your response with suggestions in a structu
         });
       }
 
-      // Check if app exists and is enabled
+      // Check if app exists and is active
       const app = await db
         .select()
-        .from(platformModules)
-        .where(eq(platformModules.id, appSlug))
+        .from(appsRegistry)
+        .where(eq(appsRegistry.slug, appSlug))
         .limit(1);
 
       if (app.length === 0) {
@@ -6769,7 +6803,7 @@ When suggesting improvements, format your response with suggestions in a structu
         });
       }
 
-      if (app[0].status !== 'enabled') {
+      if (!app[0].isActive) {
         return res.status(400).json({
           success: false,
           error: 'App is not available for installation'
@@ -6805,15 +6839,6 @@ When suggesting improvements, format your response with suggestions in a structu
           updatedAt: new Date()
         })
         .returning();
-
-      // Increment install count
-      await db
-        .update(platformModules)
-        .set({ 
-          installs: sql`${platformModules.installs} + 1`,
-          updatedAt: new Date()
-        })
-        .where(eq(platformModules.id, appSlug));
 
       res.json({
         success: true,
@@ -6869,15 +6894,6 @@ When suggesting improvements, format your response with suggestions in a structu
           eq(userAppInstallations.userId, userId),
           eq(userAppInstallations.appSlug, appSlug)
         ));
-
-      // Decrement install count
-      await db
-        .update(platformModules)
-        .set({ 
-          installs: sql`GREATEST(${platformModules.installs} - 1, 0)`,
-          updatedAt: new Date()
-        })
-        .where(eq(platformModules.id, appSlug));
 
       res.json({
         success: true,
