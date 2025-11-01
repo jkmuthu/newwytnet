@@ -187,6 +187,15 @@ const wytApps = [
     category: "ai-tools",
     isActive: true,
     metadata: { route: "/app/ai", contexts: ["app", "hub"], version: "1.0.0" }
+  },
+  {
+    name: "WytApi",
+    slug: "wytapi",
+    description: "API Access Management - Manage API keys, monitor usage, and access platform datasets programmatically",
+    icon: "code",
+    category: "core-platform",
+    isActive: true,
+    metadata: { route: "/apppanel/wytapi", contexts: ["app"], version: "1.0.0" }
   }
 ];
 
