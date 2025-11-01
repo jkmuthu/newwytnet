@@ -198,6 +198,58 @@ import { whatsappAuthService } from "./services/whatsappAuthService";
 
 // Principal resolver now imported from customAuth.ts
 
+// Helper function for Nice Classification descriptions
+function getNiceClassDescription(classNum: number): string {
+  const descriptions: Record<number, string> = {
+    1: 'Chemicals',
+    2: 'Paints',
+    3: 'Cosmetics and cleaning preparations',
+    4: 'Lubricants and fuels',
+    5: 'Pharmaceuticals',
+    6: 'Common metals',
+    7: 'Machines',
+    8: 'Hand tools',
+    9: 'Scientific and electric apparatus',
+    10: 'Medical apparatus',
+    11: 'Environmental control apparatus',
+    12: 'Vehicles',
+    13: 'Firearms',
+    14: 'Jewelry',
+    15: 'Musical instruments',
+    16: 'Paper goods and printed matter',
+    17: 'Rubber goods',
+    18: 'Leather goods',
+    19: 'Non-metallic building materials',
+    20: 'Furniture',
+    21: 'Housewares and glass',
+    22: 'Cordage and fibers',
+    23: 'Yarns and threads',
+    24: 'Fabrics',
+    25: 'Clothing',
+    26: 'Fancy goods',
+    27: 'Floor coverings',
+    28: 'Toys and sporting goods',
+    29: 'Meats and processed foods',
+    30: 'Staple foods',
+    31: 'Natural agricultural products',
+    32: 'Light beverages',
+    33: 'Wines and spirits',
+    34: 'Smokers articles',
+    35: 'Advertising and business',
+    36: 'Insurance and financial',
+    37: 'Building construction and repair',
+    38: 'Communication',
+    39: 'Transportation and storage',
+    40: 'Treatment of materials',
+    41: 'Education and entertainment',
+    42: 'Computer and scientific',
+    43: 'Hotels and restaurants',
+    44: 'Medical, beauty and agricultural',
+    45: 'Legal and security'
+  };
+  return descriptions[classNum] || 'Unknown class';
+}
+
 export async function registerRoutes(app: Express): Promise<void> {
   // Setup authentication systems
   await setupAuth(app); // Legacy auth system (being migrated)
@@ -10013,6 +10065,23 @@ When suggesting improvements, format your response with suggestions in a structu
     } catch (error: any) {
       console.error('Error adding lifecycle event:', error);
       res.status(500).json({ error: error.message || 'Failed to add lifecycle event' });
+    }
+  });
+
+  // Get Nice Classifications (1-45) with descriptions
+  app.get('/api/trademarks/classes', apiAuthMiddleware, async (req: any, res) => {
+    try {
+      const classes = Array.from({ length: 45 }, (_, i) => {
+        const classNum = i + 1;
+        return {
+          class: classNum,
+          description: getNiceClassDescription(classNum),
+        };
+      });
+      res.json({ success: true, classes });
+    } catch (error: any) {
+      console.error('Error fetching trademark classes:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch classes' });
     }
   });
 
