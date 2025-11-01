@@ -3034,6 +3034,98 @@ export const trademarkLifecycle = pgTable("trademark_lifecycle", {
 // ========================================
 
 // ========================================
+// WYTAPI - API ACCESS MANAGEMENT SYSTEM
+// ========================================
+
+export const apiTierEnum = pgEnum("api_tier", [
+  "free",
+  "starter", 
+  "pro",
+  "enterprise"
+]);
+
+export const apiKeyStatusEnum = pgEnum("api_key_status", [
+  "active",
+  "revoked",
+  "expired"
+]);
+
+export const apiPricingTiers = pgTable("api_pricing_tiers", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tier: apiTierEnum("tier").notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  
+  priceMonthly: integer("price_monthly").notNull().default(0),
+  priceYearly: integer("price_yearly").notNull().default(0),
+  
+  requestsPerMonth: integer("requests_per_month").notNull(),
+  requestsPerMinute: integer("requests_per_minute").notNull(),
+  maxApiKeys: integer("max_api_keys").notNull().default(1),
+  
+  features: jsonb("features").default([]),
+  
+  isActive: boolean("is_active").default(true).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const apiKeys = pgTable("api_keys", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  
+  keyPrefix: varchar("key_prefix", { length: 10 }).notNull(),
+  keyHash: varchar("key_hash", { length: 255 }).notNull(),
+  
+  name: varchar("name", { length: 100 }).notNull(),
+  tier: apiTierEnum("tier").notNull().default('free'),
+  status: apiKeyStatusEnum("status").notNull().default('active'),
+  
+  lastUsedAt: timestamp("last_used_at"),
+  expiresAt: timestamp("expires_at"),
+  
+  metadata: jsonb("metadata").default({}),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("api_keys_user_id_idx").on(table.userId),
+  keyPrefixIdx: index("api_keys_prefix_idx").on(table.keyPrefix),
+  statusIdx: index("api_keys_status_idx").on(table.status),
+}));
+
+export const apiUsageLogs = pgTable("api_usage_logs", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  apiKeyId: uuid("api_key_id").notNull().references(() => apiKeys.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  
+  endpoint: varchar("endpoint", { length: 500 }).notNull(),
+  method: varchar("method", { length: 10 }).notNull(),
+  
+  statusCode: integer("status_code"),
+  responseTime: integer("response_time"),
+  
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  
+  requestParams: jsonb("request_params").default({}),
+  errorMessage: text("error_message"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  apiKeyIdIdx: index("api_usage_api_key_id_idx").on(table.apiKeyId),
+  userIdIdx: index("api_usage_user_id_idx").on(table.userId),
+  endpointIdx: index("api_usage_endpoint_idx").on(table.endpoint),
+  createdAtIdx: index("api_usage_created_at_idx").on(table.createdAt),
+}));
+
+// ========================================
+// END WYTAPI SYSTEM
+// ========================================
+
+// ========================================
 // END DATASET MANAGEMENT SYSTEM
 // ========================================
 
