@@ -9778,6 +9778,188 @@ When suggesting improvements, format your response with suggestions in a structu
   // ========================================
 
   // ========================================
+  // PUBLIC DATASET API - For External Developers
+  // ========================================
+
+  // Get all available datasets (public access)
+  app.get('/api/datasets', async (req: any, res) => {
+    try {
+      const collections = await db.select({
+        id: datasetCollections.id,
+        key: datasetCollections.key,
+        name: datasetCollections.name,
+        description: datasetCollections.description,
+        scope: datasetCollections.scope,
+        itemCount: sql<number>`(SELECT COUNT(*)::int FROM ${datasetItems} WHERE ${datasetItems.collectionId} = ${datasetCollections.id})`,
+        lastSyncedAt: datasetCollections.lastSyncedAt,
+      })
+        .from(datasetCollections)
+        .where(eq(datasetCollections.scope, 'global'))
+        .orderBy(datasetCollections.name);
+
+      res.json({ success: true, datasets: collections });
+    } catch (error) {
+      console.error('Error fetching public datasets:', error);
+      res.status(500).json({ error: 'Failed to fetch datasets' });
+    }
+  });
+
+  // Get dataset items by key (public access)
+  app.get('/api/datasets/:key', async (req: any, res) => {
+    try {
+      const { key } = req.params;
+      const limit = parseInt(req.query.limit as string) || 100;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const collection = await db.select()
+        .from(datasetCollections)
+        .where(and(
+          eq(datasetCollections.key, key),
+          eq(datasetCollections.scope, 'global')
+        ))
+        .limit(1);
+
+      if (collection.length === 0) {
+        return res.status(404).json({ error: 'Dataset not found' });
+      }
+
+      const items = await db.select()
+        .from(datasetItems)
+        .where(eq(datasetItems.collectionId, collection[0].id))
+        .limit(limit)
+        .offset(offset)
+        .orderBy(datasetItems.sortOrder, datasetItems.label);
+
+      res.json({
+        success: true,
+        collection: collection[0],
+        items,
+        pagination: { limit, offset, total: items.length },
+      });
+    } catch (error) {
+      console.error('Error fetching dataset items:', error);
+      res.status(500).json({ error: 'Failed to fetch dataset items' });
+    }
+  });
+
+  // ========================================
+  // TRADEMARK API (Admin + Public)
+  // ========================================
+
+  const { trademarkService } = await import('./services/trademark-service');
+  const { tmviewService } = await import('./services/tmview-service');
+
+  // Search trademarks (public access)
+  app.get('/api/trademarks/search', async (req: any, res) => {
+    try {
+      const filters = {
+        tmNumber: req.query.tmNumber as string,
+        brandName: req.query.brandName as string,
+        owner: req.query.owner as string,
+        status: req.query.status as string,
+        office: req.query.office as string,
+        limit: parseInt(req.query.limit as string) || 50,
+        offset: parseInt(req.query.offset as string) || 0,
+      };
+
+      const results = await trademarkService.searchTrademarks(filters);
+      res.json({ success: true, trademarks: results });
+    } catch (error: any) {
+      console.error('Error searching trademarks:', error);
+      res.status(500).json({ error: error.message || 'Failed to search trademarks' });
+    }
+  });
+
+  // Get trademark by TM Number (public access)
+  app.get('/api/trademarks/:tmNumber', async (req: any, res) => {
+    try {
+      const { tmNumber } = req.params;
+      const trademark = await trademarkService.getTrademarkWithLifecycle(tmNumber);
+
+      if (!trademark) {
+        return res.status(404).json({ error: 'Trademark not found' });
+      }
+
+      res.json({ success: true, trademark });
+    } catch (error: any) {
+      console.error('Error fetching trademark:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch trademark' });
+    }
+  });
+
+  // Get trademark statistics (public access)
+  app.get('/api/trademarks/stats', async (req: any, res) => {
+    try {
+      const stats = await trademarkService.getStats();
+      res.json({ success: true, stats });
+    } catch (error: any) {
+      console.error('Error fetching trademark stats:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch stats' });
+    }
+  });
+
+  // Admin: Manually add/update trademark
+  app.post('/api/admin/trademarks', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const userId = req.admin?.id;
+      const result = await trademarkService.upsertTrademark(req.body, userId);
+      res.json({ success: true, ...result });
+    } catch (error: any) {
+      console.error('Error upserting trademark:', error);
+      res.status(500).json({ error: error.message || 'Failed to upsert trademark' });
+    }
+  });
+
+  // Admin: Trigger TMView sync
+  app.post('/api/admin/trademarks/sync', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { startPage, endPage, pageSize } = req.body;
+      
+      // Start sync in background (don't wait for completion)
+      tmviewService.syncTrademarks({
+        startPage: startPage || 1,
+        endPage: endPage || 10,
+        pageSize: pageSize || 30,
+      }).then(result => {
+        console.log('[TMView] Sync completed:', result);
+      }).catch(error => {
+        console.error('[TMView] Sync failed:', error);
+      });
+
+      res.json({
+        success: true,
+        message: 'Sync started',
+        params: { startPage, endPage, pageSize },
+      });
+    } catch (error: any) {
+      console.error('Error starting sync:', error);
+      res.status(500).json({ error: error.message || 'Failed to start sync' });
+    }
+  });
+
+  // Admin: Add lifecycle event
+  app.post('/api/admin/trademarks/:tmNumber/lifecycle', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { tmNumber } = req.params;
+      const userId = req.admin?.id;
+      
+      const event = await trademarkService.addLifecycleEvent({
+        tmNumber,
+        ...req.body,
+      }, userId);
+
+      res.json({ success: true, event });
+    } catch (error: any) {
+      console.error('Error adding lifecycle event:', error);
+      res.status(500).json({ error: error.message || 'Failed to add lifecycle event' });
+    }
+  });
+
+  // ========================================
+  // END TRADEMARK API
+  // ========================================
+
+  // ========================================
   // WYTWAALL MARKETPLACE ROUTES
   // ========================================
 
