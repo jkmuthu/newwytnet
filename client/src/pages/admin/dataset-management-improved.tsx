@@ -287,43 +287,243 @@ export default function AdminDatasetManagementImproved() {
               {collectionsLoading ? (
                 <p className="text-sm text-muted-foreground">Loading collections...</p>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {collectionsData?.collections.map((collection) => (
-                    <Card key={collection.id} className="hover:shadow-md transition-shadow cursor-pointer" 
-                      onClick={() => handleViewItems(collection)}
-                      data-testid={`collection-card-${collection.key}`}>
-                      <CardContent className="pt-6">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-2xl">{(collection.metadata as any)?.icon || '📊'}</span>
-                            <div>
-                              <h3 className="font-semibold">{collection.name}</h3>
-                              <p className="text-xs text-muted-foreground font-mono">{collection.key}</p>
+                <div className="space-y-6">
+                  {/* Geographic & Location Data */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b">
+                      <Globe className="h-5 w-5 text-blue-600" />
+                      <h3 className="font-semibold text-lg">Geographic & Location Data</h3>
+                      <Badge variant="outline" className="ml-auto">Master Dataset</Badge>
+                    </div>
+                    <div className="space-y-2">
+                      {collectionsData?.collections
+                        .filter(c => ['countries', 'states', 'cities', 'timezones'].includes(c.key))
+                        .map((collection) => (
+                          <div
+                            key={collection.id}
+                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent hover:border-primary transition-all cursor-pointer group"
+                            onClick={() => handleViewItems(collection)}
+                            data-testid={`collection-row-${collection.key}`}
+                          >
+                            <div className="flex items-center gap-4 flex-1">
+                              <span className="text-3xl">{(collection.metadata as any)?.icon || '📊'}</span>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-semibold text-base">{collection.name}</h4>
+                                  <code className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">{collection.key}</code>
+                                  {collection.scope === 'global' && <Globe className="h-3.5 w-3.5 text-blue-500" />}
+                                  {isImmutable(collection) && <Badge variant="secondary" className="text-xs">Protected</Badge>}
+                                </div>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {collection.description || 'No description'}
+                                </p>
+                              </div>
                             </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewItems(collection);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              View Items
+                            </Button>
                           </div>
-                          {collection.scope === 'global' ? (
-                            <Globe className="h-4 w-4 text-blue-500" />
-                          ) : (
-                            <Building className="h-4 w-4 text-green-500" />
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          {collection.description || 'No description'}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          {isImmutable(collection) && (
-                            <Badge variant="secondary" className="text-xs">Protected</Badge>
-                          )}
-                          <Button variant="outline" size="sm" onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewItems(collection);
-                          }}>
-                            View Items
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        ))}
+                    </div>
+                  </div>
+
+                  {/* Language & Currency Data */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b">
+                      <Globe className="h-5 w-5 text-green-600" />
+                      <h3 className="font-semibold text-lg">Language & Currency Data</h3>
+                    </div>
+                    <div className="space-y-2">
+                      {collectionsData?.collections
+                        .filter(c => ['languages', 'currencies'].includes(c.key))
+                        .map((collection) => (
+                          <div
+                            key={collection.id}
+                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent hover:border-primary transition-all cursor-pointer group"
+                            onClick={() => handleViewItems(collection)}
+                            data-testid={`collection-row-${collection.key}`}
+                          >
+                            <div className="flex items-center gap-4 flex-1">
+                              <span className="text-3xl">{(collection.metadata as any)?.icon || '📊'}</span>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-semibold text-base">{collection.name}</h4>
+                                  <code className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">{collection.key}</code>
+                                  {collection.scope === 'global' && <Globe className="h-3.5 w-3.5 text-blue-500" />}
+                                  {isImmutable(collection) && <Badge variant="secondary" className="text-xs">Protected</Badge>}
+                                </div>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {collection.description || 'No description'}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewItems(collection);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              View Items
+                            </Button>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+
+                  {/* India-Specific Data */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b">
+                      <span className="text-xl">🇮🇳</span>
+                      <h3 className="font-semibold text-lg">India-Specific Data</h3>
+                    </div>
+                    <div className="space-y-2">
+                      {collectionsData?.collections
+                        .filter(c => ['india_states', 'india_cities', 'gst_state_codes'].includes(c.key))
+                        .map((collection) => (
+                          <div
+                            key={collection.id}
+                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent hover:border-primary transition-all cursor-pointer group"
+                            onClick={() => handleViewItems(collection)}
+                            data-testid={`collection-row-${collection.key}`}
+                          >
+                            <div className="flex items-center gap-4 flex-1">
+                              <span className="text-3xl">{(collection.metadata as any)?.icon || '📊'}</span>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-semibold text-base">{collection.name}</h4>
+                                  <code className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">{collection.key}</code>
+                                  {collection.scope === 'global' && <Globe className="h-3.5 w-3.5 text-blue-500" />}
+                                  {isImmutable(collection) && <Badge variant="secondary" className="text-xs">Protected</Badge>}
+                                </div>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {collection.description || 'No description'}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewItems(collection);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              View Items
+                            </Button>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+
+                  {/* Business & Industry Data */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 pb-2 border-b">
+                      <Building className="h-5 w-5 text-purple-600" />
+                      <h3 className="font-semibold text-lg">Business & Industry Data</h3>
+                    </div>
+                    <div className="space-y-2">
+                      {collectionsData?.collections
+                        .filter(c => ['industries', 'company_sizes', 'job_roles'].includes(c.key))
+                        .map((collection) => (
+                          <div
+                            key={collection.id}
+                            className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent hover:border-primary transition-all cursor-pointer group"
+                            onClick={() => handleViewItems(collection)}
+                            data-testid={`collection-row-${collection.key}`}
+                          >
+                            <div className="flex items-center gap-4 flex-1">
+                              <span className="text-3xl">{(collection.metadata as any)?.icon || '📊'}</span>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-semibold text-base">{collection.name}</h4>
+                                  <code className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">{collection.key}</code>
+                                  {collection.scope === 'global' && <Globe className="h-3.5 w-3.5 text-blue-500" />}
+                                  {isImmutable(collection) && <Badge variant="secondary" className="text-xs">Protected</Badge>}
+                                </div>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {collection.description || 'No description'}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleViewItems(collection);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              View Items
+                            </Button>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+
+                  {/* Other Collections */}
+                  {collectionsData?.collections.filter(c => 
+                    !['countries', 'states', 'cities', 'timezones', 'languages', 'currencies', 
+                      'india_states', 'india_cities', 'gst_state_codes', 'industries', 'company_sizes', 'job_roles'].includes(c.key)
+                  ).length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 pb-2 border-b">
+                        <Database className="h-5 w-5 text-gray-600" />
+                        <h3 className="font-semibold text-lg">Other Collections</h3>
+                      </div>
+                      <div className="space-y-2">
+                        {collectionsData?.collections
+                          .filter(c => !['countries', 'states', 'cities', 'timezones', 'languages', 'currencies', 
+                            'india_states', 'india_cities', 'gst_state_codes', 'industries', 'company_sizes', 'job_roles'].includes(c.key))
+                          .map((collection) => (
+                            <div
+                              key={collection.id}
+                              className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent hover:border-primary transition-all cursor-pointer group"
+                              onClick={() => handleViewItems(collection)}
+                              data-testid={`collection-row-${collection.key}`}
+                            >
+                              <div className="flex items-center gap-4 flex-1">
+                                <span className="text-3xl">{(collection.metadata as any)?.icon || '📊'}</span>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-semibold text-base">{collection.name}</h4>
+                                    <code className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">{collection.key}</code>
+                                    {collection.scope === 'global' && <Globe className="h-3.5 w-3.5 text-blue-500" />}
+                                    {isImmutable(collection) && <Badge variant="secondary" className="text-xs">Protected</Badge>}
+                                  </div>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    {collection.description || 'No description'}
+                                  </p>
+                                </div>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleViewItems(collection);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                View Items
+                              </Button>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
