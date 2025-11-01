@@ -13,7 +13,7 @@ import {
 export default function AppPanelHome() {
   const [, setLocation] = useLocation();
 
-  const { data: addedApps, isLoading } = useQuery({
+  const { data: addedApps, isLoading } = useQuery<{ apps: any[] }>({
     queryKey: ["/api/panel/apps/added"],
   });
 
