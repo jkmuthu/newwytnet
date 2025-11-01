@@ -59,7 +59,7 @@
 
 ---
 
-#### **All Entities** (`entities.tsx`)
+#### **All Objects** (`entities.tsx`)
 | Feature | Mutation | API Endpoint | Status |
 |---------|----------|--------------|--------|
 | Create Entity | `saveMutation` | `POST /api/entities` | ✅ Working |
