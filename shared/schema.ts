@@ -2925,6 +2925,114 @@ export const datasetItems = pgTable("dataset_items", {
   uniqueCodePerCollection: unique().on(table.collectionId, table.code, table.locale),
 }));
 
+// Dataset Sync Logs - Track all sync operations for datasets
+export const datasetSyncLogs = pgTable("dataset_sync_logs", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  collectionId: uuid("collection_id").notNull().references(() => datasetCollections.id, { onDelete: 'cascade' }),
+  syncType: varchar("sync_type", { length: 50 }).notNull(), // 'full', 'incremental', 'manual'
+  status: varchar("status", { length: 50 }).notNull(), // 'in_progress', 'success', 'failed', 'partial'
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+  duration: integer("duration"), // in seconds
+  recordsProcessed: integer("records_processed").default(0),
+  recordsInserted: integer("records_inserted").default(0),
+  recordsUpdated: integer("records_updated").default(0),
+  recordsDuplicated: integer("records_duplicated").default(0),
+  recordsFailed: integer("records_failed").default(0),
+  errorMessage: text("error_message"),
+  errorDetails: jsonb("error_details").default({}),
+  metadata: jsonb("metadata").default({}), // { source: 'TMView', triggeredBy: 'auto', page: 1-100 }
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Dataset Audit Trail - Track all changes to dataset items
+export const datasetAuditTrail = pgTable("dataset_audit_trail", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  collectionId: uuid("collection_id").notNull().references(() => datasetCollections.id, { onDelete: 'cascade' }),
+  itemId: uuid("item_id"), // null for collection-level changes
+  action: varchar("action", { length: 50 }).notNull(), // 'create', 'update', 'delete', 'sync'
+  userId: varchar("user_id").references(() => users.id), // null for automated sync
+  changedFields: jsonb("changed_fields").default({}), // { field: { old: 'value', new: 'value' } }
+  oldValues: jsonb("old_values").default({}),
+  newValues: jsonb("new_values").default({}),
+  source: varchar("source", { length: 100 }).default('manual'), // 'manual', 'sync', 'import', 'api'
+  ipAddress: varchar("ip_address", { length: 50 }),
+  userAgent: text("user_agent"),
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Dataset Validation Rules - Define validation rules for datasets
+export const datasetValidationRules = pgTable("dataset_validation_rules", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  collectionId: uuid("collection_id").notNull().references(() => datasetCollections.id, { onDelete: 'cascade' }),
+  fieldName: varchar("field_name", { length: 100 }).notNull(), // 'code', 'label', metadata field
+  ruleType: varchar("rule_type", { length: 50 }).notNull(), // 'required', 'unique', 'format', 'range', 'enum'
+  ruleConfig: jsonb("rule_config").default({}), // { pattern: '^[0-9]{7}$', min: 1, max: 45, values: [...] }
+  errorMessage: text("error_message"),
+  isActive: boolean("is_active").default(true),
+  priority: integer("priority").default(0), // execution order
+  metadata: jsonb("metadata").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// ========================================
+// TRADEMARK DATASET SYSTEM (India)
+// ========================================
+
+// Trademark Master Records - Main trademark data (2.4M+ India trademarks)
+export const trademarkMaster = pgTable("trademark_master", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tmNumber: varchar("tm_number", { length: 20 }).notNull().unique(), // Application Number (7 digits)
+  brandName: varchar("brand_name", { length: 500 }), // Word Mark
+  brandImage: text("brand_image"), // Logo URL
+  classes: jsonb("classes").default([]), // [1, 3, 9] - Nice Classification classes
+  goodsServices: text("goods_services"), // Description of goods/services
+  applicationDate: timestamp("application_date"),
+  registrationDate: timestamp("registration_date"),
+  status: varchar("status", { length: 50 }).notNull().default('Filed'), // Filed, Examined, Accepted, Registered, Objected, Opposed, Abandoned, Removed, Expired
+  office: varchar("office", { length: 100 }), // MUMBAI, DELHI, CHENNAI, AHMEDABAD, KOLKATA
+  owner: varchar("owner", { length: 500 }), // Applicant/Owner name
+  ownerAddress: text("owner_address"),
+  country: varchar("country", { length: 10 }).default('IN'), // Always India
+  source: varchar("source", { length: 50 }).default('TMView'), // TMView, IPIndia, Gazette, Manual
+  sourcePriority: integer("source_priority").default(2), // Gazette:1, TMView:2, Crawled:3
+  dataQuality: varchar("data_quality", { length: 20 }).default('good'), // excellent, good, fair, poor
+  isVerified: boolean("is_verified").default(false),
+  lastSyncedAt: timestamp("last_synced_at"),
+  metadata: jsonb("metadata").default({}), // { attorney: '', vienna_codes: [], disclaimer: '' }
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  tmNumberIdx: index("tm_number_idx").on(table.tmNumber),
+  statusIdx: index("trademark_status_idx").on(table.status),
+  classesIdx: index("trademark_classes_idx").on(table.classes),
+  ownerIdx: index("trademark_owner_idx").on(table.owner),
+}));
+
+// Trademark Lifecycle Events - Track all events for each trademark
+export const trademarkLifecycle = pgTable("trademark_lifecycle", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tmNumber: varchar("tm_number", { length: 20 }).notNull(), // Links to trademark_master
+  eventType: varchar("event_type", { length: 100 }).notNull(), // Filing, Examination, Hearing, Registration, Renewal, Opposition, Rectification, Withdrawal
+  eventDate: timestamp("event_date").notNull(),
+  eventDetails: text("event_details"),
+  documentUrl: text("document_url"),
+  source: varchar("source", { length: 50 }).default('TMView'), // IPIndia, Gazette, TMView
+  metadata: jsonb("metadata").default({}), // { hearing_officer: '', opposition_number: '' }
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  tmNumberIdx: index("lifecycle_tm_number_idx").on(table.tmNumber),
+  eventTypeIdx: index("lifecycle_event_type_idx").on(table.eventType),
+  eventDateIdx: index("lifecycle_event_date_idx").on(table.eventDate),
+}));
+
+// ========================================
+// END TRADEMARK DATASET SYSTEM
+// ========================================
+
 // ========================================
 // END DATASET MANAGEMENT SYSTEM
 // ========================================
@@ -3596,6 +3704,20 @@ export const selectDatasetCollectionSchema = createSelectSchema(datasetCollectio
 export const insertDatasetItemSchema = createInsertSchema(datasetItems).omit({ id: true, createdAt: true, updatedAt: true });
 export const selectDatasetItemSchema = createSelectSchema(datasetItems);
 
+// Enhanced Dataset Infrastructure schema exports
+export const insertDatasetSyncLogSchema = createInsertSchema(datasetSyncLogs).omit({ id: true, createdAt: true });
+export const selectDatasetSyncLogSchema = createSelectSchema(datasetSyncLogs);
+export const insertDatasetAuditTrailSchema = createInsertSchema(datasetAuditTrail).omit({ id: true, createdAt: true });
+export const selectDatasetAuditTrailSchema = createSelectSchema(datasetAuditTrail);
+export const insertDatasetValidationRuleSchema = createInsertSchema(datasetValidationRules).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectDatasetValidationRuleSchema = createSelectSchema(datasetValidationRules);
+
+// Trademark Dataset schema exports
+export const insertTrademarkMasterSchema = createInsertSchema(trademarkMaster).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectTrademarkMasterSchema = createSelectSchema(trademarkMaster);
+export const insertTrademarkLifecycleSchema = createInsertSchema(trademarkLifecycle).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectTrademarkLifecycleSchema = createSelectSchema(trademarkLifecycle);
+
 // Module Activation schema exports
 export const insertPlatformModuleActivationSchema = createInsertSchema(platformModuleActivations).omit({ id: true, activatedAt: true, updatedAt: true });
 export const selectPlatformModuleActivationSchema = createSelectSchema(platformModuleActivations);
@@ -3621,6 +3743,20 @@ export type DatasetCollection = typeof datasetCollections.$inferSelect;
 export type InsertDatasetCollection = z.infer<typeof insertDatasetCollectionSchema>;
 export type DatasetItem = typeof datasetItems.$inferSelect;
 export type InsertDatasetItem = z.infer<typeof insertDatasetItemSchema>;
+
+// Enhanced Dataset Infrastructure type exports
+export type DatasetSyncLog = typeof datasetSyncLogs.$inferSelect;
+export type InsertDatasetSyncLog = z.infer<typeof insertDatasetSyncLogSchema>;
+export type DatasetAuditTrail = typeof datasetAuditTrail.$inferSelect;
+export type InsertDatasetAuditTrail = z.infer<typeof insertDatasetAuditTrailSchema>;
+export type DatasetValidationRule = typeof datasetValidationRules.$inferSelect;
+export type InsertDatasetValidationRule = z.infer<typeof insertDatasetValidationRuleSchema>;
+
+// Trademark Dataset type exports
+export type TrademarkMaster = typeof trademarkMaster.$inferSelect;
+export type InsertTrademarkMaster = z.infer<typeof insertTrademarkMasterSchema>;
+export type TrademarkLifecycle = typeof trademarkLifecycle.$inferSelect;
+export type InsertTrademarkLifecycle = z.infer<typeof insertTrademarkLifecycleSchema>;
 
 // WytLife Applications schema exports
 export const insertWytLifeApplicationSchema = createInsertSchema(wytLifeApplications).omit({ id: true, createdAt: true, updatedAt: true });
