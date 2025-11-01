@@ -9781,8 +9781,10 @@ When suggesting improvements, format your response with suggestions in a structu
   // PUBLIC DATASET API - For External Developers
   // ========================================
 
-  // Get all available datasets (public access)
-  app.get('/api/datasets', async (req: any, res) => {
+  const { apiAuthMiddleware } = await import('./middleware/api-auth');
+
+  // Get all available datasets (public access with API key)
+  app.get('/api/datasets', apiAuthMiddleware, async (req: any, res) => {
     try {
       const collections = await db.select({
         id: datasetCollections.id,
@@ -9804,8 +9806,8 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Get dataset items by key (public access)
-  app.get('/api/datasets/:key', async (req: any, res) => {
+  // Get dataset items by key (public access with API key)
+  app.get('/api/datasets/:key', apiAuthMiddleware, async (req: any, res) => {
     try {
       const { key } = req.params;
       const limit = parseInt(req.query.limit as string) || 100;
@@ -9849,8 +9851,8 @@ When suggesting improvements, format your response with suggestions in a structu
   const { trademarkService } = await import('./services/trademark-service');
   const { tmviewService } = await import('./services/tmview-service');
 
-  // Search trademarks (public access)
-  app.get('/api/trademarks/search', async (req: any, res) => {
+  // Search trademarks (public access with API key)
+  app.get('/api/trademarks/search', apiAuthMiddleware, async (req: any, res) => {
     try {
       const filters = {
         tmNumber: req.query.tmNumber as string,
@@ -9870,8 +9872,8 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Get trademark by TM Number (public access)
-  app.get('/api/trademarks/:tmNumber', async (req: any, res) => {
+  // Get trademark by TM Number (public access with API key)
+  app.get('/api/trademarks/:tmNumber', apiAuthMiddleware, async (req: any, res) => {
     try {
       const { tmNumber } = req.params;
       const trademark = await trademarkService.getTrademarkWithLifecycle(tmNumber);
@@ -9887,8 +9889,8 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Get trademark statistics (public access)
-  app.get('/api/trademarks/stats', async (req: any, res) => {
+  // Get trademark statistics (public access with API key)
+  app.get('/api/trademarks/stats', apiAuthMiddleware, async (req: any, res) => {
     try {
       const stats = await trademarkService.getStats();
       res.json({ success: true, stats });
@@ -9957,6 +9959,169 @@ When suggesting improvements, format your response with suggestions in a structu
 
   // ========================================
   // END TRADEMARK API
+  // ========================================
+
+  // ========================================
+  // WYTAPI MANAGEMENT ROUTES
+  // ========================================
+
+  const { apiKeyService } = await import('./services/api-key-service');
+  const { apiUsageService } = await import('./services/api-usage-service');
+
+  // Get user's API keys
+  app.get('/api/wytapi/keys', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const keys = await apiKeyService.listUserKeys(principal.id);
+      res.json({ success: true, keys });
+    } catch (error: any) {
+      console.error('Error fetching API keys:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch API keys' });
+    }
+  });
+
+  // Create new API key
+  app.post('/api/wytapi/keys', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { name, tier, expiresInDays } = req.body;
+      
+      const newKey = await apiKeyService.createKey({
+        userId: principal.id,
+        name: name || 'My API Key',
+        tier: tier || 'free',
+        expiresInDays,
+      });
+
+      res.json({ success: true, key: newKey });
+    } catch (error: any) {
+      console.error('Error creating API key:', error);
+      res.status(500).json({ error: error.message || 'Failed to create API key' });
+    }
+  });
+
+  // Revoke API key
+  app.delete('/api/wytapi/keys/:keyId', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { keyId } = req.params;
+      const result = await apiKeyService.revokeKey(keyId, principal.id);
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error revoking API key:', error);
+      res.status(500).json({ error: error.message || 'Failed to revoke API key' });
+    }
+  });
+
+  // Regenerate API key
+  app.post('/api/wytapi/keys/:keyId/regenerate', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { keyId } = req.params;
+      const newKey = await apiKeyService.regenerateKey(keyId, principal.id);
+      res.json({ success: true, key: newKey });
+    } catch (error: any) {
+      console.error('Error regenerating API key:', error);
+      res.status(500).json({ error: error.message || 'Failed to regenerate API key' });
+    }
+  });
+
+  // Get usage statistics
+  app.get('/api/wytapi/usage/stats', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const days = parseInt(req.query.days as string) || 30;
+      const stats = await apiUsageService.getUserUsageStats(principal.id, days);
+      res.json({ success: true, stats });
+    } catch (error: any) {
+      console.error('Error fetching usage stats:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch usage stats' });
+    }
+  });
+
+  // Get usage timeline
+  app.get('/api/wytapi/usage/timeline', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const days = parseInt(req.query.days as string) || 30;
+      const timeline = await apiUsageService.getUsageTimeline(principal.id, days);
+      res.json({ success: true, timeline });
+    } catch (error: any) {
+      console.error('Error fetching usage timeline:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch usage timeline' });
+    }
+  });
+
+  // Get current month usage
+  app.get('/api/wytapi/usage/current', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const usage = await apiUsageService.getCurrentMonthUsage(principal.id);
+      const tier = await apiKeyService.getUserTier(principal.id);
+      
+      const tierData = await db.select()
+        .from(apiPricingTiers)
+        .where(eq(apiPricingTiers.tier, tier))
+        .limit(1);
+
+      res.json({
+        success: true,
+        usage,
+        tier,
+        limit: tierData[0]?.requestsPerMonth || 0,
+        percentage: tierData[0] ? ((usage / tierData[0].requestsPerMonth) * 100).toFixed(2) : '0',
+      });
+    } catch (error: any) {
+      console.error('Error fetching current usage:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch current usage' });
+    }
+  });
+
+  // Get API pricing tiers
+  app.get('/api/wytapi/tiers', async (req: any, res) => {
+    try {
+      const tiers = await db.select()
+        .from(apiPricingTiers)
+        .where(eq(apiPricingTiers.isActive, true))
+        .orderBy(apiPricingTiers.sortOrder);
+
+      res.json({ success: true, tiers });
+    } catch (error: any) {
+      console.error('Error fetching pricing tiers:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch pricing tiers' });
+    }
+  });
+
+  // ========================================
+  // END WYTAPI MANAGEMENT ROUTES
   // ========================================
 
   // ========================================
