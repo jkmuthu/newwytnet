@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Network, Plus, Search, Tag, CheckCircle, Circle, Trash2, Edit, BarChart3, Settings as SettingsIcon, Database, Eye } from "lucide-react";
 
-interface EntityType {
+interface ObjectType {
   id: string;
   name: string;
   slug: string;
@@ -22,7 +22,7 @@ interface EntityType {
   isSystem: boolean;
 }
 
-interface Entity {
+interface ObjectItem {
   id: string;
   title: string;
   slug: string;
@@ -32,23 +32,23 @@ interface Entity {
   isVerified: boolean;
   isPublic: boolean;
   tagCount: number;
-  entityType?: EntityType;
+  entityType?: ObjectType;
 }
 
-export default function AdminEntities() {
+export default function AdminObjects() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<string>("entities-list");
+  const [activeTab, setActiveTab] = useState<string>("objects-list");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-  // Fetch entity types
-  const { data: entityTypesData } = useQuery<{ types: EntityType[] }>({
+  // Fetch object types
+  const { data: objectTypesData } = useQuery<{ types: ObjectType[] }>({
     queryKey: ["/api/entities/types"],
   });
 
-  // Fetch entities with filters
-  const { data: entitiesData, isLoading } = useQuery<{ entities: Entity[] }>({
+  // Fetch objects with filters
+  const { data: objectsData, isLoading } = useQuery<{ entities: ObjectItem[] }>({
     queryKey: ["/api/entities", { search: searchQuery, typeId: selectedType !== "all" ? selectedType : undefined }],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -57,17 +57,17 @@ export default function AdminEntities() {
       
       const url = `/api/entities${params.toString() ? `?${params.toString()}` : ""}`;
       const response = await fetch(url, { credentials: 'include' });
-      if (!response.ok) throw new Error("Failed to fetch entities");
+      if (!response.ok) throw new Error("Failed to fetch objects");
       return response.json();
     }
   });
 
-  const entityTypes = entityTypesData?.types || [];
-  const entities = entitiesData?.entities || [];
+  const objectTypes = objectTypesData?.types || [];
+  const objects = objectsData?.entities || [];
 
-  // Get entity count by type
-  const getEntityCountByType = (typeId: string) => {
-    return entities.filter(e => e.entityTypeId === typeId).length;
+  // Get object count by type
+  const getObjectCountByType = (typeId: string) => {
+    return objects.filter(e => e.entityTypeId === typeId).length;
   };
 
   return (
@@ -77,26 +77,26 @@ export default function AdminEntities() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Network className="h-8 w-8 text-purple-600" />
-            Entities Management
+            Objects Management
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Manage entities and knowledge graph structure
+            Manage objects and knowledge graph structure
           </p>
         </div>
         <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button data-testid="button-create-entity">
+            <Button data-testid="button-create-object">
               <Plus className="h-4 w-4 mr-2" />
-              Create Entity
+              Create Object
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Create New Entity</DialogTitle>
-              <DialogDescription>Add a new entity to the knowledge graph</DialogDescription>
+              <DialogTitle>Create New Object</DialogTitle>
+              <DialogDescription>Add a new object to the knowledge graph</DialogDescription>
             </DialogHeader>
-            <EntityForm 
-              entityTypes={entityTypes} 
+            <ObjectForm 
+              objectTypes={objectTypes} 
               onSuccess={() => {
                 setCreateDialogOpen(false);
                 queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
@@ -109,13 +109,13 @@ export default function AdminEntities() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="entities-list" data-testid="tab-entities-list">
+          <TabsTrigger value="objects-list" data-testid="tab-objects-list">
             <Database className="h-4 w-4 mr-2" />
-            Entities List
+            Objects List
           </TabsTrigger>
-          <TabsTrigger value="entity-types" data-testid="tab-entity-types">
+          <TabsTrigger value="object-types" data-testid="tab-object-types">
             <Tag className="h-4 w-4 mr-2" />
-            Entity Types
+            Object Types
           </TabsTrigger>
           <TabsTrigger value="analytics" data-testid="tab-analytics">
             <BarChart3 className="h-4 w-4 mr-2" />
@@ -127,24 +127,24 @@ export default function AdminEntities() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Entities List Tab */}
-        <TabsContent value="entities-list" className="space-y-4">
+        {/* Objects List Tab */}
+        <TabsContent value="objects-list" className="space-y-4">
           {/* Stats Overview */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600">Total Entities</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-600">Total Objects</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold" data-testid="text-total-entities">{entities.length}</div>
+                <div className="text-2xl font-bold" data-testid="text-total-objects">{objects.length}</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600">Entity Types</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-600">Object Types</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold" data-testid="text-entity-types">{entityTypes.length}</div>
+                <div className="text-2xl font-bold" data-testid="text-object-types">{objectTypes.length}</div>
               </CardContent>
             </Card>
             <Card>
@@ -152,8 +152,8 @@ export default function AdminEntities() {
                 <CardTitle className="text-sm font-medium text-gray-600">Verified</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold" data-testid="text-verified-entities">
-                  {entities.filter(e => e.isVerified).length}
+                <div className="text-2xl font-bold" data-testid="text-verified-objects">
+                  {objects.filter(e => e.isVerified).length}
                 </div>
               </CardContent>
             </Card>
@@ -163,7 +163,7 @@ export default function AdminEntities() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold" data-testid="text-total-tags">
-                  {entities.reduce((sum, e) => sum + (e.tagCount || 0), 0)}
+                  {objects.reduce((sum, e) => sum + (e.tagCount || 0), 0)}
                 </div>
               </CardContent>
             </Card>
@@ -174,42 +174,42 @@ export default function AdminEntities() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search entities by name or alias..."
+                placeholder="Search objects by name or alias..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
-                data-testid="input-search-entities"
+                data-testid="input-search-objects"
               />
             </div>
             <Select value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger className="w-[200px]" data-testid="select-entity-type-filter">
+              <SelectTrigger className="w-[200px]" data-testid="select-object-type-filter">
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                {entityTypes.map((type) => (
+                {objectTypes.map((type) => (
                   <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Entities Table */}
+          {/* Objects Table */}
           <Card>
             <CardContent className="p-0">
               {isLoading ? (
-                <div className="text-center py-12 text-gray-500">Loading entities...</div>
-              ) : entities.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">Loading objects...</div>
+              ) : objects.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   <Database className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p>No entities found</p>
+                  <p>No objects found</p>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[40px]"></TableHead>
-                      <TableHead>Entity Name</TableHead>
+                      <TableHead>Object Name</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Aliases</TableHead>
                       <TableHead className="text-center">Status</TableHead>
@@ -217,11 +217,11 @@ export default function AdminEntities() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {entities.map((entity) => (
-                      <EntityRow 
-                        key={entity.id} 
-                        entity={entity} 
-                        entityTypes={entityTypes} 
+                    {objects.map((object) => (
+                      <ObjectRow 
+                        key={object.id} 
+                        object={object} 
+                        objectTypes={objectTypes} 
                       />
                     ))}
                   </TableBody>
@@ -231,24 +231,24 @@ export default function AdminEntities() {
           </Card>
         </TabsContent>
 
-        {/* Entity Types Tab */}
-        <TabsContent value="entity-types" className="space-y-4">
+        {/* Object Types Tab */}
+        <TabsContent value="object-types" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Entity Types</CardTitle>
-              <CardDescription>Core entity types in the knowledge graph</CardDescription>
+              <CardTitle>Object Types</CardTitle>
+              <CardDescription>Core object types in the knowledge graph</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                {entityTypes.map((type) => (
+                {objectTypes.map((type) => (
                   <div
                     key={type.id}
                     className="p-3 border rounded-lg hover:border-purple-400 cursor-pointer transition-colors"
                     onClick={() => {
                       setSelectedType(type.id);
-                      setActiveTab("entities-list");
+                      setActiveTab("objects-list");
                     }}
-                    data-testid={`card-entity-type-${type.slug}`}
+                    data-testid={`card-object-type-${type.slug}`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <Badge variant="outline" className={`bg-${type.color}-100 text-${type.color}-700`}>
@@ -256,7 +256,7 @@ export default function AdminEntities() {
                       </Badge>
                       {type.isSystem && <CheckCircle className="h-3 w-3 text-green-600" />}
                     </div>
-                    <div className="text-xs text-gray-500">{getEntityCountByType(type.id)} entities</div>
+                    <div className="text-xs text-gray-500">{getObjectCountByType(type.id)} objects</div>
                   </div>
                 ))}
               </div>
@@ -270,7 +270,7 @@ export default function AdminEntities() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5" />
-                Entity Analytics
+                Object Analytics
               </CardTitle>
               <CardDescription>View insights and trends for your knowledge graph</CardDescription>
             </CardHeader>
@@ -279,7 +279,7 @@ export default function AdminEntities() {
                 <BarChart3 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <h3 className="text-lg font-semibold mb-2">Analytics Coming Soon</h3>
                 <p className="text-sm">
-                  Entity analytics, relationship insights, and usage trends will be available here.
+                  Object analytics, relationship insights, and usage trends will be available here.
                 </p>
               </div>
             </CardContent>
@@ -292,16 +292,16 @@ export default function AdminEntities() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <SettingsIcon className="h-5 w-5" />
-                Entity Configuration
+                Object Configuration
               </CardTitle>
-              <CardDescription>Configure entity settings and preferences</CardDescription>
+              <CardDescription>Configure object settings and preferences</CardDescription>
             </CardHeader>
             <CardContent className="py-12">
               <div className="text-center text-muted-foreground">
                 <SettingsIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <h3 className="text-lg font-semibold mb-2">Settings Coming Soon</h3>
                 <p className="text-sm">
-                  Entity configuration options, validation rules, and system preferences will be available here.
+                  Object configuration options, validation rules, and system preferences will be available here.
                 </p>
               </div>
             </CardContent>
@@ -312,59 +312,59 @@ export default function AdminEntities() {
   );
 }
 
-// Entity Row Component with Edit capability
-function EntityRow({ entity, entityTypes }: { entity: Entity; entityTypes: EntityType[] }) {
+// Object Row Component with Edit capability
+function ObjectRow({ object, objectTypes }: { object: ObjectItem; objectTypes: ObjectType[] }) {
   const { toast } = useToast();
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
-  const entityType = entityTypes.find(t => t.id === entity.entityTypeId);
+  const objectType = objectTypes.find(t => t.id === object.entityTypeId);
 
   const deleteMutation = useMutation({
-    mutationFn: () => apiRequest("DELETE", `/api/entities/${entity.id}`),
+    mutationFn: () => apiRequest("DELETE", `/api/entities/${object.id}`),
     onSuccess: () => {
-      toast({ title: "Entity deleted successfully" });
+      toast({ title: "Object deleted successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
     },
     onError: () => {
-      toast({ title: "Failed to delete entity", variant: "destructive" });
+      toast({ title: "Failed to delete object", variant: "destructive" });
     }
   });
 
   const handleDelete = () => {
-    if (confirm(`Are you sure you want to delete "${entity.title}"?`)) {
+    if (confirm(`Are you sure you want to delete "${object.title}"?`)) {
       deleteMutation.mutate();
     }
   };
 
   return (
-    <TableRow data-testid={`row-entity-${entity.slug}`}>
+    <TableRow data-testid={`row-object-${object.slug}`}>
       <TableCell>
-        {entity.isVerified ? (
-          <CheckCircle className="h-4 w-4 text-green-600" data-testid={`icon-verified-${entity.id}`} />
+        {object.isVerified ? (
+          <CheckCircle className="h-4 w-4 text-green-600" data-testid={`icon-verified-${object.id}`} />
         ) : (
           <Circle className="h-4 w-4 text-gray-300" />
         )}
       </TableCell>
       <TableCell>
-        <div className="font-medium" data-testid={`text-entity-title-${entity.id}`}>
-          {entity.title}
+        <div className="font-medium" data-testid={`text-object-title-${object.id}`}>
+          {object.title}
         </div>
-        {entity.description && (
-          <div className="text-xs text-gray-500 mt-1 line-clamp-1">{entity.description}</div>
+        {object.description && (
+          <div className="text-xs text-gray-500 mt-1 line-clamp-1">{object.description}</div>
         )}
       </TableCell>
       <TableCell>
-        {entityType && (
-          <Badge variant="outline" data-testid={`badge-entity-type-${entity.id}`}>
-            {entityType.name}
+        {objectType && (
+          <Badge variant="outline" data-testid={`badge-object-type-${object.id}`}>
+            {objectType.name}
           </Badge>
         )}
       </TableCell>
       <TableCell>
         <div className="flex flex-wrap gap-1">
-          {entity.aliases && entity.aliases.length > 0 ? (
-            entity.aliases.slice(0, 3).map((alias, i) => (
+          {object.aliases && object.aliases.length > 0 ? (
+            object.aliases.slice(0, 3).map((alias, i) => (
               <Badge key={i} variant="secondary" className="text-xs">
                 {alias}
               </Badge>
@@ -372,19 +372,19 @@ function EntityRow({ entity, entityTypes }: { entity: Entity; entityTypes: Entit
           ) : (
             <span className="text-xs text-gray-400">-</span>
           )}
-          {entity.aliases && entity.aliases.length > 3 && (
+          {object.aliases && object.aliases.length > 3 && (
             <Badge variant="secondary" className="text-xs">
-              +{entity.aliases.length - 3}
+              +{object.aliases.length - 3}
             </Badge>
           )}
         </div>
       </TableCell>
       <TableCell className="text-center">
         <div className="flex items-center justify-center gap-2">
-          {entity.tagCount > 0 && (
+          {object.tagCount > 0 && (
             <Badge variant="outline" className="text-xs">
               <Tag className="h-3 w-3 mr-1" />
-              {entity.tagCount}
+              {object.tagCount}
             </Badge>
           )}
         </div>
@@ -396,13 +396,13 @@ function EntityRow({ entity, entityTypes }: { entity: Entity; entityTypes: Entit
               <Button 
                 variant="ghost" 
                 size="sm" 
-                data-testid={`button-view-entity-${entity.id}`}
+                data-testid={`button-view-object-${object.id}`}
               >
                 <Eye className="h-4 w-4" />
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-              <EntityDetailsView entity={entity} entityType={entityType} />
+              <ObjectDetailsView object={object} objectType={objectType} />
             </DialogContent>
           </Dialog>
           
@@ -411,19 +411,19 @@ function EntityRow({ entity, entityTypes }: { entity: Entity; entityTypes: Entit
               <Button 
                 variant="ghost" 
                 size="sm"
-                data-testid={`button-edit-entity-${entity.id}`}
+                data-testid={`button-edit-object-${object.id}`}
               >
                 <Edit className="h-4 w-4 text-blue-600" />
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Edit Entity</DialogTitle>
-                <DialogDescription>Update entity information</DialogDescription>
+                <DialogTitle>Edit Object</DialogTitle>
+                <DialogDescription>Update object information</DialogDescription>
               </DialogHeader>
-              <EntityForm
-                entity={entity}
-                entityTypes={entityTypes}
+              <ObjectForm
+                object={object}
+                objectTypes={objectTypes}
                 onSuccess={() => {
                   setEditDialogOpen(false);
                   queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
@@ -437,7 +437,7 @@ function EntityRow({ entity, entityTypes }: { entity: Entity; entityTypes: Entit
             size="sm"
             onClick={handleDelete}
             disabled={deleteMutation.isPending}
-            data-testid={`button-delete-entity-${entity.id}`}
+            data-testid={`button-delete-object-${object.id}`}
           >
             <Trash2 className="h-4 w-4 text-red-600" />
           </Button>
@@ -447,10 +447,10 @@ function EntityRow({ entity, entityTypes }: { entity: Entity; entityTypes: Entit
   );
 }
 
-// Entity Details View Component
-function EntityDetailsView({ entity, entityType }: { entity: Entity; entityType?: EntityType }) {
+// Object Details View Component
+function ObjectDetailsView({ object, objectType }: { object: ObjectItem; objectType?: ObjectType }) {
   const { data: relationshipsData } = useQuery<{ relationships: any[] }>({
-    queryKey: ["/api/entities", entity.id, "relationships"],
+    queryKey: ["/api/entities", object.id, "relationships"],
   });
 
   const relationships = relationshipsData?.relationships || [];
@@ -459,30 +459,30 @@ function EntityDetailsView({ entity, entityType }: { entity: Entity; entityType?
     <div className="space-y-4">
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
-          {entity.isVerified && <CheckCircle className="h-5 w-5 text-green-600" />}
-          {entity.title}
+          {object.isVerified && <CheckCircle className="h-5 w-5 text-green-600" />}
+          {object.title}
         </DialogTitle>
-        <DialogDescription>{entity.description || "No description"}</DialogDescription>
+        <DialogDescription>{object.description || "No description"}</DialogDescription>
       </DialogHeader>
 
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium text-gray-600">Entity Type</label>
+            <label className="text-sm font-medium text-gray-600">Object Type</label>
             <div className="mt-1">
-              {entityType && (
-                <Badge variant="outline">{entityType.name}</Badge>
+              {objectType && (
+                <Badge variant="outline">{objectType.name}</Badge>
               )}
             </div>
           </div>
           <div>
             <label className="text-sm font-medium text-gray-600">Status</label>
             <div className="mt-1 flex gap-2">
-              <Badge variant={entity.isVerified ? "default" : "secondary"}>
-                {entity.isVerified ? "Verified" : "Unverified"}
+              <Badge variant={object.isVerified ? "default" : "secondary"}>
+                {object.isVerified ? "Verified" : "Unverified"}
               </Badge>
-              <Badge variant={entity.isPublic ? "default" : "secondary"}>
-                {entity.isPublic ? "Public" : "Private"}
+              <Badge variant={object.isPublic ? "default" : "secondary"}>
+                {object.isPublic ? "Public" : "Private"}
               </Badge>
             </div>
           </div>
@@ -491,8 +491,8 @@ function EntityDetailsView({ entity, entityType }: { entity: Entity; entityType?
         <div>
           <label className="text-sm font-medium text-gray-600">Aliases</label>
           <div className="mt-1 flex flex-wrap gap-1">
-            {entity.aliases && entity.aliases.length > 0 ? (
-              entity.aliases.map((alias, i) => (
+            {object.aliases && object.aliases.length > 0 ? (
+              object.aliases.map((alias, i) => (
                 <Badge key={i} variant="secondary">{alias}</Badge>
               ))
             ) : (
@@ -520,41 +520,41 @@ function EntityDetailsView({ entity, entityType }: { entity: Entity; entityType?
   );
 }
 
-// Entity Form Component (for both Create and Edit)
-function EntityForm({ 
-  entity, 
-  entityTypes, 
+// Object Form Component (for both Create and Edit)
+function ObjectForm({ 
+  object, 
+  objectTypes, 
   onSuccess 
 }: { 
-  entity?: Entity;
-  entityTypes: EntityType[]; 
+  object?: ObjectItem;
+  objectTypes: ObjectType[]; 
   onSuccess: () => void;
 }) {
   const { toast } = useToast();
-  const isEdit = !!entity;
+  const isEdit = !!object;
   
   const [formData, setFormData] = useState({
-    title: entity?.title || "",
-    entityTypeId: entity?.entityTypeId || entityTypes[0]?.id || "",
-    description: entity?.description || "",
-    aliases: entity?.aliases?.join(", ") || "",
-    isVerified: entity?.isVerified || false,
-    isPublic: entity?.isPublic ?? true,
+    title: object?.title || "",
+    entityTypeId: object?.entityTypeId || objectTypes[0]?.id || "",
+    description: object?.description || "",
+    aliases: object?.aliases?.join(", ") || "",
+    isVerified: object?.isVerified || false,
+    isPublic: object?.isPublic ?? true,
   });
 
   const saveMutation = useMutation({
     mutationFn: (data: any) => {
       if (isEdit) {
-        return apiRequest("PUT", `/api/entities/${entity.id}`, data);
+        return apiRequest("PUT", `/api/entities/${object.id}`, data);
       }
       return apiRequest("POST", "/api/entities", data);
     },
     onSuccess: () => {
-      toast({ title: `Entity ${isEdit ? 'updated' : 'created'} successfully` });
+      toast({ title: `Object ${isEdit ? 'updated' : 'created'} successfully` });
       onSuccess();
     },
     onError: () => {
-      toast({ title: `Failed to ${isEdit ? 'update' : 'create'} entity`, variant: "destructive" });
+      toast({ title: `Failed to ${isEdit ? 'update' : 'create'} object`, variant: "destructive" });
     }
   });
 
@@ -576,18 +576,18 @@ function EntityForm({
           value={formData.title}
           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
           required
-          data-testid="input-entity-title"
+          data-testid="input-object-title"
         />
       </div>
       
       <div>
-        <label className="text-sm font-medium">Entity Type *</label>
+        <label className="text-sm font-medium">Object Type *</label>
         <Select value={formData.entityTypeId} onValueChange={(value) => setFormData({ ...formData, entityTypeId: value })}>
-          <SelectTrigger data-testid="select-entity-type">
+          <SelectTrigger data-testid="select-object-type">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {entityTypes.map((type) => (
+            {objectTypes.map((type) => (
               <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
             ))}
           </SelectContent>
@@ -599,7 +599,7 @@ function EntityForm({
         <Input
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          data-testid="input-entity-description"
+          data-testid="input-object-description"
         />
       </div>
       
@@ -609,7 +609,7 @@ function EntityForm({
           value={formData.aliases}
           onChange={(e) => setFormData({ ...formData, aliases: e.target.value })}
           placeholder="e.g., Bangalore, Bengaluru"
-          data-testid="input-entity-aliases"
+          data-testid="input-object-aliases"
         />
       </div>
 
@@ -620,7 +620,7 @@ function EntityForm({
             checked={formData.isVerified}
             onChange={(e) => setFormData({ ...formData, isVerified: e.target.checked })}
             className="rounded"
-            data-testid="checkbox-entity-verified"
+            data-testid="checkbox-object-verified"
           />
           Verified
         </label>
@@ -630,15 +630,15 @@ function EntityForm({
             checked={formData.isPublic}
             onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
             className="rounded"
-            data-testid="checkbox-entity-public"
+            data-testid="checkbox-object-public"
           />
           Public
         </label>
       </div>
       
       <div className="flex gap-2 pt-4">
-        <Button type="submit" disabled={saveMutation.isPending} data-testid="button-submit-entity">
-          {saveMutation.isPending ? (isEdit ? "Updating..." : "Creating...") : (isEdit ? "Update Entity" : "Create Entity")}
+        <Button type="submit" disabled={saveMutation.isPending} data-testid="button-submit-object">
+          {saveMutation.isPending ? (isEdit ? "Updating..." : "Creating...") : (isEdit ? "Update Object" : "Create Object")}
         </Button>
       </div>
     </form>

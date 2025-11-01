@@ -142,11 +142,11 @@ export const navigationSections: NavigationSection[] = [
         keywords: ["organizations", "tenants", "companies"]
       },
       {
-        label: "All Entities",
+        label: "All Objects",
         icon: Network,
-        href: "/engine/entities",
-        description: "Entity type management, custom entities",
-        keywords: ["entities", "types", "custom"]
+        href: "/engine/objects",
+        description: "Object type management, custom objects",
+        keywords: ["objects", "types", "custom"]
       },
       {
         label: "All Datasets",

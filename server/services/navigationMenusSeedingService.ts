@@ -7,7 +7,7 @@ const DEFAULT_ENGINE_MENUS = [
   { title: "Overview", route: "/engine", order: 1 },
   { title: "All Users", route: "/engine/users", order: 2 },
   { title: "All Orgs", route: "/engine/tenants", order: 3 },
-  { title: "All Entities", route: "/engine/entities", order: 4 },
+  { title: "All Objects", route: "/engine/objects", order: 4 },
   { title: "DataSets", route: "/engine/datasets", order: 5 },
   { title: "Media", route: "/engine/media", order: 6 },
   { title: "Module Library", route: "/engine/modules", order: 7 },

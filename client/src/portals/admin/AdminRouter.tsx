@@ -20,7 +20,7 @@ import AdminSystemSecurity from "@/pages/admin/system-security";
 import AdminFinance from "@/pages/admin/finance";
 import AdminWytPoints from "@/pages/admin/wytpoints";
 import AdminDatasetManagement from "@/pages/admin/dataset-management-improved";
-import AdminEntities from "@/pages/admin/entities";
+import AdminObjects from "@/pages/admin/objects";
 
 // Import admin analytics (legacy)
 import AdminAnalytics from "@/pages/admin-analytics";
@@ -85,7 +85,7 @@ export default function AdminRouter() {
           <Route path="/engine/users" component={AdminUsers} />
           <Route path="/engine/tenants" component={AdminTenants} />
           <Route path="/engine/datasets" component={AdminDatasetManagement} />
-          <Route path="/engine/entities" component={AdminEntities} />
+          <Route path="/engine/objects" component={AdminObjects} />
           <Route path="/engine/media" component={AdminMedia} />
 
           {/* Platform Management Routes */}
