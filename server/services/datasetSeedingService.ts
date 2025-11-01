@@ -32,13 +32,9 @@ export class DatasetSeedingService {
     console.log('🌱 Initializing WytData datasets...');
     
     try {
-      await this.seedCountries();
+      await this.seedGlobalLocations();
       await this.seedLanguages();
       await this.seedCurrencies();
-      await this.seedTimezones();
-      await this.seedIndiaStates();
-      await this.seedIndiaCities();
-      await this.seedIndiaGSTCodes();
       await this.seedIndustries();
       await this.seedCompanySizes();
       await this.seedJobRoles();
@@ -47,6 +43,148 @@ export class DatasetSeedingService {
     } catch (error) {
       console.error('❌ Error initializing datasets:', error);
     }
+  }
+
+  /**
+   * Seed Unified Global Locations dataset
+   * Consolidates Countries, States, Cities, and Timezones with hierarchical relationships
+   */
+  private async seedGlobalLocations() {
+    const collectionId = await this.createCollection({
+      key: 'global_locations',
+      name: 'Global Locations',
+      description: 'Unified hierarchical location data: countries, states, cities, and timezones with filtering by type',
+      scope: 'global',
+      metadata: { icon: '🌍', immutable: true, unified: true }
+    });
+
+    // COUNTRIES (Type: country)
+    const countries: DatasetItem[] = [
+      { code: 'IN', label: 'India', sortOrder: 1, metadata: { type: 'country', phonePrefix: '+91', currency: 'INR', flag: '🇮🇳', timezone: 'Asia/Kolkata' } },
+      { code: 'US', label: 'United States', sortOrder: 2, metadata: { type: 'country', phonePrefix: '+1', currency: 'USD', flag: '🇺🇸', timezone: 'America/New_York' } },
+      { code: 'GB', label: 'United Kingdom', sortOrder: 3, metadata: { type: 'country', phonePrefix: '+44', currency: 'GBP', flag: '🇬🇧', timezone: 'Europe/London' } },
+      { code: 'CA', label: 'Canada', sortOrder: 4, metadata: { type: 'country', phonePrefix: '+1', currency: 'CAD', flag: '🇨🇦', timezone: 'America/Toronto' } },
+      { code: 'AU', label: 'Australia', sortOrder: 5, metadata: { type: 'country', phonePrefix: '+61', currency: 'AUD', flag: '🇦🇺', timezone: 'Australia/Sydney' } },
+      { code: 'DE', label: 'Germany', sortOrder: 6, metadata: { type: 'country', phonePrefix: '+49', currency: 'EUR', flag: '🇩🇪', timezone: 'Europe/Berlin' } },
+      { code: 'FR', label: 'France', sortOrder: 7, metadata: { type: 'country', phonePrefix: '+33', currency: 'EUR', flag: '🇫🇷', timezone: 'Europe/Paris' } },
+      { code: 'JP', label: 'Japan', sortOrder: 8, metadata: { type: 'country', phonePrefix: '+81', currency: 'JPY', flag: '🇯🇵', timezone: 'Asia/Tokyo' } },
+      { code: 'CN', label: 'China', sortOrder: 9, metadata: { type: 'country', phonePrefix: '+86', currency: 'CNY', flag: '🇨🇳', timezone: 'Asia/Shanghai' } },
+      { code: 'BR', label: 'Brazil', sortOrder: 10, metadata: { type: 'country', phonePrefix: '+55', currency: 'BRL', flag: '🇧🇷', timezone: 'America/Sao_Paulo' } },
+      { code: 'SG', label: 'Singapore', sortOrder: 11, metadata: { type: 'country', phonePrefix: '+65', currency: 'SGD', flag: '🇸🇬', timezone: 'Asia/Singapore' } },
+      { code: 'AE', label: 'United Arab Emirates', sortOrder: 12, metadata: { type: 'country', phonePrefix: '+971', currency: 'AED', flag: '🇦🇪', timezone: 'Asia/Dubai' } },
+      { code: 'NL', label: 'Netherlands', sortOrder: 13, metadata: { type: 'country', phonePrefix: '+31', currency: 'EUR', flag: '🇳🇱', timezone: 'Europe/Amsterdam' } },
+      { code: 'SE', label: 'Sweden', sortOrder: 14, metadata: { type: 'country', phonePrefix: '+46', currency: 'SEK', flag: '🇸🇪', timezone: 'Europe/Stockholm' } },
+      { code: 'NO', label: 'Norway', sortOrder: 15, metadata: { type: 'country', phonePrefix: '+47', currency: 'NOK', flag: '🇳🇴', timezone: 'Europe/Oslo' } },
+      { code: 'CH', label: 'Switzerland', sortOrder: 16, metadata: { type: 'country', phonePrefix: '+41', currency: 'CHF', flag: '🇨🇭', timezone: 'Europe/Zurich' } },
+      { code: 'ES', label: 'Spain', sortOrder: 17, metadata: { type: 'country', phonePrefix: '+34', currency: 'EUR', flag: '🇪🇸', timezone: 'Europe/Madrid' } },
+      { code: 'IT', label: 'Italy', sortOrder: 18, metadata: { type: 'country', phonePrefix: '+39', currency: 'EUR', flag: '🇮🇹', timezone: 'Europe/Rome' } },
+      { code: 'MX', label: 'Mexico', sortOrder: 19, metadata: { type: 'country', phonePrefix: '+52', currency: 'MXN', flag: '🇲🇽', timezone: 'America/Mexico_City' } },
+      { code: 'ZA', label: 'South Africa', sortOrder: 20, metadata: { type: 'country', phonePrefix: '+27', currency: 'ZAR', flag: '🇿🇦', timezone: 'Africa/Johannesburg' } },
+      { code: 'KR', label: 'South Korea', sortOrder: 21, metadata: { type: 'country', phonePrefix: '+82', currency: 'KRW', flag: '🇰🇷', timezone: 'Asia/Seoul' } },
+      { code: 'ID', label: 'Indonesia', sortOrder: 22, metadata: { type: 'country', phonePrefix: '+62', currency: 'IDR', flag: '🇮🇩', timezone: 'Asia/Jakarta' } },
+      { code: 'MY', label: 'Malaysia', sortOrder: 23, metadata: { type: 'country', phonePrefix: '+60', currency: 'MYR', flag: '🇲🇾', timezone: 'Asia/Kuala_Lumpur' } },
+      { code: 'TH', label: 'Thailand', sortOrder: 24, metadata: { type: 'country', phonePrefix: '+66', currency: 'THB', flag: '🇹🇭', timezone: 'Asia/Bangkok' } },
+      { code: 'PH', label: 'Philippines', sortOrder: 25, metadata: { type: 'country', phonePrefix: '+63', currency: 'PHP', flag: '🇵🇭', timezone: 'Asia/Manila' } },
+      { code: 'VN', label: 'Vietnam', sortOrder: 26, metadata: { type: 'country', phonePrefix: '+84', currency: 'VND', flag: '🇻🇳', timezone: 'Asia/Ho_Chi_Minh' } },
+      { code: 'NZ', label: 'New Zealand', sortOrder: 27, metadata: { type: 'country', phonePrefix: '+64', currency: 'NZD', flag: '🇳🇿', timezone: 'Pacific/Auckland' } },
+      { code: 'PL', label: 'Poland', sortOrder: 28, metadata: { type: 'country', phonePrefix: '+48', currency: 'PLN', flag: '🇵🇱', timezone: 'Europe/Warsaw' } },
+      { code: 'BE', label: 'Belgium', sortOrder: 29, metadata: { type: 'country', phonePrefix: '+32', currency: 'EUR', flag: '🇧🇪', timezone: 'Europe/Brussels' } },
+      { code: 'AT', label: 'Austria', sortOrder: 30, metadata: { type: 'country', phonePrefix: '+43', currency: 'EUR', flag: '🇦🇹', timezone: 'Europe/Vienna' } },
+      { code: 'DK', label: 'Denmark', sortOrder: 31, metadata: { type: 'country', phonePrefix: '+45', currency: 'DKK', flag: '🇩🇰', timezone: 'Europe/Copenhagen' } },
+      { code: 'FI', label: 'Finland', sortOrder: 32, metadata: { type: 'country', phonePrefix: '+358', currency: 'EUR', flag: '🇫🇮', timezone: 'Europe/Helsinki' } },
+      { code: 'IE', label: 'Ireland', sortOrder: 33, metadata: { type: 'country', phonePrefix: '+353', currency: 'EUR', flag: '🇮🇪', timezone: 'Europe/Dublin' } },
+      { code: 'PT', label: 'Portugal', sortOrder: 34, metadata: { type: 'country', phonePrefix: '+351', currency: 'EUR', flag: '🇵🇹', timezone: 'Europe/Lisbon' } },
+      { code: 'IL', label: 'Israel', sortOrder: 35, metadata: { type: 'country', phonePrefix: '+972', currency: 'ILS', flag: '🇮🇱', timezone: 'Asia/Jerusalem' } },
+      { code: 'TR', label: 'Turkey', sortOrder: 36, metadata: { type: 'country', phonePrefix: '+90', currency: 'TRY', flag: '🇹🇷', timezone: 'Europe/Istanbul' } },
+      { code: 'SA', label: 'Saudi Arabia', sortOrder: 37, metadata: { type: 'country', phonePrefix: '+966', currency: 'SAR', flag: '🇸🇦', timezone: 'Asia/Riyadh' } },
+      { code: 'EG', label: 'Egypt', sortOrder: 38, metadata: { type: 'country', phonePrefix: '+20', currency: 'EGP', flag: '🇪🇬', timezone: 'Africa/Cairo' } },
+      { code: 'NG', label: 'Nigeria', sortOrder: 39, metadata: { type: 'country', phonePrefix: '+234', currency: 'NGN', flag: '🇳🇬', timezone: 'Africa/Lagos' } },
+      { code: 'KE', label: 'Kenya', sortOrder: 40, metadata: { type: 'country', phonePrefix: '+254', currency: 'KES', flag: '🇰🇪', timezone: 'Africa/Nairobi' } },
+      { code: 'AR', label: 'Argentina', sortOrder: 41, metadata: { type: 'country', phonePrefix: '+54', currency: 'ARS', flag: '🇦🇷', timezone: 'America/Buenos_Aires' } },
+      { code: 'CL', label: 'Chile', sortOrder: 42, metadata: { type: 'country', phonePrefix: '+56', currency: 'CLP', flag: '🇨🇱', timezone: 'America/Santiago' } },
+      { code: 'CO', label: 'Colombia', sortOrder: 43, metadata: { type: 'country', phonePrefix: '+57', currency: 'COP', flag: '🇨🇴', timezone: 'America/Bogota' } },
+      { code: 'PE', label: 'Peru', sortOrder: 44, metadata: { type: 'country', phonePrefix: '+51', currency: 'PEN', flag: '🇵🇪', timezone: 'America/Lima' } },
+      { code: 'PK', label: 'Pakistan', sortOrder: 45, metadata: { type: 'country', phonePrefix: '+92', currency: 'PKR', flag: '🇵🇰', timezone: 'Asia/Karachi' } },
+      { code: 'BD', label: 'Bangladesh', sortOrder: 46, metadata: { type: 'country', phonePrefix: '+880', currency: 'BDT', flag: '🇧🇩', timezone: 'Asia/Dhaka' } },
+      { code: 'LK', label: 'Sri Lanka', sortOrder: 47, metadata: { type: 'country', phonePrefix: '+94', currency: 'LKR', flag: '🇱🇰', timezone: 'Asia/Colombo' } },
+      { code: 'NP', label: 'Nepal', sortOrder: 48, metadata: { type: 'country', phonePrefix: '+977', currency: 'NPR', flag: '🇳🇵', timezone: 'Asia/Kathmandu' } },
+      { code: 'HK', label: 'Hong Kong', sortOrder: 49, metadata: { type: 'country', phonePrefix: '+852', currency: 'HKD', flag: '🇭🇰', timezone: 'Asia/Hong_Kong' } },
+      { code: 'TW', label: 'Taiwan', sortOrder: 50, metadata: { type: 'country', phonePrefix: '+886', currency: 'TWD', flag: '🇹🇼', timezone: 'Asia/Taipei' } }
+    ];
+
+    // INDIA STATES & UTs (Type: state, countryCode: IN)
+    const indiaStates: DatasetItem[] = [
+      { code: 'IN-AN', label: 'Andaman and Nicobar Islands', sortOrder: 101, metadata: { type: 'state', countryCode: 'IN', stateType: 'UT', capital: 'Port Blair', gstCode: '35' } },
+      { code: 'IN-AP', label: 'Andhra Pradesh', sortOrder: 102, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Amaravati', gstCode: '37' } },
+      { code: 'IN-AR', label: 'Arunachal Pradesh', sortOrder: 103, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Itanagar', gstCode: '12' } },
+      { code: 'IN-AS', label: 'Assam', sortOrder: 104, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Dispur', gstCode: '18' } },
+      { code: 'IN-BR', label: 'Bihar', sortOrder: 105, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Patna', gstCode: '10' } },
+      { code: 'IN-CH', label: 'Chandigarh', sortOrder: 106, metadata: { type: 'state', countryCode: 'IN', stateType: 'UT', capital: 'Chandigarh', gstCode: '04' } },
+      { code: 'IN-CT', label: 'Chhattisgarh', sortOrder: 107, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Raipur', gstCode: '22' } },
+      { code: 'IN-DN', label: 'Dadra and Nagar Haveli and Daman and Diu', sortOrder: 108, metadata: { type: 'state', countryCode: 'IN', stateType: 'UT', capital: 'Daman', gstCode: '26' } },
+      { code: 'IN-DL', label: 'Delhi', sortOrder: 109, metadata: { type: 'state', countryCode: 'IN', stateType: 'UT', capital: 'New Delhi', gstCode: '07' } },
+      { code: 'IN-GA', label: 'Goa', sortOrder: 110, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Panaji', gstCode: '30' } },
+      { code: 'IN-GJ', label: 'Gujarat', sortOrder: 111, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Gandhinagar', gstCode: '24' } },
+      { code: 'IN-HR', label: 'Haryana', sortOrder: 112, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Chandigarh', gstCode: '06' } },
+      { code: 'IN-HP', label: 'Himachal Pradesh', sortOrder: 113, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Shimla', gstCode: '02' } },
+      { code: 'IN-JK', label: 'Jammu and Kashmir', sortOrder: 114, metadata: { type: 'state', countryCode: 'IN', stateType: 'UT', capital: 'Srinagar', gstCode: '01' } },
+      { code: 'IN-JH', label: 'Jharkhand', sortOrder: 115, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Ranchi', gstCode: '20' } },
+      { code: 'IN-KA', label: 'Karnataka', sortOrder: 116, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Bengaluru', gstCode: '29' } },
+      { code: 'IN-KL', label: 'Kerala', sortOrder: 117, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Thiruvananthapuram', gstCode: '32' } },
+      { code: 'IN-LA', label: 'Ladakh', sortOrder: 118, metadata: { type: 'state', countryCode: 'IN', stateType: 'UT', capital: 'Leh', gstCode: '38' } },
+      { code: 'IN-LD', label: 'Lakshadweep', sortOrder: 119, metadata: { type: 'state', countryCode: 'IN', stateType: 'UT', capital: 'Kavaratti', gstCode: '31' } },
+      { code: 'IN-MP', label: 'Madhya Pradesh', sortOrder: 120, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Bhopal', gstCode: '23' } },
+      { code: 'IN-MH', label: 'Maharashtra', sortOrder: 121, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Mumbai', gstCode: '27' } },
+      { code: 'IN-MN', label: 'Manipur', sortOrder: 122, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Imphal', gstCode: '14' } },
+      { code: 'IN-ML', label: 'Meghalaya', sortOrder: 123, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Shillong', gstCode: '17' } },
+      { code: 'IN-MZ', label: 'Mizoram', sortOrder: 124, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Aizawl', gstCode: '15' } },
+      { code: 'IN-NL', label: 'Nagaland', sortOrder: 125, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Kohima', gstCode: '13' } },
+      { code: 'IN-OR', label: 'Odisha', sortOrder: 126, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Bhubaneswar', gstCode: '21' } },
+      { code: 'IN-PY', label: 'Puducherry', sortOrder: 127, metadata: { type: 'state', countryCode: 'IN', stateType: 'UT', capital: 'Puducherry', gstCode: '34' } },
+      { code: 'IN-PB', label: 'Punjab', sortOrder: 128, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Chandigarh', gstCode: '03' } },
+      { code: 'IN-RJ', label: 'Rajasthan', sortOrder: 129, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Jaipur', gstCode: '08' } },
+      { code: 'IN-SK', label: 'Sikkim', sortOrder: 130, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Gangtok', gstCode: '11' } },
+      { code: 'IN-TN', label: 'Tamil Nadu', sortOrder: 131, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Chennai', gstCode: '33' } },
+      { code: 'IN-TG', label: 'Telangana', sortOrder: 132, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Hyderabad', gstCode: '36' } },
+      { code: 'IN-TR', label: 'Tripura', sortOrder: 133, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Agartala', gstCode: '16' } },
+      { code: 'IN-UP', label: 'Uttar Pradesh', sortOrder: 134, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Lucknow', gstCode: '09' } },
+      { code: 'IN-UT', label: 'Uttarakhand', sortOrder: 135, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Dehradun', gstCode: '05' } },
+      { code: 'IN-WB', label: 'West Bengal', sortOrder: 136, metadata: { type: 'state', countryCode: 'IN', stateType: 'State', capital: 'Kolkata', gstCode: '19' } }
+    ];
+
+    // INDIA MAJOR CITIES (Type: city, countryCode: IN, stateCode: XX)
+    const indiaCities: DatasetItem[] = [
+      { code: 'IN-KA-BLR', label: 'Bengaluru', sortOrder: 201, metadata: { type: 'city', countryCode: 'IN', stateCode: 'IN-KA', population: 12000000, latitude: 12.9716, longitude: 77.5946, aliases: ['Bangalore'] } },
+      { code: 'IN-DL-DEL', label: 'New Delhi', sortOrder: 202, metadata: { type: 'city', countryCode: 'IN', stateCode: 'IN-DL', population: 30000000, latitude: 28.6139, longitude: 77.2090 } },
+      { code: 'IN-MH-MUM', label: 'Mumbai', sortOrder: 203, metadata: { type: 'city', countryCode: 'IN', stateCode: 'IN-MH', population: 20000000, latitude: 19.0760, longitude: 72.8777 } },
+      { code: 'IN-TG-HYD', label: 'Hyderabad', sortOrder: 204, metadata: { type: 'city', countryCode: 'IN', stateCode: 'IN-TG', population: 10000000, latitude: 17.3850, longitude: 78.4867 } },
+      { code: 'IN-TN-CHN', label: 'Chennai', sortOrder: 205, metadata: { type: 'city', countryCode: 'IN', stateCode: 'IN-TN', population: 10000000, latitude: 13.0827, longitude: 80.2707 } },
+      { code: 'IN-WB-KOL', label: 'Kolkata', sortOrder: 206, metadata: { type: 'city', countryCode: 'IN', stateCode: 'IN-WB', population: 15000000, latitude: 22.5726, longitude: 88.3639 } },
+      { code: 'IN-MH-PUN', label: 'Pune', sortOrder: 207, metadata: { type: 'city', countryCode: 'IN', stateCode: 'IN-MH', population: 7000000, latitude: 18.5204, longitude: 73.8567 } },
+      { code: 'IN-GJ-AMD', label: 'Ahmedabad', sortOrder: 208, metadata: { type: 'city', countryCode: 'IN', stateCode: 'IN-GJ', population: 8000000, latitude: 23.0225, longitude: 72.5714 } },
+      { code: 'IN-GJ-SUR', label: 'Surat', sortOrder: 209, metadata: { type: 'city', countryCode: 'IN', stateCode: 'IN-GJ', population: 6000000, latitude: 21.1702, longitude: 72.8311 } },
+      { code: 'IN-RJ-JAI', label: 'Jaipur', sortOrder: 210, metadata: { type: 'city', countryCode: 'IN', stateCode: 'IN-RJ', population: 3500000, latitude: 26.9124, longitude: 75.7873 } }
+    ];
+
+    // TIMEZONES (Type: timezone, linked to countries via metadata)
+    const timezones: DatasetItem[] = [
+      { code: 'TZ-Asia/Kolkata', label: 'India Standard Time (IST)', sortOrder: 301, metadata: { type: 'timezone', utcOffset: '+05:30', dst: false, countries: ['IN'], tzCode: 'Asia/Kolkata' } },
+      { code: 'TZ-America/New_York', label: 'Eastern Time (ET)', sortOrder: 302, metadata: { type: 'timezone', utcOffset: '-05:00', dst: true, countries: ['US'], tzCode: 'America/New_York' } },
+      { code: 'TZ-America/Los_Angeles', label: 'Pacific Time (PT)', sortOrder: 303, metadata: { type: 'timezone', utcOffset: '-08:00', dst: true, countries: ['US'], tzCode: 'America/Los_Angeles' } },
+      { code: 'TZ-Europe/London', label: 'British Summer Time (BST)', sortOrder: 304, metadata: { type: 'timezone', utcOffset: '+00:00', dst: true, countries: ['GB'], tzCode: 'Europe/London' } },
+      { code: 'TZ-Europe/Paris', label: 'Central European Time (CET)', sortOrder: 305, metadata: { type: 'timezone', utcOffset: '+01:00', dst: true, countries: ['FR', 'DE', 'ES', 'IT'], tzCode: 'Europe/Paris' } },
+      { code: 'TZ-Asia/Tokyo', label: 'Japan Standard Time (JST)', sortOrder: 306, metadata: { type: 'timezone', utcOffset: '+09:00', dst: false, countries: ['JP'], tzCode: 'Asia/Tokyo' } },
+      { code: 'TZ-Asia/Shanghai', label: 'China Standard Time (CST)', sortOrder: 307, metadata: { type: 'timezone', utcOffset: '+08:00', dst: false, countries: ['CN'], tzCode: 'Asia/Shanghai' } },
+      { code: 'TZ-Australia/Sydney', label: 'Australian Eastern Time (AET)', sortOrder: 308, metadata: { type: 'timezone', utcOffset: '+10:00', dst: true, countries: ['AU'], tzCode: 'Australia/Sydney' } },
+      { code: 'TZ-Asia/Dubai', label: 'Gulf Standard Time (GST)', sortOrder: 309, metadata: { type: 'timezone', utcOffset: '+04:00', dst: false, countries: ['AE'], tzCode: 'Asia/Dubai' } },
+      { code: 'TZ-Asia/Singapore', label: 'Singapore Time (SGT)', sortOrder: 310, metadata: { type: 'timezone', utcOffset: '+08:00', dst: false, countries: ['SG'], tzCode: 'Asia/Singapore' } }
+    ];
+
+    // Combine all location data
+    const allLocations = [...countries, ...indiaStates, ...indiaCities, ...timezones];
+    
+    await this.createItems(collectionId, allLocations);
+    console.log(`  ✓ Seeded Global Locations: ${countries.length} countries, ${indiaStates.length} states, ${indiaCities.length} cities, ${timezones.length} timezones`);
   }
 
   /**

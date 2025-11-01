@@ -9544,10 +9544,11 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Get single dataset collection with items
+  // Get single dataset collection with items (supports hierarchical filtering)
   app.get('/api/admin/datasets/:id', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { id } = req.params;
+      const { type, countryCode, stateCode, search } = req.query;
 
       const [collection] = await db.select()
         .from(datasetCollections)
@@ -9558,12 +9559,51 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.status(404).json({ error: 'Dataset collection not found' });
       }
 
-      const items = await db.select()
+      // Fetch all items first
+      let items = await db.select()
         .from(datasetItems)
         .where(eq(datasetItems.collectionId, id))
         .orderBy(datasetItems.sortOrder, datasetItems.label);
 
-      res.json({ success: true, collection, items });
+      // Apply client-side filtering for unified location dataset
+      if (collection.key === 'global_locations' || type || countryCode || stateCode || search) {
+        items = items.filter(item => {
+          const metadata = item.metadata as any;
+          
+          // Filter by type (country, state, city, timezone)
+          if (type && metadata?.type !== type) {
+            return false;
+          }
+          
+          // Filter by country code
+          if (countryCode && metadata?.countryCode !== countryCode) {
+            return false;
+          }
+          
+          // Filter by state code
+          if (stateCode && metadata?.stateCode !== stateCode) {
+            return false;
+          }
+          
+          // Search in code or label
+          if (search) {
+            const searchLower = search.toString().toLowerCase();
+            const codeMatch = item.code.toLowerCase().includes(searchLower);
+            const labelMatch = item.label.toLowerCase().includes(searchLower);
+            const aliasMatch = metadata?.aliases && Array.isArray(metadata.aliases) 
+              ? metadata.aliases.some((alias: string) => alias.toLowerCase().includes(searchLower))
+              : false;
+            
+            if (!codeMatch && !labelMatch && !aliasMatch) {
+              return false;
+            }
+          }
+          
+          return true;
+        });
+      }
+
+      res.json({ success: true, collection, items, filters: { type, countryCode, stateCode, search } });
     } catch (error) {
       console.error('Error fetching dataset collection:', error);
       res.status(500).json({ error: 'Failed to fetch dataset collection' });
