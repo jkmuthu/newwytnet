@@ -57,6 +57,7 @@ import {
   User,
   Layers,
   Zap,
+  X,
 } from "lucide-react";
 
 // Wizard schema for all 6 screens
@@ -521,59 +522,174 @@ function Screen1BasicInfo({ form, onNameChange }: { form: any; onNameChange: (na
         )}
       />
 
-      <div className="grid grid-cols-2 gap-4">
-        <FormField
-          control={form.control}
-          name="icon"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Icon</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger data-testid="select-app-icon">
-                    <SelectValue placeholder="Select icon" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="Package">Package</SelectItem>
-                  <SelectItem value="Calculator">Calculator</SelectItem>
-                  <SelectItem value="FileSignature">File Signature</SelectItem>
-                  <SelectItem value="QrCode">QR Code</SelectItem>
-                  <SelectItem value="Users">Users</SelectItem>
-                  <SelectItem value="Grid3x3">Grid</SelectItem>
-                  <SelectItem value="Bot">Bot</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <FormField
+        control={form.control}
+        name="category"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Category</FormLabel>
+            <CategorySelector 
+              value={field.value}
+              onChange={field.onChange}
+            />
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger data-testid="select-app-category">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="productivity">Productivity</SelectItem>
-                  <SelectItem value="finance">Finance</SelectItem>
-                  <SelectItem value="communication">Communication</SelectItem>
-                  <SelectItem value="utilities">Utilities</SelectItem>
-                  <SelectItem value="developer">Developer Tools</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <Separator />
+
+      <div>
+        <h4 className="text-md font-semibold mb-4">Visual Assets</h4>
+        <p className="text-sm text-muted-foreground mb-4">
+          Add icons, logos, and banners to make your app stand out
+        </p>
+
+        <div className="space-y-6">
+          <FormField
+            control={form.control}
+            name="icon"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>App Icon</FormLabel>
+                <FormDescription>
+                  Square icon that represents your app (recommended: 512x512px)
+                </FormDescription>
+                <ImageUploadCrop
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  aspect={1}
+                  cropShape="square"
+                  label="Upload Icon"
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="image"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>App Logo</FormLabel>
+                <FormDescription>
+                  Primary logo for your app (recommended: 1200x600px)
+                </FormDescription>
+                <ImageUploadCrop
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  aspect={2}
+                  cropShape="rect"
+                  label="Upload Logo"
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="banner"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Banner Image</FormLabel>
+                <FormDescription>
+                  Wide banner for app pages and marketing (recommended: 1920x600px)
+                </FormDescription>
+                <ImageUploadCrop
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  aspect={16/9}
+                  cropShape="rect"
+                  label="Upload Banner"
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
       </div>
+    </div>
+  );
+}
+
+// Category Selector with instant creation
+function CategorySelector({ value, onChange }: { value?: string; onChange: (value: string) => void }) {
+  const [showNewCategory, setShowNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+
+  const categories = [
+    "productivity",
+    "finance",
+    "communication",
+    "utilities",
+    "developer",
+    "ai-tools",
+    "core-platform",
+    "social",
+    "business",
+    "education",
+    "storage",
+    "web-development"
+  ];
+
+  const handleAddCategory = () => {
+    if (newCategoryName.trim()) {
+      const slug = newCategoryName.toLowerCase().replace(/\s+/g, '-');
+      onChange(slug);
+      setNewCategoryName("");
+      setShowNewCategory(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger data-testid="select-app-category">
+          <SelectValue placeholder="Select category" />
+        </SelectTrigger>
+        <SelectContent>
+          {categories.map((cat) => (
+            <SelectItem key={cat} value={cat}>
+              {cat.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+            </SelectItem>
+          ))}
+          <Separator className="my-2" />
+          <div 
+            className="px-2 py-1.5 text-sm hover:bg-accent cursor-pointer rounded-sm flex items-center gap-2"
+            onClick={() => setShowNewCategory(true)}
+          >
+            <Sparkles className="h-4 w-4" />
+            Add New Category
+          </div>
+        </SelectContent>
+      </Select>
+
+      {showNewCategory && (
+        <div className="flex gap-2">
+          <Input
+            placeholder="Enter category name"
+            value={newCategoryName}
+            onChange={(e) => setNewCategoryName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+          />
+          <Button type="button" size="sm" onClick={handleAddCategory}>
+            <Check className="h-4 w-4" />
+          </Button>
+          <Button 
+            type="button" 
+            size="sm" 
+            variant="outline" 
+            onClick={() => {
+              setShowNewCategory(false);
+              setNewCategoryName("");
+            }}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
