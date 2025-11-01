@@ -156,6 +156,13 @@ export const navigationSections: NavigationSection[] = [
         keywords: ["datasets", "data", "wytdata"]
       },
       {
+        label: "Trademark - India",
+        icon: FileText,
+        href: "/engine/trademarks",
+        description: "Indian trademark database management with TM Numbers",
+        keywords: ["trademarks", "tm", "india", "brand", "intellectual property"]
+      },
+      {
         label: "All Modules",
         icon: Package,
         href: "/engine/modules",
