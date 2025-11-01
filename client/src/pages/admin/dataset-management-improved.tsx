@@ -474,10 +474,10 @@ export default function AdminDatasetManagementImproved() {
                   </div>
 
                   {/* Other Collections */}
-                  {collectionsData?.collections.filter(c => 
+                  {(collectionsData?.collections?.filter(c => 
                     !['countries', 'states', 'cities', 'timezones', 'languages', 'currencies', 
                       'india_states', 'india_cities', 'gst_state_codes', 'industries', 'company_sizes', 'job_roles'].includes(c.key)
-                  ).length > 0 && (
+                  ).length || 0) > 0 && (
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 pb-2 border-b">
                         <Database className="h-5 w-5 text-gray-600" />
