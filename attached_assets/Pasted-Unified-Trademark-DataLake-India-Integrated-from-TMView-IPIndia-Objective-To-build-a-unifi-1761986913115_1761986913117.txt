@@ -1,0 +1,193 @@
+Unified Trademark DataLake – India (Integrated from TMView & IPIndia)
+
+Objective: To build a unified “Trademark DataLake” for India by collecting, validating, and synchronizing trademark records from multiple public sources (TMView, IPIndia, and Gazette).
+All data will be uniquely indexed using the **Trademark Application Number (TM Number)**, and the system will automatically manage duplicates and lifecycle updates.
+
+---
+
+## 🧱 Core Functional Requirements
+
+### 1️⃣ Data Source & Extraction
+
+* The system should fetch Indian Trademark data primarily from:
+
+  * TMView ([https://www.tmdn.org/tmview/](https://www.tmdn.org/tmview/))
+  * IPIndia Trademark Public Search (optional secondary source)
+* TMView India dataset includes more than **2.4 million trademarks** with complete filing and registration data.
+* Data fields available in TMView (India):
+
+  * TM Number (Application Number)
+  * Brand Image / Logo (if available)
+  * Brand Name (Word Mark)
+  * Status (Registered, Objected, etc.)
+  * Office (e.g., India – CGDPTM)
+  * Application Date
+  * Goods and Services (Class numbers)
+  * Owner / Applicant
+  * Country (India)
+* There is **no CAPTCHA** or login requirement, hence data can be fetched programmatically in a paginated manner (1–30, 31–60…).
+
+---
+
+### 2️⃣ Unified Dataset Structure
+
+The system should maintain one unified dataset combining both **Master Record** and **Lifecycle Events** for each TM Number.
+
+#### a) Master Record (Primary Table)
+
+Each trademark record represents one unique TM Number and includes:
+
+* TM Number (unique key)
+* Brand Name / Word Mark
+* Class Numbers
+* Goods/Services Description
+* Application Date
+* Registration Date (if available)
+* Status (Filed / Examined / Accepted / Registered / Objected / Opposed / Abandoned / Removed)
+* Office (e.g., Chennai, Mumbai)
+* Owner / Applicant
+* Country (India)
+* Logo / Image URL
+* Source (TMView, IPIndia, Gazette)
+* Last Updated (timestamp)
+
+#### b) Lifecycle Events (Secondary Table)
+
+Each TM Number can have multiple related events:
+
+* Event Type (Filing, Examination, Hearing, Registration, Renewal, Opposition, Rectification)
+* Event Date
+* Details (text summary)
+* Source (IPIndia / Gazette / TMView)
+* Document link (if available)
+* Last Updated timestamp
+
+Both tables link through the same **TM Number**.
+
+---
+
+### 3️⃣ TM Number Validation & Deduplication
+
+* Before inserting or updating any record:
+
+  * Validate that `TM Number` is present and correctly formatted (7 digits for India).
+  * Reject any record without a valid TM Number.
+* When new data arrives:
+
+  * If TM Number already exists → check for field differences.
+  * If identical → ignore as duplicate.
+  * If updated → update only changed fields.
+  * If record appears from multiple sources → apply source priority:
+
+    * Gazette / Official API > TMView > Crawled.
+
+---
+
+### 4️⃣ Sync and Refresh Mechanism
+
+* System should automatically fetch and sync data at regular intervals:
+
+  * Incremental sync daily (new or modified records).
+  * Full sync monthly (verify older data).
+* Allow manual “Sync Now” trigger from Super Admin panel.
+* Maintain logs of:
+
+  * Total records processed.
+  * New inserts, updates, duplicates ignored.
+  * Source used and any errors encountered.
+
+---
+
+### 5️⃣ Error & Exception Handling
+
+* Invalid TM Numbers → Reject and store in error queue.
+* Missing required fields → log for manual review.
+* Conflicting updates → maintain version history (last value and new value).
+* Maintain detailed sync logs and timestamps for audit.
+
+---
+
+### 6️⃣ Super Admin Functions
+
+* Dashboard to view:
+
+  * Total records, new records, updates, ignored duplicates.
+  * Source-wise summary (TMView / Gazette / IPIndia).
+  * Sync history (with date & duration).
+* Search & Filter by:
+
+  * TM Number / Brand Name / Class / Status / Office / Date Range.
+* Export verified dataset (CSV / JSON).
+* Manual upload of CSV (for Gazette entries).
+
+---
+
+### 7️⃣ Data Consistency & Standards
+
+* Country fixed as **India**.
+* Class Numbers limited to 1–45.
+* Date format: YYYY-MM-DD.
+* Status standardized:
+
+  * Filed / Objected / Examined / Accepted / Registered / Opposed / Withdrawn / Abandoned / Removed / Expired.
+* Office standardized to:
+
+  * MUMBAI / DELHI / CHENNAI / AHMEDABAD / KOLKATA.
+* Owner Name, Brand Name, and Description to be cleaned for extra spaces and case consistency.
+
+---
+
+### 8️⃣ Data Usage & Integration
+
+* The unified dataset will power:
+
+  * **Brand Safe Report Generator**
+  * **OpenBrand Directory**
+  * **Trademark Watch / Monitoring**
+  * **GeoMark Verification**
+* Must provide a query API for internal modules:
+
+  * Search by TM Number / Brand / Class / Status.
+
+---
+
+### 9️⃣ Audit & Logs
+
+* Maintain complete audit trail of:
+
+  * Created / Updated / Ignored records.
+  * Sync sessions.
+  * Source and time of update.
+* Enable manual “View Change History” for any TM Number.
+
+---
+
+### 🔟 Future Enhancements (optional)
+
+* Add Trademark Ownership Transfer tracking.
+* Integrate WIPO International filings linked to India.
+* Enable trademark similarity check engine (AI-based).
+* Provide analytics (per class, per status, per city).
+
+---
+
+## 🧭 Expected Outcomes
+
+* India Trademark Dataset (2.4M+ records) automatically built and updated.
+* No duplicates — every record unique by TM Number.
+* Filing to Registration lifecycle mapped for each mark.
+* Daily and monthly sync automation active.
+* Data available for all BGrow applications.
+
+---
+
+✅ **Deliverable Summary**
+When Replit builds this module, it should:
+
+* Collect and normalize India trademarks from TMView.
+* Validate and deduplicate by TM Number.
+* Maintain a unified dataset combining filing + lifecycle.
+* Provide admin controls and logs.
+* Enable easy export and API access.
+
+---
