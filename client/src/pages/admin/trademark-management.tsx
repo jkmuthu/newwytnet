@@ -94,6 +94,10 @@ export default function TrademarkManagement() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" data-testid="button-import-csv">
+            <Upload className="h-4 w-4 mr-2" />
+            Import CSV
+          </Button>
           <Button variant="outline" data-testid="button-export">
             <Download className="h-4 w-4 mr-2" />
             Export
