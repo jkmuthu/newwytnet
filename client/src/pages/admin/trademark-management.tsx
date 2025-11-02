@@ -39,6 +39,8 @@ export default function TrademarkManagement() {
   const [officeFilter, setOfficeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(0);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
   const pageSize = 50;
 
   // Fetch trademarks
@@ -77,6 +79,49 @@ export default function TrademarkManagement() {
     queryKey: ['/api/trademarks/classes'],
   });
 
+  // CSV Import mutation
+  const importCsvMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/api/admin/trademarks/import-csv', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to import CSV');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Import Successful",
+        description: `Imported ${data.imported} trademarks, ${data.skipped} skipped, ${data.errors} errors`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/trademarks/search'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/trademarks/stats'] });
+      setIsImportDialogOpen(false);
+      setCsvFile(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Import Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleImportCsv = () => {
+    if (csvFile) {
+      importCsvMutation.mutate(csvFile);
+    }
+  };
+
   const trademarks = trademarksData?.trademarks || [];
   const stats: any = statsData?.stats || {};
   const niceClasses: any[] = classesData?.classes || [];
@@ -94,10 +139,63 @@ export default function TrademarkManagement() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" data-testid="button-import-csv">
-            <Upload className="h-4 w-4 mr-2" />
-            Import CSV
-          </Button>
+          <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" data-testid="button-import-csv">
+                <Upload className="h-4 w-4 mr-2" />
+                Import CSV
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Import Trademarks from CSV</DialogTitle>
+                <DialogDescription>
+                  Upload a CSV file containing trademark data. The file should include columns: tmNumber, brandName, owner, ownerAddress, status, office, goodsServices, classes (comma-separated).
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="csv-file">CSV File</Label>
+                  <Input
+                    id="csv-file"
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                    data-testid="input-csv-file"
+                  />
+                </div>
+                {csvFile && (
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Selected: {csvFile.name} ({(csvFile.size / 1024).toFixed(2)} KB)
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleImportCsv}
+                    disabled={!csvFile || importCsvMutation.isPending}
+                    data-testid="button-upload-csv"
+                  >
+                    {importCsvMutation.isPending ? "Importing..." : "Import"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      const template = "tmNumber,brandName,owner,ownerAddress,status,office,goodsServices,classes\n1225579,Sample Brand,Sample Owner,123 Street,Filed,Mumbai,Computer software,9,42";
+                      const blob = new Blob([template], { type: 'text/csv' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'trademark-template.csv';
+                      a.click();
+                    }}
+                    data-testid="button-download-template"
+                  >
+                    Download Template
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
           <Button variant="outline" data-testid="button-export">
             <Download className="h-4 w-4 mr-2" />
             Export
@@ -355,63 +453,6 @@ function AddTrademarkForm({ onSuccess, niceClasses }: { onSuccess: () => void; n
     applicationDate: '',
     registrationDate: '',
   });
-  const [isFetching, setIsFetching] = useState(false);
-  const [isFetched, setIsFetched] = useState(false);
-
-  // Fetch trademark details by TM Number from TMView
-  const handleFetchDetails = async () => {
-    if (!/^\d{7}$/.test(formData.tmNumber)) {
-      toast({
-        title: "Invalid TM Number",
-        description: "Please enter a valid 7-digit TM Number",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsFetching(true);
-    try {
-      const response = await fetch(`/api/admin/trademarks/fetch-tmview/${formData.tmNumber}`, {
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Trademark not found in TMView');
-      }
-
-      const data = await response.json();
-      const tm = data.trademark;
-
-      // Auto-populate form with fetched data from TMView
-      setFormData({
-        tmNumber: tm.tmNumber || formData.tmNumber,
-        brandName: tm.brandName || '',
-        owner: tm.owner || '',
-        ownerAddress: tm.ownerAddress || '',
-        office: tm.office || 'MUMBAI',
-        status: tm.status || 'Filed',
-        classes: tm.classes || [],
-        goodsServices: tm.goodsServices || '',
-        applicationDate: tm.applicationDate ? new Date(tm.applicationDate).toISOString().split('T')[0] : '',
-        registrationDate: tm.registrationDate ? new Date(tm.registrationDate).toISOString().split('T')[0] : '',
-      });
-
-      setIsFetched(true);
-      toast({
-        title: "Success!",
-        description: "Trademark details fetched from TMView successfully",
-      });
-    } catch (error) {
-      toast({
-        title: "Not Found",
-        description: "Trademark not found in TMView. Please check the TM Number or add manually.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsFetching(false);
-    }
-  };
 
   const addMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -475,46 +516,18 @@ function AddTrademarkForm({ onSuccess, niceClasses }: { onSuccess: () => void; n
       <div className="space-y-4">
         <div>
           <Label htmlFor="tmNumber">TM Number (Application Number) *</Label>
-          <div className="flex gap-2">
-            <Input
-              id="tmNumber"
-              placeholder="1234567"
-              value={formData.tmNumber}
-              onChange={(e) => {
-                setFormData({ ...formData, tmNumber: e.target.value });
-                setIsFetched(false);
-              }}
-              required
-              pattern="\d{7}"
-              maxLength={7}
-              data-testid="input-tm-number"
-              className="flex-1"
-            />
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleFetchDetails}
-              disabled={isFetching || formData.tmNumber.length !== 7}
-              data-testid="button-fetch-details"
-            >
-              {isFetching ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Fetching...
-                </>
-              ) : (
-                <>
-                  <Search className="h-4 w-4 mr-2" />
-                  Fetch
-                </>
-              )}
-            </Button>
-          </div>
+          <Input
+            id="tmNumber"
+            placeholder="1234567"
+            value={formData.tmNumber}
+            onChange={(e) => setFormData({ ...formData, tmNumber: e.target.value })}
+            required
+            pattern="\d{7}"
+            maxLength={7}
+            data-testid="input-tm-number"
+          />
           <p className="text-xs text-gray-500 mt-1">
-            {isFetched 
-              ? "✓ Details fetched successfully. You can edit before saving." 
-              : "Enter 7-digit TM Number and click Fetch to auto-fill all details"
-            }
+            Enter 7-digit TM Number (India Application Number)
           </p>
         </div>
 

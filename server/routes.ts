@@ -10077,6 +10077,83 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // Admin: Import CSV
+  const csvUpload = multer({ storage: multer.memoryStorage() });
+  app.post('/api/admin/trademarks/import-csv', adminAuthMiddleware, csvUpload.single('file'), async (req: any, res) => {
+    try {
+      const userId = req.admin?.id;
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      // Parse CSV
+      const csvContent = file.buffer.toString('utf-8');
+      const lines = csvContent.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        return res.status(400).json({ error: 'CSV file is empty or has no data rows' });
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim());
+      
+      let imported = 0;
+      let skipped = 0;
+      let errors = 0;
+
+      for (let i = 1; i < lines.length; i++) {
+        try {
+          const values = lines[i].split(',').map(v => v.trim());
+          const row: any = {};
+          
+          headers.forEach((header, idx) => {
+            row[header] = values[idx] || '';
+          });
+
+          // Parse classes if present
+          if (row.classes) {
+            row.classes = row.classes.split(',').map((c: string) => parseInt(c.trim())).filter((c: number) => !isNaN(c));
+          }
+
+          // Validate TM Number
+          if (!row.tmNumber || !/^\d{7}$/.test(row.tmNumber)) {
+            skipped++;
+            continue;
+          }
+
+          // Insert trademark
+          await trademarkService.upsertTrademark({
+            tmNumber: row.tmNumber,
+            brandName: row.brandName || '',
+            owner: row.owner || '',
+            ownerAddress: row.ownerAddress || '',
+            status: row.status || 'Filed',
+            office: row.office || '',
+            goodsServices: row.goodsServices || '',
+            classes: row.classes || [],
+          }, userId);
+
+          imported++;
+        } catch (error: any) {
+          console.error(`Error importing row ${i}:`, error);
+          errors++;
+        }
+      }
+
+      res.json({ 
+        success: true, 
+        imported, 
+        skipped, 
+        errors,
+        message: `Imported ${imported} trademarks, ${skipped} skipped, ${errors} errors`
+      });
+    } catch (error: any) {
+      console.error('Error importing CSV:', error);
+      res.status(500).json({ error: error.message || 'Failed to import CSV' });
+    }
+  });
+
   // Admin: Add lifecycle event
   app.post('/api/admin/trademarks/:tmNumber/lifecycle', adminAuthMiddleware, async (req: any, res) => {
     try {
