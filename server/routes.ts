@@ -9983,6 +9983,33 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // Fetch trademark from TMView by TM Number (admin only)
+  app.get('/api/admin/trademarks/fetch-tmview/:tmNumber', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { tmNumber } = req.params;
+      
+      // Validate TM Number format (7 digits for India)
+      if (!/^\d{7}$/.test(tmNumber)) {
+        return res.status(400).json({ error: 'TM Number must be 7 digits' });
+      }
+
+      const { tmviewScraper } = await import('./services/tmview-scraper');
+      const trademark = await tmviewScraper.fetchTrademark(tmNumber);
+
+      if (!trademark || !trademark.brandName) {
+        return res.status(404).json({ 
+          error: 'Trademark not found in TMView',
+          message: 'No data found for this TM Number in TMView database'
+        });
+      }
+
+      res.json({ success: true, trademark });
+    } catch (error: any) {
+      console.error('Error fetching from TMView:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch from TMView' });
+    }
+  });
+
   // Get trademark by TM Number (public access with API key)
   app.get('/api/trademarks/:tmNumber', apiAuthMiddleware, async (req: any, res) => {
     try {

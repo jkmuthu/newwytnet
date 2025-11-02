@@ -354,7 +354,7 @@ function AddTrademarkForm({ onSuccess, niceClasses }: { onSuccess: () => void; n
   const [isFetching, setIsFetching] = useState(false);
   const [isFetched, setIsFetched] = useState(false);
 
-  // Fetch trademark details by TM Number
+  // Fetch trademark details by TM Number from TMView
   const handleFetchDetails = async () => {
     if (!/^\d{7}$/.test(formData.tmNumber)) {
       toast({
@@ -367,24 +367,25 @@ function AddTrademarkForm({ onSuccess, niceClasses }: { onSuccess: () => void; n
 
     setIsFetching(true);
     try {
-      const response = await fetch(`/api/trademarks/${formData.tmNumber}`, {
+      const response = await fetch(`/api/admin/trademarks/fetch-tmview/${formData.tmNumber}`, {
         credentials: 'include',
       });
 
       if (!response.ok) {
-        throw new Error('Trademark not found');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Trademark not found in TMView');
       }
 
       const data = await response.json();
       const tm = data.trademark;
 
-      // Auto-populate form with fetched data
+      // Auto-populate form with fetched data from TMView
       setFormData({
         tmNumber: tm.tmNumber || formData.tmNumber,
         brandName: tm.brandName || '',
         owner: tm.owner || '',
         ownerAddress: tm.ownerAddress || '',
-        office: tm.office || '',
+        office: tm.office || 'MUMBAI',
         status: tm.status || 'Filed',
         classes: tm.classes || [],
         goodsServices: tm.goodsServices || '',
@@ -394,13 +395,13 @@ function AddTrademarkForm({ onSuccess, niceClasses }: { onSuccess: () => void; n
 
       setIsFetched(true);
       toast({
-        title: "Success",
-        description: "Trademark details fetched successfully",
+        title: "Success!",
+        description: "Trademark details fetched from TMView successfully",
       });
     } catch (error) {
       toast({
         title: "Not Found",
-        description: "Trademark not found in database. You can add it manually.",
+        description: "Trademark not found in TMView. Please check the TM Number or add manually.",
         variant: "destructive",
       });
     } finally {
