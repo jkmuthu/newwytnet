@@ -10567,4 +10567,38 @@ When suggesting improvements, format your response with suggestions in a structu
       res.status(500).json({ error: error.message || 'Failed to update password' });
     }
   });
+
+  // Serve presentations for download
+  app.get('/docs/presentations/:filename', async (req, res) => {
+    try {
+      const { filename } = req.params;
+      const filePath = path.join(process.cwd(), 'docs', 'presentations', filename);
+      
+      // Check if file exists
+      const fileExists = await fs.access(filePath).then(() => true).catch(() => false);
+      if (!fileExists) {
+        return res.status(404).json({ error: 'File not found' });
+      }
+      
+      // Set appropriate content type
+      const ext = path.extname(filename).toLowerCase();
+      const contentTypes: Record<string, string> = {
+        '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        '.ppt': 'application/vnd.ms-powerpoint',
+        '.pdf': 'application/pdf',
+        '.md': 'text/markdown'
+      };
+      
+      const contentType = contentTypes[ext] || 'application/octet-stream';
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      
+      // Stream the file
+      const fileBuffer = await fs.readFile(filePath);
+      res.send(fileBuffer);
+    } catch (error: any) {
+      console.error('Error serving presentation:', error);
+      res.status(500).json({ error: error.message || 'Failed to serve presentation' });
+    }
+  });
 }
