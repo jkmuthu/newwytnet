@@ -26,6 +26,8 @@ import NotFound from "@/pages/not-found";
 import ComingSoon from "@/pages/coming-soon";
 // Import the DevDocumentation component
 import DevDocumentation from "@/pages/dev-documentation";
+import DashboardPage from "@/pages/dashboard";
+import PresentationViewer from "@/pages/presentation-viewer";
 
 // Account pages
 import MyAccountPage from "@/pages/account/MyAccountPage";
@@ -179,6 +181,9 @@ export default function PublicRouter() {
       <Route path="/astro-pre" component={() => { window.location.href = "/"; return null; }} />
       <Route path="/business" component={() => { window.location.href = "/"; return null; }} />
       <Route path="/invoice-c" component={() => { window.location.href = "/"; return null; }} />
+
+      {/* Presentation viewer route */}
+      <Route path="/presentations" component={PresentationViewer} />
 
         {/* 404 fallback */}
         <Route component={NotFound} />

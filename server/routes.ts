@@ -169,7 +169,8 @@ import rolesRouter from "./routes/roles";
 import platformHubsRouter from "./routes/platform-hubs";
 import wytaiRouter from "./routes/wytai";
 import themesRouter from "./routes/themes";
-import supportRouter from "./routes/support";
+import supportRoutes from "./routes/support";
+import walletRoutes from "./routes/wallet";
 import integrationsRouter from "./routes/integrations";
 import organizationsRouter from "./routes/organizations";
 import platformSettingsRouter from "./routes/platform-settings";
@@ -181,6 +182,7 @@ import { setupQATestingTrackerRoutes } from "./routes/qa-testing-tracker";
 import { rateLimiters } from "./middleware/rateLimiter";
 import { requireAuth } from "./wytpass-identity";
 import { whatsappAuthService } from "./services/whatsappAuthService";
+import presentationsRoutes from "./routes/presentations";
 
 // Trademark analysis functions now imported from services/trademarkAnalysis.ts
 
@@ -289,7 +291,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.use('/api', themesRouter);
 
   // Register Support & Knowledge Base Router
-  app.use('/api', supportRouter);
+  app.use('/api', supportRoutes);
 
   // Register Integrations Management Router
   app.use('/api', integrationsRouter);
@@ -314,6 +316,9 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // Register QA Testing Tracker Routes
   setupQATestingTrackerRoutes(app);
+
+  // Register Presentations Routes
+  app.use('/api', presentationsRoutes);
 
   // Auth routes - unified endpoint for both authentication systems
   app.get('/api/auth/user', async (req: any, res) => {
@@ -968,7 +973,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // File upload endpoint for admin
   const upload = multer({ storage: multer.memoryStorage() });
-  
+
   app.post('/api/admin/upload', adminAuthMiddleware, upload.single('file'), async (req: any, res) => {
     try {
       if (!req.file) {
@@ -1213,7 +1218,7 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       // Extract wizard fields from configData
       const configData = (app.configData as any) || {};
-      
+
       const result = {
         ...app,
         moduleCount: appModulesData.length,
@@ -1340,7 +1345,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.post('/api/admin/apps/bulk-cleanup', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { keepAppNames } = req.body;
-      
+
       if (!Array.isArray(keepAppNames) || keepAppNames.length === 0) {
         return res.status(400).json({
           success: false,
@@ -3907,9 +3912,9 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Old mock assessment endpoints removed - now using production assessmentService
   // Real endpoints are at /api/assessments/* (lines 2870-2980) with database integration
 
-  // ============================================================================
+  // =============================================================================
   // PLATFORM MODULES MANAGEMENT API
-  // ============================================================================
+  // =============================================================================
 
   // Initialize default platform modules service
   async function initializeDefaultModules() {
@@ -7030,7 +7035,7 @@ When suggesting improvements, format your response with suggestions in a structu
   });
 
   // =============================================================================
-  // SOCIAL AUTHENTICATION ROUTES
+  // SOCIAL AUTHENTICATIONROUTES
   // =============================================================================
 
   // Social auth providers info with mobile verification policy
@@ -8276,25 +8281,6 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.status(400).json({
           success: false,
           error: 'Credentials object is required'
-        });
-      }
-
-      // Get provider display name and category
-      const providerConfig = {
-        google_auth: { displayName: 'Google OAuth', category: 'auth' },
-        facebook_auth: { displayName: 'Facebook OAuth', category: 'auth' },
-        linkedin_auth: { displayName: 'LinkedIn OAuth', category: 'auth' },
-        whatsapp_auth: { displayName: 'WhatsApp Business', category: 'auth' },
-        sms_otp: { displayName: 'SMS OTP Service', category: 'auth' },
-        razorpay: { displayName: 'Razorpay', category: 'payment' },
-        gpay_direct: { displayName: 'Google Pay Direct', category: 'payment' },
-        bhim_direct: { displayName: 'BHIM Pay Direct', category: 'payment' }
-      }[provider];
-
-      if (!providerConfig) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid provider'
         });
       }
 
@@ -9615,28 +9601,28 @@ When suggesting improvements, format your response with suggestions in a structu
       let items = await db.select()
         .from(datasetItems)
         .where(eq(datasetItems.collectionId, id))
-        .orderBy(datasetItems.sortOrder, datasetItems.label);
+        .orderBy(datasetItems.sortOrder);
 
       // Apply client-side filtering for unified location dataset
       if (collection.key === 'global_locations' || type || countryCode || stateCode || search) {
         items = items.filter(item => {
           const metadata = item.metadata as any;
-          
+
           // Filter by type (country, state, city, timezone)
           if (type && metadata?.type !== type) {
             return false;
           }
-          
+
           // Filter by country code
           if (countryCode && metadata?.countryCode !== countryCode) {
             return false;
           }
-          
+
           // Filter by state code
           if (stateCode && metadata?.stateCode !== stateCode) {
             return false;
           }
-          
+
           // Search in code or label
           if (search) {
             const searchLower = search.toString().toLowerCase();
@@ -9645,12 +9631,12 @@ When suggesting improvements, format your response with suggestions in a structu
             const aliasMatch = metadata?.aliases && Array.isArray(metadata.aliases) 
               ? metadata.aliases.some((alias: string) => alias.toLowerCase().includes(searchLower))
               : false;
-            
+
             if (!codeMatch && !labelMatch && !aliasMatch) {
               return false;
             }
           }
-          
+
           return true;
         });
       }
@@ -9987,7 +9973,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.get('/api/admin/trademarks/fetch-tmview/:tmNumber', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { tmNumber } = req.params;
-      
+
       // Validate TM Number format (7 digits for India)
       if (!/^\d{7}$/.test(tmNumber)) {
         return res.status(400).json({ error: 'TM Number must be 7 digits' });
@@ -10054,7 +10040,7 @@ When suggesting improvements, format your response with suggestions in a structu
   app.post('/api/admin/trademarks/sync', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { startPage, endPage, pageSize } = req.body;
-      
+
       // Start sync in background (don't wait for completion)
       tmviewService.syncTrademarks({
         startPage: startPage || 1,
@@ -10091,13 +10077,13 @@ When suggesting improvements, format your response with suggestions in a structu
       // Parse CSV
       const csvContent = file.buffer.toString('utf-8');
       const lines = csvContent.split('\n').filter(line => line.trim());
-      
+
       if (lines.length < 2) {
         return res.status(400).json({ error: 'CSV file is empty or has no data rows' });
       }
 
       const headers = lines[0].split(',').map(h => h.trim());
-      
+
       let imported = 0;
       let skipped = 0;
       let errors = 0;
@@ -10106,7 +10092,7 @@ When suggesting improvements, format your response with suggestions in a structu
         try {
           const values = lines[i].split(',').map(v => v.trim());
           const row: any = {};
-          
+
           headers.forEach((header, idx) => {
             row[header] = values[idx] || '';
           });
@@ -10159,7 +10145,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const { tmNumber } = req.params;
       const userId = req.admin?.id;
-      
+
       const event = await trademarkService.addLifecycleEvent({
         tmNumber,
         ...req.body,
@@ -10225,7 +10211,7 @@ When suggesting improvements, format your response with suggestions in a structu
       }
 
       const { name, tier, expiresInDays } = req.body;
-      
+
       const newKey = await apiKeyService.createKey({
         userId: principal.id,
         name: name || 'My API Key',
@@ -10318,7 +10304,7 @@ When suggesting improvements, format your response with suggestions in a structu
 
       const usage = await apiUsageService.getCurrentMonthUsage(principal.id);
       const tier = await apiKeyService.getUserTier(principal.id);
-      
+
       const tierData = await db.select()
         .from(apiPricingTiers)
         .where(eq(apiPricingTiers.tier, tier))
