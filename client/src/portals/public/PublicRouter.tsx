@@ -182,8 +182,9 @@ export default function PublicRouter() {
       <Route path="/business" component={() => { window.location.href = "/"; return null; }} />
       <Route path="/invoice-c" component={() => { window.location.href = "/"; return null; }} />
 
-      {/* Presentation viewer route */}
+      {/* Presentation viewer routes */}
       <Route path="/presentations" component={PresentationViewer} />
+      <Route path="/investor-presentation" component={PresentationViewer} />
 
         {/* 404 fallback */}
         <Route component={NotFound} />
