@@ -5,13 +5,14 @@ import * as path from "path";
 const PptxGenJS = (PptxGenJSModule as any).default || PptxGenJSModule;
 const pptx = new PptxGenJS();
 
-pptx.author = "WytNet";
+pptx.author = "WytNet | JK Muthu";
 pptx.company = "WytNet Platform";
-pptx.subject = "Investor Presentation 2025";
-pptx.title = "WytNet Platform - Investor Presentation";
+pptx.subject = "Investor Presentation 2025 - Revolutionizing the Human Experience";
+pptx.title = "WytLife × WytGlass × WytNet - Investor Presentation";
 
 const COLORS = {
-  primary: "4F46E5",
+  primary: "1D8BD1",
+  wytlife: "1D8BD1",
   secondary: "7C3AED",
   accent: "EC4899",
   success: "10B981",
@@ -26,315 +27,458 @@ const COLORS = {
   orange: "F97316",
   teal: "14B8A6",
   cyan: "06B6D4",
-  indigo: "6366F1"
+  indigo: "6366F1",
+  gradient1: "4F46E5",
+  gradient2: "7C3AED"
 };
+
+const WYTLIFE_LOGO_PATH = path.join(process.cwd(), "attached_assets", "logo_1764073078385.jpg");
 
 function createTitleSlide() {
   const slide = pptx.addSlide();
   
   slide.addShape(pptx.ShapeType.rect, {
     x: 0, y: 0, w: "100%", h: "100%",
-    fill: { type: "solid", color: COLORS.primary }
+    fill: { type: "solid", color: COLORS.wytlife }
   });
   
-  slide.addText("WytNet Platform", {
-    x: 0.5, y: 2, w: 9, h: 1.2,
-    fontSize: 48, bold: true, color: COLORS.white,
+  slide.addShape(pptx.ShapeType.rect, {
+    x: 0, y: 0, w: "100%", h: 0.15,
+    fill: { type: "solid", color: COLORS.white }
+  });
+  
+  if (fs.existsSync(WYTLIFE_LOGO_PATH)) {
+    slide.addImage({
+      path: WYTLIFE_LOGO_PATH,
+      x: 3.5, y: 1.2, w: 3, h: 1.2
+    });
+  }
+  
+  slide.addText("REVOLUTIONIZING THE HUMAN EXPERIENCE", {
+    x: 0.5, y: 2.6, w: 9, h: 0.5,
+    fontSize: 20, bold: true, color: COLORS.white,
     align: "center"
   });
   
-  slide.addText("The Future of Digital Life & Business", {
-    x: 0.5, y: 3.2, w: 9, h: 0.6,
-    fontSize: 24, color: COLORS.white,
+  slide.addText("The Next Human Interface", {
+    x: 0.5, y: 3.2, w: 9, h: 0.4,
+    fontSize: 18, color: COLORS.white,
     align: "center"
   });
   
-  slide.addText('"Where Life Continues Forever & Business Thrives Seamlessly"', {
-    x: 0.5, y: 4.2, w: 9, h: 0.5,
-    fontSize: 16, italic: true, color: COLORS.white,
+  slide.addText("WytLife  ×  WytGlass  ×  WytNet", {
+    x: 0.5, y: 3.8, w: 9, h: 0.5,
+    fontSize: 24, bold: true, color: COLORS.white,
     align: "center"
   });
   
   slide.addText("Investor Presentation 2025", {
-    x: 0.5, y: 5, w: 9, h: 0.4,
+    x: 0.5, y: 4.8, w: 9, h: 0.3,
     fontSize: 14, color: COLORS.white,
     align: "center"
   });
 }
 
-function createExecutiveSummarySlide() {
+function createProblemSlide() {
   const slide = pptx.addSlide();
   
-  slide.addText("Executive Summary", {
+  slide.addText("Technology Evolved, Human Experience Didn't", {
     x: 0.5, y: 0.3, w: 9, h: 0.6,
-    fontSize: 32, bold: true, color: COLORS.dark
+    fontSize: 28, bold: true, color: COLORS.dark
   });
   
   slide.addShape(pptx.ShapeType.rect, {
     x: 0.5, y: 1.1, w: 4.2, h: 3.4,
-    fill: { color: "FEF3C7" },
-    line: { color: COLORS.warning, width: 1 }
+    fill: { color: "FEE2E2" },
+    line: { color: "EF4444", width: 2 }
   });
   
-  slide.addText("The Problem", {
-    x: 0.7, y: 1.2, w: 4, h: 0.4,
-    fontSize: 18, bold: true, color: COLORS.dark
+  slide.addText("Digital Fragmentation Crisis", {
+    x: 0.7, y: 1.2, w: 4, h: 0.5,
+    fontSize: 16, bold: true, color: "DC2626"
   });
   
   slide.addText([
-    { text: "• Death ends legacy & knowledge transfer\n", options: { bullet: false } },
-    { text: "• Businesses struggle with disconnected tools\n", options: { bullet: false } },
-    { text: "• Digital immortality remains science fiction\n", options: { bullet: false } },
-    { text: "• Multi-platform subscription fatigue\n", options: { bullet: false } },
-    { text: "• Data silos limit business intelligence", options: { bullet: false } }
-  ], {
-    x: 0.7, y: 1.7, w: 4, h: 2.5,
-    fontSize: 12, color: COLORS.dark, valign: "top"
+    "• Juggling countless apps, passwords, platforms\n\n",
+    "• Overload leads to burnout, lost productivity\n\n",
+    "• No unified platform for life's essentials\n\n",
+    "• Death ends legacy & knowledge transfer\n\n",
+    "• Multi-platform subscription fatigue"
+  ].join(""), {
+    x: 0.7, y: 1.8, w: 4, h: 2.5,
+    fontSize: 11, color: COLORS.dark, valign: "top"
   });
   
   slide.addShape(pptx.ShapeType.rect, {
     x: 5.2, y: 1.1, w: 4.2, h: 3.4,
-    fill: { color: "DCFCE7" },
-    line: { color: COLORS.success, width: 1 }
+    fill: { color: "FEF3C7" },
+    line: { color: COLORS.warning, width: 2 }
   });
   
-  slide.addText("Our Solution", {
-    x: 5.4, y: 1.2, w: 4, h: 0.4,
-    fontSize: 18, bold: true, color: COLORS.dark
+  slide.addText("AI Exists, Not for Humans", {
+    x: 5.4, y: 1.2, w: 4, h: 0.5,
+    fontSize: 16, bold: true, color: "D97706"
   });
   
   slide.addText([
-    { text: "• WytLife: Digital immortality platform\n", options: { bullet: false } },
-    { text: "• 39 WytApps: Unified business ecosystem\n", options: { bullet: false } },
-    { text: "• Soul Engine: AI consciousness preservation\n", options: { bullet: false } },
-    { text: "• Multi-tenant SaaS: White-label ready\n", options: { bullet: false } },
-    { text: "• WytData: Comprehensive DataLake", options: { bullet: false } }
-  ], {
-    x: 5.4, y: 1.7, w: 4, h: 2.5,
-    fontSize: 12, color: COLORS.dark, valign: "top"
+    "• AI is disconnected from our lives\n\n",
+    "• We adapt to technology, not vice-versa\n\n",
+    "• No system truly understands people\n\n",
+    "• Digital immortality remains science fiction\n\n",
+    "• Data silos limit business intelligence"
+  ].join(""), {
+    x: 5.4, y: 1.8, w: 4, h: 2.5,
+    fontSize: 11, color: COLORS.dark, valign: "top"
   });
   
   slide.addShape(pptx.ShapeType.rect, {
-    x: 0.5, y: 4.7, w: 8.9, h: 0.7,
-    fill: { color: "E0E7FF" }
+    x: 0.5, y: 4.7, w: 8.9, h: 0.6,
+    fill: { color: COLORS.wytlife }
   });
   
-  slide.addText("Market Opportunity: $50B+ digital legacy + $200B+ SaaS + $15B data services = $265B+", {
-    x: 0.7, y: 4.8, w: 8.5, h: 0.5,
-    fontSize: 14, bold: true, color: COLORS.indigo, align: "center"
-  });
-}
-
-function createPlatformOverviewSlide() {
-  const slide = pptx.addSlide();
-  
-  slide.addText("WytNet Platform Overview", {
-    x: 0.5, y: 0.3, w: 9, h: 0.5,
-    fontSize: 28, bold: true, color: COLORS.dark
-  });
-  
-  slide.addText("Multi-Tenant White-Label SaaS Ecosystem", {
-    x: 0.5, y: 0.8, w: 9, h: 0.3,
-    fontSize: 16, color: COLORS.secondary
-  });
-  
-  const boxes = [
-    { title: "Platform Architecture", items: ["Multi-tenant infrastructure", "White-label capabilities", "Custom domain support", "Row-level security (RLS)"], color: "DBEAFE", x: 0.5 },
-    { title: "Core Components", items: ["39 WytApps", "51 Platform Modules", "5 Active Hubs", "WytPass Universal Auth"], color: "EDE9FE", x: 3.4 },
-    { title: "Technology Stack", items: ["React + TypeScript", "PostgreSQL (Neon)", "Express.js Backend", "AI (GPT-4o, Claude, Gemini)"], color: "FCE7F3", x: 6.3 }
-  ];
-  
-  boxes.forEach(box => {
-    slide.addShape(pptx.ShapeType.rect, {
-      x: box.x, y: 1.3, w: 2.8, h: 2.8,
-      fill: { color: box.color },
-      line: { color: COLORS.primary, width: 1 }
-    });
-    
-    slide.addText(box.title, {
-      x: box.x + 0.1, y: 1.4, w: 2.6, h: 0.4,
-      fontSize: 12, bold: true, color: COLORS.dark, align: "center"
-    });
-    
-    slide.addText(box.items.map(item => `✓ ${item}`).join("\n"), {
-      x: box.x + 0.1, y: 1.9, w: 2.6, h: 2,
-      fontSize: 10, color: COLORS.dark, valign: "top"
-    });
-  });
-  
-  slide.addShape(pptx.ShapeType.rect, {
-    x: 0.5, y: 4.3, w: 8.9, h: 1,
-    fill: { color: "E0E7FF" }
-  });
-  
-  slide.addText("Platform Statistics", {
-    x: 0.7, y: 4.4, w: 8.5, h: 0.3,
-    fontSize: 14, bold: true, color: COLORS.dark
-  });
-  
-  const stats = [
-    { value: "39", label: "WytApps", color: COLORS.indigo },
-    { value: "51", label: "Modules", color: COLORS.purple },
-    { value: "5", label: "Hubs", color: COLORS.pink },
-    { value: "38+", label: "Datasets", color: COLORS.blue },
-    { value: "2.4M+", label: "Records", color: COLORS.green }
-  ];
-  
-  stats.forEach((stat, i) => {
-    slide.addText(stat.value, {
-      x: 0.7 + i * 1.8, y: 4.7, w: 1.6, h: 0.35,
-      fontSize: 18, bold: true, color: stat.color, align: "center"
-    });
-    slide.addText(stat.label, {
-      x: 0.7 + i * 1.8, y: 5, w: 1.6, h: 0.25,
-      fontSize: 10, color: COLORS.dark, align: "center"
-    });
+  slide.addText("We need a system that understands people — where technology adapts to humans.", {
+    x: 0.7, y: 4.8, w: 8.5, h: 0.4,
+    fontSize: 14, bold: true, color: COLORS.white, align: "center"
   });
 }
 
-function createWytLifeSlide() {
+function createWytLifeIntroSlide() {
   const slide = pptx.addSlide();
   
   slide.addShape(pptx.ShapeType.rect, {
     x: 0, y: 0, w: "100%", h: "100%",
-    fill: { type: "solid", color: COLORS.secondary }
+    fill: { type: "solid", color: COLORS.wytlife }
   });
   
-  slide.addText("WytLife", {
-    x: 0.5, y: 1.8, w: 9, h: 1,
-    fontSize: 56, bold: true, color: COLORS.white, align: "center"
+  if (fs.existsSync(WYTLIFE_LOGO_PATH)) {
+    slide.addImage({
+      path: WYTLIFE_LOGO_PATH,
+      x: 3.5, y: 0.8, w: 3, h: 1.2
+    });
+  }
+  
+  slide.addText("Your Life... Reimagined", {
+    x: 0.5, y: 2.2, w: 9, h: 0.6,
+    fontSize: 32, bold: true, color: COLORS.white, align: "center"
   });
   
-  slide.addText("The World's First Life Continuity Platform", {
-    x: 0.5, y: 2.8, w: 9, h: 0.5,
-    fontSize: 24, color: COLORS.white, align: "center"
-  });
+  const features = [
+    { icon: "🧠", title: "Unified Intelligence", desc: "Integrates AI, personal data, habits, goals & relationships for a seamless experience." },
+    { icon: "🌐", title: "One Ecosystem", desc: "Unifies health, work, social, and daily routines into a single intelligent platform." },
+    { icon: "❤️", title: "Human-First Design", desc: "Technology built to understand you, anticipate needs, and amplify your potential." }
+  ];
   
-  slide.addText('"The day humanity stops dying and starts evolving — begins with WytLife"', {
-    x: 0.5, y: 3.8, w: 9, h: 0.5,
-    fontSize: 16, italic: true, color: COLORS.white, align: "center"
+  features.forEach((f, i) => {
+    const y = 3 + i * 0.85;
+    slide.addShape(pptx.ShapeType.rect, {
+      x: 1, y, w: 8, h: 0.75,
+      fill: { color: COLORS.white }
+    });
+    slide.addText(f.icon + "  " + f.title, {
+      x: 1.2, y: y + 0.05, w: 7.6, h: 0.35,
+      fontSize: 14, bold: true, color: COLORS.wytlife
+    });
+    slide.addText(f.desc, {
+      x: 1.2, y: y + 0.4, w: 7.6, h: 0.3,
+      fontSize: 10, color: COLORS.dark
+    });
   });
 }
 
-function createWytLifeDetailsSlide() {
+function createWytGlassSlide() {
   const slide = pptx.addSlide();
   
-  slide.addText("WytLife: Digital Immortality", {
+  slide.addText("WytGlass: The Next Human Interface", {
     x: 0.5, y: 0.3, w: 9, h: 0.5,
     fontSize: 28, bold: true, color: COLORS.dark
   });
   
   slide.addShape(pptx.ShapeType.rect, {
-    x: 0.5, y: 1, w: 4.2, h: 3.5,
+    x: 0.5, y: 0.9, w: 9, h: 0.6,
+    fill: { color: COLORS.wytlife }
+  });
+  
+  slide.addText("Human + AI + Reality = New Interface", {
+    x: 0.7, y: 1, w: 8.6, h: 0.4,
+    fontSize: 18, bold: true, color: COLORS.white, align: "center"
+  });
+  
+  slide.addText("WytGlass transforms interaction with information. Lightweight smart eyewear projects your digital life — tasks, messages, reminders, and AI guidance — seamlessly onto the real world.", {
+    x: 0.5, y: 1.65, w: 9, h: 0.6,
+    fontSize: 12, color: COLORS.dark, align: "center"
+  });
+  
+  const features = [
+    { title: "Heads-Up Intelligence", desc: "Real-time information appears when and where needed, maintaining focus without extra devices.", color: "DBEAFE" },
+    { title: "Contextual Awareness", desc: "Navigation, meeting reminders, and insights guide your day with perfect timing.", color: "EDE9FE" },
+    { title: "Personal AI Companion", desc: "Your AI assistant in your vision provides contextual insights, reminders, and daily guidance.", color: "D1FAE5" }
+  ];
+  
+  features.forEach((f, i) => {
+    const x = 0.5 + i * 3.1;
+    slide.addShape(pptx.ShapeType.rect, {
+      x, y: 2.4, w: 3, h: 1.8,
+      fill: { color: f.color },
+      line: { color: COLORS.wytlife, width: 1 }
+    });
+    slide.addText(f.title, {
+      x: x + 0.1, y: 2.5, w: 2.8, h: 0.4,
+      fontSize: 12, bold: true, color: COLORS.dark, align: "center"
+    });
+    slide.addText(f.desc, {
+      x: x + 0.1, y: 2.95, w: 2.8, h: 1.1,
+      fontSize: 10, color: COLORS.dark, valign: "top", align: "center"
+    });
+  });
+  
+  slide.addShape(pptx.ShapeType.rect, {
+    x: 0.5, y: 4.4, w: 9, h: 0.8,
     fill: { color: "F3F4F6" }
   });
   
-  slide.addText("What is WytLife?", {
-    x: 0.7, y: 1.1, w: 4, h: 0.4,
-    fontSize: 16, bold: true, color: COLORS.dark
+  slide.addText("Productivity Layer", {
+    x: 0.7, y: 4.5, w: 8.6, h: 0.3,
+    fontSize: 14, bold: true, color: COLORS.dark, align: "center"
   });
   
-  slide.addText([
-    "✓ MyClone: Your digital twin powered by AI\n",
-    "✓ Soul Engine: Proprietary AI capturing essence\n",
-    "✓ Record voice, memories, thoughts, emotions\n",
-    "✓ Your personality lives forever\n",
-    "✓ Family can interact with your digital self"
-  ].join(""), {
-    x: 0.7, y: 1.6, w: 4, h: 2.5,
-    fontSize: 11, color: COLORS.dark, valign: "top"
-  });
-  
-  slide.addShape(pptx.ShapeType.rect, {
-    x: 5.2, y: 1, w: 4.2, h: 3.5,
-    fill: { color: "EDE9FE" }
-  });
-  
-  slide.addText("Key Features", {
-    x: 5.4, y: 1.1, w: 4, h: 0.4,
-    fontSize: 16, bold: true, color: COLORS.dark
-  });
-  
-  slide.addText([
-    "🗄️ Preserve Legacy: Knowledge never fades\n",
-    "❤️ Reconnect Forever: Family interactions\n",
-    "🧠 Extend Your Mind: Digital assistant\n",
-    "✨ WytPoints Powered: Ecosystem integration\n",
-    "🔮 Soul Intelligence: Captures essence"
-  ].join(""), {
-    x: 5.4, y: 1.6, w: 4, h: 2.5,
-    fontSize: 11, color: COLORS.dark, valign: "top"
+  slide.addText("A transparent interface enhancing reality, perfect for professionals, students, and knowledge workers.", {
+    x: 0.7, y: 4.8, w: 8.6, h: 0.3,
+    fontSize: 11, color: COLORS.dark, align: "center"
   });
 }
 
-function createFounderSlide() {
+function createWytLifeGlassCombinationSlide() {
   const slide = pptx.addSlide();
   
-  slide.addText("WytLife: Founder's Story", {
+  slide.addShape(pptx.ShapeType.rect, {
+    x: 0, y: 0, w: "50%", h: "100%",
+    fill: { type: "solid", color: COLORS.wytlife }
+  });
+  
+  slide.addText("Your Life.", {
+    x: 0.3, y: 1.2, w: 4.5, h: 0.5,
+    fontSize: 32, bold: true, color: COLORS.white
+  });
+  
+  slide.addText("Your Vision.", {
+    x: 0.3, y: 1.7, w: 4.5, h: 0.5,
+    fontSize: 32, bold: true, color: COLORS.white
+  });
+  
+  slide.addText("Your Flow.", {
+    x: 0.3, y: 2.2, w: 4.5, h: 0.5,
+    fontSize: 32, bold: true, color: COLORS.white
+  });
+  
+  slide.addText("WytLife × WytGlass", {
+    x: 0.3, y: 3, w: 4.5, h: 0.4,
+    fontSize: 16, color: COLORS.white
+  });
+  
+  slide.addText("The Unbeatable Combination", {
+    x: 0.3, y: 3.4, w: 4.5, h: 0.4,
+    fontSize: 14, italic: true, color: COLORS.white
+  });
+  
+  const features = [
+    { icon: "👁️", title: "Routines Visible", desc: "Daily habits, schedules, and priorities appear in your line of sight." },
+    { icon: "🎤", title: "Instant Capture", desc: "Capture tasks, ideas, and reminders with voice and gesture controls." },
+    { icon: "🧭", title: "Contextual Guidance", desc: "Navigation, meeting reminders, and insights guide your day." },
+    { icon: "🤖", title: "AI Life Coach", desc: "AI monitors behaviors, optimizing productivity with personalized recommendations." }
+  ];
+  
+  features.forEach((f, i) => {
+    const y = 1 + i * 1.05;
+    slide.addShape(pptx.ShapeType.rect, {
+      x: 5.2, y, w: 4.5, h: 0.95,
+      fill: { color: "F9FAFB" }
+    });
+    slide.addText(f.icon + "  " + f.title, {
+      x: 5.4, y: y + 0.1, w: 4.1, h: 0.35,
+      fontSize: 12, bold: true, color: COLORS.wytlife
+    });
+    slide.addText(f.desc, {
+      x: 5.4, y: y + 0.45, w: 4.1, h: 0.4,
+      fontSize: 9, color: COLORS.dark
+    });
+  });
+}
+
+function createWytNetInfraSlide() {
+  const slide = pptx.addSlide();
+  
+  slide.addText("WytNet: The Infrastructure Behind Everything", {
     x: 0.5, y: 0.3, w: 9, h: 0.5,
-    fontSize: 28, bold: true, color: COLORS.dark
+    fontSize: 26, bold: true, color: COLORS.dark
   });
   
-  slide.addText("JK Muthu", {
-    x: 0.5, y: 1, w: 4, h: 0.5,
-    fontSize: 24, bold: true, color: COLORS.primary
+  slide.addText("A Multi-SaaS Engine for a Billion Lives", {
+    x: 0.5, y: 0.8, w: 9, h: 0.3,
+    fontSize: 16, color: COLORS.wytlife
   });
   
-  slide.addText("The World's First Deathless Person", {
-    x: 0.5, y: 1.5, w: 4, h: 0.3,
-    fontSize: 14, color: COLORS.secondary
+  slide.addText("WytNet is the powerful backbone enabling WytLife and WytGlass, providing unified digital infrastructure across identity, communication, commerce, and connectivity.", {
+    x: 0.5, y: 1.2, w: 9, h: 0.5,
+    fontSize: 11, color: COLORS.dark, align: "center"
+  });
+  
+  const pillars = [
+    { title: "Digital Identity", desc: "WytPass: secure, unified authentication across all platforms.", color: "DBEAFE", icon: "🔐" },
+    { title: "Social & CRM", desc: "WytCircle, Streams, Pages: connect people, businesses, communities.", color: "EDE9FE", icon: "👥" },
+    { title: "Business Tools", desc: "Full-stack SaaS: CRM, ERP, billing, payments, no-code websites.", color: "D1FAE5", icon: "💼" }
+  ];
+  
+  pillars.forEach((p, i) => {
+    const x = 0.5 + i * 3.1;
+    slide.addShape(pptx.ShapeType.rect, {
+      x, y: 1.85, w: 3, h: 1.5,
+      fill: { color: p.color },
+      line: { color: COLORS.wytlife, width: 1 }
+    });
+    slide.addText(p.icon + " " + p.title, {
+      x: x + 0.1, y: 1.95, w: 2.8, h: 0.4,
+      fontSize: 11, bold: true, color: COLORS.dark, align: "center"
+    });
+    slide.addText(p.desc, {
+      x: x + 0.1, y: 2.35, w: 2.8, h: 0.9,
+      fontSize: 9, color: COLORS.dark, valign: "top", align: "center"
+    });
+  });
+  
+  const pillars2 = [
+    { title: "Marketplaces", desc: "OwnerNet, GigNet, MemberNet: interconnected commerce ecosystems.", color: "FEF3C7", icon: "🛒" },
+    { title: "Infrastructure", desc: "WytCloud, WytScore, WytPoints, WytPay: enterprise-grade services.", color: "FCE7F3", icon: "☁️" }
+  ];
+  
+  pillars2.forEach((p, i) => {
+    const x = 2 + i * 3.5;
+    slide.addShape(pptx.ShapeType.rect, {
+      x, y: 3.5, w: 3.3, h: 1.3,
+      fill: { color: p.color },
+      line: { color: COLORS.wytlife, width: 1 }
+    });
+    slide.addText(p.icon + " " + p.title, {
+      x: x + 0.1, y: 3.6, w: 3.1, h: 0.35,
+      fontSize: 11, bold: true, color: COLORS.dark, align: "center"
+    });
+    slide.addText(p.desc, {
+      x: x + 0.1, y: 3.95, w: 3.1, h: 0.7,
+      fontSize: 9, color: COLORS.dark, valign: "top", align: "center"
+    });
+  });
+}
+
+function createMarketOpportunitySlide() {
+  const slide = pptx.addSlide();
+  
+  slide.addText("A $300 Billion+ Global Opportunity", {
+    x: 0.5, y: 0.3, w: 9, h: 0.6,
+    fontSize: 32, bold: true, color: COLORS.dark, align: "center"
+  });
+  
+  const markets = [
+    { value: "$70B", label: "Wearables Market", desc: "Smart glasses and AR drive explosive growth in consumer tech.", color: "DBEAFE" },
+    { value: "$150B", label: "AI Life Management", desc: "AI platforms are reshaping how people work and live.", color: "EDE9FE" },
+    { value: "$235B", label: "SaaS Ecosystem", desc: "Cloud-based business infrastructure dominates enterprise tech spending.", color: "D1FAE5" },
+    { value: "$45B", label: "Digital Identity", desc: "Unified authentication and identity management are rapidly expanding.", color: "FEF3C7" }
+  ];
+  
+  markets.forEach((m, i) => {
+    const x = 0.3 + i * 2.4;
+    slide.addShape(pptx.ShapeType.rect, {
+      x, y: 1.1, w: 2.3, h: 2.8,
+      fill: { color: m.color },
+      line: { color: COLORS.wytlife, width: 1 }
+    });
+    slide.addText(m.value, {
+      x: x + 0.1, y: 1.2, w: 2.1, h: 0.6,
+      fontSize: 28, bold: true, color: COLORS.wytlife, align: "center"
+    });
+    slide.addText(m.label, {
+      x: x + 0.1, y: 1.8, w: 2.1, h: 0.5,
+      fontSize: 11, bold: true, color: COLORS.dark, align: "center"
+    });
+    slide.addText(m.desc, {
+      x: x + 0.1, y: 2.35, w: 2.1, h: 1.4,
+      fontSize: 9, color: COLORS.dark, valign: "top", align: "center"
+    });
   });
   
   slide.addShape(pptx.ShapeType.rect, {
-    x: 0.5, y: 1.9, w: 4.2, h: 0.6,
-    fill: { color: "F3E8FF" }
+    x: 0.5, y: 4.1, w: 9, h: 1.1,
+    fill: { color: COLORS.wytlife }
   });
   
-  slide.addText('"I am creating my immortality. I\'m alive, and I\'m becoming eternal."', {
-    x: 0.6, y: 2, w: 4, h: 0.4,
-    fontSize: 10, italic: true, color: COLORS.purple
+  slide.addText("We converge four massive tech trends, creating an unprecedented opportunity.", {
+    x: 0.7, y: 4.2, w: 8.6, h: 0.4,
+    fontSize: 14, bold: true, color: COLORS.white, align: "center"
   });
   
-  slide.addText([
-    "✓ Currently building his MyClone\n",
-    "✓ Active documentation of consciousness\n",
-    "✓ Family already has MyClones\n",
-    "✓ Living proof of digital immortality\n",
-    "✓ This isn't science fiction—it's happening TODAY"
-  ].join(""), {
-    x: 0.5, y: 2.7, w: 4.2, h: 2,
-    fontSize: 11, color: COLORS.dark, valign: "top"
+  slide.addText("The timing is now. Total Addressable Market: $300B+", {
+    x: 0.7, y: 4.65, w: 8.6, h: 0.4,
+    fontSize: 16, bold: true, color: COLORS.white, align: "center"
+  });
+}
+
+function createReadinessSlide() {
+  const slide = pptx.addSlide();
+  
+  slide.addText("Vision Ready. Technology Ready. Ecosystem Ready.", {
+    x: 0.5, y: 0.3, w: 9, h: 0.5,
+    fontSize: 26, bold: true, color: COLORS.dark, align: "center"
+  });
+  
+  const items = [
+    { num: "01", title: "WytNet Core Architecture", desc: "Fully operational multi-SaaS platform with 51 modules.", status: "✓ Complete" },
+    { num: "02", title: "WytApps & WytHubs Ecosystem", desc: "39 integrated applications ready for scale across 17 categories.", status: "✓ Complete" },
+    { num: "03", title: "WytLife Validation", desc: "Life OS concept validated. Founder's MyClone actively in use.", status: "✓ Complete" },
+    { num: "04", title: "WytGlass Prototype", desc: "UI/UX complete, hardware partnerships in discussion.", status: "In Progress" },
+    { num: "05", title: "WytData DataLake", desc: "2.4M+ trademark records. WytApi gateway ready for monetization.", status: "✓ Complete" }
+  ];
+  
+  items.forEach((item, i) => {
+    const y = 0.95 + i * 0.9;
+    const isComplete = item.status.includes("Complete");
+    
+    slide.addShape(pptx.ShapeType.rect, {
+      x: 0.5, y, w: 0.7, h: 0.8,
+      fill: { color: isComplete ? COLORS.wytlife : "FEF3C7" }
+    });
+    
+    slide.addText(item.num, {
+      x: 0.5, y: y + 0.2, w: 0.7, h: 0.4,
+      fontSize: 18, bold: true, color: isComplete ? COLORS.white : COLORS.dark, align: "center"
+    });
+    
+    slide.addShape(pptx.ShapeType.rect, {
+      x: 1.3, y, w: 8.2, h: 0.8,
+      fill: { color: isComplete ? "D1FAE5" : "FEF3C7" }
+    });
+    
+    slide.addText(item.title, {
+      x: 1.5, y: y + 0.1, w: 5.5, h: 0.35,
+      fontSize: 13, bold: true, color: COLORS.dark
+    });
+    
+    slide.addText(item.desc, {
+      x: 1.5, y: y + 0.45, w: 5.5, h: 0.3,
+      fontSize: 9, color: COLORS.dark
+    });
+    
+    slide.addText(item.status, {
+      x: 7.2, y: y + 0.2, w: 2, h: 0.4,
+      fontSize: 10, bold: true, color: isComplete ? COLORS.green : COLORS.orange, align: "right"
+    });
   });
   
   slide.addShape(pptx.ShapeType.rect, {
-    x: 5.2, y: 1, w: 4.2, h: 3.8,
-    fill: { color: "E0E7FF" }
+    x: 0.5, y: 5, w: 9, h: 0.3,
+    fill: { color: COLORS.wytlife }
   });
   
-  slide.addText("Founding 1000 Program", {
-    x: 5.4, y: 1.1, w: 4, h: 0.4,
-    fontSize: 16, bold: true, color: COLORS.dark
-  });
-  
-  slide.addText([
-    "🎯 Early Access: First to build MyClone\n",
-    "✨ Exclusive Features: Premium capabilities\n",
-    "👥 Community: Connect with immortals\n",
-    "🏆 Legacy Status: Founding member badge\n",
-    "∞ Digital Immortality: Live forever"
-  ].join(""), {
-    x: 5.4, y: 1.6, w: 4, h: 2,
-    fontSize: 11, color: COLORS.dark, valign: "top"
-  });
-  
-  slide.addShape(pptx.ShapeType.rect, {
-    x: 5.4, y: 3.8, w: 3.8, h: 0.8,
-    fill: { color: COLORS.white }
-  });
-  
-  slide.addText("WhatsApp Community Active\nReal-time updates & exclusive access", {
-    x: 5.5, y: 3.9, w: 3.6, h: 0.6,
-    fontSize: 10, color: COLORS.dark, align: "center"
+  slide.addText("Expert Team: Proven execution, deep technical expertise.", {
+    x: 0.7, y: 5.02, w: 8.6, h: 0.25,
+    fontSize: 11, bold: true, color: COLORS.white, align: "center"
   });
 }
 
@@ -346,27 +490,27 @@ function createDataLakeSlide() {
     fontSize: 28, bold: true, color: COLORS.dark
   });
   
-  slide.addText("India's Largest Trademark Database", {
+  slide.addText("India's Largest Trademark Database + Global Reference Data", {
     x: 0.5, y: 0.8, w: 9, h: 0.3,
-    fontSize: 16, color: COLORS.secondary
+    fontSize: 16, color: COLORS.wytlife
   });
   
   slide.addShape(pptx.ShapeType.rect, {
     x: 0.5, y: 1.2, w: 4.2, h: 3.3,
     fill: { color: "D1FAE5" },
-    line: { color: COLORS.green, width: 1 }
+    line: { color: COLORS.green, width: 2 }
   });
   
-  slide.addText("Trademark DataLake - India", {
+  slide.addText("🏛️ Trademark DataLake - India", {
     x: 0.7, y: 1.3, w: 4, h: 0.4,
     fontSize: 14, bold: true, color: COLORS.dark
   });
   
   slide.addText([
-    "• 2.4M+ Records - Comprehensive Indian trademark database\n",
-    "• Real-time Updates - Synced with IP India & TMView\n",
-    "• Full Lifecycle Tracking - Application → Registration → Renewal\n",
-    "• 45 Nice Classifications - Complete goods/services categorization\n",
+    "• 2.4M+ Records - Comprehensive Indian trademark database\n\n",
+    "• Real-time Updates - Synced with IP India & TMView\n\n",
+    "• Full Lifecycle Tracking - Application → Registration → Renewal\n\n",
+    "• 45 Nice Classifications - Complete goods/services categorization\n\n",
     "• Bulk Import/Export - CSV, JSON, API access"
   ].join(""), {
     x: 0.7, y: 1.8, w: 4, h: 2.5,
@@ -376,26 +520,34 @@ function createDataLakeSlide() {
   slide.addShape(pptx.ShapeType.rect, {
     x: 5.2, y: 1.2, w: 4.2, h: 3.3,
     fill: { color: "DBEAFE" },
-    line: { color: COLORS.blue, width: 1 }
+    line: { color: COLORS.blue, width: 2 }
   });
   
-  slide.addText("38+ Global Datasets", {
+  slide.addText("🌐 38+ Global Datasets", {
     x: 5.4, y: 1.3, w: 4, h: 0.4,
     fontSize: 14, bold: true, color: COLORS.dark
   });
   
   slide.addText([
-    "✓ Locations: Countries, States, Cities, Timezones\n",
-    "✓ Languages: 20+ global languages\n",
-    "✓ Currencies: 20+ world currencies\n",
-    "✓ Industries: 15+ sector classifications\n",
-    "✓ Company Sizes: Startup to Enterprise\n",
-    "✓ Job Roles: 15+ professional categories\n",
-    "\n",
-    "Coming Soon: Patent Database, Company Registry, GST Directory"
+    "✓ Locations: Countries, States, Cities, Timezones\n\n",
+    "✓ Languages: 20+ global languages\n\n",
+    "✓ Currencies: 20+ world currencies\n\n",
+    "✓ Industries: 15+ sector classifications\n\n",
+    "✓ Company Sizes: Startup to Enterprise\n\n",
+    "Coming Soon: Patent DB, Company Registry, GST Directory"
   ].join(""), {
     x: 5.4, y: 1.8, w: 4, h: 2.5,
     fontSize: 10, color: COLORS.dark, valign: "top"
+  });
+  
+  slide.addShape(pptx.ShapeType.rect, {
+    x: 0.5, y: 4.7, w: 8.9, h: 0.5,
+    fill: { color: COLORS.wytlife }
+  });
+  
+  slide.addText("Proprietary Data Moat: A defensible competitive advantage in the Indian market", {
+    x: 0.7, y: 4.8, w: 8.5, h: 0.3,
+    fontSize: 12, bold: true, color: COLORS.white, align: "center"
   });
 }
 
@@ -409,35 +561,36 @@ function createWytApiSlide() {
   
   slide.addText("Enterprise Data Access with Tiered Pricing", {
     x: 0.5, y: 0.8, w: 9, h: 0.3,
-    fontSize: 16, color: COLORS.secondary
+    fontSize: 16, color: COLORS.wytlife
   });
   
   const tiers = [
-    { name: "Free Tier", price: "$0", features: ["100 API calls/day", "Basic search endpoints", "Community support", "Rate limited"], color: "F3F4F6", x: 0.5 },
-    { name: "Professional", price: "$99/mo", features: ["10,000 API calls/day", "All search endpoints", "Priority support", "Bulk export access"], color: "DBEAFE", x: 3.4 },
-    { name: "Enterprise", price: "$999/mo", features: ["Unlimited API calls", "Dedicated endpoints", "White-label access", "Custom integrations"], color: "EDE9FE", x: 6.3 }
+    { name: "Free Tier", price: "$0", features: ["100 API calls/day", "Basic search endpoints", "Community support", "Rate limited"], color: "F3F4F6", accent: COLORS.dark },
+    { name: "Professional", price: "$99/mo", features: ["10,000 API calls/day", "All search endpoints", "Priority support", "Bulk export access"], color: "DBEAFE", accent: COLORS.wytlife },
+    { name: "Enterprise", price: "$999/mo", features: ["Unlimited API calls", "Dedicated endpoints", "White-label access", "Custom integrations"], color: COLORS.wytlife, accent: COLORS.white }
   ];
   
-  tiers.forEach(tier => {
+  tiers.forEach((tier, i) => {
+    const x = 0.5 + i * 3.1;
     slide.addShape(pptx.ShapeType.rect, {
-      x: tier.x, y: 1.2, w: 2.8, h: 2.8,
+      x, y: 1.2, w: 3, h: 2.8,
       fill: { color: tier.color },
-      line: { color: COLORS.primary, width: 1 }
+      line: { color: COLORS.wytlife, width: 2 }
     });
     
     slide.addText(tier.name, {
-      x: tier.x + 0.1, y: 1.3, w: 2.6, h: 0.35,
-      fontSize: 12, bold: true, color: COLORS.dark, align: "center"
+      x: x + 0.1, y: 1.3, w: 2.8, h: 0.35,
+      fontSize: 14, bold: true, color: tier.accent, align: "center"
     });
     
     slide.addText(tier.price, {
-      x: tier.x + 0.1, y: 1.65, w: 2.6, h: 0.4,
-      fontSize: 20, bold: true, color: COLORS.primary, align: "center"
+      x: x + 0.1, y: 1.65, w: 2.8, h: 0.5,
+      fontSize: 24, bold: true, color: tier.accent, align: "center"
     });
     
-    slide.addText(tier.features.map(f => `• ${f}`).join("\n"), {
-      x: tier.x + 0.1, y: 2.1, w: 2.6, h: 1.8,
-      fontSize: 9, color: COLORS.dark, valign: "top"
+    slide.addText(tier.features.map(f => `✓ ${f}`).join("\n"), {
+      x: x + 0.2, y: 2.2, w: 2.6, h: 1.7,
+      fontSize: 10, color: tier.accent, valign: "top"
     });
   });
   
@@ -456,11 +609,11 @@ function createWytApiSlide() {
   apiStats.forEach((stat, i) => {
     slide.addText(stat.value, {
       x: 0.7 + i * 2.2, y: 4.35, w: 2, h: 0.35,
-      fontSize: 16, bold: true, color: COLORS.green, align: "center"
+      fontSize: 18, bold: true, color: COLORS.wytlife, align: "center"
     });
     slide.addText(stat.label, {
       x: 0.7 + i * 2.2, y: 4.7, w: 2, h: 0.3,
-      fontSize: 9, color: COLORS.dark, align: "center"
+      fontSize: 10, color: COLORS.dark, align: "center"
     });
   });
 }
@@ -494,12 +647,12 @@ function createWytAppsSlide() {
     slide.addShape(pptx.ShapeType.rect, {
       x, y, w: 3, h: 1.4,
       fill: { color: cat.color },
-      line: { color: COLORS.primary, width: 0.5 }
+      line: { color: COLORS.wytlife, width: 0.5 }
     });
     
     slide.addText(cat.title, {
       x: x + 0.1, y: y + 0.05, w: 2.8, h: 0.3,
-      fontSize: 9, bold: true, color: COLORS.dark
+      fontSize: 10, bold: true, color: COLORS.dark
     });
     
     slide.addText(cat.apps, {
@@ -523,123 +676,66 @@ function createRevenueSlide() {
     { num: "3", name: "WytLife Premium", desc: "$29-$999/month", color: COLORS.green },
     { num: "4", name: "Enterprise Licenses", desc: "$5K-$50K/year", color: COLORS.orange },
     { num: "5", name: "Transaction Fees", desc: "1-3% per transaction", color: COLORS.pink },
-    { num: "6", name: "WytApi Data Services", desc: "$99-$999/month (NEW)", color: COLORS.teal }
+    { num: "6", name: "WytApi Data Services", desc: "$99-$999/month", color: COLORS.teal }
   ];
   
   streams.forEach((stream, i) => {
-    const y = 1 + i * 0.6;
+    const y = 0.95 + i * 0.65;
     slide.addShape(pptx.ShapeType.rect, {
-      x: 0.5, y, w: 0.1, h: 0.5,
+      x: 0.5, y, w: 4.5, h: 0.55,
+      fill: { color: "F9FAFB" }
+    });
+    slide.addShape(pptx.ShapeType.rect, {
+      x: 0.5, y, w: 0.1, h: 0.55,
       fill: { color: stream.color }
     });
     slide.addText(`${stream.num}. ${stream.name}`, {
-      x: 0.7, y, w: 2.5, h: 0.5,
+      x: 0.7, y, w: 2.5, h: 0.55,
       fontSize: 11, bold: true, color: COLORS.dark, valign: "middle"
     });
     slide.addText(stream.desc, {
-      x: 3.2, y, w: 1.8, h: 0.5,
-      fontSize: 10, color: COLORS.dark, valign: "middle"
+      x: 3.2, y, w: 1.8, h: 0.55,
+      fontSize: 10, color: stream.color, valign: "middle", align: "right"
     });
   });
   
-  slide.addText("Market Opportunity", {
-    x: 5.5, y: 0.9, w: 4, h: 0.4,
-    fontSize: 18, bold: true, color: COLORS.dark
+  slide.addShape(pptx.ShapeType.rect, {
+    x: 5.3, y: 0.95, w: 4.2, h: 4.2,
+    fill: { color: COLORS.wytlife }
+  });
+  
+  slide.addText("Total Addressable Market", {
+    x: 5.5, y: 1.1, w: 3.8, h: 0.5,
+    fontSize: 16, bold: true, color: COLORS.white
   });
   
   const markets = [
-    { name: "Digital Legacy", value: "$50B+", color: COLORS.indigo },
-    { name: "Multi-SaaS", value: "$200B+", color: COLORS.purple },
-    { name: "Data Services", value: "$15B+", color: COLORS.green }
+    { name: "Wearables", value: "$70B" },
+    { name: "AI Life Management", value: "$150B" },
+    { name: "SaaS Ecosystem", value: "$235B" },
+    { name: "Digital Identity", value: "$45B" }
   ];
   
-  markets.forEach((market, i) => {
-    const y = 1.4 + i * 1.1;
-    slide.addShape(pptx.ShapeType.rect, {
-      x: 5.5, y, w: 4, h: 1,
-      fill: { color: "F3F4F6" }
+  markets.forEach((m, i) => {
+    const y = 1.7 + i * 0.65;
+    slide.addText(m.name, {
+      x: 5.5, y, w: 2.5, h: 0.5,
+      fontSize: 11, color: COLORS.white
     });
-    slide.addText(market.name, {
-      x: 5.7, y: y + 0.1, w: 3.6, h: 0.35,
-      fontSize: 12, bold: true, color: COLORS.dark
-    });
-    slide.addText(market.value, {
-      x: 5.7, y: y + 0.45, w: 3.6, h: 0.4,
-      fontSize: 24, bold: true, color: market.color
+    slide.addText(m.value, {
+      x: 8, y, w: 1.3, h: 0.5,
+      fontSize: 14, bold: true, color: COLORS.white, align: "right"
     });
   });
   
   slide.addShape(pptx.ShapeType.rect, {
-    x: 5.5, y: 4.7, w: 4, h: 0.5,
-    fill: { color: "FEF3C7" }
+    x: 5.5, y: 4.4, w: 3.8, h: 0.6,
+    fill: { color: COLORS.white }
   });
   
-  slide.addText("Total Addressable Market: $265B+", {
-    x: 5.5, y: 4.75, w: 4, h: 0.4,
-    fontSize: 14, bold: true, color: COLORS.orange, align: "center"
-  });
-}
-
-function createTractionSlide() {
-  const slide = pptx.addSlide();
-  
-  slide.addText("Traction & Milestones", {
-    x: 0.5, y: 0.3, w: 9, h: 0.5,
-    fontSize: 28, bold: true, color: COLORS.dark
-  });
-  
-  slide.addShape(pptx.ShapeType.rect, {
-    x: 0.5, y: 1, w: 4.2, h: 4,
-    fill: { color: "D1FAE5" }
-  });
-  
-  slide.addText("✅ Achieved (Current)", {
-    x: 0.7, y: 1.1, w: 4, h: 0.4,
-    fontSize: 14, bold: true, color: COLORS.green
-  });
-  
-  slide.addText([
-    "✓ Platform architecture completed\n",
-    "✓ 39 WytApps designed & documented\n",
-    "✓ 51 platform modules implemented\n",
-    "✓ WytLife MVP functional\n",
-    "✓ Founder's MyClone created\n",
-    "✓ Founding 1000 program launched\n",
-    "✓ WytPass auth system operational\n",
-    "✓ Razorpay payment integration\n",
-    "✓ Trademark DataLake (2.4M+ records)\n",
-    "✓ WytApi gateway ready\n",
-    "✓ 38+ global datasets seeded"
-  ].join(""), {
-    x: 0.7, y: 1.55, w: 4, h: 3.3,
-    fontSize: 9, color: COLORS.dark, valign: "top"
-  });
-  
-  slide.addShape(pptx.ShapeType.rect, {
-    x: 5.2, y: 1, w: 4.2, h: 4,
-    fill: { color: "DBEAFE" }
-  });
-  
-  slide.addText("🎯 Next 6 Months", {
-    x: 5.4, y: 1.1, w: 4, h: 0.4,
-    fontSize: 14, bold: true, color: COLORS.blue
-  });
-  
-  slide.addText([
-    "🔄 WytLife public beta (1,000 users)\n",
-    "🔄 Mobile apps launch (iOS + Android)\n",
-    "🔄 WytApps marketplace opening\n",
-    "🔄 WytApi public launch\n",
-    "🔄 First enterprise hub sale\n",
-    "🔄 API documentation & partnerships\n",
-    "🔄 Reach 10,000 platform users\n",
-    "🔄 $100K monthly recurring revenue\n",
-    "🔄 Strategic partnership (Meta/Google)\n",
-    "🔄 Additional DataLakes (Patents, etc.)\n",
-    "🔄 Series A funding closed"
-  ].join(""), {
-    x: 5.4, y: 1.55, w: 4, h: 3.3,
-    fontSize: 9, color: COLORS.dark, valign: "top"
+  slide.addText("$300B+", {
+    x: 5.5, y: 4.45, w: 3.8, h: 0.5,
+    fontSize: 28, bold: true, color: COLORS.wytlife, align: "center"
   });
 }
 
@@ -648,79 +744,49 @@ function createInvestmentSlide() {
   
   slide.addShape(pptx.ShapeType.rect, {
     x: 0, y: 0, w: "100%", h: "100%",
-    fill: { type: "solid", color: COLORS.primary }
+    fill: { type: "solid", color: COLORS.wytlife }
   });
   
-  slide.addText("Investment Opportunity", {
+  slide.addText("Build India's Leading Tech Ecosystem with Us", {
     x: 0.5, y: 0.5, w: 9, h: 0.6,
-    fontSize: 32, bold: true, color: COLORS.white, align: "center"
+    fontSize: 26, bold: true, color: COLORS.white, align: "center"
   });
   
-  slide.addText("Join Us in Making Humanity Immortal", {
-    x: 0.5, y: 1.1, w: 9, h: 0.4,
-    fontSize: 18, color: COLORS.white, align: "center"
-  });
-  
-  const highlights = [
-    { icon: "🚀", title: "First-Mover", desc: "Digital immortality pioneer" },
-    { icon: "💰", title: "Huge Market", desc: "$265B+ opportunity" },
-    { icon: "🌟", title: "Proven Team", desc: "Real product, real users" },
-    { icon: "🗄️", title: "Data Moat", desc: "2.4M+ proprietary records" }
+  const opportunities = [
+    { title: "Strategic Investment", desc: "Seeking visionary investors to scale WytLife, WytGlass, & WytNet globally, embracing the convergence opportunity." },
+    { title: "Manufacturing Partnership", desc: "Collaborate on WytGlass hardware manufacturing. Leverage 'Make in India' for global distribution." },
+    { title: "Government & Enterprise", desc: "Align with Digital India & Smart Cities. Partner with universities and enterprises for rapid adoption." }
   ];
   
-  highlights.forEach((h, i) => {
-    const x = 0.7 + i * 2.3;
+  opportunities.forEach((opp, i) => {
+    const x = 0.5 + i * 3.1;
     slide.addShape(pptx.ShapeType.rect, {
-      x, y: 1.8, w: 2.1, h: 1.4,
+      x, y: 1.3, w: 3, h: 2,
       fill: { color: COLORS.white }
     });
-    slide.addText(h.icon, {
-      x, y: 1.9, w: 2.1, h: 0.4,
-      fontSize: 24, align: "center"
+    slide.addText(opp.title, {
+      x: x + 0.15, y: 1.4, w: 2.7, h: 0.5,
+      fontSize: 12, bold: true, color: COLORS.wytlife, align: "center"
     });
-    slide.addText(h.title, {
-      x, y: 2.3, w: 2.1, h: 0.35,
-      fontSize: 12, bold: true, color: COLORS.dark, align: "center"
-    });
-    slide.addText(h.desc, {
-      x, y: 2.6, w: 2.1, h: 0.4,
-      fontSize: 9, color: COLORS.dark, align: "center"
+    slide.addText(opp.desc, {
+      x: x + 0.15, y: 1.9, w: 2.7, h: 1.3,
+      fontSize: 9, color: COLORS.dark, valign: "top", align: "center"
     });
   });
   
   slide.addShape(pptx.ShapeType.rect, {
-    x: 1.5, y: 3.5, w: 7, h: 2,
-    fill: { color: COLORS.white }
+    x: 1, y: 3.5, w: 8, h: 1,
+    fill: { color: "0D6EBE" }
   });
   
-  slide.addText("Series A Funding", {
-    x: 1.5, y: 3.6, w: 7, h: 0.4,
-    fontSize: 20, bold: true, color: COLORS.primary, align: "center"
+  slide.addText("Let's build the future from Madurai. India's moment to lead in human-computer interfaces is now. We have the vision, tech, and team. We need ambitious partners.", {
+    x: 1.2, y: 3.6, w: 7.6, h: 0.8,
+    fontSize: 11, italic: true, color: COLORS.white, align: "center", valign: "middle"
   });
   
-  slide.addText("$5M", {
-    x: 1.5, y: 4, w: 3.5, h: 0.6,
-    fontSize: 36, bold: true, color: COLORS.indigo, align: "center"
-  });
-  
-  slide.addText("20%", {
-    x: 5, y: 4, w: 3.5, h: 0.6,
-    fontSize: 36, bold: true, color: COLORS.purple, align: "center"
-  });
-  
-  slide.addText("Funding Amount", {
-    x: 1.5, y: 4.5, w: 3.5, h: 0.3,
-    fontSize: 10, color: COLORS.dark, align: "center"
-  });
-  
-  slide.addText("Equity Offered", {
-    x: 5, y: 4.5, w: 3.5, h: 0.3,
-    fontSize: 10, color: COLORS.dark, align: "center"
-  });
-  
-  slide.addText("Exit: 3-5 year horizon | IPO or strategic acquisition | $500M-$1B valuation", {
-    x: 1.5, y: 5, w: 7, h: 0.3,
-    fontSize: 10, color: COLORS.dark, align: "center"
+  slide.addText("Market Timing is Perfect: India's matured digital infrastructure, manufacturing, and talent ecosystem make this vision achievable.", {
+    x: 0.5, y: 4.65, w: 9, h: 0.5,
+    fontSize: 10, color: COLORS.white, align: "center"
   });
 }
 
@@ -729,61 +795,95 @@ function createThankYouSlide() {
   
   slide.addShape(pptx.ShapeType.rect, {
     x: 0, y: 0, w: "100%", h: "100%",
-    fill: { type: "solid", color: COLORS.secondary }
+    fill: { type: "solid", color: COLORS.wytlife }
   });
   
-  slide.addText("Thank You", {
-    x: 0.5, y: 1.5, w: 9, h: 1,
-    fontSize: 56, bold: true, color: COLORS.white, align: "center"
+  slide.addText("The Future Belongs to Those Who Build It", {
+    x: 0.5, y: 0.8, w: 9, h: 0.6,
+    fontSize: 28, bold: true, color: COLORS.white, align: "center"
   });
   
-  slide.addText('"The day humanity stops dying and starts evolving — begins with WytLife"', {
-    x: 0.5, y: 2.8, w: 9, h: 0.5,
+  slide.addText("From Madurai to the World", {
+    x: 0.5, y: 1.4, w: 9, h: 0.4,
     fontSize: 16, italic: true, color: COLORS.white, align: "center"
   });
   
-  slide.addText("Together, let's make immortality accessible to everyone.", {
-    x: 0.5, y: 3.6, w: 9, h: 0.4,
-    fontSize: 14, color: COLORS.white, align: "center"
+  slide.addText("We are building India's most ambitious integrated ecosystem for life management, wearable computing, and digital infrastructure. This is more than a product; it's a platform for human potential.", {
+    x: 1, y: 2, w: 8, h: 0.8,
+    fontSize: 12, color: COLORS.white, align: "center"
   });
   
   slide.addShape(pptx.ShapeType.rect, {
-    x: 2.5, y: 4.3, w: 5, h: 1,
+    x: 1.5, y: 3, w: 3.3, h: 1.2,
     fill: { color: COLORS.white }
   });
   
-  slide.addText("Contact: JK Muthu, Founder & CEO\njkm@wytnet.com | WytNet.com", {
-    x: 2.5, y: 4.4, w: 5, h: 0.8,
-    fontSize: 12, color: COLORS.dark, align: "center"
+  slide.addText("JK Muthu", {
+    x: 1.6, y: 3.1, w: 3.1, h: 0.4,
+    fontSize: 16, bold: true, color: COLORS.wytlife, align: "center"
   });
-}
-
-async function generatePresentation() {
-  console.log("Creating WytNet Investor Presentation...");
   
-  createTitleSlide();
-  createExecutiveSummarySlide();
-  createPlatformOverviewSlide();
-  createWytLifeSlide();
-  createWytLifeDetailsSlide();
-  createFounderSlide();
-  createDataLakeSlide();
-  createWytApiSlide();
-  createWytAppsSlide();
-  createRevenueSlide();
-  createTractionSlide();
-  createInvestmentSlide();
-  createThankYouSlide();
+  slide.addText("Founder", {
+    x: 1.6, y: 3.5, w: 3.1, h: 0.3,
+    fontSize: 11, color: COLORS.dark, align: "center"
+  });
   
-  const outputDir = path.join(process.cwd(), "docs", "presentations");
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
+  slide.addText("jkm@wytnet.com", {
+    x: 1.6, y: 3.85, w: 3.1, h: 0.25,
+    fontSize: 9, color: COLORS.wytlife, align: "center"
+  });
+  
+  slide.addShape(pptx.ShapeType.rect, {
+    x: 5.2, y: 3, w: 3.3, h: 1.2,
+    fill: { color: COLORS.white }
+  });
+  
+  slide.addText("M. Senthil Kumar", {
+    x: 5.3, y: 3.1, w: 3.1, h: 0.4,
+    fontSize: 16, bold: true, color: COLORS.wytlife, align: "center"
+  });
+  
+  slide.addText("Tech Advisor", {
+    x: 5.3, y: 3.5, w: 3.1, h: 0.3,
+    fontSize: 11, color: COLORS.dark, align: "center"
+  });
+  
+  if (fs.existsSync(WYTLIFE_LOGO_PATH)) {
+    slide.addImage({
+      path: WYTLIFE_LOGO_PATH,
+      x: 3.5, y: 4.4, w: 3, h: 1.2
+    });
   }
-  
-  const outputPath = path.join(outputDir, "WytNet-Investor-Presentation-2025.pptx");
-  
-  await pptx.writeFile({ fileName: outputPath });
-  console.log(`✓ Presentation saved to: ${outputPath}`);
 }
 
-generatePresentation().catch(console.error);
+createTitleSlide();
+createProblemSlide();
+createWytLifeIntroSlide();
+createWytGlassSlide();
+createWytLifeGlassCombinationSlide();
+createWytNetInfraSlide();
+createMarketOpportunitySlide();
+createReadinessSlide();
+createDataLakeSlide();
+createWytApiSlide();
+createWytAppsSlide();
+createRevenueSlide();
+createInvestmentSlide();
+createThankYouSlide();
+
+const outputDir = path.join(process.cwd(), "docs", "presentations");
+if (!fs.existsSync(outputDir)) {
+  fs.mkdirSync(outputDir, { recursive: true });
+}
+
+const outputPath = path.join(outputDir, "WytNet-Investor-Presentation-2025.pptx");
+
+pptx.writeFile({ fileName: outputPath })
+  .then(() => {
+    console.log("✅ Professional PowerPoint presentation created successfully!");
+    console.log(`📁 Output: ${outputPath}`);
+    console.log("📊 14 slides with WytLife branding, WytGlass vision, and $300B+ market opportunity");
+  })
+  .catch((err: Error) => {
+    console.error("Error creating presentation:", err);
+  });
