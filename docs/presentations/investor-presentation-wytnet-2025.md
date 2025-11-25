@@ -1,4 +1,3 @@
-
 ---
 theme: default
 background: gradient-to-br from-indigo-500 via-purple-500 to-pink-500
@@ -36,8 +35,9 @@ layout: two-cols
 ## The Problem
 - Death ends legacy & knowledge transfer
 - Businesses struggle with disconnected tools
-- Digital immortality is science fiction
+- Digital immortality remains science fiction
 - Multi-platform subscription fatigue
+- Data silos limit business intelligence
 
 ::right::
 
@@ -46,9 +46,10 @@ layout: two-cols
 - **39 WytApps**: Unified business ecosystem
 - **Soul Engine**: AI-powered consciousness preservation
 - **Multi-tenant SaaS**: White-label ready platform
+- **WytData**: Comprehensive DataLake as a Service
 
 <div class="mt-8 p-4 bg-gradient-to-r from-indigo-100 to-purple-100 rounded-lg">
-  <strong>Market Opportunity:</strong> $50B+ digital legacy market + $200B+ SaaS ecosystem
+  <strong>Market Opportunity:</strong> $50B+ digital legacy market + $200B+ SaaS ecosystem + $15B data services
 </div>
 
 ---
@@ -65,7 +66,7 @@ layout: two-cols
     <li>✓ Multi-tenant infrastructure</li>
     <li>✓ White-label capabilities</li>
     <li>✓ Custom domain support</li>
-    <li>✓ Row-level security</li>
+    <li>✓ Row-level security (RLS)</li>
   </ul>
 </div>
 
@@ -85,7 +86,7 @@ layout: two-cols
     <li>✓ React + TypeScript</li>
     <li>✓ PostgreSQL (Neon)</li>
     <li>✓ Express.js Backend</li>
-    <li>✓ AI Integration (GPT-4, Claude, Gemini)</li>
+    <li>✓ AI (GPT-4o, Claude 3.5, Gemini 2.0)</li>
   </ul>
 </div>
 
@@ -346,6 +347,131 @@ class: text-center
 </div>
 
 ---
+layout: center
+class: text-center
+---
+
+# 🗄️ WytData & DataLake
+## Data as a Service (DaaS) - New Revenue Stream
+
+<div class="text-xl mt-8">
+  Comprehensive Data Infrastructure for Enterprises
+</div>
+
+---
+
+# WytData: DataLake Platform
+
+## India's Largest Trademark Database
+
+<div class="grid grid-cols-2 gap-8 mt-6">
+
+<div class="p-6 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg">
+  <h3 class="text-2xl font-bold mb-4">🏷️ Trademark DataLake - India</h3>
+  <ul class="space-y-3">
+    <li><strong>2.4M+ Records</strong>
+      <p class="text-sm">Comprehensive Indian trademark database</p>
+    </li>
+    <li><strong>Real-time Updates</strong>
+      <p class="text-sm">Synced with IP India & TMView</p>
+    </li>
+    <li><strong>Full Lifecycle Tracking</strong>
+      <p class="text-sm">Application → Registration → Renewal</p>
+    </li>
+    <li><strong>45 Nice Classifications</strong>
+      <p class="text-sm">Complete goods/services categorization</p>
+    </li>
+    <li><strong>Bulk Import/Export</strong>
+      <p class="text-sm">CSV, JSON, API access</p>
+    </li>
+  </ul>
+</div>
+
+<div class="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg">
+  <h3 class="text-2xl font-bold mb-4">📊 38+ Global Datasets</h3>
+  <ul class="space-y-2 text-sm">
+    <li>✓ <strong>Locations</strong>: Countries, States, Cities, Timezones</li>
+    <li>✓ <strong>Languages</strong>: 20+ global languages</li>
+    <li>✓ <strong>Currencies</strong>: 20+ world currencies</li>
+    <li>✓ <strong>Industries</strong>: 15+ sector classifications</li>
+    <li>✓ <strong>Company Sizes</strong>: Startup to Enterprise</li>
+    <li>✓ <strong>Job Roles</strong>: 15+ professional categories</li>
+    <li>✓ <strong>More Coming</strong>: Patents, Companies, Products</li>
+  </ul>
+  
+  <div class="mt-4 p-3 bg-white rounded shadow">
+    <strong>Coming Soon:</strong>
+    <p class="text-xs">Patent Database, Company Registry, GST Directory</p>
+  </div>
+</div>
+
+</div>
+
+---
+
+# WytApi: API Monetization Gateway
+
+## Enterprise Data Access with Tiered Pricing
+
+<div class="grid grid-cols-3 gap-4 mt-6">
+
+<div class="p-6 bg-gray-50 rounded-lg border-2 border-gray-200">
+  <h4 class="text-xl font-bold mb-2 text-gray-700">🆓 Free Tier</h4>
+  <div class="text-3xl font-bold mb-2">$0</div>
+  <ul class="text-sm space-y-1">
+    <li>• 100 API calls/day</li>
+    <li>• Basic search endpoints</li>
+    <li>• Community support</li>
+    <li>• Rate limited</li>
+  </ul>
+</div>
+
+<div class="p-6 bg-blue-50 rounded-lg border-2 border-blue-300">
+  <h4 class="text-xl font-bold mb-2 text-blue-700">💼 Professional</h4>
+  <div class="text-3xl font-bold mb-2">$99/mo</div>
+  <ul class="text-sm space-y-1">
+    <li>• 10,000 API calls/day</li>
+    <li>• All search endpoints</li>
+    <li>• Priority support</li>
+    <li>• Bulk export access</li>
+  </ul>
+</div>
+
+<div class="p-6 bg-purple-50 rounded-lg border-2 border-purple-300">
+  <h4 class="text-xl font-bold mb-2 text-purple-700">🏢 Enterprise</h4>
+  <div class="text-3xl font-bold mb-2">$999/mo</div>
+  <ul class="text-sm space-y-1">
+    <li>• Unlimited API calls</li>
+    <li>• Dedicated endpoints</li>
+    <li>• White-label access</li>
+    <li>• Custom integrations</li>
+  </ul>
+</div>
+
+</div>
+
+<div class="mt-6 p-4 bg-gradient-to-r from-green-100 to-emerald-100 rounded-lg">
+  <div class="grid grid-cols-4 gap-4 text-center">
+    <div>
+      <div class="text-2xl font-bold text-green-600">2.4M+</div>
+      <div class="text-xs">Trademark Records</div>
+    </div>
+    <div>
+      <div class="text-2xl font-bold text-blue-600">38+</div>
+      <div class="text-xs">Global Datasets</div>
+    </div>
+    <div>
+      <div class="text-2xl font-bold text-purple-600">99.9%</div>
+      <div class="text-xs">Uptime SLA</div>
+    </div>
+    <div>
+      <div class="text-2xl font-bold text-orange-600">&lt;50ms</div>
+      <div class="text-xs">Response Time</div>
+    </div>
+  </div>
+</div>
+
+---
 
 # WytNet Platform: 39 WytApps Ecosystem
 
@@ -436,12 +562,12 @@ class: text-center
 </div>
 
 <div class="p-4 bg-teal-50 rounded border-2 border-teal-200">
-  <h4 class="font-bold mb-2">🗄️ Storage & More (5)</h4>
+  <h4 class="font-bold mb-2">🗄️ Storage & Data (5)</h4>
   <ul>
     <li>• WytCloud (Storage)</li>
     <li>• WytQRC (QR Codes)</li>
-    <li>• WytLand (Real Estate)</li>
-    <li>• DiscAssesser</li>
+    <li>• WytData (DataLake)</li>
+    <li>• WytAssesser (DISC)</li>
     <li>• Currency Converter</li>
   </ul>
 </div>
@@ -464,14 +590,14 @@ class: text-center
     <li>✓ <strong>White-Label</strong>: Custom branding & domains</li>
     <li>✓ <strong>Scalable</strong>: Serverless infrastructure</li>
     <li>✓ <strong>PWA Support</strong>: Mobile & offline capabilities</li>
-    <li>✓ <strong>AI Integration</strong>: GPT-4, Claude, Gemini</li>
+    <li>✓ <strong>AI Integration</strong>: GPT-4o, Claude 3.5, Gemini 2.0</li>
   </ul>
 </div>
 
 <div>
   <h3 class="text-xl font-bold mb-4">🎯 Key Features</h3>
   <ul class="space-y-2 text-sm">
-    <li>✓ <strong>WytPass Auth</strong>: Universal identity (Google, OTP, Email)</li>
+    <li>✓ <strong>WytPass Auth</strong>: Universal identity (Google, LinkedIn, OTP)</li>
     <li>✓ <strong>51 Platform Modules</strong>: Modular architecture</li>
     <li>✓ <strong>RBAC System</strong>: 80 permissions, 8 default roles</li>
     <li>✓ <strong>API-First</strong>: RESTful APIs with rate limiting</li>
@@ -484,7 +610,7 @@ class: text-center
 
 <div class="mt-6 p-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg">
   <h3 class="text-xl font-bold mb-3">📊 Platform Statistics (Current)</h3>
-  <div class="grid grid-cols-4 gap-4">
+  <div class="grid grid-cols-5 gap-4">
     <div class="text-center">
       <div class="text-3xl font-bold text-indigo-600">39</div>
       <div class="text-sm">WytApps</div>
@@ -498,8 +624,12 @@ class: text-center
       <div class="text-sm">Active Hubs</div>
     </div>
     <div class="text-center">
-      <div class="text-3xl font-bold text-blue-600">17</div>
-      <div class="text-sm">Categories</div>
+      <div class="text-3xl font-bold text-blue-600">38+</div>
+      <div class="text-sm">Datasets</div>
+    </div>
+    <div class="text-center">
+      <div class="text-3xl font-bold text-green-600">2.4M+</div>
+      <div class="text-sm">Data Records</div>
     </div>
   </div>
 </div>
@@ -511,9 +641,9 @@ class: text-center
 <div class="grid grid-cols-2 gap-8">
 
 <div>
-  <h3 class="text-2xl font-bold mb-4">💰 Revenue Streams</h3>
+  <h3 class="text-2xl font-bold mb-4">💰 Revenue Streams (6)</h3>
   
-  <div class="space-y-3">
+  <div class="space-y-2">
     <div class="p-3 bg-blue-50 rounded border-l-4 border-blue-500">
       <h4 class="font-bold">1. SaaS Subscriptions</h4>
       <p class="text-sm">Individual app pricing: $5-$99/month</p>
@@ -538,13 +668,18 @@ class: text-center
       <h4 class="font-bold">5. Transaction Fees</h4>
       <p class="text-sm">Payment gateway: 1-3% per transaction</p>
     </div>
+    
+    <div class="p-3 bg-teal-50 rounded border-l-4 border-teal-500">
+      <h4 class="font-bold">6. WytApi Data Services (NEW)</h4>
+      <p class="text-sm">API access: $99-$999/month</p>
+    </div>
   </div>
 </div>
 
 <div>
   <h3 class="text-2xl font-bold mb-4">📈 Market Opportunity</h3>
   
-  <div class="space-y-4">
+  <div class="space-y-3">
     <div class="p-4 bg-gradient-to-r from-indigo-100 to-purple-100 rounded-lg">
       <h4 class="font-bold text-lg">Digital Legacy Market</h4>
       <div class="text-3xl font-bold text-indigo-600">$50B+</div>
@@ -558,9 +693,9 @@ class: text-center
     </div>
     
     <div class="p-4 bg-gradient-to-r from-green-100 to-teal-100 rounded-lg">
-      <h4 class="font-bold text-lg">AR/VR Market (WytGlass)</h4>
-      <div class="text-3xl font-bold text-green-600">$80B</div>
-      <p class="text-sm mt-1">By 2028 projection</p>
+      <h4 class="font-bold text-lg">Data Services Market</h4>
+      <div class="text-3xl font-bold text-green-600">$15B+</div>
+      <p class="text-sm mt-1">API & DataLake services</p>
     </div>
   </div>
 </div>
@@ -574,7 +709,7 @@ class: text-center
 <div class="grid grid-cols-2 gap-8 mt-6">
 
 <div>
-  <h3 class="text-2xl font-bold mb-4">🎯 Phase 1: WytLife Launch</h3>
+  <h3 class="text-2xl font-bold mb-4">🎯 Phase 1: Foundation (Current)</h3>
   <ul class="space-y-2">
     <li>✓ <strong>Founding 1000 Program</strong> (Active)
       <p class="text-sm ml-6">Early adopters community building</p>
@@ -582,8 +717,8 @@ class: text-center
     <li>✓ <strong>WhatsApp Community</strong> (Active)
       <p class="text-sm ml-6">Real-time engagement & updates</p>
     </li>
-    <li>✓ <strong>Influencer Partnerships</strong>
-      <p class="text-sm ml-6">Target thought leaders & educators</p>
+    <li>✓ <strong>DataLake Development</strong> (In Progress)
+      <p class="text-sm ml-6">2.4M+ trademark records India</p>
     </li>
     <li>✓ <strong>PR Campaign</strong>
       <p class="text-sm ml-6">"World's First Deathless Person"</p>
@@ -592,18 +727,18 @@ class: text-center
 </div>
 
 <div>
-  <h3 class="text-2xl font-bold mb-4">🚀 Phase 2: Platform Expansion</h3>
+  <h3 class="text-2xl font-bold mb-4">🚀 Phase 2: Expansion</h3>
   <ul class="space-y-2">
-    <li>✓ <strong>WytApps Marketplace</strong>
+    <li>🔄 <strong>WytApps Marketplace</strong>
       <p class="text-sm ml-6">Launch all 39 apps publicly</p>
     </li>
-    <li>✓ <strong>White-Label Sales</strong>
+    <li>🔄 <strong>WytApi Launch</strong>
+      <p class="text-sm ml-6">Data monetization APIs live</p>
+    </li>
+    <li>🔄 <strong>White-Label Sales</strong>
       <p class="text-sm ml-6">Enterprise hub licensing</p>
     </li>
-    <li>✓ <strong>API Partnerships</strong>
-      <p class="text-sm ml-6">Integration with existing tools</p>
-    </li>
-    <li>✓ <strong>Geographic Expansion</strong>
+    <li>🔄 <strong>Geographic Expansion</strong>
       <p class="text-sm ml-6">India → US → Global</p>
     </li>
   </ul>
@@ -616,15 +751,15 @@ class: text-center
   <div class="grid grid-cols-4 gap-2 text-sm">
     <div class="p-2 bg-white rounded shadow">
       <strong>Q1 2025</strong>
-      <p class="text-xs">WytLife Beta</p>
+      <p class="text-xs">WytLife Beta + DataLake</p>
     </div>
     <div class="p-2 bg-white rounded shadow">
       <strong>Q2 2025</strong>
-      <p class="text-xs">Platform Launch</p>
+      <p class="text-xs">WytApi Launch</p>
     </div>
     <div class="p-2 bg-white rounded shadow">
       <strong>Q3 2025</strong>
-      <p class="text-xs">Mobile Apps</p>
+      <p class="text-xs">Mobile Apps + Expansion</p>
     </div>
     <div class="p-2 bg-white rounded shadow">
       <strong>Q4 2025</strong>
@@ -647,7 +782,7 @@ class: text-center
     <li>✓ <strong>All-in-One</strong>: 39 apps in unified ecosystem</li>
     <li>✓ <strong>White-Label Ready</strong>: Multi-tenant from day one</li>
     <li>✓ <strong>WytPass</strong>: Universal identity across all apps</li>
-    <li>✓ <strong>Blockchain Integration</strong>: WytCoin & digital verification</li>
+    <li>✓ <strong>DataLake Moat</strong>: 2.4M+ proprietary records</li>
   </ul>
 </div>
 
@@ -662,7 +797,7 @@ class: text-center
     
     <div class="p-3 bg-gray-50 rounded">
       <strong>vs Salesforce/HubSpot</strong>
-      <p>We add: WytWall social + life continuity</p>
+      <p>We add: WytWall social + life continuity + data APIs</p>
     </div>
     
     <div class="p-3 bg-gray-50 rounded">
@@ -671,8 +806,8 @@ class: text-center
     </div>
     
     <div class="p-3 bg-gray-50 rounded">
-      <strong>vs WordPress/Wix</strong>
-      <p>We add: WytBuilder AI + full SaaS ecosystem</p>
+      <strong>vs Data Providers (Crunchbase, etc.)</strong>
+      <p>We add: Full SaaS ecosystem + white-label</p>
     </div>
   </div>
 </div>
@@ -680,7 +815,7 @@ class: text-center
 </div>
 
 <div class="mt-6 p-4 bg-gradient-to-r from-yellow-100 to-orange-100 rounded-lg text-center">
-  <strong>Moat:</strong> Network effects + proprietary Soul Engine + integrated ecosystem = hard to replicate
+  <strong>Moat:</strong> Network effects + proprietary Soul Engine + 2.4M+ DataLake + integrated ecosystem = hard to replicate
 </div>
 
 ---
@@ -697,7 +832,7 @@ class: text-center
       <h4 class="text-lg font-bold">JK Muthu</h4>
       <p class="text-sm text-gray-600">Founder & CEO</p>
       <ul class="text-sm mt-2 space-y-1">
-        <li>• 15+ years in tech & AI</li>
+        <li>• 15+ years in tech & business</li>
         <li>• First person building MyClone</li>
         <li>• Vision: Digital immortality for humanity</li>
       </ul>
@@ -735,8 +870,8 @@ class: text-center
     </div>
     
     <div class="p-3 bg-orange-50 rounded">
-      <strong>AR/VR Technology Expert</strong>
-      <p>WytGlass development roadmap</p>
+      <strong>Data & API Expert</strong>
+      <p>DataLake monetization strategy</p>
     </div>
   </div>
 </div>
@@ -782,6 +917,10 @@ class: text-center
   <div class="mt-4 p-3 bg-green-50 rounded">
     <strong>Average Revenue Per User (ARPU):</strong> $250/year
   </div>
+  
+  <div class="mt-2 p-3 bg-blue-50 rounded">
+    <strong>WytApi Revenue (Additional):</strong> $500K-$2M/year
+  </div>
 </div>
 
 <div>
@@ -792,7 +931,7 @@ class: text-center
       <h4 class="font-bold text-lg">Series A: $5M</h4>
       <p class="text-sm mt-2"><strong>Use of Funds:</strong></p>
       <ul class="text-sm mt-2 space-y-1">
-        <li>• 40% Product Development (WytLife + Apps)</li>
+        <li>• 40% Product Development (WytLife + DataLake)</li>
         <li>• 30% Marketing & User Acquisition</li>
         <li>• 20% Team Expansion (15 new hires)</li>
         <li>• 10% Infrastructure & Operations</li>
@@ -801,7 +940,7 @@ class: text-center
     
     <div class="mt-4 p-3 bg-yellow-50 rounded border-2 border-yellow-300">
       <strong>Valuation:</strong> $25M pre-money
-      <p class="text-sm mt-1">Based on comparable SaaS platforms + unique positioning</p>
+      <p class="text-sm mt-1">Based on comparable SaaS + DataLake platforms</p>
     </div>
   </div>
 </div>
@@ -827,6 +966,9 @@ class: text-center
     <li>✓ Multi-tenant infrastructure ready</li>
     <li>✓ WytPass auth system operational</li>
     <li>✓ Payment integration (Razorpay) complete</li>
+    <li>✓ <strong>Trademark DataLake built (2.4M+ records)</strong></li>
+    <li>✓ <strong>WytApi gateway infrastructure ready</strong></li>
+    <li>✓ <strong>38+ global datasets seeded</strong></li>
   </ul>
 </div>
 
@@ -836,12 +978,13 @@ class: text-center
     <li>🔄 WytLife public beta (1,000 users)</li>
     <li>🔄 Mobile apps launch (iOS + Android)</li>
     <li>🔄 WytApps marketplace opening</li>
+    <li>🔄 WytApi public launch</li>
     <li>🔄 First enterprise hub sale</li>
     <li>🔄 API documentation & partnerships</li>
     <li>🔄 Reach 10,000 platform users</li>
     <li>🔄 $100K monthly recurring revenue</li>
     <li>🔄 Strategic partnership (Meta/Google)</li>
-    <li>🔄 WytGlass prototype development</li>
+    <li>🔄 Additional DataLakes (Patents, Companies)</li>
     <li>🔄 Series A funding closed</li>
   </ul>
 </div>
@@ -859,7 +1002,7 @@ class: text-center
   Join Us in Making Humanity Immortal
 </div>
 
-<div class="grid grid-cols-3 gap-6 max-w-4xl mx-auto">
+<div class="grid grid-cols-4 gap-6 max-w-5xl mx-auto">
   <div class="p-6 bg-blue-50 rounded-lg">
     <div class="text-4xl mb-2">🚀</div>
     <h3 class="font-bold">First-Mover</h3>
@@ -869,13 +1012,19 @@ class: text-center
   <div class="p-6 bg-purple-50 rounded-lg">
     <div class="text-4xl mb-2">💰</div>
     <h3 class="font-bold">Huge Market</h3>
-    <p class="text-sm">$50B+ opportunity</p>
+    <p class="text-sm">$265B+ opportunity</p>
   </div>
   
   <div class="p-6 bg-pink-50 rounded-lg">
     <div class="text-4xl mb-2">🌟</div>
     <h3 class="font-bold">Proven Team</h3>
     <p class="text-sm">Real product, real users</p>
+  </div>
+  
+  <div class="p-6 bg-green-50 rounded-lg">
+    <div class="text-4xl mb-2">🗄️</div>
+    <h3 class="font-bold">Data Moat</h3>
+    <p class="text-sm">2.4M+ proprietary records</p>
   </div>
 </div>
 
@@ -906,6 +1055,7 @@ class: text-center
         <li>✓ Board seat & strategic input</li>
         <li>✓ First access to WytLife for family</li>
         <li>✓ Founding 1000 lifetime membership</li>
+        <li>✓ Priority access to WytApi enterprise tier</li>
         <li>✓ Exclusive investor updates & events</li>
       </ul>
     </div>
@@ -932,13 +1082,14 @@ class: text-center
   <div>
     <h3 class="font-bold mb-2">Contact:</h3>
     <p>JK Muthu, Founder & CEO</p>
-    <p class="text-sm text-gray-600">jkm@jkmuthu.com</p>
+    <p class="text-sm text-gray-600">jkm@wytnet.com</p>
   </div>
   
   <div>
     <h3 class="font-bold mb-2">Resources:</h3>
     <p class="text-sm">📱 WytLife WhatsApp Community</p>
-    <p class="text-sm">🌐 WytNet.com (launching soon)</p>
+    <p class="text-sm">🌐 WytNet.com</p>
+    <p class="text-sm">📊 WytApi Developer Portal (Coming Soon)</p>
   </div>
 </div>
 
