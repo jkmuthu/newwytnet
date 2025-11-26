@@ -49,6 +49,7 @@ import PaymentsPage from "@/pages/payments";
 import TestPaymentLink from "@/pages/test-payment-link";
 import WytWall from "@/pages/wytwall";
 import WytLife from "@/pages/wytlife";
+import WytHubs from "@/pages/wythubs";
 
 /**
  * ProtectedRoute - Redirects to login if not authenticated, saves return URL
@@ -105,6 +106,10 @@ export default function PublicRouter() {
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
       <Route path="/help" component={Help} />
+
+      {/* WytHubs - Specialized Platform Hubs */}
+      <Route path="/wythubs" component={WytHubs} />
+      <Route path="/hub-discovery" component={WytHubs} />
 
       {/* WytLife - Lifestyle & Community */}
       <Route path="/wytlife" component={WytLife} />

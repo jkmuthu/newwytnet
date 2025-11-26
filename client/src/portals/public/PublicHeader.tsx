@@ -102,6 +102,15 @@ export default function PublicHeader() {
                 </NavigationMenuLink>
               </NavigationMenuItem>
 
+              {/* WytHubs - Direct Link */}
+              <NavigationMenuItem>
+                <NavigationMenuLink asChild>
+                  <Link href="/wythubs" className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-transparent px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:text-blue-600 dark:hover:text-blue-400 hover:scale-105 focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
+                    WytHubs
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+
               {/* WytLife - Direct Link */}
               <NavigationMenuItem>
                 <NavigationMenuLink asChild>
