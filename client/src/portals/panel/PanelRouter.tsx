@@ -714,7 +714,7 @@ function MyPanelMarketplace() {
                               size="sm" 
                               variant={pricing.type === 'free' ? 'outline' : 'default'}
                               className="ml-2"
-                              onClick={() => setPurchaseModalTool(tool)}
+                              onClick={() => setPurchaseModalApp(tool)}
                             >
                               {pricing.type === 'free' ? 'Get Free' : 'Purchase'}
                             </Button>
@@ -919,8 +919,8 @@ function MyPanelAccount() {
 
   // Pre-fill username when profile loads
   useEffect(() => {
-    if (profile?.username) {
-      usernameForm.reset({ username: profile.username });
+    if ((profile as any)?.username) {
+      usernameForm.reset({ username: (profile as any).username });
     }
   }, [profile]);
 
@@ -996,7 +996,7 @@ function MyPanelAccount() {
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Current username</p>
                   <p className="text-lg font-medium mt-1" data-testid="text-current-username">
-                    {profile?.username || 'Not set'}
+                    {(profile as any)?.username || 'Not set'}
                   </p>
                 </div>
                 <Button 
@@ -1172,35 +1172,36 @@ function MyPanelProfile() {
 
   const profileForm = useForm({
     defaultValues: {
-      bio: profile?.bio || '',
-      location: profile?.location || '',
-      website: profile?.website || '',
-      company: profile?.company || '',
-      jobTitle: profile?.jobTitle || '',
-      phone: profile?.phone || '',
-      address: profile?.address || '',
-      city: profile?.city || '',
-      state: profile?.state || '',
-      country: profile?.country || '',
-      zipCode: profile?.zipCode || '',
+      bio: (profile as any)?.bio || '',
+      location: (profile as any)?.location || '',
+      website: (profile as any)?.website || '',
+      company: (profile as any)?.company || '',
+      jobTitle: (profile as any)?.jobTitle || '',
+      phone: (profile as any)?.phone || '',
+      address: (profile as any)?.address || '',
+      city: (profile as any)?.city || '',
+      state: (profile as any)?.state || '',
+      country: (profile as any)?.country || '',
+      zipCode: (profile as any)?.zipCode || '',
     },
   });
 
   // Update form when profile loads
   useEffect(() => {
     if (profile) {
+      const p = profile as any;
       profileForm.reset({
-        bio: profile.bio || '',
-        location: profile.location || '',
-        website: profile.website || '',
-        company: profile.company || '',
-        jobTitle: profile.jobTitle || '',
-        phone: profile.phone || '',
-        address: profile.address || '',
-        city: profile.city || '',
-        state: profile.state || '',
-        country: profile.country || '',
-        zipCode: profile.zipCode || '',
+        bio: p.bio || '',
+        location: p.location || '',
+        website: p.website || '',
+        company: p.company || '',
+        jobTitle: p.jobTitle || '',
+        phone: p.phone || '',
+        address: p.address || '',
+        city: p.city || '',
+        state: p.state || '',
+        country: p.country || '',
+        zipCode: p.zipCode || '',
       });
     }
   }, [profile]);
@@ -1804,54 +1805,361 @@ function OrgPanelDuties() {
   );
 }
 
+// ============================================================
+// HUB PANEL COMPONENTS - /h/:hubname/*
+// ============================================================
+
+function HubPanelDashboard() {
+  return (
+    <div className="p-6 space-y-6">
+      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 rounded-lg">
+        <h1 className="text-2xl font-bold mb-2">Hub Dashboard</h1>
+        <p className="opacity-90">Manage your hub community and content</p>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <div className="bg-purple-100 dark:bg-purple-900 p-2 rounded">
+                <User className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Members</p>
+                <p className="text-2xl font-bold">1,247</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <div className="bg-blue-100 dark:bg-blue-900 p-2 rounded">
+                <AppWindow className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Active Apps</p>
+                <p className="text-2xl font-bold">12</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <div className="bg-green-100 dark:bg-green-900 p-2 rounded">
+                <Activity className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Posts Today</p>
+                <p className="text-2xl font-bold">89</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <div className="bg-orange-100 dark:bg-orange-900 p-2 rounded">
+                <TrendingUp className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Growth</p>
+                <p className="text-2xl font-bold">+15%</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Hub Activity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">Recent hub activity and engagement metrics...</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function HubPanelWytWall() {
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold mb-2">Hub WytWall</h1>
+        <p className="text-gray-600 dark:text-gray-400">Community posts and discussions</p>
+      </div>
+      
+      <Tabs defaultValue="posts" className="w-full">
+        <TabsList>
+          <TabsTrigger value="posts">Posts</TabsTrigger>
+          <TabsTrigger value="matches">Matches</TabsTrigger>
+          <TabsTrigger value="add-post">Add Post</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="posts" className="mt-6">
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-muted-foreground text-center py-8">
+                Hub community posts will appear here...
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="matches" className="mt-6">
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-muted-foreground text-center py-8">
+                Member matches based on needs and offers...
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="add-post" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Create Hub Post</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">Post creation form for hub members...</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function HubPanelWytApps() {
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold mb-2">Hub Apps</h1>
+        <p className="text-gray-600 dark:text-gray-400">Apps available in this hub</p>
+      </div>
+      
+      <Tabs defaultValue="added" className="w-full">
+        <TabsList>
+          <TabsTrigger value="added">Added Apps</TabsTrigger>
+          <TabsTrigger value="available">Available Apps</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="added" className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="bg-blue-100 dark:bg-blue-900 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3">
+                  <AppWindow className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="font-semibold">WytPass</h3>
+                <p className="text-sm text-muted-foreground">Authentication</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="bg-purple-100 dark:bg-purple-900 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3">
+                  <LayoutDashboard className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <h3 className="font-semibold">WytPanel</h3>
+                <p className="text-sm text-muted-foreground">Dashboard</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="bg-green-100 dark:bg-green-900 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3">
+                  <Zap className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="font-semibold">WytWall</h3>
+                <p className="text-sm text-muted-foreground">Community</p>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="available" className="mt-6">
+          <Card>
+            <CardContent className="p-6">
+              <p className="text-muted-foreground text-center py-8">
+                Browse and add more apps to this hub...
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function HubPanelTeam() {
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Hub Team</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage hub administrators and moderators</p>
+        </div>
+        <Button>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Team Member
+        </Button>
+      </div>
+      
+      <Card>
+        <CardContent className="p-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
+                  <User className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <p className="font-medium">Hub Owner</p>
+                  <p className="text-sm text-muted-foreground">owner@wytnet.com</p>
+                </div>
+              </div>
+              <Badge>Owner</Badge>
+            </div>
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                  <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="font-medium">Admin User</p>
+                  <p className="text-sm text-muted-foreground">admin@wytnet.com</p>
+                </div>
+              </div>
+              <Badge variant="secondary">Admin</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function HubPanelProfile() {
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold mb-2">Hub Profile</h1>
+        <p className="text-gray-600 dark:text-gray-400">Configure hub settings and branding</p>
+      </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Hub Information</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium">Hub Name</label>
+              <p className="text-lg mt-1">WytLife Hub</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Hub URL</label>
+              <p className="text-lg mt-1">wytlife.wytnet.com</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Description</label>
+              <p className="text-muted-foreground mt-1">A community for lifestyle and wellness enthusiasts</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Status</label>
+              <div className="mt-1">
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Active</Badge>
+              </div>
+            </div>
+          </div>
+          <Button variant="outline">
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Hub Profile
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 /**
  * PanelRouter handles WytPanel routes for authenticated users
- * Routes: '/mypanel/*', '/orgpanel/*'
+ * Routes: /u/:username/*, /o/:orgname/*, /a/:appname/*, /h/:hubname/*
  */
 export default function PanelRouter() {
   return (
     <PanelLayout>
       <Switch>
-      {/* Redirect old routes to new structure */}
+      {/* Legacy redirects to new URL structure */}
       <Route path="/panel">
-        <Redirect to="/mypanel" />
+        <Redirect to="/u/me" />
       </Route>
       <Route path="/panel/me/:rest*">
-        {(params) => <Redirect to={`/mypanel/${params.rest || ''}`} />}
+        {(params: any) => <Redirect to={`/u/me/${params['rest*'] || ''}`} />}
       </Route>
       <Route path="/panel/org/:rest*">
-        {(params) => <Redirect to={`/orgpanel/${params.rest || ''}`} />}
+        {(params: any) => <Redirect to={`/o/default/${params['rest*'] || ''}`} />}
       </Route>
       <Route path="/panel/org">
-        <Redirect to="/orgpanel" />
+        <Redirect to="/o/default" />
+      </Route>
+      <Route path="/mypanel">
+        <Redirect to="/u/me" />
+      </Route>
+      <Route path="/mypanel/:rest*">
+        {(params: any) => <Redirect to={`/u/me/${params['rest*'] || ''}`} />}
+      </Route>
+      <Route path="/orgpanel">
+        <Redirect to="/o/default" />
+      </Route>
+      <Route path="/orgpanel/:rest*">
+        {(params: any) => <Redirect to={`/o/default/${params['rest*'] || ''}`} />}
       </Route>
 
-      {/* My Panel routes - Personal dashboard and features */}
-      <Route path="/mypanel" component={MyPanelDashboard} />
-      <Route path="/mypanel/dashboard" component={MyPanelDashboard} />
-      <Route path="/mypanel/wytwall" component={MyPanelWytWall} />
-      <Route path="/mypanel/posts" component={MyPosts} />
-      <Route path="/mypanel/duties" component={MyPanelDuties} />
-      <Route path="/mypanel/wytscore" component={MyPanelWytScore} />
-      <Route path="/mypanel/circle" component={MyPanelCircle} />
-      <Route path="/mypanel/wallet" component={MyWallet} />
-      <Route path="/mypanel/points" component={MyPoints} />
-      <Route path="/mypanel/wytapps/:slug" component={WytAppWorkspace} />
-      <Route path="/mypanel/wytapps" component={MyPanelWytApps} />
-      <Route path="/mypanel/wytgames" component={MyPanelWytGames} />
-      <Route path="/mypanel/profile" component={MyProfile} />
-      <Route path="/mypanel/account" component={MyAccount} />
+      {/* User Panel routes - /u/:username/* */}
+      <Route path="/u/:username" component={MyPanelDashboard} />
+      <Route path="/u/:username/dashboard" component={MyPanelDashboard} />
+      <Route path="/u/:username/wytwall" component={MyPanelWytWall} />
+      <Route path="/u/:username/posts" component={MyPosts} />
+      <Route path="/u/:username/duties" component={MyPanelDuties} />
+      <Route path="/u/:username/wytscore" component={MyPanelWytScore} />
+      <Route path="/u/:username/circle" component={MyPanelCircle} />
+      <Route path="/u/:username/wallet" component={MyWallet} />
+      <Route path="/u/:username/points" component={MyPoints} />
+      <Route path="/u/:username/wytapps/:slug" component={WytAppWorkspace} />
+      <Route path="/u/:username/wytapps" component={MyPanelWytApps} />
+      <Route path="/u/:username/wytgames" component={MyPanelWytGames} />
+      <Route path="/u/:username/profile" component={MyProfile} />
+      <Route path="/u/:username/account" component={MyAccount} />
 
-      {/* Organization Panel routes - Team/organization features */}
-      <Route path="/orgpanel" component={OrgPanelDashboard} />
-      <Route path="/orgpanel/dashboard" component={OrgPanelDashboard} />
-      <Route path="/orgpanel/wytwall" component={OrgPanelWytWall} />
-      <Route path="/orgpanel/posts" component={OrgPanelWytWall} />
-      <Route path="/orgpanel/wytapps" component={MyPanelWytApps} />
-      <Route path="/orgpanel/team" component={OrgPanelMembers} />
-      <Route path="/orgpanel/profile" component={OrgPanelSettings} />
+      {/* Organization Panel routes - /o/:orgname/* */}
+      <Route path="/o/:orgname" component={OrgPanelDashboard} />
+      <Route path="/o/:orgname/dashboard" component={OrgPanelDashboard} />
+      <Route path="/o/:orgname/wytwall" component={OrgPanelWytWall} />
+      <Route path="/o/:orgname/posts" component={OrgPanelWytWall} />
+      <Route path="/o/:orgname/wytapps" component={MyPanelWytApps} />
+      <Route path="/o/:orgname/team" component={OrgPanelMembers} />
+      <Route path="/o/:orgname/profile" component={OrgPanelSettings} />
 
-      {/* App Panel routes - App-specific features */}
+      {/* App Panel routes - /a/:appname/* */}
+      <Route path="/a/:appname/:rest*" component={AppPanelRouter} />
+      <Route path="/a/:appname" component={AppPanelRouter} />
+      
+      {/* Hub Panel routes - /h/:hubname/* */}
+      <Route path="/h/:hubname" component={HubPanelDashboard} />
+      <Route path="/h/:hubname/dashboard" component={HubPanelDashboard} />
+      <Route path="/h/:hubname/wytwall" component={HubPanelWytWall} />
+      <Route path="/h/:hubname/wytapps" component={HubPanelWytApps} />
+      <Route path="/h/:hubname/team" component={HubPanelTeam} />
+      <Route path="/h/:hubname/profile" component={HubPanelProfile} />
+
+      {/* Legacy App Panel route */}
       <Route path="/apppanel/:rest*" component={AppPanelRouter} />
 
         {/* 404 fallback for panel routes */}

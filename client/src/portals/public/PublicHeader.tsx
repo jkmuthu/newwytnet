@@ -37,11 +37,10 @@ export default function PublicHeader() {
 
   const hasAuth = (contextsData?.contexts?.length || 0) > 0;
 
-  // Initialize theme from localStorage or system preference
+  // Initialize theme from localStorage (Light mode as default)
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const shouldBeDark = savedTheme === 'dark' || (!savedTheme && systemPrefersDark);
+    const shouldBeDark = savedTheme === 'dark';
     
     setIsDark(shouldBeDark);
     document.documentElement.classList.toggle('dark', shouldBeDark);
