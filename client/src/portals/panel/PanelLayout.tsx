@@ -10,7 +10,7 @@ interface PanelLayoutProps {
   children: ReactNode;
 }
 
-export type WorkspaceType = 'personal' | 'organization' | 'app';
+export type WorkspaceType = 'personal' | 'organization' | 'app' | 'hub';
 
 export interface WorkspaceContext {
   type: WorkspaceType;
@@ -19,6 +19,8 @@ export interface WorkspaceContext {
   orgId?: string;
   appSlug?: string;
   appName?: string;
+  hubSlug?: string;
+  hubName?: string;
 }
 
 /**
@@ -36,37 +38,95 @@ export default function PanelLayout({ children }: PanelLayoutProps) {
     name: 'My Panel'
   });
 
+  // Helper to convert slug to display name
+  const slugToDisplayName = (slug: string): string => {
+    return slug
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  // App name mappings
+  const appNameMap: Record<string, string> = {
+    'wytduty': 'WytDuty',
+    'wytqrc': 'WytQRC',
+    'wytassesser': 'WytAssesser',
+    'wytbuilder': 'WytBuilder',
+    'wytlife': 'WytLife',
+    'assessment': 'Assessment',
+    'wytwall': 'WytWall',
+    'qr-generator': 'QR Generator',
+    'ai-directory': 'AI Directory',
+  };
+
   // Auto-detect workspace based on current route
   useEffect(() => {
     // Normalize location path (ensure leading slash)
     const normalizedPath = location.startsWith('/') ? location : `/${location}`;
     
-    // Check for App Panel first (most specific)
+    // NEW: Check for /a/:appname (App Panel)
+    const appMatch = normalizedPath.match(/^\/a\/([^\/]+)/);
+    if (appMatch) {
+      const appSlug = appMatch[1];
+      const appDisplayName = appNameMap[appSlug] || slugToDisplayName(appSlug);
+      
+      setCurrentWorkspace({
+        type: 'app',
+        id: `app-${appSlug}`,
+        name: appDisplayName,
+        appSlug,
+        appName: appDisplayName
+      });
+      return;
+    }
+    
+    // NEW: Check for /h/:hubname (Hub Panel)
+    const hubMatch = normalizedPath.match(/^\/h\/([^\/]+)/);
+    if (hubMatch) {
+      const hubSlug = hubMatch[1];
+      const hubDisplayName = slugToDisplayName(hubSlug);
+      
+      setCurrentWorkspace({
+        type: 'hub',
+        id: `hub-${hubSlug}`,
+        name: `${hubDisplayName} Hub`,
+        hubSlug,
+        hubName: hubDisplayName
+      });
+      return;
+    }
+    
+    // NEW: Check for /o/:orgname (Org Panel)
+    const orgMatch = normalizedPath.match(/^\/o\/([^\/]+)/);
+    if (orgMatch) {
+      const orgSlug = orgMatch[1];
+      const orgDisplayName = orgSlug === 'default' ? 'Organization' : slugToDisplayName(orgSlug);
+      
+      setCurrentWorkspace({
+        type: 'organization',
+        id: `org-${orgSlug}`,
+        name: orgDisplayName,
+        orgId: orgSlug
+      });
+      return;
+    }
+    
+    // NEW: Check for /u/:username (User Panel)
+    const userMatch = normalizedPath.match(/^\/u\/([^\/]+)/);
+    if (userMatch) {
+      const username = userMatch[1];
+      
+      setCurrentWorkspace({
+        type: 'personal',
+        id: username,
+        name: username === 'me' ? 'My Panel' : `${username}'s Panel`
+      });
+      return;
+    }
+    
+    // Legacy: Check for /apppanel/ routes
     if (normalizedPath.includes('/apppanel/')) {
-      // Extract app slug from URL: /apppanel/wytduty -> wytduty
       const appSlug = normalizedPath.split('/apppanel/')[1]?.split('/')[0] || '';
-      
-      // Convert slug to display name (e.g., 'expense-calculator' -> 'Expense Calculator')
-      const slugToDisplayName = (slug: string): string => {
-        return slug
-          .split('-')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
-      };
-      
-      const appNameMap: Record<string, string> = {
-        'wytduty': 'WytDuty',
-        'wytqrc': 'WytQRC',
-        'wytassesser': 'WytAssesser',
-        'wytbuilder': 'WytBuilder',
-        'wytlife': 'WytLife',
-        'assessment': 'Assessment',
-        'wytwall': 'WytWall',
-        'qr-generator': 'QR Generator',
-        'ai-directory': 'AI Directory',
-        // Fallback to auto-generated name from slug
-      };
-      
       const appDisplayName = appNameMap[appSlug] || slugToDisplayName(appSlug);
       
       setCurrentWorkspace({
@@ -89,7 +149,6 @@ export default function PanelLayout({ children }: PanelLayoutProps) {
         name: 'My Panel'
       });
     } else if (normalizedPath.includes('/panel/org')) {
-      // Handle legacy /panel/org routes before redirect
       setCurrentWorkspace({
         type: 'organization',
         id: 'org',

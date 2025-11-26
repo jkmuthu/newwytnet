@@ -59,33 +59,38 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
   const installedAppsCount = (myAppsData as any)?.apps?.length || 0;
   const appsCountBadge = installedAppsCount > 99 ? '99+' : installedAppsCount.toString();
 
+  // Extract username from URL or use default
+  const usernameFromUrl = location.match(/^\/u\/([^\/]+)/)?.[1] || 'me';
+  const orgnameFromUrl = location.match(/^\/o\/([^\/]+)/)?.[1] || 'default';
+  const appnameFromUrl = location.match(/^\/a\/([^\/]+)/)?.[1] || '';
+  const hubnameFromUrl = location.match(/^\/h\/([^\/]+)/)?.[1] || '';
+  
   // Navigation items based on workspace context
   const getNavigationItems = () => {
     if (currentWorkspace.type === 'app') {
-      // AppPanel Navigation - App-specific menus
-      const appSlug = currentWorkspace.appSlug || '';
+      // AppPanel Navigation - /a/:appname/*
+      const appSlug = currentWorkspace.appSlug || appnameFromUrl;
       
       // Define app-specific navigation
       const appNavigations: Record<string, any[]> = {
         'wytduty': [
-          { label: "Dashboard", icon: Home, href: `/apppanel/wytduty`, active: location === `/apppanel/wytduty` || location === `/apppanel/wytduty/dashboard` },
-          { label: "My Duties", icon: FileText, href: `/apppanel/wytduty/my-duties`, active: location === `/apppanel/wytduty/my-duties` },
-          { label: "Assigned Duties", icon: Package, href: `/apppanel/wytduty/assigned`, active: location === `/apppanel/wytduty/assigned` },
-          { label: "Calendar", icon: Calendar, href: `/apppanel/wytduty/calendar`, active: location === `/apppanel/wytduty/calendar` },
-          { label: "Settings", icon: Settings, href: `/apppanel/wytduty/settings`, active: location === `/apppanel/wytduty/settings` },
+          { label: "Dashboard", icon: Home, href: `/a/wytduty`, active: location === `/a/wytduty` || location === `/a/wytduty/dashboard` },
+          { label: "My Duties", icon: FileText, href: `/a/wytduty/my-duties`, active: location === `/a/wytduty/my-duties` },
+          { label: "Assigned Duties", icon: Package, href: `/a/wytduty/assigned`, active: location === `/a/wytduty/assigned` },
+          { label: "Calendar", icon: Calendar, href: `/a/wytduty/calendar`, active: location === `/a/wytduty/calendar` },
+          { label: "Settings", icon: Settings, href: `/a/wytduty/settings`, active: location === `/a/wytduty/settings` },
         ],
         'wytqrc': [
-          { label: "Dashboard", icon: Home, href: `/apppanel/wytqrc`, active: location === `/apppanel/wytqrc` },
-          { label: "Generate QR", icon: Package, href: `/apppanel/wytqrc/generate`, active: location === `/apppanel/wytqrc/generate` },
-          { label: "My QR Codes", icon: FolderOpen, href: `/apppanel/wytqrc/my-codes`, active: location === `/apppanel/wytqrc/my-codes` },
-          { label: "Settings", icon: Settings, href: `/apppanel/wytqrc/settings`, active: location === `/apppanel/wytqrc/settings` },
+          { label: "Dashboard", icon: Home, href: `/a/wytqrc`, active: location === `/a/wytqrc` },
+          { label: "Generate QR", icon: Package, href: `/a/wytqrc/generate`, active: location === `/a/wytqrc/generate` },
+          { label: "My QR Codes", icon: FolderOpen, href: `/a/wytqrc/my-codes`, active: location === `/a/wytqrc/my-codes` },
+          { label: "Settings", icon: Settings, href: `/a/wytqrc/settings`, active: location === `/a/wytqrc/settings` },
         ],
-        // Add more app navigations as needed
       };
       
       const items = appNavigations[appSlug] || [
-        { label: "Dashboard", icon: Home, href: `/apppanel/${appSlug}`, active: location === `/apppanel/${appSlug}` },
-        { label: "Settings", icon: Settings, href: `/apppanel/${appSlug}/settings`, active: location === `/apppanel/${appSlug}/settings` },
+        { label: "Dashboard", icon: Home, href: `/a/${appSlug}`, active: location === `/a/${appSlug}` },
+        { label: "Settings", icon: Settings, href: `/a/${appSlug}/settings`, active: location === `/a/${appSlug}/settings` },
       ];
       
       return [
@@ -94,75 +99,115 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
           items
         }
       ];
-    } else if (currentWorkspace.type === 'personal') {
-      // MyPanel Navigation
+    } else if (currentWorkspace.type === 'hub') {
+      // HubPanel Navigation - /h/:hubname/*
+      const hubSlug = hubnameFromUrl;
       return [
         {
-          section: "MyPanel",
+          section: "Hub Panel",
+          items: [
+            { 
+              label: "Hub Dashboard", 
+              icon: Home, 
+              href: `/h/${hubSlug}`, 
+              active: location === `/h/${hubSlug}` || location === `/h/${hubSlug}/dashboard`
+            },
+            { 
+              label: "Hub WytWall", 
+              icon: MessageSquare, 
+              href: `/h/${hubSlug}/wytwall`, 
+              active: location === `/h/${hubSlug}/wytwall`
+            },
+            { 
+              label: "Hub Apps", 
+              icon: Package, 
+              href: `/h/${hubSlug}/wytapps`, 
+              active: location === `/h/${hubSlug}/wytapps`
+            },
+            { 
+              label: "Hub Team", 
+              icon: Users, 
+              href: `/h/${hubSlug}/team`, 
+              active: location === `/h/${hubSlug}/team`
+            },
+            { 
+              label: "Hub Profile", 
+              icon: Building, 
+              href: `/h/${hubSlug}/profile`, 
+              active: location === `/h/${hubSlug}/profile`
+            },
+          ]
+        }
+      ];
+    } else if (currentWorkspace.type === 'personal') {
+      // MyPanel Navigation - /u/:username/*
+      return [
+        {
+          section: "My Panel",
           items: [
             { 
               label: "My Dashboard", 
               icon: Home, 
-              href: "/mypanel", 
-              active: location === "/mypanel" || location === "/mypanel/dashboard"
+              href: `/u/${usernameFromUrl}`, 
+              active: location === `/u/${usernameFromUrl}` || location === `/u/${usernameFromUrl}/dashboard`
             },
             { 
               label: "My WytWall", 
               icon: MessageSquare, 
-              href: "/mypanel/wytwall", 
-              active: location === "/mypanel/wytwall" || location === "/mypanel/posts"
+              href: `/u/${usernameFromUrl}/wytwall`, 
+              active: location === `/u/${usernameFromUrl}/wytwall` || location === `/u/${usernameFromUrl}/posts`
             },
             { 
               label: "My WytApps", 
               icon: Package, 
-              href: "/mypanel/wytapps", 
-              active: location === "/mypanel/wytapps" || location.startsWith("/mypanel/wytapps/"),
+              href: `/u/${usernameFromUrl}/wytapps`, 
+              active: location === `/u/${usernameFromUrl}/wytapps` || location.startsWith(`/u/${usernameFromUrl}/wytapps/`),
               badge: installedAppsCount > 0 ? { content: appsCountBadge, tone: 'default' as const } : undefined
             },
             { 
               label: "My Profile", 
               icon: User, 
-              href: "/mypanel/profile", 
-              active: location === "/mypanel/profile" 
+              href: `/u/${usernameFromUrl}/profile`, 
+              active: location === `/u/${usernameFromUrl}/profile` 
             },
           ]
         }
       ];
     } else {
-      // OrgPanel Navigation
+      // OrgPanel Navigation - /o/:orgname/*
       return [
         {
-          section: "OrgPanel",
+          section: "Org Panel",
           items: [
             { 
               label: "Our Dashboard", 
               icon: Building, 
-              href: "/orgpanel", 
-              active: location === "/orgpanel" || location === "/orgpanel/dashboard"
+              href: `/o/${orgnameFromUrl}`, 
+              active: location === `/o/${orgnameFromUrl}` || location === `/o/${orgnameFromUrl}/dashboard`
             },
             { 
               label: "Our WytWall", 
               icon: MessageSquare, 
-              href: "/orgpanel/wytwall", 
-              active: location === "/orgpanel/wytwall" || location === "/orgpanel/posts"
+              href: `/o/${orgnameFromUrl}/wytwall`, 
+              active: location === `/o/${orgnameFromUrl}/wytwall` || location === `/o/${orgnameFromUrl}/posts`
             },
             { 
               label: "Our WytApps", 
               icon: Package, 
-              href: "/orgpanel/wytapps", 
-              active: location === "/orgpanel/wytapps" 
+              href: `/o/${orgnameFromUrl}/wytapps`, 
+              active: location === `/o/${orgnameFromUrl}/wytapps` 
             },
             { 
               label: "Our Team", 
               icon: Users, 
-              href: "/orgpanel/team", 
-              active: location === "/orgpanel/team" 
+              href: `/o/${orgnameFromUrl}/team`, 
+              active: location === `/o/${orgnameFromUrl}/team` 
             },
             { 
               label: "Our Org Profile", 
               icon: Building, 
-              href: "/orgpanel/profile", 
-              active: location === "/orgpanel/profile" 
+              href: `/o/${orgnameFromUrl}/profile`, 
+              active: location === `/o/${orgnameFromUrl}/profile` 
             },
           ]
         }
