@@ -2,6 +2,11 @@
 
 **WytNet.com** is an all-in-one digital platform designed to enhance both lifestyle and workstyle for individuals and organizations. Its mission is to create a connected digital ecosystem emphasizing speed, security, and scalability by unifying productivity, social networking, and intelligent automation. The platform aims to build a world where every task, connection, and opportunity is managed within a smart, trustworthy environment.
 
+**Recent Updates (Nov 26, 2025):**
+- ✅ Light mode set as default theme (dark mode no longer system preference override)
+- ✅ File organization completed - documentation, setup, and config files organized into dedicated folders
+- ✅ Professional investor presentation (14 slides) with WytLife branding and $300B+ market opportunity
+
 WytNet is a white-label, multi-tenant SaaS platform built on "Engine," a modular framework organizing components into **Modules → Apps → Hubs**. Key features include universal WytPass authentication, robust role-based access control (RBAC), comprehensive multi-tenancy with Row Level Security, a WytPoints economic system, and AI-powered automation via the WytAI Agent.
 
 # User Preferences
