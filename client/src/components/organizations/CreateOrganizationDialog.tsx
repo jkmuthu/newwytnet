@@ -382,33 +382,48 @@ export default function CreateOrganizationDialog({
                   <FormLabel>Business Types *</FormLabel>
                   <FormDescription>Select all that apply</FormDescription>
                   <div className="grid grid-cols-2 gap-3 mt-2">
-                    {BUSINESS_TYPES.map((type) => (
-                      <div 
-                        key={type} 
-                        className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-colors ${
-                          field.value?.includes(type) 
-                            ? 'bg-primary/10 border-primary' 
-                            : 'hover:bg-muted'
-                        }`}
-                        onClick={() => toggleBusinessType(type)}
-                        data-testid={`checkbox-${type.toLowerCase().replace(/\s+/g, '-')}`}
-                      >
-                        <Checkbox 
-                          checked={field.value?.includes(type)}
-                          onCheckedChange={() => toggleBusinessType(type)}
-                        />
-                        <Label className="cursor-pointer text-sm">{type}</Label>
-                      </div>
-                    ))}
+                    {BUSINESS_TYPES.map((type) => {
+                      const isSelected = field.value?.includes(type);
+                      return (
+                        <div 
+                          key={type} 
+                          className={`flex items-center space-x-2 p-3 rounded-lg border cursor-pointer transition-colors ${
+                            isSelected 
+                              ? 'bg-primary/10 border-primary' 
+                              : 'hover:bg-muted'
+                          }`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const current = field.value || [];
+                            if (current.includes(type)) {
+                              field.onChange(current.filter((t: string) => t !== type));
+                            } else {
+                              field.onChange([...current, type]);
+                            }
+                          }}
+                          data-testid={`checkbox-${type.toLowerCase().replace(/\s+/g, '-')}`}
+                        >
+                          <div className={`w-4 h-4 border rounded flex items-center justify-center ${isSelected ? 'bg-primary border-primary' : 'border-input'}`}>
+                            {isSelected && <span className="text-primary-foreground text-xs">✓</span>}
+                          </div>
+                          <Label className="cursor-pointer text-sm">{type}</Label>
+                        </div>
+                      );
+                    })}
                   </div>
                   {field.value?.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {field.value.map((type) => (
+                      {field.value.map((type: string) => (
                         <Badge key={type} variant="secondary" className="flex items-center gap-1">
                           {type}
                           <X 
                             className="h-3 w-3 cursor-pointer" 
-                            onClick={() => toggleBusinessType(type)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const current = field.value || [];
+                              field.onChange(current.filter((t: string) => t !== type));
+                            }}
                           />
                         </Badge>
                       ))}
