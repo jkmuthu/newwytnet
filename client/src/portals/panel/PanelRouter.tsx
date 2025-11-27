@@ -1491,23 +1491,238 @@ function OrgPanelDashboard() {
 }
 
 function OrgPanelSettings() {
-  return (
-    <div className="p-6">
-      <Card>
-        <CardContent className="py-12">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Settings className="h-8 w-8 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Organization Settings
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
-              Configure your organization's preferences, branding, and access controls.
+  const [, params] = useLocation();
+  const { toast } = useToast();
+  const orgname = window.location.pathname.split('/o/')[1]?.split('/')[0] || '';
+  
+  const { data: orgsData, isLoading } = useQuery({
+    queryKey: ['/api/user/organizations'],
+  });
+  
+  const organization = (orgsData as any)?.organizations?.find(
+    (org: any) => org.slug === orgname || org.name.toLowerCase().replace(/\s+/g, '-') === orgname
+  );
+  
+  const updateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest('PUT', `/api/user/organizations/${organization?.id}`, data);
+      return response;
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "Organization updated successfully" });
+      queryClient.invalidateQueries({ queryKey: ['/api/user/organizations'] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to update organization", variant: "destructive" });
+    },
+  });
+  
+  const form = useForm({
+    defaultValues: {
+      name: '',
+      slug: '',
+      description: '',
+      orgType: '',
+      businessTypes: [] as string[],
+      location: '',
+      email: '',
+      website: '',
+      isPublic: false,
+    },
+  });
+  
+  useEffect(() => {
+    if (organization) {
+      form.reset({
+        name: organization.name || '',
+        slug: organization.slug || '',
+        description: organization.description || '',
+        orgType: organization.orgType || '',
+        businessTypes: organization.businessTypes || [],
+        location: organization.location || '',
+        email: organization.email || '',
+        website: organization.website || '',
+        isPublic: organization.isPublic || false,
+      });
+    }
+  }, [organization]);
+  
+  const onSubmit = (data: any) => {
+    updateMutation.mutate(data);
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <div className="animate-pulse">Loading organization settings...</div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
+  if (!organization) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Organization Not Found</h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              The organization "{orgname}" could not be found or you don't have access.
             </p>
-            <Button className="mt-6">
-              Configure Settings
-            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Organization Settings</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage {organization.name}'s settings and preferences</p>
+        </div>
+        {organization.isPublic && (
+          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+            Public at wytnet.com/o/{organization.slug}
+          </Badge>
+        )}
+      </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            General Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Organization Name</label>
+                <input
+                  {...form.register('name')}
+                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-700"
+                  placeholder="Enter organization name"
+                  data-testid="input-org-name"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">URL Slug</label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">wytnet.com/o/</span>
+                  <input
+                    {...form.register('slug')}
+                    className="flex-1 px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-700"
+                    placeholder="my-organization"
+                    data-testid="input-org-slug"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-medium">Description</label>
+                <textarea
+                  {...form.register('description')}
+                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-700"
+                  rows={3}
+                  placeholder="Describe your organization"
+                  data-testid="input-org-description"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Organization Type</label>
+                <select
+                  {...form.register('orgType')}
+                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-700"
+                  data-testid="select-org-type"
+                >
+                  <option value="">Select type</option>
+                  <option value="Proprietorship">Proprietorship</option>
+                  <option value="Partnership">Partnership</option>
+                  <option value="LLP">LLP</option>
+                  <option value="Pvt Ltd">Pvt Ltd</option>
+                  <option value="Public Ltd">Public Ltd</option>
+                  <option value="Trust / NGO">Trust / NGO</option>
+                </select>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Location</label>
+                <input
+                  {...form.register('location')}
+                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-700"
+                  placeholder="City, Country"
+                  data-testid="input-org-location"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Email</label>
+                <input
+                  {...form.register('email')}
+                  type="email"
+                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-700"
+                  placeholder="contact@organization.com"
+                  data-testid="input-org-email"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Website</label>
+                <input
+                  {...form.register('website')}
+                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-800 dark:border-gray-700"
+                  placeholder="https://www.organization.com"
+                  data-testid="input-org-website"
+                />
+              </div>
+              
+              <div className="space-y-2 md:col-span-2">
+                <div className="flex items-center justify-between p-4 border rounded-lg dark:border-gray-700">
+                  <div>
+                    <label className="text-sm font-medium">Public Organization</label>
+                    <p className="text-sm text-gray-500">Make your organization page visible at wytnet.com/o/{form.watch('slug')}</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    {...form.register('isPublic')}
+                    className="h-5 w-5"
+                    data-testid="checkbox-org-public"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-4">
+              <Button type="button" variant="outline" onClick={() => form.reset()}>
+                Reset
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+      
+      <Card className="border-red-200 dark:border-red-800">
+        <CardHeader>
+          <CardTitle className="text-red-600 dark:text-red-400">Danger Zone</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Delete Organization</p>
+              <p className="text-sm text-gray-500">Permanently delete this organization and all its data</p>
+            </div>
+            <Button variant="destructive" data-testid="button-delete-org">Delete Organization</Button>
           </div>
         </CardContent>
       </Card>
