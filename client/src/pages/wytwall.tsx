@@ -12,6 +12,7 @@ import FiltersPanel from "@/components/wytwall/FiltersPanel";
 import NeedCard from "@/components/wytwall/NeedCard";
 import OfferCard from "@/components/wytwall/OfferCard";
 import PromotionsPanel from "@/components/wytwall/PromotionsPanel";
+import HomeContentSections from "@/components/wytwall/HomeContentSections";
 
 export default function WytWall() {
   const { user } = useAuthContext();
@@ -353,6 +354,9 @@ export default function WytWall() {
           </div>
         </div>
       )}
+
+      {/* Additional Home Content Sections */}
+      <HomeContentSections isAuthenticated={!!user} />
     </div>
   );
 
