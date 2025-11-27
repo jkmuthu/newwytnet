@@ -42,8 +42,14 @@ import {
   Globe, 
   X,
   Loader2,
-  Search
+  Search,
+  Link,
+  Eye,
+  EyeOff,
+  Check,
+  AlertCircle
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 const ORG_TYPES = [
   'Proprietorship',
@@ -64,6 +70,7 @@ const BUSINESS_TYPES = [
 
 const organizationFormSchema = z.object({
   name: z.string().min(1, "Organization name is required").max(50, "Max 50 characters"),
+  slug: z.string().min(3, "At least 3 characters").max(100, "Max 100 characters").regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens").optional().or(z.literal('')),
   description: z.string().max(200, "Max 200 characters").optional().or(z.literal('')),
   orgType: z.enum(ORG_TYPES, { required_error: "Please select organization type" }),
   businessTypes: z.array(z.enum(BUSINESS_TYPES)).min(1, "Select at least one business type"),
@@ -81,6 +88,7 @@ const organizationFormSchema = z.object({
   email: z.string().email("Valid email required"),
   website: z.string().url("Enter valid URL").optional().or(z.literal('')),
   logo: z.string().optional(),
+  isPublic: z.boolean().optional(),
 });
 
 type OrganizationFormData = z.infer<typeof organizationFormSchema>;
@@ -115,10 +123,15 @@ export default function CreateOrganizationDialog({
   
   const isEditing = !!editingOrg;
 
+  const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [slugMessage, setSlugMessage] = useState<string>('');
+  const slugCheckTimeoutRef = useRef<NodeJS.Timeout>();
+  
   const form = useForm<OrganizationFormData>({
     resolver: zodResolver(organizationFormSchema),
     defaultValues: {
       name: "",
+      slug: "",
       description: "",
       orgType: undefined,
       businessTypes: [],
@@ -127,6 +140,7 @@ export default function CreateOrganizationDialog({
       email: "",
       website: "",
       logo: "",
+      isPublic: false,
     },
   });
 
@@ -136,6 +150,7 @@ export default function CreateOrganizationDialog({
       if (editingOrg) {
         form.reset({
           name: editingOrg.name || "",
+          slug: editingOrg.slug || "",
           description: editingOrg.description || "",
           orgType: editingOrg.orgType || undefined,
           businessTypes: editingOrg.businessTypes || [],
@@ -144,31 +159,98 @@ export default function CreateOrganizationDialog({
           email: editingOrg.email || "",
           website: editingOrg.website || "",
           logo: editingOrg.logo || "",
+          isPublic: editingOrg.isPublic || false,
         });
         setLocationSearch(editingOrg.location || "");
+        setSlugStatus('idle');
+        setSlugMessage('');
       } else {
-        // Pre-fill with Kamalam Ventures sample data
+        // Clear form for new organization
         form.reset({
-          name: "Kamalam Ventures",
-          description: "A dynamic business enterprise focused on trading and services",
-          orgType: "Proprietorship",
-          businessTypes: ["Merchant / Trader", "Service Provider"],
-          location: "Chennai, Tamil Nadu, India",
-          locationDetails: {
-            city: "Chennai",
-            state: "Tamil Nadu",
-            country: "India",
-            pincode: "600001",
-          },
-          email: "contact@kalalamventures.com",
-          website: "https://kalalamventures.com",
+          name: "",
+          slug: "",
+          description: "",
+          orgType: undefined,
+          businessTypes: [],
+          location: "",
+          locationDetails: {},
+          email: "",
+          website: "",
           logo: "",
+          isPublic: false,
         });
-        setLocationSearch("Chennai, Tamil Nadu, India");
+        setLocationSearch("");
+        setSlugStatus('idle');
+        setSlugMessage('');
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editingOrg?.id]);
+  
+  // Slug availability check
+  const checkSlugAvailability = async (slug: string) => {
+    if (!slug || slug.length < 3) {
+      setSlugStatus('idle');
+      setSlugMessage('');
+      return;
+    }
+    
+    setSlugStatus('checking');
+    try {
+      const params = new URLSearchParams({ slug });
+      if (editingOrg?.id) {
+        params.set('excludeId', editingOrg.id);
+      }
+      const response = await fetch(`/api/organizations/check-slug?${params}`);
+      const data = await response.json();
+      
+      if (data.available) {
+        setSlugStatus('available');
+        setSlugMessage('This URL is available!');
+      } else {
+        setSlugStatus('taken');
+        setSlugMessage(data.message || 'This URL is already taken');
+      }
+    } catch (error) {
+      setSlugStatus('idle');
+      setSlugMessage('');
+    }
+  };
+  
+  const handleSlugChange = (value: string) => {
+    const cleanedSlug = value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    form.setValue('slug', cleanedSlug);
+    setSlugStatus('idle');
+    setSlugMessage('');
+    
+    if (slugCheckTimeoutRef.current) {
+      clearTimeout(slugCheckTimeoutRef.current);
+    }
+    
+    if (cleanedSlug.length >= 3) {
+      slugCheckTimeoutRef.current = setTimeout(() => {
+        checkSlugAvailability(cleanedSlug);
+      }, 500);
+    }
+  };
+  
+  // Auto-generate slug from name if slug is empty
+  const handleNameChange = (name: string) => {
+    form.setValue('name', name);
+    const currentSlug = form.getValues('slug');
+    if (!currentSlug || currentSlug === '') {
+      const generatedSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      form.setValue('slug', generatedSlug);
+      if (generatedSlug.length >= 3) {
+        if (slugCheckTimeoutRef.current) {
+          clearTimeout(slugCheckTimeoutRef.current);
+        }
+        slugCheckTimeoutRef.current = setTimeout(() => {
+          checkSlugAvailability(generatedSlug);
+        }, 500);
+      }
+    }
+  };
 
   // Mappls location search
   const searchLocation = async (query: string) => {
@@ -308,7 +390,8 @@ export default function CreateOrganizationDialog({
                     <Input 
                       placeholder="Enter organization name" 
                       maxLength={50}
-                      {...field} 
+                      value={field.value}
+                      onChange={(e) => handleNameChange(e.target.value)}
                       data-testid="input-org-name"
                     />
                   </FormControl>
@@ -316,6 +399,82 @@ export default function CreateOrganizationDialog({
                     {field.value?.length || 0}/50 characters
                   </FormDescription>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Custom URL Slug */}
+            <FormField
+              control={form.control}
+              name="slug"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Custom URL (Optional)</FormLabel>
+                  <div className="relative">
+                    <FormControl>
+                      <div className="relative">
+                        <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          placeholder="my-company"
+                          value={field.value}
+                          onChange={(e) => handleSlugChange(e.target.value)}
+                          className={`pl-10 pr-10 ${
+                            slugStatus === 'available' ? 'border-green-500 focus:border-green-500' :
+                            slugStatus === 'taken' ? 'border-red-500 focus:border-red-500' : ''
+                          }`}
+                          data-testid="input-org-slug"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          {slugStatus === 'checking' && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                          {slugStatus === 'available' && <Check className="h-4 w-4 text-green-500" />}
+                          {slugStatus === 'taken' && <AlertCircle className="h-4 w-4 text-red-500" />}
+                        </div>
+                      </div>
+                    </FormControl>
+                    {form.watch('isPublic') && field.value && (
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        Public URL: wytnet.com/o/{field.value}
+                      </div>
+                    )}
+                    {slugMessage && (
+                      <div className={`mt-1 text-xs ${slugStatus === 'available' ? 'text-green-600' : 'text-red-500'}`}>
+                        {slugMessage}
+                      </div>
+                    )}
+                  </div>
+                  <FormDescription>
+                    Only lowercase letters, numbers, and hyphens. Auto-generated from name if left empty.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Visibility Toggle */}
+            <FormField
+              control={form.control}
+              name="isPublic"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5 flex-1">
+                    <FormLabel className="flex items-center gap-2">
+                      {field.value ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                      Public Organization
+                    </FormLabel>
+                    <FormDescription>
+                      {field.value 
+                        ? "Anyone can view your organization page at wytnet.com/o/" + (form.watch('slug') || 'your-org')
+                        : "Only visible to members when logged in"
+                      }
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      data-testid="switch-org-visibility"
+                    />
+                  </FormControl>
                 </FormItem>
               )}
             />

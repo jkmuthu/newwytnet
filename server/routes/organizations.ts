@@ -15,6 +15,7 @@ const router = Router();
 // Schema for organization creation/update
 const createOrganizationSchema = z.object({
   name: z.string().min(1).max(50),
+  slug: z.string().min(3).max(100).regex(/^[a-z0-9-]+$/, "Only lowercase letters, numbers, and hyphens").optional(),
   description: z.string().max(200).optional(),
   orgType: z.enum(['Proprietorship', 'Partnership', 'LLP', 'Pvt Ltd', 'Public Ltd', 'Trust / NGO']),
   businessTypes: z.array(z.enum(['Manufacturer', 'Retail Outlet', 'Merchant / Trader', 'Exporter', 'Service Provider'])).min(1),
@@ -32,6 +33,7 @@ const createOrganizationSchema = z.object({
   email: z.string().email(),
   website: z.string().url().optional().or(z.literal('')),
   logo: z.string().optional(),
+  isPublic: z.boolean().optional(),
 });
 
 // Helper to generate slug from name
@@ -46,6 +48,53 @@ function generateSlug(name: string): string {
 // ========================================
 // USER ORGANIZATION ROUTES (Panel)
 // ========================================
+
+// GET /api/organizations/check-slug - Check if slug is available
+router.get("/organizations/check-slug", async (req, res) => {
+  try {
+    const { slug, excludeId } = req.query;
+    
+    if (!slug || typeof slug !== 'string') {
+      return res.status(400).json({ success: false, error: "Slug is required" });
+    }
+
+    // Validate slug format
+    if (!/^[a-z0-9-]+$/.test(slug)) {
+      return res.json({ 
+        success: true, 
+        available: false, 
+        message: "Only lowercase letters, numbers, and hyphens allowed" 
+      });
+    }
+
+    if (slug.length < 3) {
+      return res.json({ 
+        success: true, 
+        available: false, 
+        message: "Slug must be at least 3 characters" 
+      });
+    }
+
+    // Check if slug exists
+    let query = db.select({ id: organizations.id }).from(organizations).where(eq(organizations.slug, slug));
+    
+    const existing = await query.limit(1);
+    
+    // If excludeId is provided, check if the existing slug belongs to that org (for editing)
+    if (existing.length > 0 && excludeId && existing[0].id === excludeId) {
+      return res.json({ success: true, available: true });
+    }
+
+    res.json({ 
+      success: true, 
+      available: existing.length === 0,
+      message: existing.length > 0 ? "This URL is already taken" : undefined
+    });
+  } catch (error) {
+    console.error("Error checking slug:", error);
+    res.status(500).json({ success: false, error: "Failed to check slug availability" });
+  }
+});
 
 // GET /api/user/organizations - Get organizations for logged in user
 router.get("/user/organizations", isAuthenticatedUnified, async (req: any, res) => {
@@ -72,6 +121,7 @@ router.get("/user/organizations", isAuthenticatedUnified, async (req: any, res) 
         website: organizations.website,
         location: organizations.location,
         locationDetails: organizations.locationDetails,
+        isPublic: organizations.isPublic,
         createdAt: organizations.createdAt,
         ownerId: organizations.ownerId,
       })
@@ -95,6 +145,7 @@ router.get("/user/organizations", isAuthenticatedUnified, async (req: any, res) 
         website: organizations.website,
         location: organizations.location,
         locationDetails: organizations.locationDetails,
+        isPublic: organizations.isPublic,
         createdAt: organizations.createdAt,
         ownerId: organizations.ownerId,
         role: organizationMembers.role,
@@ -189,21 +240,37 @@ router.post("/user/organizations", isAuthenticatedUnified, async (req: any, res)
 
     const data = validationResult.data;
     
-    // Generate slug
-    let slug = generateSlug(data.name);
+    // Use provided slug or generate from name
+    let slug = data.slug || generateSlug(data.name);
     
-    // Check if slug exists, append number if needed
-    const existingSlugs = await db
-      .select({ slug: organizations.slug })
-      .from(organizations)
-      .where(ilike(organizations.slug, `${slug}%`));
-    
-    if (existingSlugs.length > 0) {
-      const slugSet = new Set(existingSlugs.map(o => o.slug));
-      let counter = 1;
-      while (slugSet.has(slug)) {
-        slug = `${generateSlug(data.name)}-${counter}`;
-        counter++;
+    // Check if provided slug is taken
+    if (data.slug) {
+      const existing = await db
+        .select({ id: organizations.id })
+        .from(organizations)
+        .where(eq(organizations.slug, data.slug))
+        .limit(1);
+      
+      if (existing.length > 0) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "This URL is already taken. Please choose a different one." 
+        });
+      }
+    } else {
+      // Auto-generate and ensure uniqueness
+      const existingSlugs = await db
+        .select({ slug: organizations.slug })
+        .from(organizations)
+        .where(ilike(organizations.slug, `${slug}%`));
+      
+      if (existingSlugs.length > 0) {
+        const slugSet = new Set(existingSlugs.map(o => o.slug));
+        let counter = 1;
+        while (slugSet.has(slug)) {
+          slug = `${generateSlug(data.name)}-${counter}`;
+          counter++;
+        }
       }
     }
 
@@ -233,6 +300,7 @@ router.post("/user/organizations", isAuthenticatedUnified, async (req: any, res)
         website: data.website || null,
         location: data.location,
         locationDetails: data.locationDetails || {},
+        isPublic: data.isPublic ?? false,
         ownerId: userId,
         status: 'active',
         isActive: true,
@@ -294,10 +362,27 @@ router.put("/user/organizations/:id", isAuthenticatedUnified, async (req: any, r
 
     const data = validationResult.data;
 
+    // Check if slug is being changed and if the new slug is available
+    if (data.slug && data.slug !== org.slug) {
+      const existing = await db
+        .select({ id: organizations.id })
+        .from(organizations)
+        .where(eq(organizations.slug, data.slug))
+        .limit(1);
+      
+      if (existing.length > 0) {
+        return res.status(400).json({ 
+          success: false, 
+          error: "This URL is already taken. Please choose a different one." 
+        });
+      }
+    }
+
     const [updated] = await db
       .update(organizations)
       .set({
         name: data.name ?? org.name,
+        slug: data.slug ?? org.slug,
         description: data.description ?? org.description,
         logo: data.logo ?? org.logo,
         orgType: data.orgType ?? org.orgType,
@@ -306,6 +391,7 @@ router.put("/user/organizations/:id", isAuthenticatedUnified, async (req: any, r
         website: data.website ?? org.website,
         location: data.location ?? org.location,
         locationDetails: data.locationDetails ?? org.locationDetails,
+        isPublic: data.isPublic ?? org.isPublic,
         updatedAt: new Date(),
       })
       .where(eq(organizations.id, id))

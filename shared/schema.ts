@@ -2805,11 +2805,14 @@ export const organizations = pgTable("organizations", {
   location: varchar("location", { length: 255 }),
   locationDetails: jsonb("location_details").default({}), // Mappls location data: lat, lng, address, placeId, etc.
   settings: jsonb("settings").default({}),
+  isPublic: boolean("is_public").default(false), // If true, public page at /o/orgslug; if false, only visible when authenticated
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_organizations_display_id").on(table.displayId),
+  index("idx_organizations_slug").on(table.slug),
+  index("idx_organizations_is_public").on(table.isPublic),
 ]);
 
 // Organization Members - Team members in organizations
