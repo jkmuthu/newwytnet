@@ -7,7 +7,7 @@ import {
   users,
 } from "@shared/schema";
 import { eq, desc, sql, ilike, or, and } from "drizzle-orm";
-import { adminAuthMiddleware, isAuthenticated } from "../customAuth";
+import { adminAuthMiddleware, isAuthenticatedUnified } from "../customAuth";
 import { requirePermission } from "../permission-middleware";
 
 const router = Router();
@@ -48,7 +48,7 @@ function generateSlug(name: string): string {
 // ========================================
 
 // GET /api/user/organizations - Get organizations for logged in user
-router.get("/user/organizations", isAuthenticated, async (req: any, res) => {
+router.get("/user/organizations", isAuthenticatedUnified, async (req: any, res) => {
   try {
     const userId = req.user?.id;
     
@@ -121,7 +121,7 @@ router.get("/user/organizations", isAuthenticated, async (req: any, res) => {
 });
 
 // GET /api/user/organizations/:id - Get specific organization for user
-router.get("/user/organizations/:id", isAuthenticated, async (req: any, res) => {
+router.get("/user/organizations/:id", isAuthenticatedUnified, async (req: any, res) => {
   try {
     const userId = req.user?.id;
     const { id } = req.params;
@@ -169,7 +169,7 @@ router.get("/user/organizations/:id", isAuthenticated, async (req: any, res) => 
 });
 
 // POST /api/user/organizations - Create new organization for user
-router.post("/user/organizations", isAuthenticated, async (req: any, res) => {
+router.post("/user/organizations", isAuthenticatedUnified, async (req: any, res) => {
   try {
     const userId = req.user?.id;
     
@@ -258,7 +258,7 @@ router.post("/user/organizations", isAuthenticated, async (req: any, res) => {
 });
 
 // PUT /api/user/organizations/:id - Update organization for user
-router.put("/user/organizations/:id", isAuthenticated, async (req: any, res) => {
+router.put("/user/organizations/:id", isAuthenticatedUnified, async (req: any, res) => {
   try {
     const userId = req.user?.id;
     const { id } = req.params;
@@ -319,7 +319,7 @@ router.put("/user/organizations/:id", isAuthenticated, async (req: any, res) => 
 });
 
 // DELETE /api/user/organizations/:id - Delete organization for user
-router.delete("/user/organizations/:id", isAuthenticated, async (req: any, res) => {
+router.delete("/user/organizations/:id", isAuthenticatedUnified, async (req: any, res) => {
   try {
     const userId = req.user?.id;
     const { id } = req.params;

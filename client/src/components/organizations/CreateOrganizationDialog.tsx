@@ -167,7 +167,8 @@ export default function CreateOrganizationDialog({
         setLocationSearch("Chennai, Tamil Nadu, India");
       }
     }
-  }, [open, editingOrg, form]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editingOrg?.id]);
 
   // Mappls location search
   const searchLocation = async (query: string) => {
