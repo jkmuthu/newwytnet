@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import CreateOrganizationDialog from "@/components/organizations/CreateOrganizationDialog";
 import { 
   Building2, 
@@ -18,7 +19,9 @@ import {
   Edit,
   MapPin,
   Mail,
-  Globe
+  Globe,
+  LayoutGrid,
+  List
 } from "lucide-react";
 
 interface Organization {
@@ -40,6 +43,7 @@ interface Organization {
 
 export default function MyOrgs() {
   const [activeTab, setActiveTab] = useState("owner");
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
 
@@ -173,6 +177,110 @@ export default function MyOrgs() {
     </Card>
   );
 
+  const OrgListRow = ({ org, isOwner }: { org: Organization; isOwner: boolean }) => (
+    <TableRow className="hover:bg-muted/50" data-testid={`row-org-${org.slug}`}>
+      <TableCell>
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center text-white shadow-sm flex-shrink-0">
+            {org.logo ? (
+              <img src={org.logo} alt={org.name} className="h-8 w-8 rounded-md object-cover" />
+            ) : (
+              <Building2 className="h-5 w-5" />
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="font-medium truncate">{org.name}</div>
+            <div className="text-sm text-muted-foreground truncate">@{org.slug}</div>
+          </div>
+        </div>
+      </TableCell>
+      <TableCell className="hidden md:table-cell">
+        <div className="flex flex-wrap gap-1">
+          {org.orgType && <Badge variant="outline" className="text-xs">{org.orgType}</Badge>}
+          {org.businessTypes?.slice(0, 2).map((type: string) => (
+            <Badge key={type} variant="secondary" className="text-xs">{type}</Badge>
+          ))}
+          {(org.businessTypes?.length || 0) > 2 && (
+            <Badge variant="secondary" className="text-xs">+{org.businessTypes!.length - 2}</Badge>
+          )}
+        </div>
+      </TableCell>
+      <TableCell className="hidden lg:table-cell">
+        {org.location && (
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+            <span className="truncate max-w-[180px]">{org.location}</span>
+          </div>
+        )}
+      </TableCell>
+      <TableCell className="hidden sm:table-cell">
+        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+          <Users className="h-3.5 w-3.5" />
+          <span>{org.memberCount || 1}</span>
+        </div>
+      </TableCell>
+      <TableCell>
+        <Badge variant={isOwner ? "default" : "secondary"} className="text-xs">
+          {isOwner ? <Crown className="h-3 w-3 mr-1" /> : <UserCheck className="h-3 w-3 mr-1" />}
+          {org.role || (isOwner ? 'owner' : 'member')}
+        </Badge>
+      </TableCell>
+      <TableCell>
+        <Badge variant="outline" className="capitalize text-xs">{org.status || 'Active'}</Badge>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-1">
+          <Link href={`/o/${org.slug}`}>
+            <Button size="sm" variant="default" data-testid={`button-open-${org.slug}`}>
+              <ExternalLink className="h-3.5 w-3.5 mr-1" />
+              Open
+            </Button>
+          </Link>
+          {isOwner && (
+            <>
+              <Button 
+                size="sm" 
+                variant="ghost"
+                onClick={() => handleEditOrg(org)}
+                data-testid={`button-edit-${org.slug}`}
+              >
+                <Edit className="h-3.5 w-3.5" />
+              </Button>
+              <Link href={`/o/${org.slug}/settings`}>
+                <Button size="sm" variant="ghost" data-testid={`button-settings-${org.slug}`}>
+                  <Settings className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </>
+          )}
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+
+  const OrgListView = ({ orgs, isOwner }: { orgs: Organization[]; isOwner: boolean }) => (
+    <div className="rounded-lg border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[250px]">Organization</TableHead>
+            <TableHead className="hidden md:table-cell">Type & Business</TableHead>
+            <TableHead className="hidden lg:table-cell">Location</TableHead>
+            <TableHead className="hidden sm:table-cell w-[80px]">Members</TableHead>
+            <TableHead className="w-[100px]">Role</TableHead>
+            <TableHead className="w-[80px]">Status</TableHead>
+            <TableHead className="w-[150px]">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {orgs.map((org) => (
+            <OrgListRow key={org.id} org={org} isOwner={isOwner} />
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
   const EmptyState = ({ title, description, icon: Icon }: { title: string; description: string; icon: any }) => (
     <Card className="border-dashed">
       <CardContent className="flex flex-col items-center justify-center py-12">
@@ -207,43 +315,77 @@ export default function MyOrgs() {
       </div>
 
       <Tabs defaultValue="owner" value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="owner" data-testid="tab-owner-orgs" className="flex items-center gap-2">
-            <Crown className="h-4 w-4" />
-            Owner Orgs ({ownerOrgs.length})
-          </TabsTrigger>
-          <TabsTrigger value="assigned" data-testid="tab-assigned-orgs" className="flex items-center gap-2">
-            <Briefcase className="h-4 w-4" />
-            Assigned Orgs ({assignedOrgs.length})
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between mb-4">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="owner" data-testid="tab-owner-orgs" className="flex items-center gap-2">
+              <Crown className="h-4 w-4" />
+              Owner Orgs ({ownerOrgs.length})
+            </TabsTrigger>
+            <TabsTrigger value="assigned" data-testid="tab-assigned-orgs" className="flex items-center gap-2">
+              <Briefcase className="h-4 w-4" />
+              Assigned Orgs ({assignedOrgs.length})
+            </TabsTrigger>
+          </TabsList>
+          
+          <div className="flex items-center gap-1 border rounded-lg p-1">
+            <Button
+              variant={viewMode === "list" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("list")}
+              data-testid="button-view-list"
+              className="h-8 px-2"
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === "grid" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("grid")}
+              data-testid="button-view-grid"
+              className="h-8 px-2"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
 
         <TabsContent value="owner" className="mt-6">
           {isLoading ? (
-            <div className="grid md:grid-cols-2 gap-6">
-              {[1, 2].map((i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="h-14 w-14 bg-gray-200 dark:bg-gray-700 rounded-xl" />
-                      <div>
-                        <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
-                        <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded mt-1" />
+            viewMode === "list" ? (
+              <div className="rounded-lg border animate-pulse">
+                <div className="h-12 bg-gray-100 dark:bg-gray-800 border-b" />
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-16 border-b bg-gray-50 dark:bg-gray-900" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-6">
+                {[1, 2].map((i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardHeader>
+                      <div className="flex items-center gap-3">
+                        <div className="h-14 w-14 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+                        <div>
+                          <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
+                          <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded mt-1" />
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )
           ) : ownerOrgs.length === 0 ? (
             <EmptyState 
               title="No Organizations Owned" 
               description="You don't own any organizations yet. Create one to start managing your team and projects."
               icon={Crown}
             />
+          ) : viewMode === "list" ? (
+            <OrgListView orgs={ownerOrgs} isOwner={true} />
           ) : (
             <div className="grid md:grid-cols-2 gap-6">
               {ownerOrgs.map((org) => (
@@ -255,30 +397,41 @@ export default function MyOrgs() {
 
         <TabsContent value="assigned" className="mt-6">
           {isLoading ? (
-            <div className="grid md:grid-cols-2 gap-6">
-              {[1, 2].map((i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="h-14 w-14 bg-gray-200 dark:bg-gray-700 rounded-xl" />
-                      <div>
-                        <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
-                        <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded mt-1" />
+            viewMode === "list" ? (
+              <div className="rounded-lg border animate-pulse">
+                <div className="h-12 bg-gray-100 dark:bg-gray-800 border-b" />
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-16 border-b bg-gray-50 dark:bg-gray-900" />
+                ))}
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-6">
+                {[1, 2].map((i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardHeader>
+                      <div className="flex items-center gap-3">
+                        <div className="h-14 w-14 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+                        <div>
+                          <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
+                          <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded mt-1" />
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )
           ) : assignedOrgs.length === 0 ? (
             <EmptyState 
               title="No Assigned Organizations" 
               description="You haven't been added to any organizations yet. Ask an organization admin to invite you."
               icon={Briefcase}
             />
+          ) : viewMode === "list" ? (
+            <OrgListView orgs={assignedOrgs} isOwner={false} />
           ) : (
             <div className="grid md:grid-cols-2 gap-6">
               {assignedOrgs.map((org) => (
