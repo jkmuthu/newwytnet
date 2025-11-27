@@ -7,6 +7,7 @@ import { Express } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
+import bcrypt from "bcryptjs";
 import MSG91Service from "./services/msg91Service";
 import { users } from "@shared/schema";
 import { db } from "./db";
@@ -39,7 +40,16 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 async function comparePasswords(supplied: string, stored: string): Promise<boolean> {
+  // Handle bcrypt hashes (start with $2a$ or $2b$)
+  if (stored.startsWith('$2a$') || stored.startsWith('$2b$')) {
+    return await bcrypt.compare(supplied, stored);
+  }
+  
+  // Handle scrypt hashes (format: hash.salt)
   const [hashed, salt] = stored.split(".");
+  if (!hashed || !salt) {
+    return false;
+  }
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
   return timingSafeEqual(hashedBuf, suppliedBuf);
