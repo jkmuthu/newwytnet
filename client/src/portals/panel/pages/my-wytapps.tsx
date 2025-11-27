@@ -32,10 +32,12 @@ import {
 
 interface App {
   id: string;
+  slug: string;
   name: string;
   description: string;
   icon: string;
   color: string;
+  category?: string;
   pricing: string;
   price?: number;
   currency?: string;
@@ -70,25 +72,28 @@ export default function MyWytApps() {
     queryKey: ['/api/apps/my-apps'],
   });
 
-  const allApps: App[] = catalogData?.apps || [];
-  const myApps: UserApp[] = myAppsData?.apps || [];
-  const installedSlugs = new Set(myApps.map(ua => ua.app.id));
+  const allApps: App[] = (catalogData as any)?.apps || [];
+  const myApps: UserApp[] = (myAppsData as any)?.apps || [];
+  const installedSlugs = new Set(myApps.map(ua => ua.app?.slug || ua.installation?.appSlug));
   
   // Filter to show only WytApps (exclude WytHubs and admin modules)
   const wytAppsOnly = allApps.filter(app => 
-    app.category === 'wytapps' || app.category === 'social'
+    app.category === 'wytapps' || app.category === 'social' || 
+    app.category === 'utility' || app.category === 'utilities' ||
+    app.category === 'productivity' || app.category === 'finance'
   );
-  const availableApps = wytAppsOnly.filter(app => !installedSlugs.has(app.id));
+  const availableApps = wytAppsOnly.filter(app => !installedSlugs.has(app.slug));
 
   // Install app mutation
   const installMutation = useMutation({
     mutationFn: async (appSlug: string) => {
-      return apiRequest('/api/apps/install', 'POST', { appSlug });
+      const response = await apiRequest('/api/apps/install', 'POST', { appSlug });
+      return response.json();
     },
-    onSuccess: (data, appSlug) => {
+    onSuccess: (data: any) => {
       toast({
         title: "App Installed",
-        description: data.message || "App has been added to your collection",
+        description: data?.message || "App has been added to your collection",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/apps/my-apps'] });
       queryClient.invalidateQueries({ queryKey: ['/api/apps/catalog'] });
@@ -96,7 +101,7 @@ export default function MyWytApps() {
     onError: (error: any) => {
       toast({
         title: "Installation Failed",
-        description: error.message || "Failed to install app",
+        description: error?.message || "Failed to install app",
         variant: "destructive",
       });
     },
@@ -201,9 +206,9 @@ export default function MyWytApps() {
         ) : (
           <Button
             className="w-full"
-            onClick={() => installMutation.mutate(app.id)}
+            onClick={() => installMutation.mutate(app.slug)}
             disabled={installMutation.isPending}
-            data-testid={`button-add-${app.id}`}
+            data-testid={`button-add-${app.slug}`}
           >
             <Plus className="h-4 w-4 mr-2" />
             Add App

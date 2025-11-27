@@ -22,6 +22,7 @@ import MyWytAppsPage from "./pages/my-wytapps";
 import WytAppWorkspace from "./pages/wytapp-workspace";
 import MyAccount from "./pages/my-account";
 import MyProfile from "./pages/my-profile";
+import MyOrgsPage from "./pages/my-orgs";
 import { 
   LayoutDashboard, 
   Zap, 
@@ -2134,6 +2135,7 @@ export default function PanelRouter() {
       <Route path="/u/:username/points" component={MyPoints} />
       <Route path="/u/:username/wytapps/:slug" component={WytAppWorkspace} />
       <Route path="/u/:username/wytapps" component={MyPanelWytApps} />
+      <Route path="/u/:username/orgs" component={MyOrgsPage} />
       <Route path="/u/:username/wytgames" component={MyPanelWytGames} />
       <Route path="/u/:username/profile" component={MyProfile} />
       <Route path="/u/:username/account" component={MyAccount} />

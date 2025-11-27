@@ -6727,10 +6727,39 @@ When suggesting improvements, format your response with suggestions in a structu
 
       const apps = await query;
 
+      // Default color mappings based on category
+      const categoryColors: Record<string, string> = {
+        'productivity': 'purple',
+        'utility': 'blue',
+        'utilities': 'blue',
+        'finance': 'green',
+        'social': 'pink',
+        'ai-tools': 'orange',
+        'storage': 'cyan',
+        'lifestyle': 'rose',
+        'core-platform': 'indigo',
+        'web-development': 'teal',
+      };
+
+      // Enhance apps with default values for missing fields
+      const enhancedApps = apps.map((app: any) => ({
+        ...app,
+        color: app.metadata?.color || categoryColors[app.category] || 'blue',
+        pricing: app.metadata?.pricing || 'free',
+        price: app.metadata?.price || 0,
+        currency: app.metadata?.currency || 'INR',
+        features: app.metadata?.features || [
+          'Easy to use interface',
+          'Secure and reliable',
+          'Regular updates'
+        ],
+        route: app.route || app.metadata?.route || `/app/${app.slug}`,
+      }));
+
       // Filter by category if provided
-      let filteredApps = apps;
+      let filteredApps = enhancedApps;
       if (category) {
-        filteredApps = apps.filter((app: any) => app.category === category);
+        filteredApps = enhancedApps.filter((app: any) => app.category === category);
       }
 
       res.json({

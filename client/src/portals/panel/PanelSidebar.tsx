@@ -155,7 +155,7 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               label: "My WytWall", 
               icon: MessageSquare, 
               href: `/u/${usernameFromUrl}/wytwall`, 
-              active: location === `/u/${usernameFromUrl}/wytwall` || location === `/u/${usernameFromUrl}/posts`
+              active: location === `/u/${usernameFromUrl}/wytwall` || location.startsWith(`/u/${usernameFromUrl}/wytwall/`)
             },
             { 
               label: "My WytApps", 
@@ -163,6 +163,12 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               href: `/u/${usernameFromUrl}/wytapps`, 
               active: location === `/u/${usernameFromUrl}/wytapps` || location.startsWith(`/u/${usernameFromUrl}/wytapps/`),
               badge: installedAppsCount > 0 ? { content: appsCountBadge, tone: 'default' as const } : undefined
+            },
+            { 
+              label: "My Orgs", 
+              icon: Building, 
+              href: `/u/${usernameFromUrl}/orgs`, 
+              active: location === `/u/${usernameFromUrl}/orgs` || location.startsWith(`/u/${usernameFromUrl}/orgs/`)
             },
             { 
               label: "My Profile", 
