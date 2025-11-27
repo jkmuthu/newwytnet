@@ -217,8 +217,8 @@ export default function PanelMobileLayout({
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      {user?.profileImageUrl && (
-                        <AvatarImage src={user.profileImageUrl} alt={user.name || "User"} />
+                      {(user as any)?.profileImageUrl && (
+                        <AvatarImage src={(user as any).profileImageUrl} alt={(user as any).name || "User"} />
                       )}
                       <AvatarFallback className="bg-blue-600 text-white text-xs">
                         {getUserInitials(user)}
@@ -234,9 +234,9 @@ export default function PanelMobileLayout({
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-sm font-medium">{user?.name || "User"}</p>
+                      <p className="text-sm font-medium">{(user as any)?.name || "User"}</p>
                       <p className="text-xs text-muted-foreground">
-                        {user?.email || user?.mobileNumber || ""}
+                        {(user as any)?.email || (user as any)?.mobileNumber || ""}
                       </p>
                     </div>
                   </div>
