@@ -649,8 +649,29 @@ export const hubAdminAuthMiddleware: RequestHandler = async (req, res, next) => 
   }
 };
 
-// Enhanced authentication middleware that supports all three auth types (regular user, engine admin, hub admin)
+// Enhanced authentication middleware that supports all auth types (wytpass, engine admin, hub admin, regular user)
 export const isAuthenticatedUnified: RequestHandler = async (req, res, next) => {
+  // Check 0: WytPass Principal (New unified system)
+  const wytpassPrincipal = (req.session as any)?.wytpassPrincipal;
+  if (wytpassPrincipal) {
+    try {
+      const user = await storage.getUser(wytpassPrincipal.id);
+      if (user) {
+        (req as AuthenticatedRequest).user = { 
+          id: user.id,
+          tenantId: user.tenantId || '',
+          email: user.email || undefined,
+          isSuperAdmin: wytpassPrincipal.isSuperAdmin || false,
+          provider: wytpassPrincipal.loginType || 'unified',
+          claims: { sub: user.id }
+        };
+        return next();
+      }
+    } catch (error) {
+      console.error("WytPass auth error:", error);
+    }
+  }
+
   // Check 1: Engine Admin Session
   const adminUser = (req.session as any)?.adminUser;
   if (adminUser) {
