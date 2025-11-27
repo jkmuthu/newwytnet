@@ -2147,6 +2147,7 @@ export default function PanelRouter() {
       <Route path="/o/:orgname/posts" component={OrgPanelWytWall} />
       <Route path="/o/:orgname/wytapps" component={MyPanelWytApps} />
       <Route path="/o/:orgname/team" component={OrgPanelMembers} />
+      <Route path="/o/:orgname/settings" component={OrgPanelSettings} />
       <Route path="/o/:orgname/profile" component={OrgPanelSettings} />
 
       {/* App Panel routes - /a/:appname/* */}
