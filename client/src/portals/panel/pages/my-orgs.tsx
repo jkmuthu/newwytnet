@@ -194,64 +194,28 @@ export default function MyOrgs() {
           </div>
         </div>
       </TableCell>
-      <TableCell className="hidden md:table-cell">
-        <div className="flex flex-wrap gap-1">
-          {org.orgType && <Badge variant="outline" className="text-xs">{org.orgType}</Badge>}
-          {org.businessTypes?.slice(0, 2).map((type: string) => (
-            <Badge key={type} variant="secondary" className="text-xs">{type}</Badge>
-          ))}
-          {(org.businessTypes?.length || 0) > 2 && (
-            <Badge variant="secondary" className="text-xs">+{org.businessTypes!.length - 2}</Badge>
-          )}
-        </div>
-      </TableCell>
-      <TableCell className="hidden lg:table-cell">
-        {org.location && (
-          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-            <span className="truncate max-w-[180px]">{org.location}</span>
-          </div>
-        )}
-      </TableCell>
-      <TableCell className="hidden sm:table-cell">
-        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-          <Users className="h-3.5 w-3.5" />
+      <TableCell>
+        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <Users className="h-4 w-4" />
           <span>{org.memberCount || 1}</span>
         </div>
       </TableCell>
       <TableCell>
-        <Badge variant={isOwner ? "default" : "secondary"} className="text-xs">
-          {isOwner ? <Crown className="h-3 w-3 mr-1" /> : <UserCheck className="h-3 w-3 mr-1" />}
-          {org.role || (isOwner ? 'owner' : 'member')}
-        </Badge>
+        <Badge variant="outline" className="capitalize">{org.status || 'Active'}</Badge>
       </TableCell>
       <TableCell>
-        <Badge variant="outline" className="capitalize text-xs">{org.status || 'Active'}</Badge>
-      </TableCell>
-      <TableCell>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <Link href={`/o/${org.slug}`}>
-            <Button size="sm" variant="default" data-testid={`button-open-${org.slug}`}>
-              <ExternalLink className="h-3.5 w-3.5 mr-1" />
-              Open
+            <Button size="icon" variant="default" className="h-8 w-8" data-testid={`button-open-${org.slug}`}>
+              <ExternalLink className="h-4 w-4" />
             </Button>
           </Link>
           {isOwner && (
-            <>
-              <Button 
-                size="sm" 
-                variant="ghost"
-                onClick={() => handleEditOrg(org)}
-                data-testid={`button-edit-${org.slug}`}
-              >
-                <Edit className="h-3.5 w-3.5" />
+            <Link href={`/o/${org.slug}/settings`}>
+              <Button size="icon" variant="outline" className="h-8 w-8" data-testid={`button-settings-${org.slug}`}>
+                <Settings className="h-4 w-4" />
               </Button>
-              <Link href={`/o/${org.slug}/settings`}>
-                <Button size="sm" variant="ghost" data-testid={`button-settings-${org.slug}`}>
-                  <Settings className="h-3.5 w-3.5" />
-                </Button>
-              </Link>
-            </>
+            </Link>
           )}
         </div>
       </TableCell>
@@ -263,13 +227,10 @@ export default function MyOrgs() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[250px]">Organization</TableHead>
-            <TableHead className="hidden md:table-cell">Type & Business</TableHead>
-            <TableHead className="hidden lg:table-cell">Location</TableHead>
-            <TableHead className="hidden sm:table-cell w-[80px]">Members</TableHead>
-            <TableHead className="w-[100px]">Role</TableHead>
-            <TableHead className="w-[80px]">Status</TableHead>
-            <TableHead className="w-[150px]">Actions</TableHead>
+            <TableHead>Organization</TableHead>
+            <TableHead className="w-[100px]">Members</TableHead>
+            <TableHead className="w-[100px]">Status</TableHead>
+            <TableHead className="w-[100px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
