@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, Bot, Activity, QrCode, Grid3x3, Smartphone } from "lucide-react";
+import { Home, Activity, QrCode, Grid3x3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Footer from "@/components/layout/footer";
 import UniversalAuthHeader from "@/components/universal/UniversalAuthHeader";
@@ -45,14 +45,6 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
     }
   ];
 
-  // Sidebar items for mobile menu
-  const sidebarItems = [
-    { icon: QrCode, label: 'QR Generator', href: '/qr-generator' },
-    { icon: Activity, label: 'DISC Assessment', href: '/assessment' },
-    { icon: Grid3x3, label: 'Other WytApps', href: '/wytapps' },
-    { icon: Activity, label: 'WytLife', href: '/wytlife' },
-    { icon: Smartphone, label: 'Install App', href: '/mobile-app' },
-  ];
 
   // Determine if bottom navigation should be shown
   const shouldShowBottomNav = () => {
@@ -78,8 +70,7 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
 
             {/* Right side - Universal Auth only */}
             <div className="flex items-center gap-2">
-              {/* Universal Authentication with integrated menu */}
-              <UniversalAuthHeader sidebarItems={sidebarItems} />
+              <UniversalAuthHeader />
             </div>
           </div>
         </div>

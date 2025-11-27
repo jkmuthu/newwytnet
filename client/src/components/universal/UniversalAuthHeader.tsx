@@ -6,24 +6,21 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Shield, 
-  Settings, 
   Home, 
   LogOut, 
   ChevronDown, 
   Menu,
   User,
-  CheckCircle2,
-  UserCircle
+  LayoutDashboard,
+  Shield
 } from "lucide-react";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
 
@@ -46,61 +43,39 @@ interface ContextsResponse {
   count: number;
 }
 
-interface UniversalAuthHeaderProps {
-  sidebarItems?: Array<{
-    icon: any;
-    label: string;
-    href: string;
-  }>;
-}
-
-export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuthHeaderProps = {}) {
+export default function UniversalAuthHeader() {
   const { isMobile } = useDeviceDetection();
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Fetch available contexts for the user
-  const { data: contextsData, isLoading: contextsLoading } = useQuery<ContextsResponse>({
+  const { data: contextsData } = useQuery<ContextsResponse>({
     queryKey: ["/api/auth/contexts"],
     retry: false,
-    refetchOnWindowFocus: false, // Prevent excessive refetching
-    staleTime: 5 * 60 * 1000, // Consider fresh for 5 minutes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
-  // Sort contexts in the desired order: My Panel, Org Panel, Hub Admins, Engine Admin
-  const sortContexts = (contexts: Context[]) => {
-    const priority: Record<string, number> = {
-      'user': 1,           // My Panel
-      'org': 2,            // Org Panel  
-      'hub_admin': 3,      // Hub Admin panels
-      'engine_admin': 4    // Engine Admin
-    };
-    
-    return [...contexts].sort((a, b) => {
-      const priorityA = priority[a.type] || 99;
-      const priorityB = priority[b.type] || 99;
-      return priorityA - priorityB;
-    });
-  };
-
-  const contexts = sortContexts(contextsData?.contexts || []);
-  const activeContext = contexts.find(c => c.active);
+  const contexts = contextsData?.contexts || [];
   const hasAuth = contexts.length > 0;
+  
+  const userContext = contexts.find(c => c.type === 'user');
+  const engineContext = contexts.find(c => c.type === 'engine_admin');
+  const hasEngineAccess = !!engineContext;
+  
+  const activeContext = contexts.find(c => c.active);
+  const userInfo = activeContext?.user || userContext?.user || contexts[0]?.user;
 
-  // Logout mutation
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      // Try all logout endpoints - one will succeed based on active session
       const results = await Promise.allSettled([
         fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }),
         fetch('/api/auth/admin/logout', { method: 'POST', credentials: 'include' }),
         fetch('/api/hub-admin/session', { method: 'DELETE', credentials: 'include' })
       ]);
       
-      // Check if at least one logout succeeded
-      const anySucceeded = results.some(result => result.status === 'fulfilled' && result.value.ok);
+      const anySucceeded = results.some(result => result.status === 'fulfilled' && (result.value as Response).ok);
       if (!anySucceeded) {
         throw new Error('All logout attempts failed');
       }
@@ -114,34 +89,15 @@ export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuth
       });
     },
     onError: () => {
-      // Even if logout API fails, clear client state and redirect
       queryClient.clear();
       setLocation('/');
       toast({
         title: "Session cleared",
-        description: "You have been logged out locally",
-        variant: "default",
+        description: "You have been logged out",
       });
     },
   });
 
-  // Icon mapping
-  const getIcon = (iconName: string, isActive: boolean = false) => {
-    const className = `h-4 w-4 ${isActive ? 'text-purple-600 dark:text-purple-400' : ''}`;
-    switch (iconName) {
-      case 'Shield':
-        return <Shield className={className} />;
-      case 'Settings':
-        return <Settings className={className} />;
-      case 'Home':
-      case 'User':
-        return <Home className={className} />;
-      default:
-        return <User className={className} />;
-    }
-  };
-
-  // Get user initials for avatar fallback
   const getUserInitials = (name?: string) => {
     if (!name) return 'U';
     return name
@@ -152,94 +108,70 @@ export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuth
       .slice(0, 2);
   };
 
-  // Panel Switch Handler
-  const handlePanelSwitch = (path: string) => {
-    setLocation(path);
-    setIsMenuOpen(false);
-  };
-
-  // Not authenticated - show Login/Join button OR navigation menu on mobile
   if (!hasAuth) {
-    // Mobile: Show hamburger with navigation even if not logged in
-    if (isMobile && sidebarItems.length > 0) {
-      return (
-        <div className="flex items-center gap-2">
-          <Link href="/login">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              data-testid="button-login"
-            >
-              Login
-            </Button>
-          </Link>
-          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-            <SheetTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                data-testid="button-mobile-menu"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-[280px] p-0">
-              <div className="flex flex-col h-full">
-                {/* Logo Header */}
-                <div className="p-4 border-b">
-                  <img 
-                    src="/wytnet-logo.png?v=2" 
-                    alt="WytNet" 
-                    className="h-8 w-auto"
-                  />
-                </div>
-
-                {/* Navigation Items */}
-                <div className="flex-1 overflow-y-auto p-2">
-                  <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Navigation
-                  </p>
-                  <div className="space-y-1">
-                    {sidebarItems.map((item, idx) => (
-                      <Link
-                        key={idx}
-                        href={item.href}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-      );
-    }
-
-    // Desktop: Just show login button
     return (
-      <div className="flex items-center gap-2">
-        <Link href="/login">
-          <Button 
-            variant="ghost" 
-            size={isMobile ? "sm" : "default"}
-            data-testid="button-login"
-          >
-            Login / Join
-          </Button>
-        </Link>
-      </div>
+      <Link href="/login">
+        <Button 
+          variant="default" 
+          size={isMobile ? "sm" : "default"}
+          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+          data-testid="button-login"
+        >
+          Login / Join
+        </Button>
+      </Link>
     );
   }
 
-  // Authenticated - show user DP with panel switcher
-  const userInfo = activeContext?.user || contexts[0]?.user;
+  const menuItems = (
+    <>
+      <Link href="/" onClick={() => setIsMenuOpen(false)}>
+        <DropdownMenuItem className="cursor-pointer gap-3 py-2.5" data-testid="menu-go-home">
+          <Home className="h-4 w-4" />
+          <span>Go Home</span>
+        </DropdownMenuItem>
+      </Link>
+      
+      <Link href="/u/me" onClick={() => setIsMenuOpen(false)}>
+        <DropdownMenuItem className="cursor-pointer gap-3 py-2.5" data-testid="menu-wytpanel">
+          <LayoutDashboard className="h-4 w-4" />
+          <span>WytPanel</span>
+        </DropdownMenuItem>
+      </Link>
+      
+      <Link href="/u/me/account" onClick={() => setIsMenuOpen(false)}>
+        <DropdownMenuItem className="cursor-pointer gap-3 py-2.5" data-testid="menu-my-account">
+          <User className="h-4 w-4" />
+          <span>My Account</span>
+        </DropdownMenuItem>
+      </Link>
+      
+      {hasEngineAccess && (
+        <Link href="/engine" onClick={() => setIsMenuOpen(false)}>
+          <DropdownMenuItem className="cursor-pointer gap-3 py-2.5 text-red-600 dark:text-red-400" data-testid="menu-wytengine">
+            <Shield className="h-4 w-4" />
+            <span>WytEngine</span>
+          </DropdownMenuItem>
+        </Link>
+      )}
+      
+      <DropdownMenuSeparator />
+      
+      <DropdownMenuItem
+        onClick={() => {
+          setIsMenuOpen(false);
+          logoutMutation.mutate();
+        }}
+        disabled={logoutMutation.isPending}
+        className="cursor-pointer gap-3 py-2.5 text-red-600 focus:text-red-700 focus:bg-red-50 dark:focus:bg-red-950/30"
+        data-testid="menu-logout"
+      >
+        <LogOut className="h-4 w-4" />
+        <span>{logoutMutation.isPending ? "Logging out..." : "Logout"}</span>
+      </DropdownMenuItem>
+    </>
+  );
 
-  // Mobile version - Sheet menu
   if (isMobile) {
     return (
       <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
@@ -247,12 +179,11 @@ export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuth
           <Button 
             variant="ghost" 
             size="sm" 
-            className="gap-2"
+            className="gap-2 px-2"
             data-testid="button-mobile-menu"
           >
-            <Avatar className="h-7 w-7">
-              <AvatarImage src={undefined} />
-              <AvatarFallback className="text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold">
                 {getUserInitials(userInfo?.name)}
               </AvatarFallback>
             </Avatar>
@@ -261,107 +192,75 @@ export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuth
         </SheetTrigger>
         <SheetContent side="right" className="w-[280px] p-0">
           <div className="flex flex-col h-full">
-            {/* User Info Header */}
             <div className="p-4 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white">
               <div className="flex items-center gap-3">
-                <Avatar className="h-12 w-12 border-2 border-white">
-                  <AvatarImage src={undefined} />
-                  <AvatarFallback className="bg-white text-purple-600 font-semibold">
+                <Avatar className="h-12 w-12 border-2 border-white/30">
+                  <AvatarFallback className="bg-white/20 text-white font-semibold">
                     {getUserInitials(userInfo?.name)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">{userInfo?.name}</p>
-                  <p className="text-xs opacity-90 truncate">{userInfo?.email}</p>
+                  <p className="font-semibold truncate">{userInfo?.name || "User"}</p>
+                  <p className="text-sm opacity-80 truncate">{userInfo?.email}</p>
                 </div>
               </div>
             </div>
 
-            {/* Scrollable Content Area */}
-            <div className="flex-1 overflow-y-auto p-2">
-              {/* Navigation Items (if provided) */}
-              {sidebarItems.length > 0 && (
-                <>
-                  <p className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Navigation
-                  </p>
-                  <div className="space-y-1 mb-4">
-                    {sidebarItems.map((item, idx) => (
-                      <Link
-                        key={idx}
-                        href={item.href}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </Link>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              {/* Panel Switcher */}
-              {contexts.length > 0 && (
-                <div className="space-y-1">
-                  {/* Go Home */}
-                  <Link
-                    href="/"
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            <div className="flex-1 p-2">
+              <div className="space-y-1">
+                <Link 
+                  href="/" 
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <Home className="h-5 w-5" />
+                  <span className="font-medium">Go Home</span>
+                </Link>
+                
+                <Link 
+                  href="/u/me" 
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <LayoutDashboard className="h-5 w-5" />
+                  <span className="font-medium">WytPanel</span>
+                </Link>
+                
+                <Link 
+                  href="/u/me/account" 
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <User className="h-5 w-5" />
+                  <span className="font-medium">My Account</span>
+                </Link>
+                
+                {hasEngineAccess && (
+                  <Link 
+                    href="/engine" 
                     onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-red-600 dark:text-red-400"
                   >
-                    <Home className="h-4 w-4" />
-                    <span>Go Home</span>
+                    <Shield className="h-5 w-5" />
+                    <span className="font-medium">WytEngine</span>
                   </Link>
-                  
-                  {/* My Panel, Org Panel, Hub Admin, Engine Admin */}
-                  {contexts.map((context, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handlePanelSwitch(context.path)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                        context.active
-                          ? 'bg-purple-50 dark:bg-purple-950/30 text-purple-900 dark:text-purple-100'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`}
-                      data-testid={`button-switch-${context.hubKey || context.type}`}
-                    >
-                      {getIcon(context.icon, context.active)}
-                      <div className="flex-1 text-left">
-                        <p className="font-medium">{context.name}</p>
-                        <p className="text-xs text-muted-foreground">{context.user.role}</p>
-                      </div>
-                      {context.active && (
-                        <CheckCircle2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                      )}
-                    </button>
-                  ))}
-
-                  {/* My Account */}
-                  <Link
-                    href="/account"
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <UserCircle className="h-4 w-4" />
-                    <span>My Account</span>
-                  </Link>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
-            {/* Logout */}
-            <div className="p-2 border-t">
+            <div className="p-3 border-t">
               <Button
-                onClick={() => logoutMutation.mutate()}
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  logoutMutation.mutate();
+                }}
+                variant="outline"
+                className="w-full justify-start gap-3 text-red-600 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950/30"
                 disabled={logoutMutation.isPending}
                 data-testid="button-logout"
               >
-                <LogOut className="h-4 w-4" />
-                Logout
+                <LogOut className="h-5 w-5" />
+                <span>{logoutMutation.isPending ? "Logging out..." : "Logout"}</span>
               </Button>
             </div>
           </div>
@@ -370,87 +269,31 @@ export default function UniversalAuthHeader({ sidebarItems = [] }: UniversalAuth
     );
   }
 
-  // Desktop version - Dropdown menu
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
-          className="gap-2 px-2"
+          className="gap-2 px-2 hover:bg-gray-100 dark:hover:bg-gray-800"
           data-testid="button-user-menu"
         >
           <Avatar className="h-8 w-8">
-            <AvatarImage src={undefined} />
             <AvatarFallback className="text-sm bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold">
               {getUserInitials(userInfo?.name)}
             </AvatarFallback>
           </Avatar>
           <div className="hidden md:flex flex-col items-start">
-            <span className="text-sm font-medium">{userInfo?.name}</span>
-            <span className="text-xs text-muted-foreground">{activeContext?.user.role || userInfo?.role}</span>
+            <span className="text-sm font-medium">{userInfo?.name || "User"}</span>
           </div>
           <ChevronDown className="h-4 w-4 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[280px]">
-        {/* User Info */}
-        <DropdownMenuLabel className="pb-2">
-          <div className="flex flex-col">
-            <p className="font-medium">{userInfo?.name}</p>
-            <p className="text-xs text-muted-foreground font-normal">{userInfo?.email}</p>
-          </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        
-        {/* Go Home */}
-        <Link href="/">
-          <DropdownMenuItem className="cursor-pointer" data-testid="menu-item-go-home">
-            <Home className="h-4 w-4 mr-2" />
-            Go Home
-          </DropdownMenuItem>
-        </Link>
-        
-        {/* Panel Switcher - My Panel, Org Panel, Hub Admins, Engine Admin */}
-        {contexts.map((context, index) => (
-          <DropdownMenuItem
-            key={index}
-            onClick={() => handlePanelSwitch(context.path)}
-            className={`flex items-center gap-2 cursor-pointer ${
-              context.active ? 'bg-purple-50 dark:bg-purple-950/30' : ''
-            }`}
-            data-testid={`menu-item-${context.hubKey || context.type}`}
-          >
-            {getIcon(context.icon, context.active)}
-            <div className="flex-1">
-              <p className="font-medium text-sm">{context.name}</p>
-              <p className="text-xs text-muted-foreground">{context.user.role}</p>
-            </div>
-            {context.active && (
-              <CheckCircle2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-            )}
-          </DropdownMenuItem>
-        ))}
-
-        {/* My Account */}
-        <Link href="/account">
-          <DropdownMenuItem className="cursor-pointer" data-testid="menu-item-my-account">
-            <UserCircle className="h-4 w-4 mr-2" />
-            My Account
-          </DropdownMenuItem>
-        </Link>
-
-        <DropdownMenuSeparator />
-
-        {/* Logout */}
-        <DropdownMenuItem
-          onClick={() => logoutMutation.mutate()}
-          disabled={logoutMutation.isPending}
-          className="text-red-600 focus:text-red-700 focus:bg-red-50 dark:focus:bg-red-950/30 cursor-pointer"
-          data-testid="menu-item-logout"
-        >
-          <LogOut className="h-4 w-4 mr-2" />
-          Logout
-        </DropdownMenuItem>
+      <DropdownMenuContent align="end" className="w-56">
+        <div className="px-2 py-2 border-b mb-1">
+          <p className="font-medium text-sm">{userInfo?.name || "User"}</p>
+          <p className="text-xs text-muted-foreground">{userInfo?.email}</p>
+        </div>
+        {menuItems}
       </DropdownMenuContent>
     </DropdownMenu>
   );
