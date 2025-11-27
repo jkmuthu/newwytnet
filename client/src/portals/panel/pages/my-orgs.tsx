@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import CreateOrganizationDialog from "@/components/organizations/CreateOrganizationDialog";
 import { 
   Building2, 
   Users, 
@@ -13,7 +14,11 @@ import {
   ExternalLink,
   Crown,
   UserCheck,
-  Briefcase
+  Briefcase,
+  Edit,
+  MapPin,
+  Mail,
+  Globe
 } from "lucide-react";
 
 interface Organization {
@@ -25,10 +30,18 @@ interface Organization {
   memberCount?: number;
   role?: string;
   status?: string;
+  orgType?: string;
+  businessTypes?: string[];
+  email?: string;
+  website?: string;
+  location?: string;
+  locationDetails?: any;
 }
 
 export default function MyOrgs() {
   const [activeTab, setActiveTab] = useState("owner");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [editingOrg, setEditingOrg] = useState<Organization | null>(null);
 
   const { data: orgsData, isLoading } = useQuery({
     queryKey: ['/api/user/organizations'],
@@ -38,16 +51,28 @@ export default function MyOrgs() {
   const ownerOrgs = allOrgs.filter(org => org.role === 'owner' || org.role === 'admin');
   const assignedOrgs = allOrgs.filter(org => org.role !== 'owner' && org.role !== 'admin');
 
+  const handleEditOrg = (org: Organization) => {
+    setEditingOrg(org);
+    setShowCreateDialog(true);
+  };
+
+  const handleDialogClose = (open: boolean) => {
+    setShowCreateDialog(open);
+    if (!open) {
+      setEditingOrg(null);
+    }
+  };
+
   const OrgCard = ({ org, isOwner }: { org: Organization; isOwner: boolean }) => (
     <Card className="hover:shadow-lg transition-shadow" data-testid={`card-org-${org.slug}`}>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center text-white shadow-md">
+            <div className="h-14 w-14 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center text-white shadow-md">
               {org.logo ? (
-                <img src={org.logo} alt={org.name} className="h-8 w-8 rounded" />
+                <img src={org.logo} alt={org.name} className="h-10 w-10 rounded-lg object-cover" />
               ) : (
-                <Building2 className="h-6 w-6" />
+                <Building2 className="h-7 w-7" />
               )}
             </div>
             <div>
@@ -55,23 +80,80 @@ export default function MyOrgs() {
               <CardDescription className="text-sm">@{org.slug}</CardDescription>
             </div>
           </div>
-          <Badge variant={isOwner ? "default" : "secondary"} className="flex items-center gap-1">
-            {isOwner ? <Crown className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
-            {org.role || (isOwner ? 'Owner' : 'Member')}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {isOwner && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8"
+                onClick={() => handleEditOrg(org)}
+                data-testid={`button-edit-${org.slug}`}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            <Badge variant={isOwner ? "default" : "secondary"} className="flex items-center gap-1">
+              {isOwner ? <Crown className="h-3 w-3" /> : <UserCheck className="h-3 w-3" />}
+              {org.role || (isOwner ? 'Owner' : 'Member')}
+            </Badge>
+          </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         {org.description && (
-          <p className="text-sm text-muted-foreground mb-4">{org.description}</p>
+          <p className="text-sm text-muted-foreground">{org.description}</p>
         )}
-        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+        
+        {/* Organization Details */}
+        <div className="space-y-2">
+          {org.orgType && (
+            <div className="flex items-center gap-2">
+              <Badge variant="outline">{org.orgType}</Badge>
+            </div>
+          )}
+          
+          {org.businessTypes && org.businessTypes.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {org.businessTypes.map((type: string) => (
+                <Badge key={type} variant="secondary" className="text-xs">
+                  {type}
+                </Badge>
+              ))}
+            </div>
+          )}
+          
+          {org.location && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5" />
+              <span>{org.location}</span>
+            </div>
+          )}
+          
+          {org.email && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Mail className="h-3.5 w-3.5" />
+              <span>{org.email}</span>
+            </div>
+          )}
+          
+          {org.website && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Globe className="h-3.5 w-3.5" />
+              <a href={org.website} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                {org.website.replace(/^https?:\/\//, '')}
+              </a>
+            </div>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-4 text-sm text-muted-foreground pt-2 border-t">
           <div className="flex items-center gap-1">
             <Users className="h-4 w-4" />
             <span>{org.memberCount || 1} members</span>
           </div>
-          <Badge variant="outline">{org.status || 'Active'}</Badge>
+          <Badge variant="outline" className="capitalize">{org.status || 'Active'}</Badge>
         </div>
+        
         <div className="flex gap-2">
           <Link href={`/o/${org.slug}`} className="flex-1">
             <Button className="w-full" variant="default" data-testid={`button-open-${org.slug}`}>
@@ -98,7 +180,13 @@ export default function MyOrgs() {
           <Icon className="h-8 w-8 text-gray-400" />
         </div>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{title}</h3>
-        <p className="text-gray-600 dark:text-gray-300 text-center max-w-md">{description}</p>
+        <p className="text-gray-600 dark:text-gray-300 text-center max-w-md mb-4">{description}</p>
+        {Icon === Crown && (
+          <Button onClick={() => setShowCreateDialog(true)} data-testid="button-create-org-empty">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Organization
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
@@ -112,7 +200,7 @@ export default function MyOrgs() {
             Manage organizations you own or belong to
           </p>
         </div>
-        <Button data-testid="button-create-org">
+        <Button onClick={() => setShowCreateDialog(true)} data-testid="button-create-org">
           <Plus className="h-4 w-4 mr-2" />
           Create Organization
         </Button>
@@ -137,13 +225,16 @@ export default function MyOrgs() {
                 <Card key={i} className="animate-pulse">
                   <CardHeader>
                     <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+                      <div className="h-14 w-14 bg-gray-200 dark:bg-gray-700 rounded-xl" />
                       <div>
                         <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
                         <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded mt-1" />
                       </div>
                     </div>
                   </CardHeader>
+                  <CardContent>
+                    <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded" />
+                  </CardContent>
                 </Card>
               ))}
             </div>
@@ -169,13 +260,16 @@ export default function MyOrgs() {
                 <Card key={i} className="animate-pulse">
                   <CardHeader>
                     <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded-xl" />
+                      <div className="h-14 w-14 bg-gray-200 dark:bg-gray-700 rounded-xl" />
                       <div>
                         <div className="h-5 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
                         <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded mt-1" />
                       </div>
                     </div>
                   </CardHeader>
+                  <CardContent>
+                    <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded" />
+                  </CardContent>
                 </Card>
               ))}
             </div>
@@ -194,6 +288,13 @@ export default function MyOrgs() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Create/Edit Organization Dialog */}
+      <CreateOrganizationDialog 
+        open={showCreateDialog}
+        onOpenChange={handleDialogClose}
+        editingOrg={editingOrg}
+      />
     </div>
   );
 }

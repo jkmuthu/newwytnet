@@ -10597,6 +10597,77 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // ========================================
+  // MAPPLS LOCATION API
+  // ========================================
+  
+  // Mappls location search API
+  app.get('/api/mappls/search', async (req, res) => {
+    try {
+      const { q } = req.query;
+      
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ error: 'Query parameter q is required' });
+      }
+      
+      const MAPPLS_API_KEY = process.env.MAPPLS_API_KEY;
+      if (!MAPPLS_API_KEY) {
+        // Return mock data if API key not configured
+        return res.json({
+          suggestedLocations: [
+            {
+              eLoc: 'mock_1',
+              placeName: q,
+              placeAddress: `${q}, India`,
+              type: 'CITY',
+            }
+          ]
+        });
+      }
+      
+      // Call Mappls Atlas API for place search
+      const response = await fetch(
+        `https://atlas.mappls.com/api/places/search/json?query=${encodeURIComponent(q)}&region=IND`,
+        {
+          headers: {
+            'Authorization': `Bearer ${MAPPLS_API_KEY}`,
+          },
+        }
+      );
+      
+      if (!response.ok) {
+        // Fallback: return the search query as a suggestion
+        return res.json({
+          suggestedLocations: [
+            {
+              eLoc: 'fallback_1',
+              placeName: q,
+              placeAddress: q,
+              type: 'CUSTOM',
+            }
+          ]
+        });
+      }
+      
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error('Mappls search error:', error);
+      // Return the query as a fallback
+      const { q } = req.query;
+      res.json({
+        suggestedLocations: [
+          {
+            eLoc: 'error_fallback',
+            placeName: q || 'Unknown',
+            placeAddress: q || 'Unknown location',
+            type: 'CUSTOM',
+          }
+        ]
+      });
+    }
+  });
+
   // Serve presentations for download
   app.get('/docs/presentations/:filename', async (req, res) => {
     try {
