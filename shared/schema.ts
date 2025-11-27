@@ -2795,12 +2795,15 @@ export const organizations = pgTable("organizations", {
   description: text("description"),
   logo: varchar("logo", { length: 500 }),
   status: varchar("status", { length: 20 }).default('active'),
+  orgType: varchar("org_type", { length: 50 }), // Proprietorship, Partnership, LLP, Pvt Ltd, Public Ltd, Trust / NGO
+  businessTypes: jsonb("business_types").default([]), // Array: Manufacturer, Retail Outlet, Merchant / Trader, Exporter, Service Provider
   industry: varchar("industry", { length: 100 }),
   employees: integer("employees"),
   website: varchar("website", { length: 500 }),
   email: varchar("email", { length: 255 }),
   phone: varchar("phone", { length: 50 }),
   location: varchar("location", { length: 255 }),
+  locationDetails: jsonb("location_details").default({}), // Mappls location data: lat, lng, address, placeId, etc.
   settings: jsonb("settings").default({}),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
