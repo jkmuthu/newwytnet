@@ -1505,7 +1505,7 @@ function OrgPanelSettings() {
   
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest('PUT', `/api/user/organizations/${organization?.id}`, data);
+      const response = await apiRequest(`/api/user/organizations/${organization?.id}`, 'PUT', data);
       return response;
     },
     onSuccess: () => {

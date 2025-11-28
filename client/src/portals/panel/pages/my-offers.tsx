@@ -118,7 +118,7 @@ export default function MyOffers() {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data: OfferFormData) => {
-      return apiRequest("POST", "/api/offers", data);
+      return apiRequest("/api/offers", "POST", data);
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/offers/my-offers"] });
@@ -143,7 +143,7 @@ export default function MyOffers() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<OfferFormData> }) => {
-      return apiRequest("PUT", `/api/offers/${id}`, data);
+      return apiRequest(`/api/offers/${id}`, "PUT", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/offers/my-offers"] });
@@ -166,7 +166,7 @@ export default function MyOffers() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest("DELETE", `/api/offers/${id}`);
+      return apiRequest(`/api/offers/${id}`, "DELETE");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/offers/my-offers"] });

@@ -321,7 +321,7 @@ function ObjectRow({ object, objectTypes }: { object: ObjectItem; objectTypes: O
   const objectType = objectTypes.find(t => t.id === object.entityTypeId);
 
   const deleteMutation = useMutation({
-    mutationFn: () => apiRequest("DELETE", `/api/entities/${object.id}`),
+    mutationFn: () => apiRequest(`/api/entities/${object.id}`, "DELETE"),
     onSuccess: () => {
       toast({ title: "Object deleted successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
@@ -545,9 +545,9 @@ function ObjectForm({
   const saveMutation = useMutation({
     mutationFn: (data: any) => {
       if (isEdit) {
-        return apiRequest("PUT", `/api/entities/${object.id}`, data);
+        return apiRequest(`/api/entities/${object.id}`, "PUT", data);
       }
-      return apiRequest("POST", "/api/entities", data);
+      return apiRequest("/api/entities", "POST", data);
     },
     onSuccess: () => {
       toast({ title: `Object ${isEdit ? 'updated' : 'created'} successfully` });

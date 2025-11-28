@@ -99,7 +99,7 @@ export default function ModuleBuilder({ editingModule }: { editingModule?: any }
 
   const validateMutation = useMutation({
     mutationFn: async (dslData: string) => {
-      return await apiRequest("POST", "/api/dsl/validate", { dsl: dslData });
+      return await apiRequest("/api/dsl/validate", "POST", { dsl: dslData });
     },
     onSuccess: () => {
       toast({
@@ -118,7 +118,7 @@ export default function ModuleBuilder({ editingModule }: { editingModule?: any }
 
   const createModelMutation = useMutation({
     mutationFn: async (modelData: any) => {
-      return await apiRequest("POST", "/api/models", modelData);
+      return await apiRequest("/api/models", "POST", modelData);
     },
     onSuccess: () => {
       toast({
@@ -138,7 +138,7 @@ export default function ModuleBuilder({ editingModule }: { editingModule?: any }
 
   const generateMutation = useMutation({
     mutationFn: async (modelId: string) => {
-      return await apiRequest("POST", "/api/generate/model", { modelId });
+      return await apiRequest("/api/generate/model", "POST", { modelId });
     },
     onSuccess: () => {
       toast({

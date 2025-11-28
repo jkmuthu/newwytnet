@@ -35,7 +35,7 @@ export default function AppBuilder() {
 
   const createAppMutation = useMutation({
     mutationFn: async (appData: any) => {
-      return await apiRequest("POST", "/api/apps", appData);
+      return await apiRequest("/api/apps", "POST", appData);
     },
     onSuccess: () => {
       toast({

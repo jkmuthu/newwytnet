@@ -55,7 +55,7 @@ export default function AdminTenants() {
 
   const restoreOrgMutation = useMutation({
     mutationFn: async (orgId: string) => {
-      return await apiRequest('POST', `/api/admin/trash/tenants/${orgId}/restore`);
+      return await apiRequest(`/api/admin/trash/tenants/${orgId}/restore`, 'POST');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/trash/tenants'] });
@@ -69,7 +69,7 @@ export default function AdminTenants() {
 
   const permanentlyDeleteOrgMutation = useMutation({
     mutationFn: async (orgId: string) => {
-      return await apiRequest('DELETE', `/api/admin/trash/tenants/${orgId}/permanent`);
+      return await apiRequest(`/api/admin/trash/tenants/${orgId}/permanent`, 'DELETE');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/trash/tenants'] });

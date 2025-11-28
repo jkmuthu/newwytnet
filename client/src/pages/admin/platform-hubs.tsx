@@ -125,7 +125,7 @@ export default function AdminPlatformHubs() {
 
   const restoreHubMutation = useMutation({
     mutationFn: async (hubId: string) => {
-      return await apiRequest('POST', `/api/admin/trash/hubs/${hubId}/restore`);
+      return await apiRequest(`/api/admin/trash/hubs/${hubId}/restore`, 'POST');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/trash/hubs'] });
@@ -139,7 +139,7 @@ export default function AdminPlatformHubs() {
 
   const permanentlyDeleteHubMutation = useMutation({
     mutationFn: async (hubId: string) => {
-      return await apiRequest('DELETE', `/api/admin/trash/hubs/${hubId}/permanent`);
+      return await apiRequest(`/api/admin/trash/hubs/${hubId}/permanent`, 'DELETE');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/trash/hubs'] });

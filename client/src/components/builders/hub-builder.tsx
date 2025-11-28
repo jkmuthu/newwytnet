@@ -41,7 +41,7 @@ export default function HubBuilder() {
 
   const createHubMutation = useMutation({
     mutationFn: async (hubData: any) => {
-      return await apiRequest("POST", "/api/hubs", hubData);
+      return await apiRequest("/api/hubs", "POST", hubData);
     },
     onSuccess: () => {
       toast({

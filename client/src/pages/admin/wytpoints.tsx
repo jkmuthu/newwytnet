@@ -74,7 +74,7 @@ export default function AdminWytPoints() {
   // Adjust balance mutation
   const adjustBalanceMutation = useMutation({
     mutationFn: async (data: AdjustBalanceForm) => {
-      return apiRequest('POST', '/api/admin/points/adjust', data);
+      return apiRequest('/api/admin/points/adjust', 'POST', data);
     },
     onSuccess: () => {
       toast({
@@ -99,7 +99,7 @@ export default function AdminWytPoints() {
   // Update points configuration mutation
   const updateConfigMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: ConfigForm }) => {
-      return apiRequest('PUT', `/api/admin/points/config/${id}`, data);
+      return apiRequest(`/api/admin/points/config/${id}`, 'PUT', data);
     },
     onSuccess: () => {
       toast({

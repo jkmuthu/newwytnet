@@ -66,7 +66,7 @@ function SettingsContent() {
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: Partial<AuthSettings>) => {
-      return await apiRequest('PUT', '/api/admin/settings/authentication', data);
+      return await apiRequest('/api/admin/settings/authentication', 'PUT', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/settings/authentication'] });
@@ -308,7 +308,7 @@ export default function AdminUsersImproved() {
 
   const restoreUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      return await apiRequest('POST', `/api/admin/trash/users/${userId}/restore`);
+      return await apiRequest(`/api/admin/trash/users/${userId}/restore`, 'POST');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/trash/users'] });
@@ -322,7 +322,7 @@ export default function AdminUsersImproved() {
 
   const permanentlyDeleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      return await apiRequest('DELETE', `/api/admin/trash/users/${userId}/permanent`);
+      return await apiRequest(`/api/admin/trash/users/${userId}/permanent`, 'DELETE');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/trash/users'] });
@@ -337,7 +337,7 @@ export default function AdminUsersImproved() {
   // Create user mutation
   const createUserMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await apiRequest('POST', '/api/admin/users/create', data);
+      return await apiRequest('/api/admin/users/create', 'POST', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/users'] });

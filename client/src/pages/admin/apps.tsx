@@ -146,7 +146,7 @@ export default function AdminApps() {
 
   const restoreAppMutation = useMutation({
     mutationFn: async (appId: string) => {
-      return await apiRequest('POST', `/api/admin/trash/apps/${appId}/restore`);
+      return await apiRequest(`/api/admin/trash/apps/${appId}/restore`, 'POST');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/trash/apps'] });
@@ -160,7 +160,7 @@ export default function AdminApps() {
 
   const permanentlyDeleteAppMutation = useMutation({
     mutationFn: async (appId: string) => {
-      return await apiRequest('DELETE', `/api/admin/trash/apps/${appId}/permanent`);
+      return await apiRequest(`/api/admin/trash/apps/${appId}/permanent`, 'DELETE');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/trash/apps'] });
