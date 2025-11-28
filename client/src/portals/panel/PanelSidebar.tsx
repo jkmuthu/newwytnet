@@ -192,12 +192,6 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               active: location === `/o/${orgnameFromUrl}` || location === `/o/${orgnameFromUrl}/dashboard`
             },
             { 
-              label: "Our WytWall", 
-              icon: MessageSquare, 
-              href: `/o/${orgnameFromUrl}/wytwall`, 
-              active: location === `/o/${orgnameFromUrl}/wytwall` || location === `/o/${orgnameFromUrl}/posts`
-            },
-            { 
               label: "Our WytApps", 
               icon: Package, 
               href: `/o/${orgnameFromUrl}/wytapps`, 

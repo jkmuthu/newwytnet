@@ -23,6 +23,7 @@ import WytAppWorkspace from "./pages/wytapp-workspace";
 import MyAccount from "./pages/my-account";
 import MyProfile from "./pages/my-profile";
 import MyOrgsPage from "./pages/my-orgs";
+import { Link } from "wouter";
 import { 
   LayoutDashboard, 
   Zap, 
@@ -30,6 +31,7 @@ import {
   Wallet, 
   Settings, 
   User, 
+  Users,
   Activity,
   TrendingUp,
   Clock,
@@ -47,7 +49,9 @@ import {
   Briefcase,
   Calendar,
   Package,
-  Plus
+  Plus,
+  Building,
+  FileText
 } from "lucide-react";
 
 // My Dash - Comprehensive Dashboard
@@ -1466,26 +1470,189 @@ function MyPanelProjects() {
 }
 
 function OrgPanelDashboard() {
-  return (
-    <div className="p-6">
-      <Card>
-        <CardContent className="py-12">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Briefcase className="h-8 w-8 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Organization Dashboard
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
-              Manage your organization's workspace, projects, and team members from one centralized dashboard.
-            </p>
-            <Button className="mt-6">
-              Get Started
-            </Button>
+  const orgname = window.location.pathname.split('/o/')[1]?.split('/')[0] || '';
+  
+  const { data: orgsData, isLoading } = useQuery({
+    queryKey: ['/api/user/organizations'],
+  });
+  
+  const organization = (orgsData as any)?.organizations?.find(
+    (org: any) => org.slug === orgname || org.name.toLowerCase().replace(/\s+/g, '-') === orgname
+  );
+
+  const { data: membersData } = useQuery({
+    queryKey: ['/api/user/organizations', organization?.id, 'members'],
+    queryFn: async () => {
+      if (!organization?.id) return { members: [] };
+      const res = await fetch(`/api/user/organizations/${organization.id}/members`);
+      return res.json();
+    },
+    enabled: !!organization?.id,
+  });
+
+  const teamCount = (membersData as any)?.members?.length || 0;
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="animate-pulse space-y-4">
+          <div className="h-24 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-24 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>
+            ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (!organization) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Organization Not Found</h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              The organization "{orgname}" could not be found.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const stats = [
+    {
+      title: "Team Members",
+      value: teamCount,
+      icon: Users,
+      color: "text-blue-600",
+      bgColor: "bg-blue-100 dark:bg-blue-900/30",
+    },
+    {
+      title: "Apps Installed",
+      value: 0,
+      icon: Package,
+      color: "text-green-600",
+      bgColor: "bg-green-100 dark:bg-green-900/30",
+    },
+    {
+      title: "Active Projects",
+      value: 0,
+      icon: Briefcase,
+      color: "text-purple-600",
+      bgColor: "bg-purple-100 dark:bg-purple-900/30",
+    },
+    {
+      title: "Status",
+      value: organization.status === 'active' ? 'Active' : 'Pending',
+      icon: Shield,
+      color: organization.status === 'active' ? "text-green-600" : "text-yellow-600",
+      bgColor: organization.status === 'active' ? "bg-green-100 dark:bg-green-900/30" : "bg-yellow-100 dark:bg-yellow-900/30",
+      isText: true,
+    },
+  ];
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
+        <div className="flex items-center gap-4">
+          <div className="h-14 w-14 bg-white/20 rounded-lg flex items-center justify-center">
+            <Building className="h-7 w-7" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">{organization.name}</h1>
+            <p className="text-white/80">{organization.description || 'Manage your organization workspace'}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {stats.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={index} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                      {stat.title}
+                    </p>
+                    <p className="text-2xl font-bold mt-1" data-testid={`stat-${stat.title.toLowerCase().replace(' ', '-')}`}>
+                      {stat.isText ? stat.value : (stat.value as number).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                    <Icon className={`h-5 w-5 ${stat.color}`} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-yellow-500" />
+              Quick Actions
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Link href={`/o/${orgname}/team`}>
+              <Button variant="outline" className="w-full justify-start">
+                <Users className="h-4 w-4 mr-2" />
+                Manage Team Members
+              </Button>
+            </Link>
+            <Link href={`/o/${orgname}/wytapps`}>
+              <Button variant="outline" className="w-full justify-start">
+                <Package className="h-4 w-4 mr-2" />
+                Browse Apps
+              </Button>
+            </Link>
+            <Link href={`/o/${orgname}/profile`}>
+              <Button variant="outline" className="w-full justify-start">
+                <Settings className="h-4 w-4 mr-2" />
+                Organization Settings
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-blue-500" />
+              Organization Info
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500 dark:text-gray-400">Type</span>
+              <span className="font-medium">{organization.orgType || 'Not set'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500 dark:text-gray-400">Location</span>
+              <span className="font-medium">{organization.location || 'Not set'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500 dark:text-gray-400">Email</span>
+              <span className="font-medium">{organization.email || 'Not set'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500 dark:text-gray-400">Visibility</span>
+              <span className={`font-medium ${organization.isPublic ? 'text-green-600' : 'text-gray-600'}`}>
+                {organization.isPublic ? 'Public' : 'Private'}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -2358,8 +2525,6 @@ export default function PanelRouter() {
       {/* Organization Panel routes - /o/:orgname/* */}
       <Route path="/o/:orgname" component={OrgPanelDashboard} />
       <Route path="/o/:orgname/dashboard" component={OrgPanelDashboard} />
-      <Route path="/o/:orgname/wytwall" component={OrgPanelWytWall} />
-      <Route path="/o/:orgname/posts" component={OrgPanelWytWall} />
       <Route path="/o/:orgname/wytapps" component={MyPanelWytApps} />
       <Route path="/o/:orgname/team" component={OrgPanelMembers} />
       <Route path="/o/:orgname/settings" component={OrgPanelSettings} />
