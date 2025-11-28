@@ -1,5 +1,7 @@
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Menu, ChevronLeft, ChevronRight } from "lucide-react";
+import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/ui/navigation-menu";
 import type { WorkspaceContext } from "./PanelLayout";
 import { HeaderLeftSection, HeaderRightSection } from "@/components/universal/UniversalAuthHeader";
 
@@ -11,8 +13,8 @@ interface PanelHeaderProps {
 }
 
 /**
- * PanelHeader - Clean unified header for user panels
- * Layout: [Left: Theme + Home + Logo] [Right: Notifications + User + Sidebar Toggle]
+ * PanelHeader - Unified header for user panels
+ * Layout: [Left: Theme + Home + Logo] [Center: Nav Menus] [Right: Notifications + User + Sidebar Toggle]
  */
 export default function PanelHeader({ 
   onToggleSidebar,
@@ -20,10 +22,47 @@ export default function PanelHeader({
 }: PanelHeaderProps) {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-      <div className="px-3 sm:px-6">
+      <div className="px-3 sm:px-4 lg:px-6">
         <div className="flex h-14 sm:h-16 items-center justify-between gap-2 sm:gap-4">
           {/* Left: Theme Toggle + Home + Logo */}
           <HeaderLeftSection context="public" />
+
+          {/* Center: Navigation Menus (Hidden on mobile) */}
+          <NavigationMenu className="hidden md:flex flex-1 justify-center">
+            <NavigationMenuList className="gap-0.5 lg:gap-1">
+              <NavigationMenuItem>
+                <NavigationMenuLink asChild>
+                  <Link href="/" className="inline-flex h-9 items-center justify-center rounded-md bg-transparent px-2.5 lg:px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:text-blue-600 dark:hover:text-blue-400">
+                    WytWall
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+
+              <NavigationMenuItem>
+                <NavigationMenuLink asChild>
+                  <Link href="/wytapps" className="inline-flex h-9 items-center justify-center rounded-md bg-transparent px-2.5 lg:px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:text-blue-600 dark:hover:text-blue-400">
+                    WytApps
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+
+              <NavigationMenuItem>
+                <NavigationMenuLink asChild>
+                  <Link href="/wythubs" className="inline-flex h-9 items-center justify-center rounded-md bg-transparent px-2.5 lg:px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:text-blue-600 dark:hover:text-blue-400">
+                    WytHubs
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+
+              <NavigationMenuItem>
+                <NavigationMenuLink asChild>
+                  <Link href="/wytlife" className="inline-flex h-9 items-center justify-center rounded-md bg-transparent px-2.5 lg:px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 transition-all duration-200 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-800 dark:hover:to-gray-700 hover:text-blue-600 dark:hover:text-blue-400">
+                    WytLife
+                  </Link>
+                </NavigationMenuLink>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
 
           {/* Right: Notifications + User Menu + Sidebar Toggle */}
           <div className="flex items-center gap-1 sm:gap-2">
