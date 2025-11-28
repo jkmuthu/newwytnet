@@ -53,7 +53,7 @@ interface UniversalAuthHeaderProps {
   showHomeButton?: boolean;
   showLogo?: boolean;
   showNotifications?: boolean;
-  context?: 'public' | 'panel' | 'engine';
+  context?: 'public' | 'engine' | 'hub';
 }
 
 /**
@@ -66,7 +66,7 @@ export default function UniversalAuthHeader({
   showHomeButton = true,
   showLogo = true,
   showNotifications = true,
-  context = 'panel'
+  context = 'public'
 }: UniversalAuthHeaderProps) {
   const { isMobile } = useDeviceDetection();
   const [location, setLocation] = useLocation();
