@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Menu } from "lucide-react";
-import UniversalAuthHeader from "@/components/universal/UniversalAuthHeader";
+import { Menu, ChevronLeft, ChevronRight } from "lucide-react";
+import { HeaderLeftSection, HeaderRightSection } from "@/components/universal/UniversalAuthHeader";
 
 interface AdminHeaderProps {
   onToggleSidebar: () => void;
@@ -9,8 +9,7 @@ interface AdminHeaderProps {
 
 /**
  * AdminHeader - Header for Engine admin portal
- * Uses UniversalAuthHeader for consistent layout across all panels
- * Layout: [Theme Toggle] [Home Icon] [Logo] [Notifications] [User Menu] | [System Status] | [Sidebar Toggle]
+ * Layout: [Left: Theme + Home + Logo] [Center: System Status] [Right: Notifications + User + Sidebar Toggle]
  */
 export default function AdminHeader({ 
   onToggleSidebar,
@@ -18,34 +17,14 @@ export default function AdminHeader({
 }: AdminHeaderProps) {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-red-200 dark:border-red-800 bg-white dark:bg-gray-900 shadow-sm">
-      <div className="px-6">
-        <div className="flex h-16 items-center justify-between">
-          {/* Left section - Unified Auth Header + Sidebar Toggle */}
-          <div className="flex items-center space-x-3">
-            {/* Sidebar Toggle (Mobile) */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onToggleSidebar}
-              className="lg:hidden h-9 w-9 p-0"
-              data-testid="toggle-admin-sidebar"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
+      <div className="px-4 sm:px-6">
+        <div className="flex h-14 sm:h-16 items-center justify-between gap-2 sm:gap-4">
+          {/* Left: Theme Toggle + Home + Logo */}
+          <HeaderLeftSection context="engine" />
 
-            {/* Unified Auth Header with all controls */}
-            <UniversalAuthHeader 
-              showThemeToggle={true}
-              showHomeButton={true}
-              showLogo={true}
-              showNotifications={true}
-              context="engine"
-            />
-          </div>
-
-          {/* Center section - System status indicator */}
-          <div className="hidden md:flex items-center space-x-2">
-            <div className="flex items-center space-x-1 px-3 py-1 bg-green-50 dark:bg-green-950 rounded-full">
+          {/* Center: System status indicator */}
+          <div className="hidden md:flex items-center">
+            <div className="flex items-center gap-1 px-3 py-1 bg-green-50 dark:bg-green-950 rounded-full">
               <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
               <span className="text-xs font-medium text-green-700 dark:text-green-300">
                 System Online
@@ -53,8 +32,36 @@ export default function AdminHeader({
             </div>
           </div>
 
-          {/* Right section - Empty (all controls are in UniversalAuthHeader now) */}
-          <div className="hidden md:block" />
+          {/* Right: Notifications + User Menu + Sidebar Toggle */}
+          <div className="flex items-center gap-1 sm:gap-2">
+            <HeaderRightSection />
+            
+            {/* Sidebar Collapse Toggle (Desktop only) */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggleSidebar}
+              className="hidden lg:flex h-9 w-9 p-0"
+              data-testid="toggle-collapse"
+            >
+              {sidebarCollapsed ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronLeft className="h-4 w-4" />
+              )}
+            </Button>
+
+            {/* Mobile Menu Toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggleSidebar}
+              className="lg:hidden h-9 w-9 p-0"
+              data-testid="toggle-admin-sidebar"
+            >
+              <Menu className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </header>

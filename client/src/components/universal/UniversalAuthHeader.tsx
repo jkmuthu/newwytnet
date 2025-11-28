@@ -22,8 +22,7 @@ import {
   LayoutDashboard,
   Shield,
   Sun,
-  Moon,
-  Bell
+  Moon
 } from "lucide-react";
 import { useDeviceDetection } from "@/hooks/useDeviceDetection";
 import NotificationBell from "@/components/notifications/NotificationBell";
@@ -48,33 +47,19 @@ interface ContextsResponse {
   count: number;
 }
 
-interface UniversalAuthHeaderProps {
-  showThemeToggle?: boolean;
-  showHomeButton?: boolean;
-  showLogo?: boolean;
-  showNotifications?: boolean;
-  context?: 'public' | 'engine' | 'hub';
-}
-
 /**
  * UniversalAuthHeader - Unified header component for all panels
- * Layout: [Theme Toggle] [Home Icon] [Logo] [Menus] [Notifications] [User Avatar + Dropdown]
- * Dropdown: WytPanel, My Account, WytEngine (admin only), Logout
+ * Returns left-side elements and right-side elements separately for flexible layout
  */
-export default function UniversalAuthHeader({
-  showThemeToggle = true,
-  showHomeButton = true,
-  showLogo = true,
-  showNotifications = true,
-  context = 'public'
-}: UniversalAuthHeaderProps) {
-  const { isMobile } = useDeviceDetection();
-  const [location, setLocation] = useLocation();
-  const { toast } = useToast();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+// Left side components: Theme Toggle + Home Icon + Logo
+export function HeaderLeftSection({ 
+  context = 'public' 
+}: { 
+  context?: 'public' | 'engine' | 'hub' 
+}) {
   const [isDark, setIsDark] = useState(false);
 
-  // Initialize theme from localStorage
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
     const shouldBeDark = savedTheme === 'dark';
@@ -82,13 +67,56 @@ export default function UniversalAuthHeader({
     document.documentElement.classList.toggle('dark', shouldBeDark);
   }, []);
 
-  // Toggle theme function
   const toggleTheme = () => {
     const newTheme = !isDark;
     setIsDark(newTheme);
     document.documentElement.classList.toggle('dark', newTheme);
     localStorage.setItem('theme', newTheme ? 'dark' : 'light');
   };
+
+  return (
+    <div className="flex items-center gap-1 sm:gap-2">
+      {/* Theme Toggle */}
+      <Button
+        onClick={toggleTheme}
+        variant="ghost"
+        size="sm"
+        className="h-9 w-9 p-0 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+        data-testid="button-theme-toggle"
+        aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+      >
+        {isDark ? (
+          <Sun className="h-5 w-5 text-yellow-500" />
+        ) : (
+          <Moon className="h-5 w-5 text-slate-600" />
+        )}
+      </Button>
+
+      {/* Home Icon */}
+      <Link href="/">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-9 w-9 p-0 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+          data-testid="button-home"
+          aria-label="Go to home page"
+        >
+          <Home className="h-5 w-5" />
+        </Button>
+      </Link>
+
+      {/* Logo */}
+      <ContextAwareLogo context={context} className="h-8 w-auto ml-1" href="/" />
+    </div>
+  );
+}
+
+// Right side components: Notifications + User Dropdown
+export function HeaderRightSection() {
+  const { isMobile } = useDeviceDetection();
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const { data: contextsData } = useQuery<ContextsResponse>({
     queryKey: ["/api/auth/contexts"],
@@ -149,48 +177,10 @@ export default function UniversalAuthHeader({
       .slice(0, 2);
   };
 
-  // Theme toggle button component
-  const ThemeToggleButton = () => (
-    <Button
-      onClick={toggleTheme}
-      variant="ghost"
-      size="sm"
-      className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 h-9 w-9 p-0"
-      data-testid="button-theme-toggle"
-      aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
-    >
-      {isDark ? (
-        <Sun className="h-5 w-5 text-yellow-500" />
-      ) : (
-        <Moon className="h-5 w-5 text-slate-600" />
-      )}
-    </Button>
-  );
-
-  // Home button component
-  const HomeButton = () => (
-    <Link href="/">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 h-9 w-9 p-0"
-        data-testid="button-home"
-        aria-label="Go to home page"
-      >
-        <Home className="h-5 w-5" />
-      </Button>
-    </Link>
-  );
-
-  // If not authenticated, show login button
+  // Not authenticated - show login button
   if (!hasAuth) {
     return (
       <div className="flex items-center gap-2">
-        {showThemeToggle && <ThemeToggleButton />}
-        {showHomeButton && <HomeButton />}
-        {showLogo && (
-          <ContextAwareLogo context={context} className="h-8 w-auto mx-2" href="/" />
-        )}
         <Link href="/login">
           <Button 
             variant="default" 
@@ -205,7 +195,7 @@ export default function UniversalAuthHeader({
     );
   }
 
-  // Dropdown menu items (without Go Home - we have icon for that)
+  // Dropdown menu items
   const menuItems = (
     <>
       <Link href="/u/me" onClick={() => setIsMenuOpen(false)}>
@@ -252,16 +242,14 @@ export default function UniversalAuthHeader({
   if (isMobile) {
     return (
       <div className="flex items-center gap-1">
-        {showThemeToggle && <ThemeToggleButton />}
-        {showHomeButton && <HomeButton />}
-        {showNotifications && <NotificationBell />}
+        <NotificationBell />
         
         <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <SheetTrigger asChild>
             <Button 
               variant="ghost" 
               size="sm" 
-              className="gap-2 px-2"
+              className="gap-1 px-2"
               data-testid="button-mobile-menu"
             >
               <Avatar className="h-8 w-8">
@@ -346,12 +334,7 @@ export default function UniversalAuthHeader({
   // Desktop view
   return (
     <div className="flex items-center gap-2">
-      {showThemeToggle && <ThemeToggleButton />}
-      {showHomeButton && <HomeButton />}
-      {showLogo && (
-        <ContextAwareLogo context={context} className="h-8 w-auto mx-2" href="/" />
-      )}
-      {showNotifications && <NotificationBell />}
+      <NotificationBell />
       
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -365,7 +348,7 @@ export default function UniversalAuthHeader({
                 {getUserInitials(userInfo?.name)}
               </AvatarFallback>
             </Avatar>
-            <div className="hidden md:flex flex-col items-start">
+            <div className="hidden sm:flex flex-col items-start">
               <span className="text-sm font-medium">{userInfo?.name || "User"}</span>
             </div>
             <ChevronDown className="h-4 w-4 opacity-50" />
@@ -379,6 +362,28 @@ export default function UniversalAuthHeader({
           {menuItems}
         </DropdownMenuContent>
       </DropdownMenu>
+    </div>
+  );
+}
+
+// Default export for backward compatibility - combines both sections
+export default function UniversalAuthHeader({
+  showThemeToggle = true,
+  showHomeButton = true,
+  showLogo = true,
+  showNotifications = true,
+  context = 'public'
+}: {
+  showThemeToggle?: boolean;
+  showHomeButton?: boolean;
+  showLogo?: boolean;
+  showNotifications?: boolean;
+  context?: 'public' | 'engine' | 'hub';
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <HeaderLeftSection context={context} />
+      <HeaderRightSection />
     </div>
   );
 }
