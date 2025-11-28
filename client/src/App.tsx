@@ -16,6 +16,9 @@ import PanelRouter from "@/portals/panel/PanelRouter";
 import EngineRouter from "@/portals/admin/AdminRouter"; // Engine = Super Admin Panel
 import HubAdminRouter from "@/portals/hub-admin/HubAdminRouter"; // Hub Admin = WytNet.com Hub Admin
 
+// Organization Route Handler (handles public vs private org routing)
+import OrgRouteHandler from "@/components/OrgRouteHandler";
+
 // Profile Wizard
 import ProfileWizard from "@/components/ProfileWizard";
 
@@ -62,9 +65,13 @@ function PortalRouter() {
         <Route path="/u/:username" component={PanelRouter} />
         <Route path="/u/:username/:rest*" component={PanelRouter} />
 
-        {/* NEW: Organization Panel - /o/:orgname/* */}
-        <Route path="/o/:orgname" component={PanelRouter} />
-        <Route path="/o/:orgname/:rest*" component={PanelRouter} />
+        {/* NEW: Organization Panel - /o/:orgname/* (smart routing for public/private orgs) */}
+        <Route path="/o/:orgname">
+          {(params: { orgname: string }) => <OrgRouteHandler orgname={params.orgname} />}
+        </Route>
+        <Route path="/o/:orgname/:rest*">
+          {(params: { orgname: string; 'rest*': string }) => <OrgRouteHandler orgname={params.orgname} rest={params['rest*']} />}
+        </Route>
 
         {/* NEW: App Panel - /a/:appname/* */}
         <Route path="/a/:appname" component={PanelRouter} />

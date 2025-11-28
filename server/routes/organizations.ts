@@ -46,6 +46,62 @@ function generateSlug(name: string): string {
 }
 
 // ========================================
+// PUBLIC ORGANIZATION ROUTES (No Auth Required)
+// ========================================
+
+// GET /api/public/organizations/:slug - Get public organization by slug (no auth required)
+router.get("/public/organizations/:slug", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    
+    if (!slug) {
+      return res.status(400).json({ success: false, error: "Slug is required" });
+    }
+
+    const [org] = await db
+      .select({
+        id: organizations.id,
+        displayId: organizations.displayId,
+        name: organizations.name,
+        slug: organizations.slug,
+        description: organizations.description,
+        logo: organizations.logo,
+        orgType: organizations.orgType,
+        businessTypes: organizations.businessTypes,
+        email: organizations.email,
+        website: organizations.website,
+        location: organizations.location,
+        isPublic: organizations.isPublic,
+        createdAt: organizations.createdAt,
+      })
+      .from(organizations)
+      .where(eq(organizations.slug, slug))
+      .limit(1);
+
+    if (!org) {
+      return res.status(404).json({ success: false, error: "Organization not found" });
+    }
+
+    // If not public, return 403
+    if (!org.isPublic) {
+      return res.status(403).json({ 
+        success: false, 
+        error: "This organization is private",
+        isPrivate: true 
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      organization: org
+    });
+  } catch (error) {
+    console.error("Error fetching public organization:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch organization" });
+  }
+});
+
+// ========================================
 // USER ORGANIZATION ROUTES (Panel)
 // ========================================
 
