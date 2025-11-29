@@ -10597,6 +10597,123 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // Get account profile (includes username)
+  app.get('/api/account/profile', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const [user] = await db.select({
+        id: users.id,
+        username: users.username,
+        name: users.name,
+        email: users.email,
+        profileImageUrl: users.profileImageUrl,
+      }).from(users).where(eq(users.id, principal.id));
+
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      res.json(user);
+    } catch (error: any) {
+      console.error('Error fetching profile:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch profile' });
+    }
+  });
+
+  // Check username availability
+  app.get('/api/account/username/check', async (req: any, res) => {
+    try {
+      const { username } = req.query;
+
+      if (!username || typeof username !== 'string') {
+        return res.status(400).json({ error: 'Username is required', available: false });
+      }
+
+      // Validate username format (alphanumeric, underscores, hyphens, 3-30 chars)
+      const usernameRegex = /^[a-zA-Z0-9_-]{3,30}$/;
+      if (!usernameRegex.test(username)) {
+        return res.json({ 
+          available: false, 
+          reason: 'Username must be 3-30 characters, alphanumeric, underscores, or hyphens only' 
+        });
+      }
+
+      // Check if username is reserved
+      const reservedUsernames = ['admin', 'root', 'system', 'me', 'api', 'auth', 'engine', 'panel', 'app', 'hub', 'org', 'user', 'wytnet', 'wytpass', 'wytwall', 'wytlife', 'wytapps', 'settings', 'profile', 'dashboard'];
+      if (reservedUsernames.includes(username.toLowerCase())) {
+        return res.json({ available: false, reason: 'This username is reserved' });
+      }
+
+      // Check if username already exists
+      const [existingUser] = await db.select({ id: users.id })
+        .from(users)
+        .where(eq(users.username, username.toLowerCase()));
+
+      res.json({ 
+        available: !existingUser,
+        reason: existingUser ? 'This username is already taken' : undefined
+      });
+    } catch (error: any) {
+      console.error('Error checking username:', error);
+      res.status(500).json({ error: error.message || 'Failed to check username', available: false });
+    }
+  });
+
+  // Update username
+  app.patch('/api/account/username', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { username } = req.body;
+
+      if (!username || typeof username !== 'string') {
+        return res.status(400).json({ error: 'Username is required' });
+      }
+
+      // Validate username format
+      const usernameRegex = /^[a-zA-Z0-9_-]{3,30}$/;
+      if (!usernameRegex.test(username)) {
+        return res.status(400).json({ 
+          error: 'Username must be 3-30 characters, alphanumeric, underscores, or hyphens only' 
+        });
+      }
+
+      // Check if username is reserved
+      const reservedUsernames = ['admin', 'root', 'system', 'me', 'api', 'auth', 'engine', 'panel', 'app', 'hub', 'org', 'user', 'wytnet', 'wytpass', 'wytwall', 'wytlife', 'wytapps', 'settings', 'profile', 'dashboard'];
+      if (reservedUsernames.includes(username.toLowerCase())) {
+        return res.status(400).json({ error: 'This username is reserved' });
+      }
+
+      // Check if username already exists
+      const [existingUser] = await db.select({ id: users.id })
+        .from(users)
+        .where(eq(users.username, username.toLowerCase()));
+
+      if (existingUser && existingUser.id !== principal.id) {
+        return res.status(400).json({ error: 'This username is already taken' });
+      }
+
+      // Update username
+      const [updatedUser] = await db
+        .update(users)
+        .set({ username: username.toLowerCase() })
+        .where(eq(users.id, principal.id))
+        .returning();
+
+      res.json({ success: true, user: updatedUser });
+    } catch (error: any) {
+      console.error('Error updating username:', error);
+      res.status(500).json({ error: error.message || 'Failed to update username' });
+    }
+  });
+
   // ========================================
   // MAPPLS LOCATION API
   // ========================================
