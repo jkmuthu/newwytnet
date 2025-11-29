@@ -194,31 +194,44 @@ export default function PanelMobileLayout({
       <header className="flex-shrink-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
         <div className="px-3 sm:px-4">
           <div className="flex justify-between items-center h-14">
-            {/* Left - Workspace Switcher */}
-            <Select value={currentWorkspace.id} onValueChange={handleWorkspaceChange}>
-              <SelectTrigger className="w-40 border-0 shadow-none">
-                <div className="flex items-center space-x-2">
+            {/* Left - Workspace Display/Switcher */}
+            {workspaceOptions.length === 1 ? (
+              <Link href="/u/me">
+                <div className="flex items-center space-x-2 px-3 py-2 text-sm font-medium">
                   {currentWorkspace.type === 'personal' ? (
                     <User className="h-4 w-4 text-blue-600" />
                   ) : (
                     <Building className="h-4 w-4 text-green-600" />
                   )}
-                  <SelectValue />
+                  <span>{currentWorkspace.name}</span>
                 </div>
-              </SelectTrigger>
-              <SelectContent>
-                {workspaceOptions.map((workspace) => (
-                  <SelectItem key={workspace.id} value={workspace.id}>
-                    <div className="flex items-center space-x-2">
-                      <workspace.icon className={`h-4 w-4 ${
-                        workspace.type === 'personal' ? 'text-blue-600' : 'text-green-600'
-                      }`} />
-                      <span>{workspace.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              </Link>
+            ) : (
+              <Select value={currentWorkspace.id} onValueChange={handleWorkspaceChange}>
+                <SelectTrigger className="w-40 border-0 shadow-none">
+                  <div className="flex items-center space-x-2">
+                    {currentWorkspace.type === 'personal' ? (
+                      <User className="h-4 w-4 text-blue-600" />
+                    ) : (
+                      <Building className="h-4 w-4 text-green-600" />
+                    )}
+                    <SelectValue />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  {workspaceOptions.map((workspace) => (
+                    <SelectItem key={workspace.id} value={workspace.id}>
+                      <div className="flex items-center space-x-2">
+                        <workspace.icon className={`h-4 w-4 ${
+                          workspace.type === 'personal' ? 'text-blue-600' : 'text-green-600'
+                        }`} />
+                        <span>{workspace.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
             {/* Right - Actions + Menu */}
             <div className="flex items-center space-x-1">
