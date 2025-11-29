@@ -10597,7 +10597,7 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Get account profile (includes username)
+  // Get account profile (includes username from userProfiles)
   app.get('/api/account/profile', async (req: any, res) => {
     try {
       const principal = await getPrincipal(req);
@@ -10605,26 +10605,32 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      const [user] = await db.select({
-        id: users.id,
-        username: users.username,
-        name: users.name,
-        email: users.email,
-        profileImageUrl: users.profileImageUrl,
-      }).from(users).where(eq(users.id, principal.id));
+      // Get user basic info
+      const [user] = await db.select().from(users).where(eq(users.id, principal.id));
 
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      res.json(user);
+      // Get username from userProfiles
+      const [profile] = await db.select({
+        username: userProfiles.username,
+      }).from(userProfiles).where(eq(userProfiles.userId, principal.id));
+
+      res.json({
+        id: user.id,
+        username: profile?.username || null,
+        name: user.name,
+        email: user.email,
+        profileImageUrl: user.profileImageUrl,
+      });
     } catch (error: any) {
       console.error('Error fetching profile:', error);
       res.status(500).json({ error: error.message || 'Failed to fetch profile' });
     }
   });
 
-  // Check username availability
+  // Check username availability (uses userProfiles table)
   app.get('/api/account/username/check', async (req: any, res) => {
     try {
       const { username } = req.query;
@@ -10648,14 +10654,14 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.json({ available: false, reason: 'This username is reserved' });
       }
 
-      // Check if username already exists
-      const [existingUser] = await db.select({ id: users.id })
-        .from(users)
-        .where(eq(users.username, username.toLowerCase()));
+      // Check if username already exists in userProfiles
+      const [existingProfile] = await db.select({ userId: userProfiles.userId })
+        .from(userProfiles)
+        .where(eq(userProfiles.username, username.toLowerCase()));
 
       res.json({ 
-        available: !existingUser,
-        reason: existingUser ? 'This username is already taken' : undefined
+        available: !existingProfile,
+        reason: existingProfile ? 'This username is already taken' : undefined
       });
     } catch (error: any) {
       console.error('Error checking username:', error);
@@ -10663,7 +10669,7 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Update username
+  // Update username (uses userProfiles table)
   app.patch('/api/account/username', async (req: any, res) => {
     try {
       const principal = await getPrincipal(req);
@@ -10691,23 +10697,33 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.status(400).json({ error: 'This username is reserved' });
       }
 
-      // Check if username already exists
-      const [existingUser] = await db.select({ id: users.id })
-        .from(users)
-        .where(eq(users.username, username.toLowerCase()));
+      // Check if username already exists (not owned by current user)
+      const [existingProfile] = await db.select({ userId: userProfiles.userId })
+        .from(userProfiles)
+        .where(eq(userProfiles.username, username.toLowerCase()));
 
-      if (existingUser && existingUser.id !== principal.id) {
+      if (existingProfile && existingProfile.userId !== principal.id) {
         return res.status(400).json({ error: 'This username is already taken' });
       }
 
-      // Update username
-      const [updatedUser] = await db
-        .update(users)
-        .set({ username: username.toLowerCase() })
-        .where(eq(users.id, principal.id))
-        .returning();
+      // Check if user has a profile, create one if not
+      const [existingUserProfile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, principal.id));
 
-      res.json({ success: true, user: updatedUser });
+      if (existingUserProfile) {
+        // Update existing profile
+        await db
+          .update(userProfiles)
+          .set({ username: username.toLowerCase() })
+          .where(eq(userProfiles.userId, principal.id));
+      } else {
+        // Create new profile with username
+        await db.insert(userProfiles).values({
+          userId: principal.id,
+          username: username.toLowerCase(),
+        });
+      }
+
+      res.json({ success: true, username: username.toLowerCase() });
     } catch (error: any) {
       console.error('Error updating username:', error);
       res.status(500).json({ error: error.message || 'Failed to update username' });
