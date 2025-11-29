@@ -1,18 +1,26 @@
 import { ReactNode } from "react";
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 
 interface WytWallLayoutProps {
   leftPanel: ReactNode;
   centerPanel: ReactNode;
   rightPanel: ReactNode;
+  mobileCategories?: ReactNode;
 }
 
-export default function WytWallLayout({ leftPanel, centerPanel, rightPanel }: WytWallLayoutProps) {
+export default function WytWallLayout({ leftPanel, centerPanel, rightPanel, mobileCategories }: WytWallLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-[1600px] mx-auto p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div className="max-w-[1600px] mx-auto px-2 sm:px-4 py-2 sm:py-4">
+        
+        {/* Mobile horizontal scrollable categories */}
+        {mobileCategories && (
+          <div className="lg:hidden mb-3">
+            {mobileCategories}
+          </div>
+        )}
+        
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-4">
           
           {/* Left Panel - Filters & Categories (Hidden on mobile) */}
           <div className="hidden lg:block lg:col-span-3">
@@ -38,11 +46,6 @@ export default function WytWallLayout({ leftPanel, centerPanel, rightPanel }: Wy
           </div>
 
         </div>
-      </div>
-
-      {/* Mobile Bottom Sheet for Filters (shown when filter button is clicked) */}
-      <div className="lg:hidden">
-        {/* Mobile filters will be implemented as a sheet/drawer */}
       </div>
     </div>
   );

@@ -265,6 +265,33 @@ export default function Home() {
     </div>
   );
 
+  // Mobile Categories - horizontal scrollable filter chips
+  const mobileCategories = (
+    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+      {[
+        { id: 'all', label: 'All', icon: '📋' },
+        { id: 'jobs', label: 'jobs', icon: '💼' },
+        { id: 'real_estate', label: 'real estate', icon: '🏠' },
+        { id: 'b2b_supply', label: 'b2b', icon: '🏢' },
+        { id: 'service', label: 'service', icon: '⚙️' },
+        { id: 'other', label: 'other', icon: '📦' },
+      ].map((category) => (
+        <button
+          key={category.id}
+          onClick={() => setSelectedCategory(category.id)}
+          className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap touch-manipulation ${
+            selectedCategory === category.id
+              ? "bg-blue-600 text-white shadow-lg"
+              : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+          }`}
+          data-testid={`mobile-filter-${category.id}`}
+        >
+          {category.label}
+        </button>
+      ))}
+    </div>
+  );
+
   // Right Panel - Promotional Cards
   const rightPanel = (
     <div className="space-y-6">
@@ -374,6 +401,7 @@ export default function Home() {
         leftPanel={leftPanel}
         centerPanel={centerPanel}
         rightPanel={rightPanel}
+        mobileCategories={mobileCategories}
       />
       <style>{`
         @keyframes gradient {
