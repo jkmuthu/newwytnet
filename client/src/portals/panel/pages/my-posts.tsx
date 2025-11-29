@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,7 @@ import WytWallPostForm from "@/components/WytWallPostForm";
 import { Package, Plus, Loader2 } from "lucide-react";
 
 export default function MyPosts() {
+  const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState<"all" | "need" | "offer">("all");
   const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
   const [defaultPostType, setDefaultPostType] = useState<"need" | "offer">("need");
@@ -151,7 +153,12 @@ export default function MyPosts() {
                       </div>
                       <p className="text-sm text-foreground">{post.description}</p>
                     </div>
-                    <Button size="sm" variant="outline" data-testid={`button-view-${post.id}`}>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => navigate(`/u/me/wytwall/${post.id}`)}
+                      data-testid={`button-view-${post.id}`}
+                    >
                       View Details
                     </Button>
                   </div>

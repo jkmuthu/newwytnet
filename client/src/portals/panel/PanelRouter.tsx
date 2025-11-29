@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import WytWallPostForm from "@/components/WytWallPostForm";
 import PaymentHistory from "@/components/payments/PaymentHistory";
 import MyPosts from "./pages/my-posts";
+import PostDetail from "./pages/post-detail";
 import MyWallet from "./pages/my-wallet";
 import MyPoints from "./pages/my-points";
 import MyWytAppsPage from "./pages/my-wytapps";
@@ -2843,6 +2844,7 @@ export default function PanelRouter() {
       {/* User Panel routes - /u/:username/* */}
       <Route path="/u/:username" component={MyPanelDashboard} />
       <Route path="/u/:username/dashboard" component={MyPanelDashboard} />
+      <Route path="/u/:username/wytwall/:postId" component={PostDetail} />
       <Route path="/u/:username/wytwall" component={MyPanelWytWall} />
       <Route path="/u/:username/posts" component={MyPosts} />
       <Route path="/u/:username/duties" component={MyPanelDuties} />

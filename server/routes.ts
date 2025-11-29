@@ -659,6 +659,99 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Get single WytWall post by ID
+  app.get('/api/wytwall/posts/:postId', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { postId } = req.params;
+      
+      const [post] = await db.select()
+        .from(wytWallPosts)
+        .where(
+          and(
+            eq(wytWallPosts.id, postId),
+            eq(wytWallPosts.userId, user.id)
+          )
+        );
+      
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      res.json({ post });
+    } catch (error) {
+      console.error("Error fetching WytWall post:", error);
+      res.status(500).json({ message: "Failed to fetch post" });
+    }
+  });
+
+  // Update WytWall post
+  app.patch('/api/wytwall/posts/:postId', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { postId } = req.params;
+      const { category, description } = req.body;
+      
+      // Verify the post belongs to the user
+      const [existingPost] = await db.select()
+        .from(wytWallPosts)
+        .where(
+          and(
+            eq(wytWallPosts.id, postId),
+            eq(wytWallPosts.userId, user.id)
+          )
+        );
+      
+      if (!existingPost) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      const updateData: any = {};
+      if (category) updateData.category = category;
+      if (description) updateData.description = description.substring(0, 200);
+      
+      const [updatedPost] = await db.update(wytWallPosts)
+        .set(updateData)
+        .where(eq(wytWallPosts.id, postId))
+        .returning();
+      
+      res.json({ success: true, post: updatedPost });
+    } catch (error) {
+      console.error("Error updating WytWall post:", error);
+      res.status(500).json({ message: "Failed to update post" });
+    }
+  });
+
+  // Delete WytWall post
+  app.delete('/api/wytwall/posts/:postId', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { postId } = req.params;
+      
+      // Verify the post belongs to the user
+      const [existingPost] = await db.select()
+        .from(wytWallPosts)
+        .where(
+          and(
+            eq(wytWallPosts.id, postId),
+            eq(wytWallPosts.userId, user.id)
+          )
+        );
+      
+      if (!existingPost) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      await db.delete(wytWallPosts)
+        .where(eq(wytWallPosts.id, postId));
+      
+      res.json({ success: true, message: "Post deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting WytWall post:", error);
+      res.status(500).json({ message: "Failed to delete post" });
+    }
+  });
+
   // Get user's organizations (for WytWall post form)
   app.get('/api/organizations/my-orgs', isAuthenticated, async (req: any, res) => {
     try {
