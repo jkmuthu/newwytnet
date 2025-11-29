@@ -253,21 +253,12 @@ function MyPanelDashboard() {
 
 // My WytWall - Personal Needs/Offers Stream with Tabs
 function MyPanelWytWall() {
-  const { user } = useAuth();
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("matches");
-  const [postType, setPostType] = useState<"all" | "need" | "offer">("all");
   const [defaultPostType, setDefaultPostType] = useState<"need" | "offer">("need");
   
   const { data: postsData, isLoading } = useQuery({
-    queryKey: ['/api/wytwall/my-posts', postType !== "all" ? postType : undefined],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (postType !== "all") {
-        params.set('postType', postType);
-      }
-      return await fetch(`/api/wytwall/my-posts?${params.toString()}`).then(r => r.json());
-    },
+    queryKey: ['/api/wytwall/my-posts'],
   });
 
   // Fetch PUBLIC bucket list items from OTHER users for Matches tab
@@ -278,11 +269,6 @@ function MyPanelWytWall() {
 
   const posts = (postsData as any)?.posts || [];
   const bucketMatches = (matchesData as any)?.items || [];
-  
-  const needsCount = posts.filter((p: any) => p.postType === 'need').length;
-  const offersCount = posts.filter((p: any) => p.postType === 'offer').length;
-  
-  const filteredPosts = postType === "all" ? posts : posts.filter((p: any) => p.postType === postType);
   
   return (
     <div className="p-6 space-y-6">
@@ -376,79 +362,75 @@ function MyPanelWytWall() {
         </TabsContent>
 
         {/* Posts Tab Content */}
-        <TabsContent value="posts" className="mt-6 space-y-4">
-          <div className="flex gap-2 mb-4">
-            <Button
-              variant={postType === "all" ? "default" : "outline"}
-              onClick={() => setPostType("all")}
-              size="sm"
-              data-testid="filter-all"
-            >
-              All ({posts.length})
-            </Button>
-            <Button
-              variant={postType === "need" ? "default" : "outline"}
-              onClick={() => setPostType("need")}
-              size="sm"
-              data-testid="filter-needs"
-            >
-              Needs ({needsCount})
-            </Button>
-            <Button
-              variant={postType === "offer" ? "default" : "outline"}
-              onClick={() => setPostType("offer")}
-              size="sm"
-              data-testid="filter-offers"
-            >
-              Offers ({offersCount})
-            </Button>
-          </div>
-
+        <TabsContent value="posts" className="mt-6">
           {isLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="p-6">
-                  <div className="h-24 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
-                </Card>
-              ))}
-            </div>
-          ) : filteredPosts.length === 0 ? (
-            <Card className="p-12 text-center">
-              <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Package className="h-12 w-12 text-gray-400" />
+            <Card>
+              <div className="p-6 space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="h-12 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
+                ))}
               </div>
-              <h3 className="text-lg font-medium mb-2">No {postType === "all" ? "posts" : postType === "need" ? "needs" : "offers"} yet</h3>
-              <p className="text-muted-foreground mb-4">Start by posting your first {postType === "all" ? "need or offer" : postType}</p>
+            </Card>
+          ) : posts.length === 0 ? (
+            <Card className="p-12 text-center">
+              <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Package className="h-10 w-10 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium mb-2">No posts yet</h3>
+              <p className="text-muted-foreground mb-4">Click "Add Post" to create your first need or offer</p>
             </Card>
           ) : (
-            <div className="space-y-4">
-              {filteredPosts.map((post: any) => (
-                <Card key={post.id} className="p-6 hover:shadow-lg transition-shadow" data-testid={`post-card-${post.id}`}>
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge className={post.postType === 'need' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'}>
-                          {post.postType === 'need' ? 'Need' : 'Offer'}
-                        </Badge>
-                        <Badge variant="outline">{post.category || 'Other'}</Badge>
-                        <span className="text-sm text-muted-foreground">
+            <Card>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-800 border-b">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {posts.map((post: any) => (
+                      <tr key={post.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50" data-testid={`post-row-${post.id}`}>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <Badge className={post.postType === 'need' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'}>
+                            {post.postType === 'need' ? 'Need' : 'Offer'}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
+                          {post.category || 'Other'}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate">
+                          {post.description}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {new Date(post.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="text-muted-foreground text-sm">{post.description}</p>
-                    </div>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      onClick={() => navigate(`/u/me/wytwall/${post.id}`)}
-                      data-testid={`button-view-${post.id}`}
-                    >
-                      View Details
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <Badge variant={post.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                            {post.status || 'active'}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-right">
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => navigate(`/u/me/wytwall/${post.id}`)}
+                            data-testid={`button-view-${post.id}`}
+                          >
+                            View
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
           )}
         </TabsContent>
 
