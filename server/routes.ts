@@ -606,7 +606,7 @@ export async function registerRoutes(app: Express): Promise<void> {
   app.post('/api/wytwall/posts', isAuthenticated, async (req: any, res) => {
     try {
       const user = req.user;
-      const { postType, category, description } = req.body;
+      const { postType, postFor, organizationId, category, description, validityDays } = req.body;
       
       if (!postType || !category || !description) {
         return res.status(400).json({ message: "Missing required fields" });
@@ -616,17 +616,69 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(400).json({ message: "Invalid post type" });
       }
       
+      // Validate postFor
+      const validPostFor = postFor === 'organization' ? 'organization' : 'personal';
+      
+      // If posting for organization, verify user is a member
+      if (validPostFor === 'organization' && organizationId) {
+        const [membership] = await db.select()
+          .from(organizationMembers)
+          .where(
+            and(
+              eq(organizationMembers.userId, user.id),
+              eq(organizationMembers.organizationId, organizationId)
+            )
+          );
+        
+        if (!membership) {
+          return res.status(403).json({ message: "You are not a member of this organization" });
+        }
+      }
+      
+      // Calculate expiration date
+      const validDays = [7, 15, 60, 90].includes(validityDays) ? validityDays : 7;
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + validDays);
+      
       const [newPost] = await db.insert(wytWallPosts).values({
         userId: user.id,
         postType,
+        postFor: validPostFor,
+        organizationId: validPostFor === 'organization' ? organizationId : null,
         category,
         description: description.substring(0, 200),
+        validityDays: validDays,
+        expiresAt,
+        status: 'active',
       }).returning();
       
       res.json({ success: true, post: newPost });
     } catch (error) {
       console.error("Error creating WytWall post:", error);
       res.status(500).json({ message: "Failed to create post" });
+    }
+  });
+
+  // Get user's organizations (for WytWall post form)
+  app.get('/api/organizations/my-orgs', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      
+      const userOrganizations = await db.select({
+        id: organizations.id,
+        name: organizations.name,
+        slug: organizations.slug,
+        role: organizationMembers.role,
+      })
+        .from(organizations)
+        .innerJoin(organizationMembers, eq(organizations.id, organizationMembers.organizationId))
+        .where(eq(organizationMembers.userId, user.id))
+        .orderBy(asc(organizations.name));
+      
+      res.json({ organizations: userOrganizations });
+    } catch (error) {
+      console.error("Error fetching user organizations:", error);
+      res.json({ organizations: [] });
     }
   });
 

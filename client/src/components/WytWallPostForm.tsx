@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2 } from "lucide-react";
+import { Loader2, User, Building2 } from "lucide-react";
 
 // Category options based on post type
 const NEED_CATEGORIES = [
@@ -31,7 +31,18 @@ const OFFER_CATEGORIES = [
   { value: "other", label: "Other" },
 ];
 
+const VALIDITY_OPTIONS = [
+  { value: 7, label: "7 Days" },
+  { value: 15, label: "15 Days" },
+  { value: 60, label: "60 Days" },
+  { value: 90, label: "90 Days" },
+];
+
 const formSchema = z.object({
+  postFor: z.enum(["personal", "organization"], {
+    required_error: "Please select who this post is for",
+  }),
+  organizationId: z.string().optional(),
   postType: z.enum(["need", "offer"], {
     required_error: "Post type is required",
     invalid_type_error: "Invalid post type selected"
@@ -57,12 +68,24 @@ const formSchema = z.object({
     }, {
       message: "Description contains spam-like content"
     }),
+  validityDays: z.number({
+    required_error: "Please select validity period",
+  }).min(7).max(90),
   location: z.string().optional(),
   budget: z.number()
     .positive("Budget must be positive")
     .max(10000000, "Budget exceeds maximum allowed value")
     .optional()
     .nullable(),
+}).refine((data) => {
+  // If organization is selected, organizationId is required
+  if (data.postFor === "organization" && !data.organizationId) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Please select an organization",
+  path: ["organizationId"],
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -75,13 +98,25 @@ interface WytWallPostFormProps {
 export default function WytWallPostForm({ defaultPostType = "need", onSuccess }: WytWallPostFormProps) {
   const { toast } = useToast();
   const [selectedPostType, setSelectedPostType] = useState<"need" | "offer">(defaultPostType);
+  const [postFor, setPostFor] = useState<"personal" | "organization">("personal");
+
+  // Fetch user's organizations
+  const { data: orgsData } = useQuery({
+    queryKey: ['/api/organizations/my-orgs'],
+    refetchOnWindowFocus: false,
+  });
+
+  const userOrgs = (orgsData as any)?.organizations || [];
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      postFor: "personal",
+      organizationId: "",
       postType: defaultPostType,
       category: "",
       description: "",
+      validityDays: 7,
     },
   });
 
@@ -95,10 +130,14 @@ export default function WytWallPostForm({ defaultPostType = "need", onSuccess }:
         description: `Your ${selectedPostType} has been posted successfully!`,
       });
       form.reset({
+        postFor: "personal",
+        organizationId: "",
         postType: defaultPostType,
         category: "",
         description: "",
+        validityDays: 7,
       });
+      setPostFor("personal");
       queryClient.invalidateQueries({ queryKey: ["/api/wytwall/posts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wytwall/my-posts"] });
       onSuccess?.();
@@ -121,6 +160,84 @@ export default function WytWallPostForm({ defaultPostType = "need", onSuccess }:
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Post For Selection - Personal or Organization */}
+        <FormField
+          control={form.control}
+          name="postFor"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-base font-semibold">Post For</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    setPostFor(value as "personal" | "organization");
+                    if (value === "personal") {
+                      form.setValue("organizationId", "");
+                    }
+                  }}
+                  value={field.value}
+                  className="flex gap-4"
+                  data-testid="radio-post-for"
+                >
+                  <div className={`flex items-center space-x-2 border rounded-lg px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer flex-1 ${field.value === "personal" ? "border-primary bg-primary/5" : ""}`}>
+                    <RadioGroupItem value="personal" id="personal" data-testid="radio-personal" />
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <label htmlFor="personal" className="text-sm font-medium cursor-pointer flex-1">
+                      Personal
+                    </label>
+                  </div>
+                  <div className={`flex items-center space-x-2 border rounded-lg px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer flex-1 ${field.value === "organization" ? "border-primary bg-primary/5" : ""}`}>
+                    <RadioGroupItem value="organization" id="organization" data-testid="radio-organization" />
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <label htmlFor="organization" className="text-sm font-medium cursor-pointer flex-1">
+                      Organization
+                    </label>
+                  </div>
+                </RadioGroup>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Organization Selection - Only show when "Organization" is selected */}
+        {postFor === "organization" && (
+          <FormField
+            control={form.control}
+            name="organizationId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Select Organization</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger data-testid="select-organization">
+                      <SelectValue placeholder="Choose an organization" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {userOrgs.length === 0 ? (
+                      <SelectItem value="no-orgs" disabled>
+                        No organizations found
+                      </SelectItem>
+                    ) : (
+                      userOrgs.map((org: any) => (
+                        <SelectItem key={org.id} value={org.id} data-testid={`option-org-${org.id}`}>
+                          {org.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  All org members with permissions will receive notifications
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
         {/* Post Type Selection */}
         <FormField
           control={form.control}
@@ -139,13 +256,13 @@ export default function WytWallPostForm({ defaultPostType = "need", onSuccess }:
                   className="flex gap-4"
                   data-testid="radio-post-type"
                 >
-                  <div className="flex items-center space-x-2 border rounded-lg px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer flex-1">
+                  <div className={`flex items-center space-x-2 border rounded-lg px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer flex-1 ${field.value === "need" ? "border-primary bg-primary/5" : ""}`}>
                     <RadioGroupItem value="need" id="need" data-testid="radio-need" />
                     <label htmlFor="need" className="text-sm font-medium cursor-pointer flex-1">
                       I Need
                     </label>
                   </div>
-                  <div className="flex items-center space-x-2 border rounded-lg px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer flex-1">
+                  <div className={`flex items-center space-x-2 border rounded-lg px-4 py-3 hover:bg-accent/50 transition-colors cursor-pointer flex-1 ${field.value === "offer" ? "border-primary bg-primary/5" : ""}`}>
                     <RadioGroupItem value="offer" id="offer" data-testid="radio-offer" />
                     <label htmlFor="offer" className="text-sm font-medium cursor-pointer flex-1">
                       I Offer
@@ -211,6 +328,38 @@ export default function WytWallPostForm({ defaultPostType = "need", onSuccess }:
           )}
         />
 
+        {/* Validity Days Selection */}
+        <FormField
+          control={form.control}
+          name="validityDays"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Validity Period</FormLabel>
+              <Select 
+                onValueChange={(value) => field.onChange(parseInt(value))} 
+                value={field.value?.toString()}
+              >
+                <FormControl>
+                  <SelectTrigger data-testid="select-validity">
+                    <SelectValue placeholder="Select validity period" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {VALIDITY_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value.toString()} data-testid={`option-validity-${option.value}`}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Post will automatically expire after this period
+              </p>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         {/* Submit Button */}
         <Button
           type="submit"
@@ -224,7 +373,7 @@ export default function WytWallPostForm({ defaultPostType = "need", onSuccess }:
               Posting...
             </>
           ) : (
-            `Post ${selectedPostType === "need" ? "Need" : "Offer"}`
+            "Submit the Post"
           )}
         </Button>
       </form>
