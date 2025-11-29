@@ -253,11 +253,17 @@ function MyPanelDashboard() {
 
 // My WytWall - Personal Needs/Offers Stream with Tabs
 function MyPanelWytWall() {
-  const [, navigate] = useLocation();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("matches");
   const [defaultPostType, setDefaultPostType] = useState<"need" | "offer">("need");
+  const [selectedPost, setSelectedPost] = useState<any>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [editCategory, setEditCategory] = useState("");
+  const [editDescription, setEditDescription] = useState("");
   
-  const { data: postsData, isLoading } = useQuery({
+  const { data: postsData, isLoading, refetch: refetchPosts } = useQuery({
     queryKey: ['/api/wytwall/my-posts'],
   });
 
@@ -269,6 +275,80 @@ function MyPanelWytWall() {
 
   const posts = (postsData as any)?.posts || [];
   const bucketMatches = (matchesData as any)?.items || [];
+
+  const handleViewPost = (post: any) => {
+    setSelectedPost(post);
+    setEditCategory(post.category);
+    setEditDescription(post.description);
+    setIsEditMode(false);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleEditPost = async () => {
+    if (!selectedPost) return;
+    try {
+      const response = await fetch(`/api/wytwall/posts/${selectedPost.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ category: editCategory, description: editDescription }),
+      });
+      if (response.ok) {
+        toast({ title: "Post updated successfully" });
+        refetchPosts();
+        setIsEditMode(false);
+        setIsViewDialogOpen(false);
+      } else {
+        toast({ title: "Failed to update post", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error updating post", variant: "destructive" });
+    }
+  };
+
+  const handleDeletePost = async () => {
+    if (!selectedPost) return;
+    try {
+      const response = await fetch(`/api/wytwall/posts/${selectedPost.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (response.ok) {
+        toast({ title: "Post deleted successfully" });
+        refetchPosts();
+        setIsDeleteDialogOpen(false);
+        setIsViewDialogOpen(false);
+        setSelectedPost(null);
+      } else {
+        toast({ title: "Failed to delete post", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error deleting post", variant: "destructive" });
+    }
+  };
+
+  const needCategories = [
+    { value: "need_job", label: "Need a Job" },
+    { value: "house_for_rent", label: "House for Rent" },
+    { value: "require_service", label: "Require a Service" },
+    { value: "product_for_use", label: "Product for my Use" },
+    { value: "bulk_supply", label: "Product for Bulk Supply" },
+    { value: "other", label: "Other" },
+  ];
+
+  const offerCategories = [
+    { value: "selling_bike", label: "Selling my Bike" },
+    { value: "selling_car", label: "Selling my Car" },
+    { value: "selling_property", label: "Selling my Property" },
+    { value: "renting_house", label: "Renting my House" },
+    { value: "providing_service", label: "Providing Service" },
+    { value: "other", label: "Other" },
+  ];
+
+  const getCategoryLabel = (category: string) => {
+    const all = [...needCategories, ...offerCategories];
+    return all.find(c => c.value === category)?.label || category;
+  };
   
   return (
     <div className="p-6 space-y-6">
@@ -402,7 +482,7 @@ function MyPanelWytWall() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                          {post.category || 'Other'}
+                          {getCategoryLabel(post.category)}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate">
                           {post.description}
@@ -419,7 +499,7 @@ function MyPanelWytWall() {
                           <Button 
                             size="sm" 
                             variant="ghost"
-                            onClick={() => navigate(`/u/me/wytwall/${post.id}`)}
+                            onClick={() => handleViewPost(post)}
                             data-testid={`button-view-${post.id}`}
                           >
                             View
@@ -449,6 +529,115 @@ function MyPanelWytWall() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* View/Edit Post Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {isEditMode ? 'Edit Post' : 'Post Details'}
+              {selectedPost && (
+                <Badge className={selectedPost.postType === 'need' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}>
+                  {selectedPost.postType === 'need' ? 'Need' : 'Offer'}
+                </Badge>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedPost && (
+            <div className="space-y-4 py-4">
+              {isEditMode ? (
+                <>
+                  <div className="space-y-2">
+                    <Label>Category</Label>
+                    <Select value={editCategory} onValueChange={setEditCategory}>
+                      <SelectTrigger data-testid="select-edit-category">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(selectedPost.postType === 'need' ? needCategories : offerCategories).map((cat) => (
+                          <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Description</Label>
+                    <Input
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      maxLength={200}
+                      data-testid="input-edit-description"
+                    />
+                    <p className="text-xs text-muted-foreground">{editDescription.length}/200 characters</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground text-sm">Category</Label>
+                      <p className="font-medium">{getCategoryLabel(selectedPost.category)}</p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground text-sm">Status</Label>
+                      <div className="mt-1">
+                        <Badge variant={selectedPost.status === 'active' ? 'default' : 'secondary'}>
+                          {selectedPost.status || 'active'}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground text-sm">Description</Label>
+                    <p className="mt-1">{selectedPost.description}</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                    <div>Created: {new Date(selectedPost.createdAt).toLocaleDateString()}</div>
+                    <div>Expires: {new Date(selectedPost.expiresAt).toLocaleDateString()}</div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+          
+          <div className="flex justify-between">
+            {isEditMode ? (
+              <>
+                <Button variant="outline" onClick={() => setIsEditMode(false)}>Cancel</Button>
+                <Button onClick={handleEditPost} data-testid="button-save-edit">Save Changes</Button>
+              </>
+            ) : (
+              <>
+                <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)} data-testid="button-delete">
+                  Delete
+                </Button>
+                <Button onClick={() => setIsEditMode(true)} data-testid="button-edit">
+                  Edit
+                </Button>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Delete Post</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this post? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeletePost} data-testid="button-confirm-delete">
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
