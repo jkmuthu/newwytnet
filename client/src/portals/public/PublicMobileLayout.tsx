@@ -1,9 +1,10 @@
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Home, Activity, QrCode, Grid3x3 } from "lucide-react";
+import { Home, Activity, QrCode, Grid3x3, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import Footer from "@/components/layout/footer";
-import UniversalAuthHeader from "@/components/universal/UniversalAuthHeader";
+import { HeaderRightSection } from "@/components/universal/UniversalAuthHeader";
 
 interface PublicMobileLayoutProps {
   children: ReactNode;
@@ -16,6 +17,21 @@ interface PublicMobileLayoutProps {
  */
 export default function PublicMobileLayout({ children, showFooter = true }: PublicMobileLayoutProps) {
   const [location] = useLocation();
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const shouldBeDark = savedTheme === 'dark';
+    setIsDark(shouldBeDark);
+    document.documentElement.classList.toggle('dark', shouldBeDark);
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = !isDark;
+    setIsDark(newTheme);
+    document.documentElement.classList.toggle('dark', newTheme);
+    localStorage.setItem('theme', newTheme ? 'dark' : 'light');
+  };
 
   // Bottom navigation items for mobile
   const bottomNavItems = [
@@ -59,19 +75,34 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
       <header className="flex-shrink-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
         <div className="px-3 sm:px-4">
           <div className="flex justify-between items-center h-14">
-            {/* Logo */}
-            <Link href="/" className="flex items-center" data-testid="mobile-logo">
-              <img 
-                src="/wytnet-logo.png?v=2" 
-                alt="WytNet" 
-                className="h-8 w-auto transition-transform hover:scale-105"
-              />
-            </Link>
-
-            {/* Right side - Universal Auth only */}
-            <div className="flex items-center gap-2">
-              <UniversalAuthHeader />
+            {/* Left side - Theme toggle + Logo */}
+            <div className="flex items-center gap-1">
+              <Button
+                onClick={toggleTheme}
+                variant="ghost"
+                size="sm"
+                className="h-9 w-9 p-0 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                data-testid="button-theme-toggle-mobile"
+                aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+              >
+                {isDark ? (
+                  <Sun className="h-5 w-5 text-yellow-500" />
+                ) : (
+                  <Moon className="h-5 w-5 text-slate-600" />
+                )}
+              </Button>
+              
+              <Link href="/" className="flex items-center" data-testid="mobile-logo">
+                <img 
+                  src="/wytnet-logo.png?v=2" 
+                  alt="WytNet" 
+                  className="h-7 w-auto transition-transform hover:scale-105"
+                />
+              </Link>
             </div>
+
+            {/* Right side - Notifications + User menu only */}
+            <HeaderRightSection />
           </div>
         </div>
       </header>
