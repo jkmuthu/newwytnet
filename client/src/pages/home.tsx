@@ -147,34 +147,34 @@ export default function Home() {
 
   // Center Panel - WytWall Stream
   const centerPanel = (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       
-      {/* Modern Header */}
-      <Card className="relative overflow-hidden border-0 shadow-2xl rounded-3xl">
+      {/* Modern Header - Compact on mobile */}
+      <Card className="relative overflow-hidden border-0 shadow-xl sm:shadow-2xl rounded-2xl sm:rounded-3xl">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 animate-gradient" style={{ backgroundSize: '200% 200%' }}></div>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-0 right-0 w-32 sm:w-64 h-32 sm:h-64 bg-white/10 rounded-full blur-2xl sm:blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 w-24 sm:w-48 h-24 sm:h-48 bg-white/10 rounded-full blur-2xl sm:blur-3xl"></div>
         
-        <CardContent className="relative p-6 sm:p-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="h-14 w-14 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center">
-                <Sparkles className="h-7 w-7 text-white animate-pulse" />
+        <CardContent className="relative p-4 sm:p-8">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="h-10 w-10 sm:h-14 sm:w-14 bg-white/20 backdrop-blur-xl rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
+                <Sparkles className="h-5 w-5 sm:h-7 sm:w-7 text-white animate-pulse" />
               </div>
               <div>
-                <h1 className="text-2xl sm:text-3xl font-black text-white flex items-center gap-2">
+                <h1 className="text-xl sm:text-3xl font-black text-white flex items-center gap-1.5 sm:gap-2">
                   WytWall
-                  <TrendingUp className="h-6 w-6 animate-bounce" />
+                  <TrendingUp className="h-4 w-4 sm:h-6 sm:w-6 animate-bounce" />
                 </h1>
-                <p className="text-white/90 text-sm font-medium">Offers Stream Marketplace</p>
+                <p className="text-white/90 text-xs sm:text-sm font-medium hidden sm:block">Offers Stream Marketplace</p>
               </div>
             </div>
             <Button
               onClick={handlePostNeed}
-              className="bg-white/90 hover:bg-white text-purple-600 font-bold shadow-xl hover:scale-105 transition-all rounded-xl backdrop-blur-xl"
+              className="bg-white/90 hover:bg-white text-purple-600 font-bold shadow-xl hover:scale-105 transition-all rounded-lg sm:rounded-xl backdrop-blur-xl px-3 sm:px-4 h-9 sm:h-10 text-sm"
               data-testid="button-add-post"
             >
-              <Plus className="h-5 w-5 mr-2" />
+              <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Add Post</span>
               <span className="sm:hidden">Post</span>
             </Button>
@@ -182,17 +182,17 @@ export default function Home() {
         </CardContent>
       </Card>
 
-      {/* Search Bar */}
-      <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl">
-        <CardContent className="p-4">
+      {/* Search Bar - Compact on mobile */}
+      <Card className="border-0 shadow-lg sm:shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl sm:rounded-2xl">
+        <CardContent className="p-2.5 sm:p-4">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
             <Input
               type="text"
-              placeholder="Search needs by keyword..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 h-12 text-base border-0 bg-gray-100 dark:bg-gray-700 rounded-xl focus:ring-2 focus:ring-purple-500"
+              className="pl-9 sm:pl-12 h-10 sm:h-12 text-sm sm:text-base border-0 bg-gray-100 dark:bg-gray-700 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-purple-500"
               data-testid="input-search-needs"
             />
           </div>
@@ -201,27 +201,27 @@ export default function Home() {
 
       {/* Needs Stream */}
       {isLoading ? (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="p-8 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border-0 shadow-xl rounded-2xl">
-              <Skeleton className="h-32 w-full rounded-xl" />
+            <Card key={i} className="p-4 sm:p-8 bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border-0 shadow-lg sm:shadow-xl rounded-xl sm:rounded-2xl">
+              <Skeleton className="h-20 sm:h-32 w-full rounded-lg sm:rounded-xl" />
             </Card>
           ))}
         </div>
       ) : needs.length === 0 ? (
-        <Card className="relative overflow-hidden border-0 shadow-2xl rounded-3xl">
+        <Card className="relative overflow-hidden border-0 shadow-xl sm:shadow-2xl rounded-2xl sm:rounded-3xl">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-950/20 dark:to-pink-950/20"></div>
-          <CardContent className="relative p-16 text-center">
-            <div className="mb-8">
-              <div className="mx-auto w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl">
-                <Zap className="h-12 w-12 text-white" />
+          <CardContent className="relative p-8 sm:p-16 text-center">
+            <div className="mb-4 sm:mb-8">
+              <div className="mx-auto w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-xl sm:shadow-2xl">
+                <Zap className="h-8 w-8 sm:h-12 sm:w-12 text-white" />
               </div>
             </div>
-            <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-4">
+            <h3 className="text-xl sm:text-3xl font-black text-gray-900 dark:text-white mb-2 sm:mb-4">
               No needs found
             </h3>
-            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-lg mx-auto mb-8">
-              Be the first to post a need in the marketplace and connect with solution providers!
+            <p className="text-sm sm:text-lg text-gray-600 dark:text-gray-400 max-w-lg mx-auto mb-4 sm:mb-8">
+              Be the first to post a need in the marketplace!
             </p>
             {user && (
               <Button
@@ -265,30 +265,36 @@ export default function Home() {
     </div>
   );
 
-  // Mobile Categories - horizontal scrollable filter chips
+  // Mobile Categories - horizontal scrollable filter chips with scroll shadow
   const mobileCategories = (
-    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-2 px-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-      {[
-        { id: 'all', label: 'All', icon: '📋' },
-        { id: 'jobs', label: 'jobs', icon: '💼' },
-        { id: 'real_estate', label: 'real estate', icon: '🏠' },
-        { id: 'b2b_supply', label: 'b2b', icon: '🏢' },
-        { id: 'service', label: 'service', icon: '⚙️' },
-        { id: 'other', label: 'other', icon: '📦' },
-      ].map((category) => (
-        <button
-          key={category.id}
-          onClick={() => setSelectedCategory(category.id)}
-          className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap touch-manipulation ${
-            selectedCategory === category.id
-              ? "bg-blue-600 text-white shadow-lg"
-              : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
-          }`}
-          data-testid={`mobile-filter-${category.id}`}
-        >
-          {category.label}
-        </button>
-      ))}
+    <div className="relative">
+      <div 
+        className="flex gap-2 overflow-x-auto pb-2 px-1 snap-x snap-mandatory" 
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+      >
+        {[
+          { id: 'all', label: 'All' },
+          { id: 'jobs', label: 'jobs' },
+          { id: 'real_estate', label: 'real estate' },
+          { id: 'b2b_supply', label: 'b2b supply' },
+          { id: 'service', label: 'service' },
+          { id: 'other', label: 'other' },
+        ].map((category) => (
+          <button
+            key={category.id}
+            onClick={() => setSelectedCategory(category.id)}
+            className={`flex-shrink-0 px-4 py-2.5 rounded-full text-sm font-semibold transition-all whitespace-nowrap touch-manipulation snap-start min-h-[40px] ${
+              selectedCategory === category.id
+                ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg scale-105"
+                : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-95"
+            }`}
+            data-testid={`mobile-filter-${category.id}`}
+          >
+            {category.label}
+          </button>
+        ))}
+      </div>
+      <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-gray-50 dark:from-gray-900 to-transparent pointer-events-none" />
     </div>
   );
 
