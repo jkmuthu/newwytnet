@@ -1901,24 +1901,187 @@ function OrgPanelSettings() {
 }
 
 function OrgPanelMembers() {
-  return (
-    <div className="p-6">
-      <Card>
-        <CardContent className="py-12">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-              <User className="h-8 w-8 text-white" />
+  const orgname = window.location.pathname.split('/o/')[1]?.split('/')[0] || '';
+  
+  // First get organizations to find the org ID
+  const { data: orgsData, isLoading: orgsLoading } = useQuery({
+    queryKey: ['/api/user/organizations'],
+  });
+  
+  const organization = (orgsData as any)?.organizations?.find(
+    (org: any) => org.slug === orgname || org.name.toLowerCase().replace(/\s+/g, '-') === orgname
+  );
+
+  // Then fetch members
+  const { data: membersData, isLoading: membersLoading } = useQuery({
+    queryKey: ['/api/user/organizations', organization?.id, 'members'],
+    queryFn: async () => {
+      if (!organization?.id) return { members: [], currentUserRole: 'member' };
+      const res = await fetch(`/api/user/organizations/${organization.id}/members`);
+      return res.json();
+    },
+    enabled: !!organization?.id,
+  });
+
+  const members = (membersData as any)?.members || [];
+  const currentUserRole = (membersData as any)?.currentUserRole || 'member';
+  const isOwner = (membersData as any)?.isOwner || false;
+
+  if (orgsLoading || membersLoading) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="py-12">
+            <div className="animate-pulse space-y-4">
+              <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
+              <div className="space-y-2 mt-6">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                ))}
+              </div>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Organization Members
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
-              Invite team members, manage roles and permissions, and collaborate effectively.
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!organization) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Organization Not Found</h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              The organization could not be found.
             </p>
-            <Button className="mt-6">
-              Invite Members
-            </Button>
-          </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const getRoleBadgeColor = (role: string) => {
+    switch (role) {
+      case 'owner':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+      case 'admin':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+      case 'analyst':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      case 'custom':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+    }
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Our Team</h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Manage team members, roles and permissions
+          </p>
+        </div>
+        {isOwner && (
+          <Button data-testid="button-invite-members">
+            <Users className="h-4 w-4 mr-2" />
+            Invite Members
+          </Button>
+        )}
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          {members.length === 0 ? (
+            <div className="py-12 text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="h-8 w-8 text-white" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                No team members yet
+              </h2>
+              <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+                Invite team members to collaborate on your organization.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-800/50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Team Member
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      User ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Role
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Joined
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {members.map((member: any, index: number) => (
+                    <tr key={member.userId || index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium">
+                            {member.userAvatar ? (
+                              <img src={member.userAvatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+                            ) : (
+                              member.userName?.charAt(0)?.toUpperCase() || '?'
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white">
+                              {member.userName || 'Unknown User'}
+                            </p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              {member.userEmail || ''}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-600 dark:text-gray-400 font-mono">
+                          {member.userDisplayId || member.userId?.slice(0, 8) || '-'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getRoleBadgeColor(member.role)}`}>
+                          {member.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <Button variant="ghost" size="sm" data-testid={`button-view-member-${member.userId}`}>
+                          View
+                        </Button>
+                        {isOwner && member.role !== 'owner' && (
+                          <Button variant="ghost" size="sm" className="text-blue-600" data-testid={`button-edit-member-${member.userId}`}>
+                            Edit
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

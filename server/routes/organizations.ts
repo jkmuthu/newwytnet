@@ -345,6 +345,114 @@ router.get("/user/organizations/:id", isAuthenticatedUnified, async (req: any, r
   }
 });
 
+// GET /api/user/organizations/:id/members - Get organization members
+router.get("/user/organizations/:id/members", isAuthenticatedUnified, async (req: any, res) => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, error: "Not authenticated" });
+    }
+
+    // Get the organization
+    const [org] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, id))
+      .limit(1);
+
+    if (!org) {
+      return res.status(404).json({ success: false, error: "Organization not found" });
+    }
+
+    // Check if user has access (owner or member)
+    const isOwner = org.ownerId === userId;
+    const [membership] = await db
+      .select()
+      .from(organizationMembers)
+      .where(and(
+        eq(organizationMembers.organizationId, id),
+        eq(organizationMembers.userId, userId)
+      ))
+      .limit(1);
+
+    if (!isOwner && !membership) {
+      return res.status(403).json({ success: false, error: "Access denied" });
+    }
+
+    // Get all members with user details
+    const members = await db
+      .select({
+        id: organizationMembers.id,
+        organizationId: organizationMembers.organizationId,
+        userId: organizationMembers.userId,
+        role: organizationMembers.role,
+        isActive: organizationMembers.isActive,
+        joinedAt: organizationMembers.joinedAt,
+        createdAt: organizationMembers.createdAt,
+        userName: users.name,
+        userEmail: users.email,
+        userDisplayId: users.displayId,
+        userAvatar: users.profileImageUrl,
+      })
+      .from(organizationMembers)
+      .leftJoin(users, eq(users.id, organizationMembers.userId))
+      .where(eq(organizationMembers.organizationId, id));
+
+    // Also include the owner in the member list
+    const [owner] = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        displayId: users.displayId,
+        avatar: users.profileImageUrl,
+      })
+      .from(users)
+      .where(eq(users.id, org.ownerId))
+      .limit(1);
+
+    // Check if owner is already in members list
+    const ownerInMembers = members.some(m => m.userId === org.ownerId);
+    
+    const allMembers = ownerInMembers 
+      ? members.map(m => ({
+          ...m,
+          role: m.userId === org.ownerId ? 'owner' : m.role
+        }))
+      : [
+          {
+            id: null,
+            organizationId: org.id,
+            userId: org.ownerId,
+            role: 'owner',
+            isActive: true,
+            joinedAt: org.createdAt,
+            createdAt: org.createdAt,
+            userName: owner?.name || 'Unknown',
+            userEmail: owner?.email || '',
+            userDisplayId: owner?.displayId || '',
+            userAvatar: owner?.avatar || null,
+          },
+          ...members
+        ];
+
+    // Current user's role
+    const currentUserRole = isOwner ? 'owner' : membership?.role || 'member';
+
+    res.json({ 
+      success: true, 
+      members: allMembers,
+      currentUserRole,
+      isOwner
+    });
+  } catch (error) {
+    console.error("Error fetching organization members:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch organization members" });
+  }
+});
+
 // POST /api/user/organizations - Create new organization for user
 router.post("/user/organizations", isAuthenticatedUnified, async (req: any, res) => {
   try {

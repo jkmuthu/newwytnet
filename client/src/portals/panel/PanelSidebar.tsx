@@ -56,6 +56,19 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
     staleTime: 30000, // 30 seconds
   });
 
+  // Fetch current user
+  const { data: userData } = useQuery({
+    queryKey: ['/api/auth/user'],
+    staleTime: 60000, // 1 minute
+  });
+
+  // Fetch organizations to get role info
+  const { data: orgsData } = useQuery({
+    queryKey: ['/api/user/organizations'],
+    enabled: currentWorkspace.type === 'organization',
+    staleTime: 30000,
+  });
+
   const installedAppsCount = (myAppsData as any)?.apps?.length || 0;
   const appsCountBadge = installedAppsCount > 99 ? '99+' : installedAppsCount.toString();
 
@@ -64,6 +77,13 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
   const orgnameFromUrl = location.match(/^\/o\/([^\/]+)/)?.[1] || 'default';
   const appnameFromUrl = location.match(/^\/a\/([^\/]+)/)?.[1] || '';
   const hubnameFromUrl = location.match(/^\/h\/([^\/]+)/)?.[1] || '';
+
+  // Get current org and user's role in it
+  const currentOrg = (orgsData as any)?.organizations?.find(
+    (org: any) => org.slug === orgnameFromUrl || org.name?.toLowerCase().replace(/\s+/g, '-') === orgnameFromUrl
+  );
+  const currentUserRole = currentOrg?.role || 'member';
+  const currentUser = userData as any;
   
   // Navigation items based on workspace context
   const getNavigationItems = () => {
@@ -232,17 +252,31 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
         {/* Sidebar header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
           {!collapsed && (
-            <div className="flex items-center space-x-2">
-              {currentWorkspace.type === 'app' ? (
-                <Package className="h-5 w-5 text-purple-600" />
-              ) : currentWorkspace.type === 'personal' ? (
-                <User className="h-5 w-5 text-blue-600" />
-              ) : (
-                <Building className="h-5 w-5 text-green-600" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center space-x-2">
+                {currentWorkspace.type === 'app' ? (
+                  <Package className="h-5 w-5 text-purple-600 flex-shrink-0" />
+                ) : currentWorkspace.type === 'personal' ? (
+                  <User className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                ) : (
+                  <Building className="h-5 w-5 text-green-600 flex-shrink-0" />
+                )}
+                <span className="font-medium text-gray-900 dark:text-white truncate">
+                  {currentWorkspace.name}
+                </span>
+              </div>
+              {/* Show user info and role for organization workspaces */}
+              {currentWorkspace.type === 'organization' && currentUser && (
+                <div className="mt-2 pl-7">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {currentUser.email?.split('@')[0] || currentUser.name || 'User'}{' '}
+                    <span className="text-gray-400 dark:text-gray-500">|</span>{' '}
+                    <span className="capitalize font-medium text-purple-600 dark:text-purple-400">
+                      {currentUserRole}
+                    </span>
+                  </p>
+                </div>
               )}
-              <span className="font-medium text-gray-900 dark:text-white">
-                {currentWorkspace.name}
-              </span>
             </div>
           )}
 
@@ -250,7 +284,7 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
             variant="ghost"
             size="sm"
             onClick={onToggleCollapse}
-            className="hidden lg:flex"
+            className="hidden lg:flex flex-shrink-0"
             data-testid="collapse-sidebar"
           >
             <ChevronLeft className={cn(
