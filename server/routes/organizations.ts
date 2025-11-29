@@ -4,9 +4,11 @@ import { db } from "../db";
 import { 
   organizations,
   organizationMembers,
+  organizationAppPermissions,
   users,
+  apps,
 } from "@shared/schema";
-import { eq, desc, sql, ilike, or, and } from "drizzle-orm";
+import { eq, desc, sql, ilike, or, and, inArray } from "drizzle-orm";
 import { adminAuthMiddleware, isAuthenticatedUnified } from "../customAuth";
 import { requirePermission } from "../permission-middleware";
 
@@ -153,6 +155,7 @@ router.get("/organizations/check-slug", async (req, res) => {
 });
 
 // GET /api/user/organizations - Get organizations for logged in user
+// Returns organizations with user's role and WytWall permissions
 router.get("/user/organizations", isAuthenticatedUnified, async (req: any, res) => {
   try {
     const userId = req.user?.id;
@@ -214,10 +217,77 @@ router.get("/user/organizations", isAuthenticatedUnified, async (req: any, res) 
       ))
       .orderBy(desc(organizations.createdAt));
 
-    // Combine and mark roles
+    // Get all org IDs to fetch permissions
+    const allOrgIds = [
+      ...ownedOrgs.map(o => o.id),
+      ...memberOrgs.filter(org => org.ownerId !== userId).map(o => o.id)
+    ];
+
+    // Fetch WytWall app permissions for non-owner orgs
+    // Find WytWall app first (by key)
+    const [wytWallApp] = await db
+      .select({ id: apps.id })
+      .from(apps)
+      .where(eq(apps.key, 'wytwall'))
+      .limit(1);
+
+    // Get app permissions for all member orgs
+    let appPermsMap: Record<string, { canView: boolean; canAdd: boolean; canEdit: boolean; canDelete: boolean }> = {};
+    
+    if (wytWallApp && allOrgIds.length > 0) {
+      const permissions = await db
+        .select({
+          organizationId: organizationAppPermissions.organizationId,
+          canView: organizationAppPermissions.canView,
+          canAdd: organizationAppPermissions.canAdd,
+          canEdit: organizationAppPermissions.canEdit,
+          canDelete: organizationAppPermissions.canDelete,
+        })
+        .from(organizationAppPermissions)
+        .where(and(
+          eq(organizationAppPermissions.userId, userId),
+          eq(organizationAppPermissions.appId, wytWallApp.id),
+          inArray(organizationAppPermissions.organizationId, allOrgIds)
+        ));
+
+      permissions.forEach(p => {
+        appPermsMap[p.organizationId] = {
+          canView: p.canView,
+          canAdd: p.canAdd,
+          canEdit: p.canEdit,
+          canDelete: p.canDelete,
+        };
+      });
+    }
+
+    // Owner has all permissions by default
+    const ownerPermissions = { canView: true, canAdd: true, canEdit: true, canDelete: true };
+    
+    // Default permissions for non-owner roles if not explicitly set
+    const getDefaultPermissions = (role: string) => {
+      switch (role) {
+        case 'admin':
+          return { canView: true, canAdd: true, canEdit: true, canDelete: false };
+        case 'analyst':
+          return { canView: true, canAdd: false, canEdit: false, canDelete: false };
+        default:
+          return { canView: true, canAdd: false, canEdit: false, canDelete: false };
+      }
+    };
+
+    // Combine and mark roles with permissions
     const allOrgs = [
-      ...ownedOrgs.map(org => ({ ...org, role: 'owner' as const, memberCount: 1 })),
-      ...memberOrgs.filter(org => org.ownerId !== userId).map(org => ({ ...org, memberCount: 1 }))
+      ...ownedOrgs.map(org => ({ 
+        ...org, 
+        role: 'owner' as const, 
+        memberCount: 1,
+        wytWallPermissions: ownerPermissions 
+      })),
+      ...memberOrgs.filter(org => org.ownerId !== userId).map(org => ({ 
+        ...org, 
+        memberCount: 1,
+        wytWallPermissions: appPermsMap[org.id] || getDefaultPermissions(org.role || 'member')
+      }))
     ];
 
     res.json({ success: true, organizations: allOrgs });
