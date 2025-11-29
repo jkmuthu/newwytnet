@@ -517,10 +517,34 @@ export async function setupAuth(app: Express) {
   });
 }
 
-// Unified authentication middleware - handles both WhatsApp and legacy users
+// Unified authentication middleware - handles both WhatsApp, WytPass and legacy users
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const sessionUser = (req.session as any)?.user;
+  const wytpassPrincipal = (req.session as any)?.wytpassPrincipal;
   
+  // Check for WytPass principal first (unified auth system)
+  if (wytpassPrincipal) {
+    try {
+      const user = await storage.getUser(wytpassPrincipal.id);
+      if (user) {
+        (req as any).user = {
+          id: user.id,
+          tenantId: user.tenantId || wytpassPrincipal.tenantId,
+          role: wytpassPrincipal.role || user.role,
+          isSuperAdmin: wytpassPrincipal.isSuperAdmin || false,
+          email: user.email || wytpassPrincipal.email,
+          name: user.name || wytpassPrincipal.name,
+          provider: wytpassPrincipal.loginType || 'wytpass',
+          claims: { sub: user.id }
+        };
+        return next();
+      }
+    } catch (error) {
+      console.error("WytPass auth error:", error);
+    }
+  }
+  
+  // Fallback to legacy session user
   if (!sessionUser) {
     return res.status(401).json({ message: "Unauthorized" });
   }
