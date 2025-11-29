@@ -32,10 +32,7 @@ export default function PostDetail() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: { category: string; description: string }) => {
-      return apiRequest(`/api/wytwall/posts/${postId}`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-      });
+      return apiRequest(`/api/wytwall/posts/${postId}`, 'PATCH', data);
     },
     onSuccess: () => {
       toast({ title: "Post updated successfully" });
@@ -50,9 +47,7 @@ export default function PostDetail() {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/wytwall/posts/${postId}`, {
-        method: 'DELETE',
-      });
+      return apiRequest(`/api/wytwall/posts/${postId}`, 'DELETE');
     },
     onSuccess: () => {
       toast({ title: "Post deleted successfully" });
