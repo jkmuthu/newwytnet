@@ -113,14 +113,47 @@ interface Organization {
 }
 
 
+interface WytApp {
+  id: string;
+  key: string;
+  slug: string;
+  name: string;
+  status: string;
+  accessPanels?: string[];
+}
+
 export default function AdminTenants() {
   const [orgStatusFilter, setOrgStatusFilter] = useState<'active' | 'inactive' | 'trash' | 'settings'>('active');
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const [isOrgDetailOpen, setIsOrgDetailOpen] = useState(false);
   const [isEditRoleOpen, setIsEditRoleOpen] = useState(false);
+  const [isCreateRoleOpen, setIsCreateRoleOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<OrgRole | null>(null);
+  const [newRole, setNewRole] = useState<Partial<OrgRole>>({ name: '', description: '', permissions: {} });
   const [orgRoles, setOrgRoles] = useState<OrgRole[]>(DEFAULT_ORG_ROLES);
   const { toast } = useToast();
+
+  // Fetch WytApps that can be used in org panel (for dynamic permissions)
+  const { data: wytAppsData } = useQuery<{ apps: WytApp[] }>({
+    queryKey: ['/api/admin/apps'],
+  });
+
+  // Combine default org apps with active WytApps from database
+  const allOrgApps = (() => {
+    const defaultApps = [...DEFAULT_ORG_APPS];
+    const dbApps = (wytAppsData?.apps || [])
+      .filter(app => app.status === 'active' && app.accessPanels?.includes('org_panel'))
+      .map(app => ({ slug: app.slug || app.key, name: app.name }));
+    
+    // Merge and deduplicate
+    const slugSet = new Set(defaultApps.map(a => a.slug));
+    dbApps.forEach(app => {
+      if (!slugSet.has(app.slug)) {
+        defaultApps.push(app);
+      }
+    });
+    return defaultApps;
+  })();
 
   // Fetch org roles settings from API
   const { data: orgRolesData } = useQuery({
@@ -180,6 +213,65 @@ export default function AdminTenants() {
     }
     
     setEditingRole({ ...editingRole, permissions: newPermissions });
+  };
+
+  const handleNewRolePermissionChange = (appSlug: string, permission: 'view' | 'add' | 'edit' | 'delete', value: boolean) => {
+    const newPermissions = { ...newRole.permissions } as OrgRole['permissions'];
+    if (!newPermissions[appSlug]) {
+      newPermissions[appSlug] = { view: false, add: false, edit: false, delete: false };
+    }
+    newPermissions[appSlug] = { ...newPermissions[appSlug], [permission]: value };
+    
+    if (permission === 'view' && !value) {
+      newPermissions[appSlug] = { view: false, add: false, edit: false, delete: false };
+    }
+    
+    setNewRole({ ...newRole, permissions: newPermissions });
+  };
+
+  const handleCreateRole = () => {
+    if (!newRole.name?.trim()) {
+      toast({ title: "Error", description: "Role name is required", variant: "destructive" });
+      return;
+    }
+
+    const slug = newRole.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const roleId = `role-${Date.now()}`;
+    
+    const createdRole: OrgRole = {
+      id: roleId,
+      name: newRole.name.trim(),
+      slug,
+      description: newRole.description || '',
+      isSystem: false,
+      permissions: newRole.permissions || allOrgApps.reduce((acc, app) => ({
+        ...acc,
+        [app.slug]: { view: true, add: false, edit: false, delete: false }
+      }), {}),
+      createdAt: new Date().toISOString(),
+    };
+
+    const updatedRoles = [...orgRoles, createdRole];
+    setOrgRoles(updatedRoles);
+    saveRolesMutation.mutate(updatedRoles);
+    setIsCreateRoleOpen(false);
+    setNewRole({ name: '', description: '', permissions: {} });
+    toast({ title: "Success", description: `Role "${createdRole.name}" created successfully` });
+  };
+
+  const handleDeleteRole = (roleId: string) => {
+    const roleToDelete = orgRoles.find(r => r.id === roleId);
+    if (!roleToDelete) return;
+    
+    if (roleToDelete.isSystem) {
+      toast({ title: "Error", description: "System roles cannot be deleted", variant: "destructive" });
+      return;
+    }
+
+    const updatedRoles = orgRoles.filter(r => r.id !== roleId);
+    setOrgRoles(updatedRoles);
+    saveRolesMutation.mutate(updatedRoles);
+    toast({ title: "Success", description: `Role "${roleToDelete.name}" deleted` });
   };
 
   const getRoleBadgeColor = (slug: string) => {
@@ -313,6 +405,10 @@ export default function AdminTenants() {
                           Define roles and their permissions for all organizations. Changes apply globally.
                         </CardDescription>
                       </div>
+                      <Button onClick={() => setIsCreateRoleOpen(true)} data-testid="button-create-role">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Role
+                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -350,15 +446,28 @@ export default function AdminTenants() {
                                   </span>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditRole(role)}
-                                    disabled={role.slug === 'owner'}
-                                    data-testid={`button-edit-role-${role.slug}`}
-                                  >
-                                    <Edit2 className="h-4 w-4" />
-                                  </Button>
+                                  <div className="flex items-center justify-end gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleEditRole(role)}
+                                      disabled={role.slug === 'owner'}
+                                      data-testid={`button-edit-role-${role.slug}`}
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </Button>
+                                    {!role.isSystem && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDeleteRole(role.id)}
+                                        className="text-destructive hover:text-destructive"
+                                        data-testid={`button-delete-role-${role.slug}`}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -710,7 +819,7 @@ export default function AdminTenants() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {DEFAULT_ORG_APPS.map((app) => {
+                      {allOrgApps.map((app) => {
                         const perms = editingRole.permissions[app.slug] || { view: false, add: false, edit: false, delete: false };
                         return (
                           <TableRow key={app.slug}>
@@ -766,6 +875,126 @@ export default function AdminTenants() {
             <Button onClick={handleSaveRole} disabled={saveRolesMutation.isPending}>
               <Save className="h-4 w-4 mr-2" />
               {saveRolesMutation.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create New Role Dialog */}
+      <Dialog open={isCreateRoleOpen} onOpenChange={setIsCreateRoleOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5" />
+              Create New Role
+            </DialogTitle>
+            <DialogDescription>
+              Create a custom role with specific permissions. New apps added to the platform will automatically appear here.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Role Name & Description */}
+            <div className="grid gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="newRoleName">Role Name *</Label>
+                <Input
+                  id="newRoleName"
+                  value={newRole.name || ''}
+                  onChange={(e) => setNewRole({ ...newRole, name: e.target.value })}
+                  placeholder="e.g., Project Manager, Viewer, Contributor"
+                  data-testid="input-new-role-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newRoleDescription">Description</Label>
+                <Textarea
+                  id="newRoleDescription"
+                  value={newRole.description || ''}
+                  onChange={(e) => setNewRole({ ...newRole, description: e.target.value })}
+                  placeholder="Describe what this role can do..."
+                  className="h-20"
+                  data-testid="input-new-role-description"
+                />
+              </div>
+            </div>
+
+            {/* Permissions Matrix */}
+            <div className="space-y-3">
+              <Label>App Permissions</Label>
+              <p className="text-sm text-muted-foreground">
+                When new WytApps are activated for organizations, they will automatically appear in this list.
+              </p>
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="w-[180px]">App / Feature</TableHead>
+                      <TableHead className="w-[100px] text-center">View</TableHead>
+                      <TableHead className="w-[100px] text-center">Add</TableHead>
+                      <TableHead className="w-[100px] text-center">Edit</TableHead>
+                      <TableHead className="w-[100px] text-center">Delete</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {allOrgApps.map((app) => {
+                      const perms = (newRole.permissions as OrgRole['permissions'])?.[app.slug] || { view: false, add: false, edit: false, delete: false };
+                      return (
+                        <TableRow key={app.slug}>
+                          <TableCell className="font-medium">{app.name}</TableCell>
+                          <TableCell className="text-center">
+                            <Checkbox
+                              checked={perms.view}
+                              onCheckedChange={(checked) => handleNewRolePermissionChange(app.slug, 'view', !!checked)}
+                              data-testid={`checkbox-new-${app.slug}-view`}
+                            />
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Checkbox
+                              checked={perms.add}
+                              disabled={!perms.view}
+                              onCheckedChange={(checked) => handleNewRolePermissionChange(app.slug, 'add', !!checked)}
+                              data-testid={`checkbox-new-${app.slug}-add`}
+                            />
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Checkbox
+                              checked={perms.edit}
+                              disabled={!perms.view}
+                              onCheckedChange={(checked) => handleNewRolePermissionChange(app.slug, 'edit', !!checked)}
+                              data-testid={`checkbox-new-${app.slug}-edit`}
+                            />
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Checkbox
+                              checked={perms.delete}
+                              disabled={!perms.view}
+                              onCheckedChange={(checked) => handleNewRolePermissionChange(app.slug, 'delete', !!checked)}
+                              data-testid={`checkbox-new-${app.slug}-delete`}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                If "View" is disabled, the app/feature will be hidden from users with this role.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsCreateRoleOpen(false);
+              setNewRole({ name: '', description: '', permissions: {} });
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateRole} disabled={saveRolesMutation.isPending}>
+              <Plus className="h-4 w-4 mr-2" />
+              {saveRolesMutation.isPending ? 'Creating...' : 'Create Role'}
             </Button>
           </DialogFooter>
         </DialogContent>
