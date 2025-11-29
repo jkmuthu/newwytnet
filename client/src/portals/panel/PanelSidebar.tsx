@@ -176,6 +176,12 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               href: `/u/${usernameFromUrl}/profile`, 
               active: location === `/u/${usernameFromUrl}/profile` 
             },
+            { 
+              label: "My Account", 
+              icon: Settings, 
+              href: `/u/${usernameFromUrl}/account`, 
+              active: location === `/u/${usernameFromUrl}/account` 
+            },
           ]
         }
       ];
