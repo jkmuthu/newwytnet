@@ -100,9 +100,9 @@ export default function WytWallPostForm({ defaultPostType = "need", onSuccess }:
   const [selectedPostType, setSelectedPostType] = useState<"need" | "offer">(defaultPostType);
   const [postFor, setPostFor] = useState<"personal" | "organization">("personal");
 
-  // Fetch user's organizations
+  // Fetch user's organizations (using the working endpoint)
   const { data: orgsData } = useQuery({
-    queryKey: ['/api/organizations/my-orgs'],
+    queryKey: ['/api/user/organizations'],
     refetchOnWindowFocus: false,
   });
 
