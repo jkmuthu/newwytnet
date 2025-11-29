@@ -419,14 +419,14 @@ function MyPanelWytWall() {
       </Card>
 
       {/* Tabs Navigation */}
-      <Tabs defaultValue="matches" value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs defaultValue="posts" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="posts" data-testid="tab-posts">My Posts</TabsTrigger>
           <TabsTrigger value="matches" data-testid="tab-matches">Matches</TabsTrigger>
-          <TabsTrigger value="posts" data-testid="tab-posts">Posts</TabsTrigger>
           <TabsTrigger value="received" data-testid="tab-received" className="relative">
             Received
           </TabsTrigger>
-          <TabsTrigger value="sent" data-testid="tab-sent">Sent</TabsTrigger>
+          <TabsTrigger value="sent" data-testid="tab-sent">Responded</TabsTrigger>
           <TabsTrigger value="add-post" data-testid="tab-add-post">Add Post</TabsTrigger>
         </TabsList>
 
@@ -715,7 +715,7 @@ function MyPanelWytWall() {
           )}
         </TabsContent>
 
-        {/* Sent Offers Tab Content */}
+        {/* Responded Tab - Offers I've sent and their responses */}
         <TabsContent value="sent" className="mt-6">
           {sentLoading ? (
             <Card>
@@ -730,8 +730,8 @@ function MyPanelWytWall() {
               <div className="w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Send className="h-10 w-10 text-purple-500" />
               </div>
-              <h3 className="text-lg font-medium mb-2">No offers sent yet</h3>
-              <p className="text-muted-foreground mb-4">When you make an offer on a public post, it'll appear here</p>
+              <h3 className="text-lg font-medium mb-2">No responses yet</h3>
+              <p className="text-muted-foreground mb-4">Offers you've sent and their responses will appear here</p>
               <Button onClick={() => window.location.href = '/wytwall'} data-testid="button-browse-wytwall">
                 Browse WytWall
               </Button>

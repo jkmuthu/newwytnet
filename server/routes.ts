@@ -10886,10 +10886,13 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
+      // Ensure principal.id is a string for comparison
+      const principalId = String(principal.id);
+
       // Get all my posts first
       const myPosts = await db.select({ id: wytWallPosts.id })
         .from(wytWallPosts)
-        .where(eq(wytWallPosts.userId, principal.id));
+        .where(eq(wytWallPosts.userId, principalId));
 
       const myPostIds = myPosts.map(p => p.id);
 
@@ -10897,7 +10900,7 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.json({ success: true, offers: [], total: 0 });
       }
 
-      // Get all offers on my posts
+      // Get all offers on my posts using inArray
       const receivedOffers = await db.select({
         id: wytWallPostOffers.id,
         postId: wytWallPostOffers.postId,
@@ -10918,7 +10921,7 @@ When suggesting improvements, format your response with suggestions in a structu
         .from(wytWallPostOffers)
         .innerJoin(users, eq(wytWallPostOffers.offererId, users.id))
         .innerJoin(wytWallPosts, eq(wytWallPostOffers.postId, wytWallPosts.id))
-        .where(sql`${wytWallPostOffers.postId} = ANY(${myPostIds})`)
+        .where(inArray(wytWallPostOffers.postId, myPostIds))
         .orderBy(desc(wytWallPostOffers.createdAt));
 
       res.json({ success: true, offers: receivedOffers, total: receivedOffers.length });
@@ -10935,6 +10938,9 @@ When suggesting improvements, format your response with suggestions in a structu
       if (!principal) {
         return res.status(401).json({ error: 'Not authenticated' });
       }
+
+      // Ensure principal.id is a string for comparison
+      const principalId = String(principal.id);
 
       const sentOffers = await db.select({
         id: wytWallPostOffers.id,
@@ -10954,7 +10960,7 @@ When suggesting improvements, format your response with suggestions in a structu
         .from(wytWallPostOffers)
         .innerJoin(wytWallPosts, eq(wytWallPostOffers.postId, wytWallPosts.id))
         .innerJoin(users, eq(wytWallPosts.userId, users.id))
-        .where(eq(wytWallPostOffers.offererId, principal.id))
+        .where(eq(wytWallPostOffers.offererId, principalId))
         .orderBy(desc(wytWallPostOffers.createdAt));
 
       res.json({ success: true, offers: sentOffers, total: sentOffers.length });
