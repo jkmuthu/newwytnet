@@ -167,7 +167,7 @@ export default function PanelMobileLayout({
     {
       type: 'personal' as const,
       id: 'me',
-      name: 'My Panel',
+      name: 'WytPanel',
       icon: User,
       orgId: undefined,
     }

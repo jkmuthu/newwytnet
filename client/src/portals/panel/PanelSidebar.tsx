@@ -143,7 +143,7 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
       // MyPanel Navigation - /u/:username/*
       return [
         {
-          section: "My Panel",
+          section: "WytPanel",
           items: [
             { 
               label: "My Dashboard", 

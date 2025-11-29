@@ -35,7 +35,7 @@ export default function PanelLayout({ children }: PanelLayoutProps) {
   const [currentWorkspace, setCurrentWorkspace] = useState<WorkspaceContext>({
     type: 'personal',
     id: 'me',
-    name: 'My Panel'
+    name: 'WytPanel'
   });
 
   // Helper to convert slug to display name
@@ -119,7 +119,7 @@ export default function PanelLayout({ children }: PanelLayoutProps) {
       setCurrentWorkspace({
         type: 'personal',
         id: username,
-        name: username === 'me' ? 'My Panel' : `${username}'s Panel`
+        name: username === 'me' ? 'WytPanel' : `${username}'s Panel`
       });
       return;
     }
@@ -146,7 +146,7 @@ export default function PanelLayout({ children }: PanelLayoutProps) {
       setCurrentWorkspace({
         type: 'personal',
         id: 'me',
-        name: 'My Panel'
+        name: 'WytPanel'
       });
     } else if (normalizedPath.includes('/panel/org')) {
       setCurrentWorkspace({
@@ -159,7 +159,7 @@ export default function PanelLayout({ children }: PanelLayoutProps) {
       setCurrentWorkspace({
         type: 'personal',
         id: 'me',
-        name: 'My Panel'
+        name: 'WytPanel'
       });
     }
   }, [location]);
