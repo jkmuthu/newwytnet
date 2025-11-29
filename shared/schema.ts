@@ -2672,6 +2672,7 @@ export const wytWallPosts = pgTable("wytwall_posts", {
   validityDays: integer("validity_days").notNull().default(7), // 7, 15, 60, or 90 days
   expiresAt: timestamp("expires_at"), // Calculated: createdAt + validityDays
   status: varchar("status", { length: 20 }).notNull().default("active"), // active, expired, closed
+  isPublic: boolean("is_public").default(false), // If true, visible on public WytWall marketplace
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
