@@ -12,7 +12,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import WytWallPostForm from "@/components/WytWallPostForm";
 import PaymentHistory from "@/components/payments/PaymentHistory";
 import MyPosts from "./pages/my-posts";
@@ -1902,6 +1905,14 @@ function OrgPanelSettings() {
 
 function OrgPanelMembers() {
   const orgname = window.location.pathname.split('/o/')[1]?.split('/')[0] || '';
+  const { toast } = useToast();
+  
+  // Dialog states
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [viewMemberDialogOpen, setViewMemberDialogOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('analyst');
   
   // First get organizations to find the org ID
   const { data: orgsData, isLoading: orgsLoading } = useQuery({
@@ -1913,7 +1924,7 @@ function OrgPanelMembers() {
   );
 
   // Then fetch members
-  const { data: membersData, isLoading: membersLoading } = useQuery({
+  const { data: membersData, isLoading: membersLoading, refetch: refetchMembers } = useQuery({
     queryKey: ['/api/user/organizations', organization?.id, 'members'],
     queryFn: async () => {
       if (!organization?.id) return { members: [], currentUserRole: 'member' };
@@ -1926,6 +1937,42 @@ function OrgPanelMembers() {
   const members = (membersData as any)?.members || [];
   const currentUserRole = (membersData as any)?.currentUserRole || 'member';
   const isOwner = (membersData as any)?.isOwner || false;
+
+  // Invite team mutation
+  const inviteMutation = useMutation({
+    mutationFn: async (data: { email: string; role: string }) => {
+      const res = await fetch(`/api/user/organizations/${organization.id}/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to invite team member');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: 'Invite sent', description: 'Team member has been invited successfully' });
+      setInviteDialogOpen(false);
+      setInviteEmail('');
+      setInviteRole('analyst');
+      refetchMembers();
+    },
+    onError: (error: any) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const handleInviteTeam = () => {
+    if (!inviteEmail) return;
+    inviteMutation.mutate({ email: inviteEmail, role: inviteRole });
+  };
+
+  const handleViewMember = (member: any) => {
+    setSelectedMember(member);
+    setViewMemberDialogOpen(true);
+  };
 
   if (orgsLoading || membersLoading) {
     return (
@@ -1988,10 +2035,65 @@ function OrgPanelMembers() {
           </p>
         </div>
         {isOwner && (
-          <Button data-testid="button-invite-members">
-            <Users className="h-4 w-4 mr-2" />
-            Invite Members
-          </Button>
+          <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+            <DialogTrigger asChild>
+              <Button data-testid="button-invite-team">
+                <Users className="h-4 w-4 mr-2" />
+                Invite Team
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Invite Team Member</DialogTitle>
+                <DialogDescription>
+                  Add a new team member to {organization?.name || 'your organization'}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="inviteEmail">Email Address</Label>
+                  <Input
+                    id="inviteEmail"
+                    type="email"
+                    placeholder="team@example.com"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    data-testid="input-invite-email"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="inviteRole">Role</Label>
+                  <Select value={inviteRole} onValueChange={setInviteRole}>
+                    <SelectTrigger data-testid="select-invite-role">
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="analyst">Analyst</SelectItem>
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {inviteRole === 'admin' && 'Full access to manage organization and apps'}
+                    {inviteRole === 'analyst' && 'View and analyze data across apps'}
+                    {inviteRole === 'custom' && 'Custom permissions configured separately'}
+                  </p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleInviteTeam} 
+                  disabled={inviteMutation.isPending || !inviteEmail}
+                  data-testid="button-send-invite"
+                >
+                  {inviteMutation.isPending ? 'Sending...' : 'Send Invite'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
 
@@ -2067,7 +2169,12 @@ function OrgPanelMembers() {
                         {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <Button variant="ghost" size="sm" data-testid={`button-view-member-${member.userId}`}>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleViewMember(member)}
+                          data-testid={`button-view-member-${member.userId}`}
+                        >
                           View
                         </Button>
                         {isOwner && member.role !== 'owner' && (
@@ -2084,6 +2191,68 @@ function OrgPanelMembers() {
           )}
         </CardContent>
       </Card>
+
+      {/* View Member Dialog */}
+      <Dialog open={viewMemberDialogOpen} onOpenChange={setViewMemberDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Team Member Details</DialogTitle>
+          </DialogHeader>
+          {selectedMember && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-medium">
+                  {selectedMember.userAvatar ? (
+                    <img src={selectedMember.userAvatar} alt="" className="h-16 w-16 rounded-full object-cover" />
+                  ) : (
+                    selectedMember.userName?.charAt(0)?.toUpperCase() || '?'
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {selectedMember.userName || 'Unknown User'}
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {selectedMember.userEmail || ''}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">User ID</p>
+                  <p className="font-mono text-sm text-gray-900 dark:text-white">
+                    {selectedMember.userDisplayId || selectedMember.userId?.slice(0, 8) || '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Role</p>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${getRoleBadgeColor(selectedMember.role)}`}>
+                    {selectedMember.role}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Joined</p>
+                  <p className="text-sm text-gray-900 dark:text-white">
+                    {selectedMember.joinedAt ? new Date(selectedMember.joinedAt).toLocaleDateString() : '-'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Status</p>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${selectedMember.isActive !== false ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'}`}>
+                    {selectedMember.isActive !== false ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewMemberDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

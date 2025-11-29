@@ -453,6 +453,99 @@ router.get("/user/organizations/:id/members", isAuthenticatedUnified, async (req
   }
 });
 
+// POST /api/user/organizations/:id/invite - Invite a team member to organization
+router.post("/user/organizations/:id/invite", isAuthenticatedUnified, async (req: any, res) => {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+    const { email, role } = req.body;
+    
+    if (!userId) {
+      return res.status(401).json({ success: false, error: "Not authenticated" });
+    }
+
+    if (!email || !role) {
+      return res.status(400).json({ success: false, error: "Email and role are required" });
+    }
+
+    // Get the organization
+    const [org] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, id))
+      .limit(1);
+
+    if (!org) {
+      return res.status(404).json({ success: false, error: "Organization not found" });
+    }
+
+    // Check if user is the owner (only owners can invite)
+    if (org.ownerId !== userId) {
+      return res.status(403).json({ success: false, error: "Only the owner can invite team members" });
+    }
+
+    // Find user by email
+    const [invitedUser] = await db
+      .select({ id: users.id, email: users.email, name: users.name })
+      .from(users)
+      .where(eq(users.email, email.toLowerCase()))
+      .limit(1);
+
+    if (!invitedUser) {
+      return res.status(404).json({ 
+        success: false, 
+        error: "User not found. They need to create a WytNet account first." 
+      });
+    }
+
+    // Check if user is already the owner
+    if (invitedUser.id === org.ownerId) {
+      return res.status(400).json({ success: false, error: "This user is already the owner" });
+    }
+
+    // Check if user is already a member
+    const [existingMember] = await db
+      .select()
+      .from(organizationMembers)
+      .where(
+        and(
+          eq(organizationMembers.organizationId, id),
+          eq(organizationMembers.userId, invitedUser.id)
+        )
+      )
+      .limit(1);
+
+    if (existingMember) {
+      return res.status(400).json({ success: false, error: "This user is already a team member" });
+    }
+
+    // Add the member
+    const [newMember] = await db
+      .insert(organizationMembers)
+      .values({
+        organizationId: id,
+        userId: invitedUser.id,
+        role: role,
+        isActive: true,
+        joinedAt: new Date(),
+      })
+      .returning();
+
+    res.json({ 
+      success: true, 
+      message: "Team member added successfully",
+      member: {
+        ...newMember,
+        userName: invitedUser.name,
+        userEmail: invitedUser.email,
+      }
+    });
+  } catch (error) {
+    console.error("Error inviting team member:", error);
+    res.status(500).json({ success: false, error: "Failed to invite team member" });
+  }
+});
+
 // POST /api/user/organizations - Create new organization for user
 router.post("/user/organizations", isAuthenticatedUnified, async (req: any, res) => {
   try {
