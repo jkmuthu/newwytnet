@@ -26,7 +26,6 @@ export default function MyAccount() {
   const [checkingUsername, setCheckingUsername] = useState(false);
 
   // Password form state
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -78,9 +77,9 @@ export default function MyAccount() {
     },
   });
 
-  // Change password mutation
+  // Change password mutation (set or update password)
   const changePasswordMutation = useMutation({
-    mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
+    mutationFn: async (data: { newPassword: string }) => {
       return await apiRequest("/api/account/password", "PATCH", data);
     },
     onSuccess: () => {
@@ -89,7 +88,6 @@ export default function MyAccount() {
         description: "Password updated successfully",
       });
       setPasswordDialogOpen(false);
-      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     },
@@ -125,7 +123,7 @@ export default function MyAccount() {
   };
 
   const handlePasswordSubmit = () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
+    if (!newPassword || !confirmPassword) {
       toast({
         title: "Error",
         description: "All fields are required",
@@ -137,7 +135,7 @@ export default function MyAccount() {
     if (newPassword.length < 6) {
       toast({
         title: "Error",
-        description: "New password must be at least 6 characters",
+        description: "Password must be at least 6 characters",
         variant: "destructive",
       });
       return;
@@ -152,7 +150,7 @@ export default function MyAccount() {
       return;
     }
 
-    changePasswordMutation.mutate({ currentPassword, newPassword });
+    changePasswordMutation.mutate({ newPassword });
   };
 
   if (isLoading) {
@@ -270,23 +268,12 @@ export default function MyAccount() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Change Password</DialogTitle>
+                  <DialogTitle>Set Password</DialogTitle>
                   <DialogDescription>
-                    Enter your current password and choose a new one
+                    Set a password to login with your username instead of social login
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="current-password">Current Password</Label>
-                    <Input
-                      id="current-password"
-                      type="password"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      placeholder="Enter current password"
-                      data-testid="input-current-password"
-                    />
-                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="new-password">New Password</Label>
                     <Input
@@ -299,13 +286,13 @@ export default function MyAccount() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                    <Label htmlFor="confirm-password">Confirm Password</Label>
                     <Input
                       id="confirm-password"
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm new password"
+                      placeholder="Confirm password"
                       data-testid="input-confirm-password"
                     />
                   </div>
@@ -316,7 +303,7 @@ export default function MyAccount() {
                     disabled={changePasswordMutation.isPending}
                     data-testid="button-save-password"
                   >
-                    {changePasswordMutation.isPending ? "Changing..." : "Change Password"}
+                    {changePasswordMutation.isPending ? "Saving..." : "Set Password"}
                   </Button>
                 </DialogFooter>
               </DialogContent>

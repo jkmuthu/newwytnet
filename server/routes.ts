@@ -10551,7 +10551,7 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Update/create user password
+  // Set/update user password (no current password required - allows social login users to set password)
   app.patch('/api/account/password', async (req: any, res) => {
     try {
       const principal = await getPrincipal(req);
@@ -10559,10 +10559,10 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      const { currentPassword, newPassword } = req.body;
+      const { newPassword } = req.body;
 
-      if (!newPassword || newPassword.length < 8) {
-        return res.status(400).json({ error: 'New password must be at least 8 characters' });
+      if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ error: 'Password must be at least 6 characters' });
       }
 
       // Get user from database
@@ -10570,15 +10570,6 @@ When suggesting improvements, format your response with suggestions in a structu
 
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
-      }
-
-      // If user has a password, verify current password
-      if (user.passwordHash && currentPassword) {
-        const bcrypt = await import('bcryptjs');
-        const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
-        if (!isValid) {
-          return res.status(400).json({ error: 'Current password is incorrect' });
-        }
       }
 
       // Hash and save new password
