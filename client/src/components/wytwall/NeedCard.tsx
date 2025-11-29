@@ -3,7 +3,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, Clock, DollarSign, MessageSquare, Star, ChevronDown, ChevronUp } from "lucide-react";
+import { MapPin, Clock, DollarSign, MessageSquare, Star, ChevronDown, ChevronUp, Users } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface NeedCardProps {
@@ -112,19 +112,29 @@ export default function NeedCard({ need, isAuthenticated, onMakeOffer, onLogin, 
           </CardContent>
 
           <CardFooter className="px-3 sm:px-6 border-t border-gray-200 dark:border-gray-700 py-2.5 sm:py-3 bg-gray-50 dark:bg-gray-800/50">
-            <Button
-              onClick={handleOfferClick}
-              className={`w-full font-semibold text-xs sm:text-sm h-9 sm:h-10 ${
-                isAuthenticated
-                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md"
-                  : "bg-gray-200 hover:bg-gray-300 text-gray-700"
-              }`}
-              disabled={!isAuthenticated && !onLogin}
-              data-testid={`button-make-offer-${need.id}`}
-            >
-              <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-              {isAuthenticated ? "Make an Offer" : "Login to Make Offer"}
-            </Button>
+            <div className="w-full flex items-center gap-3">
+              {/* Response Count Badge */}
+              {(need.responseCount > 0 || need.offersCount > 0) && (
+                <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-700 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600">
+                  <Users className="h-3.5 w-3.5 text-blue-500" />
+                  <span className="font-medium">{need.responseCount || need.offersCount}</span>
+                  <span className="hidden sm:inline">response{(need.responseCount || need.offersCount) !== 1 ? 's' : ''}</span>
+                </div>
+              )}
+              <Button
+                onClick={handleOfferClick}
+                className={`flex-1 font-semibold text-xs sm:text-sm h-9 sm:h-10 ${
+                  isAuthenticated
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md"
+                    : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                }`}
+                disabled={!isAuthenticated && !onLogin}
+                data-testid={`button-make-offer-${need.id}`}
+              >
+                <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                {isAuthenticated ? "Make an Offer" : "Login to Make Offer"}
+              </Button>
+            </div>
           </CardFooter>
         </>
       )}

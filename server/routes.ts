@@ -10743,7 +10743,8 @@ When suggesting improvements, format your response with suggestions in a structu
         conditions.push(eq(wytWallPosts.postType, postType));
       }
 
-      const publicPosts = await db.select({
+      // First get the posts
+      const rawPosts = await db.select({
         id: wytWallPosts.id,
         postType: wytWallPosts.postType,
         category: wytWallPosts.category,
@@ -10762,6 +10763,30 @@ When suggesting improvements, format your response with suggestions in a structu
         .orderBy(desc(wytWallPosts.createdAt))
         .limit(limit)
         .offset(offset);
+
+      // Get offer counts for each post
+      const postIds = rawPosts.map(p => p.id);
+      let offerCounts: Record<string, number> = {};
+      
+      if (postIds.length > 0) {
+        const countResults = await db.select({
+          postId: wytWallPostOffers.postId,
+          count: sql<number>`count(*)::int`,
+        })
+          .from(wytWallPostOffers)
+          .where(sql`${wytWallPostOffers.postId} = ANY(${postIds})`)
+          .groupBy(wytWallPostOffers.postId);
+        
+        countResults.forEach(row => {
+          offerCounts[row.postId] = row.count;
+        });
+      }
+
+      // Add offer counts to posts
+      const publicPosts = rawPosts.map(post => ({
+        ...post,
+        responseCount: offerCounts[post.id] || 0,
+      }));
 
       // Count posts by category for filtering
       const categoryCounts = await db.select({
@@ -10850,6 +10875,225 @@ When suggesting improvements, format your response with suggestions in a structu
     } catch (error: any) {
       console.error('Error creating WytWall offer:', error);
       res.status(500).json({ error: error.message || 'Failed to send offer' });
+    }
+  });
+
+  // Get offers received on my posts
+  app.get('/api/wytwall/offers/received', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // Get all my posts first
+      const myPosts = await db.select({ id: wytWallPosts.id })
+        .from(wytWallPosts)
+        .where(eq(wytWallPosts.userId, principal.id));
+
+      const myPostIds = myPosts.map(p => p.id);
+
+      if (myPostIds.length === 0) {
+        return res.json({ success: true, offers: [], total: 0 });
+      }
+
+      // Get all offers on my posts
+      const receivedOffers = await db.select({
+        id: wytWallPostOffers.id,
+        postId: wytWallPostOffers.postId,
+        offererId: wytWallPostOffers.offererId,
+        message: wytWallPostOffers.message,
+        proposedPrice: wytWallPostOffers.proposedPrice,
+        status: wytWallPostOffers.status,
+        responseMessage: wytWallPostOffers.responseMessage,
+        respondedAt: wytWallPostOffers.respondedAt,
+        createdAt: wytWallPostOffers.createdAt,
+        offererName: users.name,
+        offererEmail: users.email,
+        offererProfileImage: users.profileImageUrl,
+        postDescription: wytWallPosts.description,
+        postCategory: wytWallPosts.category,
+        postType: wytWallPosts.postType,
+      })
+        .from(wytWallPostOffers)
+        .innerJoin(users, eq(wytWallPostOffers.offererId, users.id))
+        .innerJoin(wytWallPosts, eq(wytWallPostOffers.postId, wytWallPosts.id))
+        .where(sql`${wytWallPostOffers.postId} = ANY(${myPostIds})`)
+        .orderBy(desc(wytWallPostOffers.createdAt));
+
+      res.json({ success: true, offers: receivedOffers, total: receivedOffers.length });
+    } catch (error: any) {
+      console.error('Error fetching received offers:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch offers' });
+    }
+  });
+
+  // Get offers I've sent
+  app.get('/api/wytwall/offers/sent', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const sentOffers = await db.select({
+        id: wytWallPostOffers.id,
+        postId: wytWallPostOffers.postId,
+        message: wytWallPostOffers.message,
+        proposedPrice: wytWallPostOffers.proposedPrice,
+        status: wytWallPostOffers.status,
+        responseMessage: wytWallPostOffers.responseMessage,
+        respondedAt: wytWallPostOffers.respondedAt,
+        createdAt: wytWallPostOffers.createdAt,
+        postDescription: wytWallPosts.description,
+        postCategory: wytWallPosts.category,
+        postType: wytWallPosts.postType,
+        postOwnerName: users.name,
+        postOwnerProfileImage: users.profileImageUrl,
+      })
+        .from(wytWallPostOffers)
+        .innerJoin(wytWallPosts, eq(wytWallPostOffers.postId, wytWallPosts.id))
+        .innerJoin(users, eq(wytWallPosts.userId, users.id))
+        .where(eq(wytWallPostOffers.offererId, principal.id))
+        .orderBy(desc(wytWallPostOffers.createdAt));
+
+      res.json({ success: true, offers: sentOffers, total: sentOffers.length });
+    } catch (error: any) {
+      console.error('Error fetching sent offers:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch offers' });
+    }
+  });
+
+  // Respond to an offer (accept/reject)
+  app.patch('/api/wytwall/offers/:offerId/respond', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { offerId } = req.params;
+      const { action, responseMessage } = req.body; // action: 'accept' or 'reject'
+
+      if (!action || !['accept', 'reject'].includes(action)) {
+        return res.status(400).json({ error: 'Invalid action. Must be "accept" or "reject"' });
+      }
+
+      // Get the offer and verify ownership
+      const offer = await db.select({
+        id: wytWallPostOffers.id,
+        offererId: wytWallPostOffers.offererId,
+        postId: wytWallPostOffers.postId,
+        postOwnerId: wytWallPosts.userId,
+        postDescription: wytWallPosts.description,
+      })
+        .from(wytWallPostOffers)
+        .innerJoin(wytWallPosts, eq(wytWallPostOffers.postId, wytWallPosts.id))
+        .where(eq(wytWallPostOffers.id, offerId))
+        .limit(1);
+
+      if (offer.length === 0) {
+        return res.status(404).json({ error: 'Offer not found' });
+      }
+
+      if (offer[0].postOwnerId !== principal.id) {
+        return res.status(403).json({ error: 'You can only respond to offers on your own posts' });
+      }
+
+      // Update the offer status
+      const newStatus = action === 'accept' ? 'accepted' : 'rejected';
+      const [updatedOffer] = await db.update(wytWallPostOffers)
+        .set({
+          status: newStatus,
+          responseMessage: responseMessage?.trim() || null,
+          respondedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(wytWallPostOffers.id, offerId))
+        .returning();
+
+      // Create notification for the offer sender
+      const notificationTitle = action === 'accept' ? 'Offer Accepted!' : 'Offer Update';
+      const notificationMessage = action === 'accept' 
+        ? `${principal.name || 'The post owner'} accepted your offer!`
+        : `${principal.name || 'The post owner'} responded to your offer`;
+
+      await db.insert(notifications).values({
+        userId: offer[0].offererId,
+        type: action === 'accept' ? 'offer_accepted' : 'offer_rejected',
+        title: notificationTitle,
+        message: notificationMessage,
+        data: { offerId, postId: offer[0].postId, action },
+        isRead: false,
+      });
+
+      res.json({ 
+        success: true, 
+        offer: updatedOffer,
+        message: `Offer ${newStatus} successfully`
+      });
+    } catch (error: any) {
+      console.error('Error responding to offer:', error);
+      res.status(500).json({ error: error.message || 'Failed to respond to offer' });
+    }
+  });
+
+  // Get offer counts for my posts (summary)
+  app.get('/api/wytwall/offers/summary', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // Get my posts with their offer counts
+      const myPosts = await db.select({ id: wytWallPosts.id })
+        .from(wytWallPosts)
+        .where(eq(wytWallPosts.userId, principal.id));
+
+      const myPostIds = myPosts.map(p => p.id);
+
+      let receivedCount = 0;
+      let pendingCount = 0;
+
+      if (myPostIds.length > 0) {
+        const receivedResult = await db.select({
+          total: sql<number>`count(*)::int`,
+          pending: sql<number>`count(*) filter (where ${wytWallPostOffers.status} = 'pending')::int`,
+        })
+          .from(wytWallPostOffers)
+          .where(sql`${wytWallPostOffers.postId} = ANY(${myPostIds})`);
+
+        if (receivedResult.length > 0) {
+          receivedCount = receivedResult[0].total;
+          pendingCount = receivedResult[0].pending;
+        }
+      }
+
+      // Get sent offers count
+      const sentResult = await db.select({
+        total: sql<number>`count(*)::int`,
+        pending: sql<number>`count(*) filter (where ${wytWallPostOffers.status} = 'pending')::int`,
+        accepted: sql<number>`count(*) filter (where ${wytWallPostOffers.status} = 'accepted')::int`,
+      })
+        .from(wytWallPostOffers)
+        .where(eq(wytWallPostOffers.offererId, principal.id));
+
+      res.json({
+        success: true,
+        received: {
+          total: receivedCount,
+          pending: pendingCount,
+        },
+        sent: {
+          total: sentResult[0]?.total || 0,
+          pending: sentResult[0]?.pending || 0,
+          accepted: sentResult[0]?.accepted || 0,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error fetching offer summary:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch summary' });
     }
   });
 
