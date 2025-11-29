@@ -2520,6 +2520,7 @@ export default function PanelRouter() {
       <Route path="/u/:username/orgs" component={MyOrgsPage} />
       <Route path="/u/:username/wytgames" component={MyPanelWytGames} />
       <Route path="/u/:username/profile" component={MyProfile} />
+      <Route path="/u/:username/settings" component={MyAccount} />
       <Route path="/u/:username/account" component={MyAccount} />
 
       {/* Organization Panel routes - /o/:orgname/* */}

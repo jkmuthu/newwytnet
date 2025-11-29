@@ -1,4 +1,4 @@
-import { useState, ReactNode } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -17,7 +17,9 @@ import {
   Building,
   Users,
   Search,
-  Bell
+  Bell,
+  Sun,
+  Moon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,9 +44,24 @@ export default function PanelMobileLayout({
 }: PanelMobileLayoutProps) {
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isDark, setIsDark] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const shouldBeDark = savedTheme === 'dark';
+    setIsDark(shouldBeDark);
+    document.documentElement.classList.toggle('dark', shouldBeDark);
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = !isDark;
+    setIsDark(newTheme);
+    document.documentElement.classList.toggle('dark', newTheme);
+    localStorage.setItem('theme', newTheme ? 'dark' : 'light');
+  };
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
@@ -92,55 +109,55 @@ export default function PanelMobileLayout({
     if (currentWorkspace.type === 'personal') {
       return [
         {
-          href: "/panel/me",
+          href: "/u/me",
           icon: Home,
           label: "Home",
-          active: location === "/panel/me" || location === "/panel/me/dashboard"
+          active: location === "/u/me" || location === "/u/me/dashboard" || location === "/panel/me"
         },
         {
-          href: "/panel/me/projects",
+          href: "/u/me/wytapps",
           icon: FolderOpen,
           label: "Projects",
-          active: location === "/panel/me/projects"
+          active: location === "/u/me/wytapps" || location.startsWith("/u/me/wytapps/")
         },
         {
-          href: "/panel/me/analytics",
+          href: "/u/me/wallet",
           icon: BarChart3,
           label: "Analytics",
-          active: location === "/panel/me/analytics"
+          active: location === "/u/me/wallet"
         },
         {
-          href: "/panel/me/messages",
+          href: "/u/me/posts",
           icon: MessageSquare,
           label: "Messages",
-          active: location === "/panel/me/messages"
+          active: location === "/u/me/posts"
         }
       ];
     } else {
       return [
         {
-          href: `/panel/org/${currentWorkspace.orgId}`,
+          href: `/o/${currentWorkspace.orgId}`,
           icon: Building,
           label: "Dashboard",
-          active: location === `/panel/org/${currentWorkspace.orgId}`
+          active: location === `/o/${currentWorkspace.orgId}` || location === `/o/${currentWorkspace.orgId}/dashboard`
         },
         {
-          href: `/panel/org/${currentWorkspace.orgId}/members`,
+          href: `/o/${currentWorkspace.orgId}/team`,
           icon: Users,
-          label: "Members",
-          active: location === `/panel/org/${currentWorkspace.orgId}/members`
+          label: "Team",
+          active: location === `/o/${currentWorkspace.orgId}/team`
         },
         {
-          href: `/panel/org/${currentWorkspace.orgId}/projects`,
+          href: `/o/${currentWorkspace.orgId}/wytapps`,
           icon: FolderOpen,
-          label: "Projects",
-          active: location === `/panel/org/${currentWorkspace.orgId}/projects`
+          label: "Apps",
+          active: location === `/o/${currentWorkspace.orgId}/wytapps`
         },
         {
-          href: `/panel/org/${currentWorkspace.orgId}/analytics`,
-          icon: BarChart3,
-          label: "Analytics",
-          active: location === `/panel/org/${currentWorkspace.orgId}/analytics`
+          href: `/o/${currentWorkspace.orgId}/settings`,
+          icon: Settings,
+          label: "Settings",
+          active: location === `/o/${currentWorkspace.orgId}/settings`
         }
       ];
     }
@@ -204,11 +221,24 @@ export default function PanelMobileLayout({
             </Select>
 
             {/* Right - Actions + Menu */}
-            <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="sm">
+            <div className="flex items-center space-x-1">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={toggleTheme}
+                className="h-9 w-9 p-0"
+                aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+              >
+                {isDark ? (
+                  <Sun className="h-5 w-5 text-yellow-500" />
+                ) : (
+                  <Moon className="h-5 w-5 text-slate-600" />
+                )}
+              </Button>
+              <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
                 <Search className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
                 <Bell className="h-5 w-5" />
               </Button>
               
@@ -241,13 +271,13 @@ export default function PanelMobileLayout({
                     </div>
                   </div>
                   <DropdownMenuSeparator />
-                  <Link href="/panel/me/profile">
+                  <Link href="/u/me/profile">
                     <DropdownMenuItem className="cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
                       Profile
                     </DropdownMenuItem>
                   </Link>
-                  <Link href="/panel/me/settings">
+                  <Link href="/u/me/settings">
                     <DropdownMenuItem className="cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />
                       Settings
