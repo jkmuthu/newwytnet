@@ -327,6 +327,31 @@ function MyPanelWytWall() {
     }
   };
 
+  const handlePublishPost = async () => {
+    if (!selectedPost) return;
+    const newPublicStatus = !selectedPost.isPublic;
+    try {
+      const response = await fetch(`/api/wytwall/posts/${selectedPost.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ isPublic: newPublicStatus }),
+      });
+      if (response.ok) {
+        toast({ 
+          title: newPublicStatus ? "Post published to WytWall!" : "Post unpublished from WytWall",
+          description: newPublicStatus ? "Your post is now visible on the public WytWall marketplace." : "Your post is now private."
+        });
+        setSelectedPost({ ...selectedPost, isPublic: newPublicStatus });
+        refetchPosts();
+      } else {
+        toast({ title: "Failed to update publish status", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error updating publish status", variant: "destructive" });
+    }
+  };
+
   const needCategories = [
     { value: "need_job", label: "Need a Job" },
     { value: "house_for_rent", label: "House for Rent" },
@@ -581,10 +606,15 @@ function MyPanelWytWall() {
                     </div>
                     <div>
                       <Label className="text-muted-foreground text-sm">Status</Label>
-                      <div className="mt-1">
+                      <div className="mt-1 flex gap-2">
                         <Badge variant={selectedPost.status === 'active' ? 'default' : 'secondary'}>
                           {selectedPost.status || 'active'}
                         </Badge>
+                        {selectedPost.isPublic && (
+                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                            Public
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -595,6 +625,29 @@ function MyPanelWytWall() {
                   <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
                     <div>Created: {new Date(selectedPost.createdAt).toLocaleDateString()}</div>
                     <div>Expires: {new Date(selectedPost.expiresAt).toLocaleDateString()}</div>
+                  </div>
+                  
+                  {/* Publish to WytWall Section */}
+                  <div className="border-t pt-4 mt-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-sm">Public WytWall</p>
+                        <p className="text-xs text-muted-foreground">
+                          {selectedPost.isPublic 
+                            ? "Your post is visible on the public marketplace" 
+                            : "Publish to make visible to everyone"}
+                        </p>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant={selectedPost.isPublic ? "outline" : "default"}
+                        onClick={handlePublishPost}
+                        data-testid="button-publish"
+                        className={selectedPost.isPublic ? "" : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"}
+                      >
+                        {selectedPost.isPublic ? "Unpublish" : "Publish to WytWall"}
+                      </Button>
+                    </div>
                   </div>
                 </>
               )}
