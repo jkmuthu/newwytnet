@@ -101,6 +101,7 @@ import {
   apiUsageLogs,
   profileFieldWeights,
   wytWallPosts,
+  wytWallPostOffers,
   insertWytWallPostSchema,
   userAppInstallations,
   aiAppProjects,
@@ -10785,6 +10786,70 @@ When suggesting improvements, format your response with suggestions in a structu
     } catch (error: any) {
       console.error('Error fetching public WytWall posts:', error);
       res.status(500).json({ error: error.message || 'Failed to fetch public posts' });
+    }
+  });
+
+  // Create an offer on a public WytWall post
+  app.post('/api/wytwall/offers', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { postId, message, price } = req.body;
+
+      if (!postId || !message) {
+        return res.status(400).json({ error: 'Post ID and message are required' });
+      }
+
+      // Verify the post exists and is public
+      const post = await db.select()
+        .from(wytWallPosts)
+        .where(and(
+          eq(wytWallPosts.id, postId),
+          eq(wytWallPosts.isPublic, true)
+        ))
+        .limit(1);
+
+      if (post.length === 0) {
+        return res.status(404).json({ error: 'Post not found or not public' });
+      }
+
+      // Prevent users from making offers on their own posts
+      if (post[0].userId === principal.id) {
+        return res.status(400).json({ error: 'You cannot make an offer on your own post' });
+      }
+
+      // Create the offer
+      const [newOffer] = await db.insert(wytWallPostOffers)
+        .values({
+          postId,
+          offererId: principal.id,
+          message: message.trim(),
+          proposedPrice: price?.trim() || null,
+          status: 'pending',
+        })
+        .returning();
+
+      // Create a notification for the post owner
+      await db.insert(notifications).values({
+        userId: post[0].userId,
+        type: 'offer_received',
+        title: 'New Offer Received',
+        message: `${principal.name || 'Someone'} sent an offer on your post`,
+        data: { offerId: newOffer.id, postId },
+        isRead: false,
+      });
+
+      res.json({ 
+        success: true, 
+        offer: newOffer,
+        message: 'Offer sent successfully'
+      });
+    } catch (error: any) {
+      console.error('Error creating WytWall offer:', error);
+      res.status(500).json({ error: error.message || 'Failed to send offer' });
     }
   });
 

@@ -2677,6 +2677,20 @@ export const wytWallPosts = pgTable("wytwall_posts", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// WytWall Post Offers - Offers made on public wytwall posts
+export const wytWallPostOffers = pgTable("wytwall_post_offers", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  postId: uuid("post_id").notNull().references(() => wytWallPosts.id, { onDelete: 'cascade' }),
+  offererId: varchar("offerer_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  message: text("message").notNull(),
+  proposedPrice: varchar("proposed_price", { length: 50 }),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // pending, accepted, rejected, withdrawn
+  responseMessage: text("response_message"), // Post owner's response
+  respondedAt: timestamp("responded_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // ========================================
 // WYTSTAR GAMIFICATION SYSTEM
 // ========================================

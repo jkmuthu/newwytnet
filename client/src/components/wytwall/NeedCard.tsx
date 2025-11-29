@@ -9,7 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 interface NeedCardProps {
   need: any;
   isAuthenticated: boolean;
-  onMakeOffer?: (needId: string) => void;
+  onMakeOffer?: (need: any) => void;
   onLogin?: () => void;
   isCollapsed?: boolean;
 }
@@ -28,7 +28,7 @@ export default function NeedCard({ need, isAuthenticated, onMakeOffer, onLogin, 
     if (!isAuthenticated) {
       onLogin?.();
     } else {
-      onMakeOffer?.(need.id);
+      onMakeOffer?.(need);
     }
   };
 

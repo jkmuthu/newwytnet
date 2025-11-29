@@ -1,28 +1,40 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import { Plus, Filter, Search, Sparkles, TrendingUp, Zap, Package, ChevronLeft, ChevronRight } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Plus, Filter, Search, Sparkles, TrendingUp, Zap, Package, ChevronLeft, ChevronRight, MessageSquare, Send } from "lucide-react";
 import WytWallLayout from "@/components/wytwall/WytWallLayout";
 import FiltersPanel from "@/components/wytwall/FiltersPanel";
 import NeedCard from "@/components/wytwall/NeedCard";
 import OfferCard from "@/components/wytwall/OfferCard";
 import PromotionsPanel from "@/components/wytwall/PromotionsPanel";
 import HomeContentSections from "@/components/wytwall/HomeContentSections";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function WytWall() {
   const { user } = useAuthContext();
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [postType, setPostType] = useState<"all" | "needs" | "offers">("all");
   const [selectedLocation, setSelectedLocation] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const POSTS_PER_PAGE = 10;
+  
+  // Make Offer Dialog state
+  const [offerDialogOpen, setOfferDialogOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<any>(null);
+  const [offerMessage, setOfferMessage] = useState("");
+  const [offerPrice, setOfferPrice] = useState("");
 
   // Build query URLs with proper query string parameters
   const needsUrl = user ? '/api/needs' : '/api/needs/public';
@@ -148,8 +160,53 @@ export default function WytWall() {
     setCurrentPage(1);
   };
 
-  const handleMakeOffer = (needId: string) => {
-    console.log('Make offer on need:', needId);
+  // Mutation for submitting offers
+  const submitOfferMutation = useMutation({
+    mutationFn: async (data: { postId: string; message: string; price?: string }) => {
+      return await apiRequest('/api/wytwall/offers', 'POST', data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Offer Sent!",
+        description: "Your offer has been sent to the post owner.",
+      });
+      setOfferDialogOpen(false);
+      setOfferMessage("");
+      setOfferPrice("");
+      setSelectedPost(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send offer",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleMakeOffer = (post: any) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    setSelectedPost(post);
+    setOfferDialogOpen(true);
+  };
+
+  const handleSubmitOffer = () => {
+    if (!selectedPost || !offerMessage.trim()) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter a message for your offer.",
+        variant: "destructive",
+      });
+      return;
+    }
+    submitOfferMutation.mutate({
+      postId: selectedPost.id,
+      message: offerMessage,
+      price: offerPrice || undefined,
+    });
   };
 
   const handleLogin = () => {
@@ -396,6 +453,88 @@ export default function WytWall() {
         centerPanel={centerPanel}
         rightPanel={rightPanel}
       />
+      
+      {/* Make Offer Dialog */}
+      <Dialog open={offerDialogOpen} onOpenChange={setOfferDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-blue-600" />
+              Make an Offer
+            </DialogTitle>
+            <DialogDescription>
+              Send your offer to the post owner. They will be notified and can respond to you.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedPost && (
+            <div className="space-y-4">
+              {/* Post Summary */}
+              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <h4 className="font-medium text-sm text-gray-900 dark:text-white mb-1">
+                  {selectedPost.title || selectedPost.description?.substring(0, 50)}
+                </h4>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Posted by {selectedPost.user?.name || 'Anonymous'}
+                </p>
+              </div>
+              
+              {/* Offer Message */}
+              <div className="space-y-2">
+                <Label htmlFor="offer-message">Your Message *</Label>
+                <Textarea
+                  id="offer-message"
+                  placeholder="Describe your offer, qualifications, or how you can help..."
+                  value={offerMessage}
+                  onChange={(e) => setOfferMessage(e.target.value)}
+                  rows={4}
+                  className="resize-none"
+                  data-testid="textarea-offer-message"
+                />
+              </div>
+              
+              {/* Price (Optional) */}
+              <div className="space-y-2">
+                <Label htmlFor="offer-price">Proposed Price (Optional)</Label>
+                <Input
+                  id="offer-price"
+                  type="text"
+                  placeholder="e.g., ₹5000 or $100"
+                  value={offerPrice}
+                  onChange={(e) => setOfferPrice(e.target.value)}
+                  data-testid="input-offer-price"
+                />
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setOfferDialogOpen(false)}
+              data-testid="button-cancel-offer"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmitOffer}
+              disabled={submitOfferMutation.isPending || !offerMessage.trim()}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              data-testid="button-submit-offer"
+            >
+              {submitOfferMutation.isPending ? (
+                "Sending..."
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Offer
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       <style>{`
         @keyframes gradient {
           0%, 100% { background-position: 0% 50%; }
