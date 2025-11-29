@@ -183,6 +183,7 @@ import { rateLimiters } from "./middleware/rateLimiter";
 import { requireAuth } from "./wytpass-identity";
 import { whatsappAuthService } from "./services/whatsappAuthService";
 import presentationsRoutes from "./routes/presentations";
+import reseedRouter from "./routes/reseed";
 
 // Trademark analysis functions now imported from services/trademarkAnalysis.ts
 
@@ -319,6 +320,9 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // Register Presentations Routes
   app.use('/api', presentationsRoutes);
+
+  // Register Re-seed Management Router (for production sync)
+  app.use('/api', reseedRouter);
 
   // Auth routes - unified endpoint for both authentication systems
   app.get('/api/auth/user', async (req: any, res) => {
