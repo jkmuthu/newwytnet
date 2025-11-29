@@ -2659,12 +2659,19 @@ export const offers = pgTable("offers", {
 // WytWall Posts - Simplified unified needs/offers stream
 export const wytWallPostTypeEnum = pgEnum("wytwall_post_type", ["need", "offer"]);
 
+export const wytWallPostForEnum = pgEnum("wytwall_post_for", ["personal", "organization"]);
+
 export const wytWallPosts = pgTable("wytwall_posts", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   postType: wytWallPostTypeEnum("post_type").notNull(), // "need" or "offer"
+  postFor: wytWallPostForEnum("post_for").notNull().default("personal"), // "personal" or "organization"
+  organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: 'set null' }), // Only if postFor = "organization"
   category: varchar("category", { length: 100 }).notNull(), // Dynamic based on postType
   description: varchar("description", { length: 200 }).notNull(),
+  validityDays: integer("validity_days").notNull().default(7), // 7, 15, 60, or 90 days
+  expiresAt: timestamp("expires_at"), // Calculated: createdAt + validityDays
+  status: varchar("status", { length: 20 }).notNull().default("active"), // active, expired, closed
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
