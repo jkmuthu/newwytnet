@@ -85,6 +85,8 @@ import {
   wytLifeApplications,
   userProfiles,
   bucketList,
+  organizations,
+  organizationMembers,
   insertBucketListSchema,
   userNeeds,
   userOffers,
@@ -453,10 +455,34 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Dashboard stats
+  // Dashboard stats (for Engine Admin)
   app.get('/api/dashboard/stats', isAuthenticated, async (req: any, res) => {
     try {
       const user = req.user;
+      const url = req.originalUrl || req.url;
+      
+      // If this is for user panel, return user-specific stats
+      if (!url.includes('/engine')) {
+        // Get user-specific stats
+        const [installedAppsResult] = await db.select({ count: sql<number>`count(*)` })
+          .from(userAppInstallations)
+          .where(eq(userAppInstallations.userId, user.id));
+        
+        const [orgsResult] = await db.select({ count: sql<number>`count(*)` })
+          .from(organizationMembers)
+          .where(eq(organizationMembers.userId, user.id));
+        
+        const [postsResult] = await db.select({ count: sql<number>`count(*)` })
+          .from(wytWallPosts)
+          .where(eq(wytWallPosts.userId, user.id));
+
+        return res.json({
+          appsUsed: Number(postsResult?.count || 0),
+          appsInstalled: Number(installedAppsResult?.count || 0),
+          orgsCount: Number(orgsResult?.count || 0),
+          plan: 'Free',
+        });
+      }
 
       if (!user?.tenantId) {
         return res.status(403).json({ message: "No tenant access" });
@@ -467,6 +493,171 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
       res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  // Dashboard activity
+  app.get('/api/dashboard/activity', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      
+      // Get recent posts
+      const recentPosts = await db.select({
+        id: wytWallPosts.id,
+        postType: wytWallPosts.postType,
+        category: wytWallPosts.category,
+        description: wytWallPosts.description,
+        createdAt: wytWallPosts.createdAt,
+      })
+        .from(wytWallPosts)
+        .where(eq(wytWallPosts.userId, user.id))
+        .orderBy(desc(wytWallPosts.createdAt))
+        .limit(10);
+      
+      // Get recent organizations
+      const recentOrgs = await db.select({
+        id: organizations.id,
+        name: organizations.name,
+        createdAt: organizations.createdAt,
+      })
+        .from(organizations)
+        .innerJoin(organizationMembers, eq(organizations.id, organizationMembers.organizationId))
+        .where(eq(organizationMembers.userId, user.id))
+        .orderBy(desc(organizations.createdAt))
+        .limit(5);
+      
+      // Format activity data
+      const activity: any[] = [];
+      
+      recentPosts.forEach((post: any) => {
+        activity.push({
+          action: `Posted a ${post.postType}: ${post.category}`,
+          time: formatTimeAgo(post.createdAt),
+          status: 'success'
+        });
+      });
+      
+      recentOrgs.forEach((org: any) => {
+        activity.push({
+          action: `Created organization: ${org.name}`,
+          time: formatTimeAgo(org.createdAt),
+          status: 'info'
+        });
+      });
+      
+      // Sort by time
+      activity.sort((a, b) => {
+        return new Date(b.time).getTime() - new Date(a.time).getTime();
+      });
+      
+      res.json({ data: activity.slice(0, 10) });
+    } catch (error) {
+      console.error("Error fetching dashboard activity:", error);
+      res.json({ data: [] });
+    }
+  });
+  
+  // Helper function to format time ago
+  function formatTimeAgo(date: Date): string {
+    const now = new Date();
+    const diff = now.getTime() - new Date(date).getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
+    return new Date(date).toLocaleDateString();
+  }
+
+  // ========================================
+  // WYTWALL API ROUTES
+  // ========================================
+
+  // Get my WytWall posts
+  app.get('/api/wytwall/my-posts', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { postType } = req.query;
+      
+      let query = db.select().from(wytWallPosts).where(eq(wytWallPosts.userId, user.id));
+      
+      if (postType && (postType === 'need' || postType === 'offer')) {
+        query = db.select().from(wytWallPosts).where(
+          and(
+            eq(wytWallPosts.userId, user.id),
+            eq(wytWallPosts.postType, postType)
+          )
+        );
+      }
+      
+      const posts = await query.orderBy(desc(wytWallPosts.createdAt));
+      
+      res.json({ posts });
+    } catch (error) {
+      console.error("Error fetching my WytWall posts:", error);
+      res.status(500).json({ message: "Failed to fetch posts", posts: [] });
+    }
+  });
+
+  // Create WytWall post
+  app.post('/api/wytwall/posts', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { postType, category, description } = req.body;
+      
+      if (!postType || !category || !description) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      if (postType !== 'need' && postType !== 'offer') {
+        return res.status(400).json({ message: "Invalid post type" });
+      }
+      
+      const [newPost] = await db.insert(wytWallPosts).values({
+        userId: user.id,
+        postType,
+        category,
+        description: description.substring(0, 200),
+      }).returning();
+      
+      res.json({ success: true, post: newPost });
+    } catch (error) {
+      console.error("Error creating WytWall post:", error);
+      res.status(500).json({ message: "Failed to create post" });
+    }
+  });
+
+  // Get public bucket list items (for matching)
+  app.get('/api/bucket-list/public', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      
+      // Get public bucket list items from other users
+      const items = await db.select({
+        id: bucketList.id,
+        title: bucketList.title,
+        description: bucketList.description,
+        category: bucketList.category,
+        targetDate: bucketList.targetDate,
+        isDone: bucketList.isDone,
+      })
+        .from(bucketList)
+        .where(
+          and(
+            eq(bucketList.isPublic, true),
+            not(eq(bucketList.userId, user.id))
+          )
+        )
+        .orderBy(desc(bucketList.createdAt))
+        .limit(20);
+      
+      res.json({ items });
+    } catch (error) {
+      console.error("Error fetching public bucket list:", error);
+      res.json({ items: [] });
     }
   });
 

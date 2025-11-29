@@ -97,7 +97,7 @@ function MyPanelDashboard() {
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Apps Used</p>
-                <p className="text-2xl font-bold">{(stats as any)?.appsUsed || 12}</p>
+                <p className="text-2xl font-bold">{(stats as any)?.appsUsed ?? 0}</p>
               </div>
             </div>
           </CardContent>
@@ -110,8 +110,8 @@ function MyPanelDashboard() {
                 <AppWindow className="h-4 w-4 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Apps Created</p>
-                <p className="text-2xl font-bold">{(stats as any)?.appsCreated || 3}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Apps Installed</p>
+                <p className="text-2xl font-bold">{(stats as any)?.appsInstalled ?? 0}</p>
               </div>
             </div>
           </CardContent>
@@ -121,11 +121,11 @@ function MyPanelDashboard() {
           <CardContent className="p-4">
             <div className="flex items-center space-x-2">
               <div className="bg-purple-100 dark:bg-purple-900 p-2 rounded">
-                <TrendingUp className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                <Building className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Monthly Usage</p>
-                <p className="text-2xl font-bold">{(stats as any)?.monthlyUsage || 47}%</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">My Orgs</p>
+                <p className="text-2xl font-bold">{(stats as any)?.orgsCount ?? 0}</p>
               </div>
             </div>
           </CardContent>
@@ -139,7 +139,7 @@ function MyPanelDashboard() {
               </div>
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Plan</p>
-                <p className="text-sm font-bold">{(stats as any)?.plan || 'Starter'}</p>
+                <p className="text-sm font-bold">{(stats as any)?.plan || 'Free'}</p>
                 <Badge variant="outline" className="text-xs">Active</Badge>
               </div>
             </div>
@@ -185,30 +185,33 @@ function MyPanelDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {((recentActivity as any)?.data || [
-                { action: 'Generated QR Code', time: '2 hours ago', status: 'success' },
-                { action: 'Created WytApp Project', time: '1 day ago', status: 'success' },
-                { action: 'Used AI Directory', time: '2 days ago', status: 'success' },
-                { action: 'Updated Profile', time: '3 days ago', status: 'info' },
-              ]).map((activity: any, index: number) => (
-                <div key={index} className="flex items-center justify-between py-2 border-b last:border-b-0">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-1 rounded-full ${
-                      activity.status === 'success' ? 'bg-green-100 dark:bg-green-900' :
-                      activity.status === 'info' ? 'bg-blue-100 dark:bg-blue-900' :
-                      'bg-gray-100 dark:bg-gray-900'
-                    }`}>
-                      <CheckCircle className={`h-3 w-3 ${
-                        activity.status === 'success' ? 'text-green-600 dark:text-green-400' :
-                        activity.status === 'info' ? 'text-blue-600 dark:text-blue-400' :
-                        'text-gray-600 dark:text-gray-400'
-                      }`} />
-                    </div>
-                    <span className="text-sm">{activity.action}</span>
-                  </div>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{activity.time}</span>
+              {((recentActivity as any)?.data || []).length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No recent activity</p>
+                  <p className="text-xs">Start using WytApps to see activity here</p>
                 </div>
-              ))}
+              ) : (
+                ((recentActivity as any)?.data || []).map((activity: any, index: number) => (
+                  <div key={index} className="flex items-center justify-between py-2 border-b last:border-b-0">
+                    <div className="flex items-center gap-3">
+                      <div className={`p-1 rounded-full ${
+                        activity.status === 'success' ? 'bg-green-100 dark:bg-green-900' :
+                        activity.status === 'info' ? 'bg-blue-100 dark:bg-blue-900' :
+                        'bg-gray-100 dark:bg-gray-900'
+                      }`}>
+                        <CheckCircle className={`h-3 w-3 ${
+                          activity.status === 'success' ? 'text-green-600 dark:text-green-400' :
+                          activity.status === 'info' ? 'text-blue-600 dark:text-blue-400' :
+                          'text-gray-600 dark:text-gray-400'
+                        }`} />
+                      </div>
+                      <span className="text-sm">{activity.action}</span>
+                    </div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{activity.time}</span>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
