@@ -263,17 +263,17 @@ export default function WytWall() {
             </h3>
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-lg mx-auto mb-8">
               {selectedCategory === 'all' 
-                ? "Be the first to post in the marketplace and connect with the community!" 
+                ? "Be the first to post on WytWall and connect with the community!" 
                 : `No posts in the ${selectedCategory.replace('_', ' ')} category yet. Be the pioneer!`}
             </p>
             {user && (
               <Button
                 onClick={handlePostNeed}
                 className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 text-white font-bold px-10 py-6 rounded-2xl shadow-2xl hover:scale-105 transition-all"
-                data-testid="button-post-first-need"
+                data-testid="button-post-to-wytwall"
               >
                 <Plus className="h-6 w-6 mr-3" />
-                Post to Marketplace
+                Post to WytWall
               </Button>
             )}
           </CardContent>
