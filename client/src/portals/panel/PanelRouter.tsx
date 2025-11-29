@@ -437,7 +437,14 @@ function MyPanelWytWall() {
                       </div>
                       <p className="text-muted-foreground text-sm">{post.description}</p>
                     </div>
-                    <Button size="sm" variant="outline" data-testid={`button-view-${post.id}`}>View Details</Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={() => navigate(`/u/me/wytwall/${post.id}`)}
+                      data-testid={`button-view-${post.id}`}
+                    >
+                      View Details
+                    </Button>
                   </div>
                 </Card>
               ))}
