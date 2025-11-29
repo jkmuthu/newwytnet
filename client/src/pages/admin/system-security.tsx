@@ -4,6 +4,7 @@ import AdminSystemLogs from "./system-logs-real";
 import AdminSystemMonitor from "./system-monitor";
 import AdminSystemStatus from "./system-status";
 import AdminSecurity from "./security";
+import AdminDatabaseSync from "./database-sync";
 
 export default function AdminSystemSecurity() {
   return (
@@ -20,6 +21,7 @@ export default function AdminSystemSecurity() {
           <TabsTrigger value="monitor" data-testid="tab-system-monitor">System Monitor</TabsTrigger>
           <TabsTrigger value="status" data-testid="tab-system-status">System Status</TabsTrigger>
           <TabsTrigger value="security" data-testid="tab-security">Security</TabsTrigger>
+          <TabsTrigger value="database-sync" data-testid="tab-database-sync">Database Sync</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview">
@@ -40,6 +42,10 @@ export default function AdminSystemSecurity() {
         
         <TabsContent value="security">
           <AdminSecurity />
+        </TabsContent>
+        
+        <TabsContent value="database-sync">
+          <AdminDatabaseSync />
         </TabsContent>
       </Tabs>
     </div>
