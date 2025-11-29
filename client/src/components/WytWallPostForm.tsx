@@ -206,35 +206,76 @@ export default function WytWallPostForm({ defaultPostType = "need", onSuccess }:
           <FormField
             control={form.control}
             name="organizationId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Select Organization</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger data-testid="select-organization">
-                      <SelectValue placeholder="Choose an organization" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {userOrgs.length === 0 ? (
-                      <SelectItem value="no-orgs" disabled>
-                        No organizations found
-                      </SelectItem>
-                    ) : (
-                      userOrgs.map((org: any) => (
-                        <SelectItem key={org.id} value={org.id} data-testid={`option-org-${org.id}`}>
-                          {org.name}
+            render={({ field }) => {
+              // Filter organizations where user can post (has Add permission)
+              const postableOrgs = userOrgs.filter((org: any) => 
+                org.role === 'owner' || org.wytWallPermissions?.canAdd === true
+              );
+              const nonPostableOrgs = userOrgs.filter((org: any) => 
+                org.role !== 'owner' && org.wytWallPermissions?.canAdd !== true
+              );
+
+              return (
+                <FormItem>
+                  <FormLabel>Select Organization</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger data-testid="select-organization">
+                        <SelectValue placeholder="Choose an organization" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {userOrgs.length === 0 ? (
+                        <SelectItem value="no-orgs" disabled>
+                          No organizations found
                         </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  All org members with permissions will receive notifications
-                </p>
-                <FormMessage />
-              </FormItem>
-            )}
+                      ) : postableOrgs.length === 0 ? (
+                        <SelectItem value="no-permission" disabled>
+                          No posting permission in any organization
+                        </SelectItem>
+                      ) : (
+                        <>
+                          {postableOrgs.map((org: any) => (
+                            <SelectItem key={org.id} value={org.id} data-testid={`option-org-${org.id}`}>
+                              <div className="flex items-center gap-2">
+                                <span>{org.name}</span>
+                                <span className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary capitalize">
+                                  {org.role}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                          {nonPostableOrgs.length > 0 && (
+                            <>
+                              <div className="px-2 py-1.5 text-xs text-muted-foreground border-t mt-1 pt-1">
+                                No posting permission:
+                              </div>
+                              {nonPostableOrgs.map((org: any) => (
+                                <SelectItem key={org.id} value={org.id} disabled data-testid={`option-org-${org.id}-disabled`}>
+                                  <div className="flex items-center gap-2 opacity-50">
+                                    <span>{org.name}</span>
+                                    <span className="text-xs px-1.5 py-0.5 rounded bg-muted capitalize">
+                                      {org.role}
+                                    </span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </>
+                          )}
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {postableOrgs.length > 0 
+                      ? "All org members with permissions will receive notifications"
+                      : "You need 'Add' permission to post for an organization"
+                    }
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
           />
         )}
 
