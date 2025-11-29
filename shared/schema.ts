@@ -2827,7 +2827,7 @@ export const organizationMembers = pgTable("organization_members", {
   id: uuid("id").default(sql`gen_random_uuid()`),
   organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
   userId: varchar("user_id").notNull().references(() => users.id),
-  role: varchar("role", { length: 50 }).notNull().default('member'), // owner, admin, member
+  role: varchar("role", { length: 50 }).notNull().default('member'), // owner, admin, analyst, custom
   permissions: jsonb("permissions").default({}),
   isActive: boolean("is_active").default(true),
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
@@ -2835,6 +2835,27 @@ export const organizationMembers = pgTable("organization_members", {
 }, (table) => ({
   pk: primaryKey({ columns: [table.organizationId, table.userId] }),
 }));
+
+// Organization App Permissions - Per-user, per-app permissions within organizations
+// Roles: owner (all permissions), admin, analyst, custom
+// Permissions: view, add, edit, delete per WytApp
+export const organizationAppPermissions = pgTable("organization_app_permissions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  appId: uuid("app_id").notNull().references(() => apps.id, { onDelete: 'cascade' }),
+  canView: boolean("can_view").default(true).notNull(),
+  canAdd: boolean("can_add").default(false).notNull(),
+  canEdit: boolean("can_edit").default(false).notNull(),
+  canDelete: boolean("can_delete").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_org_app_perms_org").on(table.organizationId),
+  index("idx_org_app_perms_user").on(table.userId),
+  index("idx_org_app_perms_app").on(table.appId),
+  unique("unique_org_user_app_permission").on(table.organizationId, table.userId, table.appId),
+]);
 
 // ========================================
 // WYTLIFE APPLICATIONS
@@ -3770,6 +3791,8 @@ export const insertOrganizationSchema = createInsertSchema(organizations);
 export const selectOrganizationSchema = createSelectSchema(organizations);
 export const insertOrganizationMemberSchema = createInsertSchema(organizationMembers);
 export const selectOrganizationMemberSchema = createSelectSchema(organizationMembers);
+export const insertOrganizationAppPermissionSchema = createInsertSchema(organizationAppPermissions).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectOrganizationAppPermissionSchema = createSelectSchema(organizationAppPermissions);
 
 // WytWall Marketplace type exports
 export type Need = typeof needs.$inferSelect;
@@ -3798,6 +3821,8 @@ export type Organization = typeof organizations.$inferSelect;
 export type InsertOrganization = typeof organizations.$inferInsert;
 export type OrganizationMember = typeof organizationMembers.$inferSelect;
 export type InsertOrganizationMember = typeof organizationMembers.$inferInsert;
+export type OrganizationAppPermission = typeof organizationAppPermissions.$inferSelect;
+export type InsertOrganizationAppPermission = z.infer<typeof insertOrganizationAppPermissionSchema>;
 
 // Dataset Management schema exports
 export const insertDatasetHubSchema = createInsertSchema(datasetHubs).omit({ id: true, createdAt: true, updatedAt: true });
