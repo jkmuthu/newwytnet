@@ -516,9 +516,16 @@ function MyPanelWytWall() {
                           {new Date(post.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <Badge variant={post.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                            {post.status || 'active'}
-                          </Badge>
+                          <div className="flex gap-1">
+                            <Badge variant={post.status === 'active' ? 'default' : 'secondary'} className="text-xs">
+                              {post.status || 'active'}
+                            </Badge>
+                            {post.isPublic && (
+                              <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 text-xs">
+                                Public
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-right">
                           <Button 

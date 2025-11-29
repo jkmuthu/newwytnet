@@ -690,7 +690,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const user = req.user;
       const { postId } = req.params;
-      const { category, description } = req.body;
+      const { category, description, isPublic } = req.body;
       
       // Verify the post belongs to the user
       const [existingPost] = await db.select()
@@ -709,6 +709,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const updateData: any = {};
       if (category) updateData.category = category;
       if (description) updateData.description = description.substring(0, 200);
+      if (typeof isPublic === 'boolean') updateData.isPublic = isPublic;
       
       const [updatedPost] = await db.update(wytWallPosts)
         .set(updateData)
@@ -10719,6 +10720,73 @@ When suggesting improvements, format your response with suggestions in a structu
   const { offersService } = await import('./services/offersService');
   const { wytstarService } = await import('./services/wytstarService');
   const { profileCompletionService } = await import('./services/profileCompletionService');
+
+  // Public WytWall Posts Route - Get all posts marked as public from wytwall_posts table
+  app.get('/api/wytwall/public', async (req: any, res) => {
+    try {
+      const category = req.query.category as string;
+      const postType = req.query.postType as string; // 'need' or 'offer'
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      let conditions: any[] = [
+        eq(wytWallPosts.isPublic, true),
+        eq(wytWallPosts.status, 'active')
+      ];
+
+      if (category && category !== 'all') {
+        conditions.push(eq(wytWallPosts.category, category));
+      }
+
+      if (postType && (postType === 'need' || postType === 'offer')) {
+        conditions.push(eq(wytWallPosts.postType, postType));
+      }
+
+      const publicPosts = await db.select({
+        id: wytWallPosts.id,
+        postType: wytWallPosts.postType,
+        category: wytWallPosts.category,
+        description: wytWallPosts.description,
+        validityDays: wytWallPosts.validityDays,
+        expiresAt: wytWallPosts.expiresAt,
+        status: wytWallPosts.status,
+        createdAt: wytWallPosts.createdAt,
+        userId: wytWallPosts.userId,
+        userName: users.name,
+        userProfileImage: users.profileImageUrl,
+      })
+        .from(wytWallPosts)
+        .leftJoin(users, eq(wytWallPosts.userId, users.id))
+        .where(and(...conditions))
+        .orderBy(desc(wytWallPosts.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      // Count posts by category for filtering
+      const categoryCounts = await db.select({
+        category: wytWallPosts.category,
+        count: sql<number>`count(*)::int`,
+      })
+        .from(wytWallPosts)
+        .where(and(eq(wytWallPosts.isPublic, true), eq(wytWallPosts.status, 'active')))
+        .groupBy(wytWallPosts.category);
+
+      const counts: Record<string, number> = {};
+      categoryCounts.forEach(row => {
+        counts[row.category] = row.count;
+      });
+
+      res.json({ 
+        success: true, 
+        posts: publicPosts, 
+        counts,
+        total: publicPosts.length
+      });
+    } catch (error: any) {
+      console.error('Error fetching public WytWall posts:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch public posts' });
+    }
+  });
 
   // Needs Routes
 

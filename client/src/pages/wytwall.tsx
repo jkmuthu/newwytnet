@@ -36,6 +36,11 @@ export default function WytWall() {
     ? `${offersUrl}?category=${selectedCategory}` 
     : offersUrl;
 
+  // Also fetch public wytwall posts (user-published posts)
+  const wytWallPublicUrl = selectedCategory !== 'all'
+    ? `/api/wytwall/public?category=${selectedCategory}`
+    : '/api/wytwall/public';
+
   const { data: needsData, isLoading: needsLoading } = useQuery({
     queryKey: [needsQueryUrl],
     enabled: postType === "all" || postType === "needs",
@@ -46,22 +51,41 @@ export default function WytWall() {
     enabled: postType === "all" || postType === "offers",
   });
 
+  // Fetch public wytwall posts
+  const { data: wytWallData, isLoading: wytWallLoading } = useQuery({
+    queryKey: [wytWallPublicUrl],
+  });
+
   const allNeeds = (needsData as any)?.needs || [];
   const allOffers = (offersData as any)?.offers || [];
+  const wytWallPosts = (wytWallData as any)?.posts || [];
   
-  // Merge counts from both needs and offers
+  // Merge counts from needs, offers, and wytwall posts
   const needsCounts = (needsData as any)?.counts || {};
   const offersCounts = (offersData as any)?.counts || {};
+  const wytWallCounts = (wytWallData as any)?.counts || {};
   const counts: Record<string, number> = {};
   
   // Combine counts for each category
-  const allCategories = new Set([...Object.keys(needsCounts), ...Object.keys(offersCounts)]);
+  const allCategories = new Set([...Object.keys(needsCounts), ...Object.keys(offersCounts), ...Object.keys(wytWallCounts)]);
   allCategories.forEach(cat => {
-    counts[cat] = (needsCounts[cat] || 0) + (offersCounts[cat] || 0);
+    counts[cat] = (needsCounts[cat] || 0) + (offersCounts[cat] || 0) + (wytWallCounts[cat] || 0);
   });
   
+  // Transform wytwall posts to match the format
+  const transformedWytWallPosts = wytWallPosts.map((p: any) => ({
+    ...p,
+    type: p.postType, // 'need' or 'offer'
+    title: p.description.substring(0, 50) + (p.description.length > 50 ? '...' : ''),
+    isWytWallPost: true, // Flag to identify these posts
+  }));
+  
   // Combine and sort by date
-  const allPosts = [...allNeeds.map((n: any) => ({ ...n, type: 'need' })), ...allOffers.map((o: any) => ({ ...o, type: 'offer' }))].sort(
+  const allPosts = [
+    ...allNeeds.map((n: any) => ({ ...n, type: 'need' })), 
+    ...allOffers.map((o: any) => ({ ...o, type: 'offer' })),
+    ...transformedWytWallPosts
+  ].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
@@ -101,7 +125,7 @@ export default function WytWall() {
   const endIndex = startIndex + POSTS_PER_PAGE;
   const paginatedPosts = posts.slice(startIndex, endIndex);
 
-  const isLoading = needsLoading || offersLoading;
+  const isLoading = needsLoading || offersLoading || wytWallLoading;
 
   // Reset to page 1 when filters change
   const handleCategoryChange = (category: string) => {
