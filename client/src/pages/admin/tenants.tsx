@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,12 +6,91 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Building, Eye, Users, Settings, Activity, Calendar, Globe, Mail, Phone, MapPin } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Building, Eye, Users, Settings, Activity, Calendar, Globe, Mail, Phone, MapPin, Shield, Plus, Edit2, Trash2, Save } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { TrashView } from "@/components/shared/TrashView";
+
+interface OrgRole {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  isSystem: boolean;
+  permissions: {
+    [appSlug: string]: {
+      view: boolean;
+      add: boolean;
+      edit: boolean;
+      delete: boolean;
+    };
+  };
+  createdAt?: string;
+}
+
+const DEFAULT_ORG_APPS = [
+  { slug: 'dashboard', name: 'Dashboard' },
+  { slug: 'wytwall', name: 'WytWall' },
+  { slug: 'wytapps', name: 'WytApps' },
+  { slug: 'team', name: 'Team Management' },
+  { slug: 'projects', name: 'Projects' },
+  { slug: 'billing', name: 'Billing' },
+  { slug: 'settings', name: 'Settings' },
+];
+
+const DEFAULT_ORG_ROLES: OrgRole[] = [
+  {
+    id: 'owner',
+    name: 'Owner',
+    slug: 'owner',
+    description: 'Full access to all organization features. Cannot be modified.',
+    isSystem: true,
+    permissions: DEFAULT_ORG_APPS.reduce((acc, app) => ({
+      ...acc,
+      [app.slug]: { view: true, add: true, edit: true, delete: true }
+    }), {}),
+  },
+  {
+    id: 'admin',
+    name: 'Admin',
+    slug: 'admin',
+    description: 'Can manage team members and most organization settings.',
+    isSystem: true,
+    permissions: DEFAULT_ORG_APPS.reduce((acc, app) => ({
+      ...acc,
+      [app.slug]: { view: true, add: true, edit: true, delete: app.slug !== 'billing' }
+    }), {}),
+  },
+  {
+    id: 'analyst',
+    name: 'Analyst',
+    slug: 'analyst',
+    description: 'Can view data and create reports. Limited editing access.',
+    isSystem: true,
+    permissions: DEFAULT_ORG_APPS.reduce((acc, app) => ({
+      ...acc,
+      [app.slug]: { view: true, add: app.slug === 'wytwall', edit: false, delete: false }
+    }), {}),
+  },
+  {
+    id: 'custom',
+    name: 'Custom',
+    slug: 'custom',
+    description: 'Fully customizable permissions set by the organization owner.',
+    isSystem: true,
+    permissions: DEFAULT_ORG_APPS.reduce((acc, app) => ({
+      ...acc,
+      [app.slug]: { view: true, add: false, edit: false, delete: false }
+    }), {}),
+  },
+];
 
 interface Organization {
   id: string;
@@ -38,7 +117,79 @@ export default function AdminTenants() {
   const [orgStatusFilter, setOrgStatusFilter] = useState<'active' | 'inactive' | 'trash' | 'settings'>('active');
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const [isOrgDetailOpen, setIsOrgDetailOpen] = useState(false);
+  const [isEditRoleOpen, setIsEditRoleOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<OrgRole | null>(null);
+  const [orgRoles, setOrgRoles] = useState<OrgRole[]>(DEFAULT_ORG_ROLES);
   const { toast } = useToast();
+
+  // Fetch org roles settings from API
+  const { data: orgRolesData } = useQuery({
+    queryKey: ['/api/admin/settings/org-roles'],
+  });
+
+  // Update local state when data is fetched
+  useEffect(() => {
+    if ((orgRolesData as any)?.roles) {
+      setOrgRoles((orgRolesData as any).roles);
+    }
+  }, [orgRolesData]);
+
+  // Save org roles mutation
+  const saveRolesMutation = useMutation({
+    mutationFn: async (roles: OrgRole[]) => {
+      return await apiRequest('/api/admin/settings/org-roles', 'POST', { roles });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/settings/org-roles'] });
+      toast({ title: "Success", description: "Organization roles saved successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Failed to save roles", variant: "destructive" });
+    }
+  });
+
+  const handleEditRole = (role: OrgRole) => {
+    setEditingRole({ ...role, permissions: { ...role.permissions } });
+    setIsEditRoleOpen(true);
+  };
+
+  const handleSaveRole = () => {
+    if (!editingRole) return;
+    
+    const updatedRoles = orgRoles.map(r => 
+      r.id === editingRole.id ? editingRole : r
+    );
+    setOrgRoles(updatedRoles);
+    saveRolesMutation.mutate(updatedRoles);
+    setIsEditRoleOpen(false);
+    setEditingRole(null);
+  };
+
+  const handlePermissionChange = (appSlug: string, permission: 'view' | 'add' | 'edit' | 'delete', value: boolean) => {
+    if (!editingRole) return;
+    
+    const newPermissions = { ...editingRole.permissions };
+    if (!newPermissions[appSlug]) {
+      newPermissions[appSlug] = { view: false, add: false, edit: false, delete: false };
+    }
+    newPermissions[appSlug] = { ...newPermissions[appSlug], [permission]: value };
+    
+    // If removing view, remove all other permissions
+    if (permission === 'view' && !value) {
+      newPermissions[appSlug] = { view: false, add: false, edit: false, delete: false };
+    }
+    
+    setEditingRole({ ...editingRole, permissions: newPermissions });
+  };
+
+  const getRoleBadgeColor = (slug: string) => {
+    switch (slug) {
+      case 'owner': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+      case 'admin': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+      case 'analyst': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      default: return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';
+    }
+  };
 
   const { data: orgsData, isLoading } = useQuery({
     queryKey: ['/api/admin/organizations'],
@@ -148,16 +299,114 @@ export default function AdminTenants() {
             </TabsList>
             
             <TabsContent value="settings" className="mt-6">
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* Organization Roles & Permissions */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Organization Settings</CardTitle>
-                    <CardDescription>Configure organization-wide settings and policies</CardDescription>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <Shield className="h-5 w-5" />
+                          Organization User Roles & Permissions
+                        </CardTitle>
+                        <CardDescription>
+                          Define roles and their permissions for all organizations. Changes apply globally.
+                        </CardDescription>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4 text-sm text-muted-foreground">
-                      <p>Organization settings configuration will be available here.</p>
-                      <p>This includes: default permissions, billing settings, team management policies, and more.</p>
+                    <div className="space-y-4">
+                      {/* Roles List */}
+                      <div className="border rounded-lg overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-muted/50">
+                              <TableHead className="w-[200px]">Role</TableHead>
+                              <TableHead>Description</TableHead>
+                              <TableHead className="w-[120px] text-center">Permissions</TableHead>
+                              <TableHead className="w-[100px] text-right">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {orgRoles.map((role) => (
+                              <TableRow key={role.id}>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <Badge className={getRoleBadgeColor(role.slug)}>
+                                      {role.name}
+                                    </Badge>
+                                    {role.isSystem && (
+                                      <Badge variant="outline" className="text-xs">System</Badge>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground">
+                                  {role.description}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <span className="text-sm text-muted-foreground">
+                                    {Object.values(role.permissions || {}).filter((p: any) => p.view).length} apps
+                                  </span>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditRole(role)}
+                                    disabled={role.slug === 'owner'}
+                                    data-testid={`button-edit-role-${role.slug}`}
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* Info Note */}
+                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                        <p className="text-sm text-blue-800 dark:text-blue-200">
+                          <strong>Note:</strong> These role settings apply globally to all organizations. 
+                          The <strong>Owner</strong> role always has full permissions and cannot be modified. 
+                          When you update permissions here, they will be used for new team member invitations.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Additional Settings */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Default Organization Settings</CardTitle>
+                    <CardDescription>Configure default settings for new organizations</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Allow team member invitations</p>
+                          <p className="text-sm text-muted-foreground">Organization owners can invite team members</p>
+                        </div>
+                        <Switch defaultChecked data-testid="switch-allow-invites" />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Enable WytWall for organizations</p>
+                          <p className="text-sm text-muted-foreground">Organizations can post on WytWall</p>
+                        </div>
+                        <Switch defaultChecked data-testid="switch-enable-wytwall" />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">Enable billing management</p>
+                          <p className="text-sm text-muted-foreground">Organizations can manage their billing</p>
+                        </div>
+                        <Switch defaultChecked data-testid="switch-enable-billing" />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -413,6 +662,112 @@ export default function AdminTenants() {
               </Card>
             </TabsContent>
           </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Role Permissions Dialog */}
+      <Dialog open={isEditRoleOpen} onOpenChange={setIsEditRoleOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Edit Role: {editingRole?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Configure permissions for this role. Changes will apply globally to all organizations.
+            </DialogDescription>
+          </DialogHeader>
+
+          {editingRole && (
+            <div className="space-y-6 py-4">
+              {/* Role Info */}
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="roleDescription">Description</Label>
+                  <Textarea
+                    id="roleDescription"
+                    value={editingRole.description}
+                    onChange={(e) => setEditingRole({ ...editingRole, description: e.target.value })}
+                    placeholder="Role description"
+                    className="h-20"
+                    data-testid="input-role-description"
+                  />
+                </div>
+              </div>
+
+              {/* Permissions Matrix */}
+              <div className="space-y-3">
+                <Label>App Permissions</Label>
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="w-[180px]">App / Feature</TableHead>
+                        <TableHead className="w-[100px] text-center">View</TableHead>
+                        <TableHead className="w-[100px] text-center">Add</TableHead>
+                        <TableHead className="w-[100px] text-center">Edit</TableHead>
+                        <TableHead className="w-[100px] text-center">Delete</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {DEFAULT_ORG_APPS.map((app) => {
+                        const perms = editingRole.permissions[app.slug] || { view: false, add: false, edit: false, delete: false };
+                        return (
+                          <TableRow key={app.slug}>
+                            <TableCell className="font-medium">{app.name}</TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox
+                                checked={perms.view}
+                                onCheckedChange={(checked) => handlePermissionChange(app.slug, 'view', !!checked)}
+                                data-testid={`checkbox-${app.slug}-view`}
+                              />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox
+                                checked={perms.add}
+                                disabled={!perms.view}
+                                onCheckedChange={(checked) => handlePermissionChange(app.slug, 'add', !!checked)}
+                                data-testid={`checkbox-${app.slug}-add`}
+                              />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox
+                                checked={perms.edit}
+                                disabled={!perms.view}
+                                onCheckedChange={(checked) => handlePermissionChange(app.slug, 'edit', !!checked)}
+                                data-testid={`checkbox-${app.slug}-edit`}
+                              />
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Checkbox
+                                checked={perms.delete}
+                                disabled={!perms.view}
+                                onCheckedChange={(checked) => handlePermissionChange(app.slug, 'delete', !!checked)}
+                                data-testid={`checkbox-${app.slug}-delete`}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  If "View" is disabled, the app/feature will be hidden from users with this role.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditRoleOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveRole} disabled={saveRolesMutation.isPending}>
+              <Save className="h-4 w-4 mr-2" />
+              {saveRolesMutation.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

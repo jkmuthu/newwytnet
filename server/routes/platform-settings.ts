@@ -310,4 +310,153 @@ router.put("/admin/settings/authentication", adminAuthMiddleware, async (req, re
   }
 });
 
+// Organization Roles Settings
+// GET /api/admin/settings/org-roles - Get organization role definitions
+router.get("/admin/settings/org-roles", adminAuthMiddleware, async (req, res) => {
+  try {
+    // Get org-roles setting from platform settings
+    const [setting] = await db
+      .select()
+      .from(platformSettings)
+      .where(eq(platformSettings.key, 'org_roles'))
+      .limit(1);
+
+    if (setting && setting.value) {
+      const roles = JSON.parse(setting.value);
+      res.json({ success: true, roles });
+    } else {
+      // Return default roles if not configured
+      const defaultRoles = [
+        {
+          id: 'owner',
+          name: 'Owner',
+          slug: 'owner',
+          description: 'Full access to all organization features. Cannot be modified.',
+          isSystem: true,
+          permissions: {
+            dashboard: { view: true, add: true, edit: true, delete: true },
+            wytwall: { view: true, add: true, edit: true, delete: true },
+            wytapps: { view: true, add: true, edit: true, delete: true },
+            team: { view: true, add: true, edit: true, delete: true },
+            projects: { view: true, add: true, edit: true, delete: true },
+            billing: { view: true, add: true, edit: true, delete: true },
+            settings: { view: true, add: true, edit: true, delete: true },
+          },
+        },
+        {
+          id: 'admin',
+          name: 'Admin',
+          slug: 'admin',
+          description: 'Can manage team members and most organization settings.',
+          isSystem: true,
+          permissions: {
+            dashboard: { view: true, add: true, edit: true, delete: true },
+            wytwall: { view: true, add: true, edit: true, delete: true },
+            wytapps: { view: true, add: true, edit: true, delete: true },
+            team: { view: true, add: true, edit: true, delete: true },
+            projects: { view: true, add: true, edit: true, delete: true },
+            billing: { view: true, add: false, edit: false, delete: false },
+            settings: { view: true, add: true, edit: true, delete: false },
+          },
+        },
+        {
+          id: 'analyst',
+          name: 'Analyst',
+          slug: 'analyst',
+          description: 'Can view data and create reports. Limited editing access.',
+          isSystem: true,
+          permissions: {
+            dashboard: { view: true, add: false, edit: false, delete: false },
+            wytwall: { view: true, add: true, edit: false, delete: false },
+            wytapps: { view: true, add: false, edit: false, delete: false },
+            team: { view: true, add: false, edit: false, delete: false },
+            projects: { view: true, add: false, edit: false, delete: false },
+            billing: { view: false, add: false, edit: false, delete: false },
+            settings: { view: false, add: false, edit: false, delete: false },
+          },
+        },
+        {
+          id: 'custom',
+          name: 'Custom',
+          slug: 'custom',
+          description: 'Fully customizable permissions set by the organization owner.',
+          isSystem: true,
+          permissions: {
+            dashboard: { view: true, add: false, edit: false, delete: false },
+            wytwall: { view: true, add: false, edit: false, delete: false },
+            wytapps: { view: true, add: false, edit: false, delete: false },
+            team: { view: true, add: false, edit: false, delete: false },
+            projects: { view: true, add: false, edit: false, delete: false },
+            billing: { view: false, add: false, edit: false, delete: false },
+            settings: { view: false, add: false, edit: false, delete: false },
+          },
+        },
+      ];
+      res.json({ success: true, roles: defaultRoles });
+    }
+  } catch (error) {
+    console.error("Error fetching org roles:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch organization roles" });
+  }
+});
+
+// POST /api/admin/settings/org-roles - Save organization role definitions
+router.post("/admin/settings/org-roles", adminAuthMiddleware, async (req, res) => {
+  try {
+    const user = (req as any).user;
+    if (!user?.isSuperAdmin) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Access denied: Super Admin required' 
+      });
+    }
+
+    const { roles } = req.body;
+    if (!roles || !Array.isArray(roles)) {
+      return res.status(400).json({ success: false, error: "Invalid roles data" });
+    }
+
+    // Check if setting exists
+    const [existing] = await db
+      .select()
+      .from(platformSettings)
+      .where(eq(platformSettings.key, 'org_roles'))
+      .limit(1);
+
+    const rolesJson = JSON.stringify(roles);
+
+    if (existing) {
+      // Update existing
+      await db
+        .update(platformSettings)
+        .set({
+          value: rolesJson,
+          updatedBy: user.id,
+          updatedAt: new Date(),
+        })
+        .where(eq(platformSettings.key, 'org_roles'));
+    } else {
+      // Create new setting
+      await db
+        .insert(platformSettings)
+        .values({
+          key: 'org_roles',
+          value: rolesJson,
+          type: 'json',
+          label: 'Organization Roles',
+          description: 'Role definitions and permissions for organization users',
+          category: 'organizations',
+          isEditable: true,
+          isPublic: false,
+          createdBy: user.id,
+        });
+    }
+
+    res.json({ success: true, message: "Organization roles saved successfully" });
+  } catch (error) {
+    console.error("Error saving org roles:", error);
+    res.status(500).json({ success: false, error: "Failed to save organization roles" });
+  }
+});
+
 export default router;
