@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Filter, Search, Sparkles, TrendingUp, Zap, Package, ChevronLeft, ChevronRight, MessageSquare, Send } from "lucide-react";
+import { Plus, Filter, Search, Sparkles, TrendingUp, Zap, Package, ChevronLeft, ChevronRight, MessageSquare, Send, Users } from "lucide-react";
 import WytWallLayout from "@/components/wytwall/WytWallLayout";
 import FiltersPanel from "@/components/wytwall/FiltersPanel";
 import NeedCard from "@/components/wytwall/NeedCard";
@@ -142,6 +142,141 @@ function OfferConversationInline({ offerId }: { offerId: string }) {
   );
 }
 
+// Response Thread Component for post owners - Facebook-style expanded comments
+function ResponseThread({ offer }: { offer: any }) {
+  const { toast } = useToast();
+  const [newMessage, setNewMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [showReplyInput, setShowReplyInput] = useState(false);
+
+  const { data: commentsData, isLoading, refetch } = useQuery({
+    queryKey: ['/api/wytwall/offers', offer.id, 'comments'],
+    queryFn: async () => {
+      const res = await fetch(`/api/wytwall/offers/${offer.id}/comments`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch comments');
+      return res.json();
+    },
+  });
+
+  const comments = (commentsData as any)?.comments || [];
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim()) return;
+    
+    setIsSending(true);
+    try {
+      const res = await fetch(`/api/wytwall/offers/${offer.id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ message: newMessage.trim() }),
+      });
+      
+      if (res.ok) {
+        setNewMessage("");
+        setShowReplyInput(false);
+        refetch();
+        toast({ title: "Reply sent!" });
+      } else {
+        toast({ title: "Failed to send reply", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error sending reply", variant: "destructive" });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      {/* Offer Header - The initial message from responder */}
+      <div className="p-4 bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-start gap-3">
+          <Avatar className="h-10 w-10 flex-shrink-0">
+            <AvatarImage src={offer.offererProfileImage} />
+            <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold">
+              {offer.offererName?.[0] || 'U'}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-sm text-gray-900 dark:text-white">
+                {offer.offererName || 'Anonymous'}
+              </span>
+              <span className="text-xs text-gray-500">
+                {new Date(offer.createdAt).toLocaleDateString()}
+              </span>
+              {offer.proposedPrice && (
+                <Badge className="bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 text-xs">
+                  {offer.proposedPrice}
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{offer.message}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Conversation Thread - Facebook-style comments */}
+      <div className="p-3">
+        {isLoading ? (
+          <div className="text-xs text-gray-500 py-2">Loading conversation...</div>
+        ) : comments.length > 0 ? (
+          <div className="space-y-2 mb-3">
+            {comments.map((comment: any) => (
+              <div 
+                key={comment.id} 
+                className={`flex gap-2 ${comment.isFromPostAuthor ? '' : 'flex-row-reverse'}`}
+              >
+                <Avatar className="h-7 w-7 flex-shrink-0">
+                  <AvatarImage src={comment.user?.profileImageUrl} />
+                  <AvatarFallback className={`text-xs ${comment.isFromPostAuthor ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
+                    {comment.user?.name?.[0] || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className={`max-w-[80%] ${comment.isFromPostAuthor ? '' : 'text-right'}`}>
+                  <div className={`inline-block px-3 py-2 rounded-2xl text-sm ${
+                    comment.isFromPostAuthor 
+                      ? 'bg-purple-100 dark:bg-purple-900/30 text-gray-900 dark:text-white' 
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                  }`}>
+                    {comment.message}
+                  </div>
+                  <div className={`text-[10px] text-gray-400 mt-0.5 px-2 ${comment.isFromPostAuthor ? '' : 'text-right'}`}>
+                    {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {/* Reply Input - Always visible for quick replies like Facebook */}
+        <div className="flex gap-2 items-center">
+          <Input
+            placeholder="Write a reply..."
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+            disabled={isSending}
+            className="flex-1 h-9 text-sm rounded-full bg-gray-100 dark:bg-gray-700 border-0"
+            data-testid={`input-reply-${offer.id}`}
+          />
+          <Button
+            onClick={handleSendMessage}
+            disabled={isSending || !newMessage.trim()}
+            size="sm"
+            className="h-9 w-9 p-0 rounded-full bg-purple-600 hover:bg-purple-700"
+            data-testid={`button-send-reply-${offer.id}`}
+          >
+            {isSending ? '...' : <Send className="h-4 w-4" />}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function WytWall() {
   const { user } = useAuthContext();
   const [, navigate] = useLocation();
@@ -163,6 +298,12 @@ export default function WytWall() {
   const [existingOffer, setExistingOffer] = useState<any>(null);
   const [isCheckingOffer, setIsCheckingOffer] = useState(false);
   const [conversationMode, setConversationMode] = useState(false);
+  
+  // View All Responses Dialog state (for post owners)
+  const [responsesDialogOpen, setResponsesDialogOpen] = useState(false);
+  const [responsesPost, setResponsesPost] = useState<any>(null);
+  const [allResponses, setAllResponses] = useState<any[]>([]);
+  const [isLoadingResponses, setIsLoadingResponses] = useState(false);
 
   // Build query URLs with proper query string parameters
   const needsUrl = user ? '/api/needs' : '/api/needs/public';
@@ -362,6 +503,36 @@ export default function WytWall() {
     navigate('/login');
   };
 
+  // Handler for post owner to view all responses
+  const handleViewResponses = async (post: any) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    
+    setResponsesPost(post);
+    setIsLoadingResponses(true);
+    setAllResponses([]);
+    setResponsesDialogOpen(true);
+    
+    try {
+      const res = await fetch(`/api/wytwall/posts/${post.id}/all-responses`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setAllResponses(data.offers || []);
+      }
+    } catch (error) {
+      console.error('Error fetching responses:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load responses",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingResponses(false);
+    }
+  };
+
   const handlePostNeed = () => {
     if (!user) {
       navigate('/login');
@@ -518,6 +689,7 @@ export default function WytWall() {
                 isAuthenticated={!!user}
                 currentUserId={user?.id}
                 onMakeOffer={handleMakeOffer}
+                onViewResponses={handleViewResponses}
                 onLogin={handleLogin}
                 isCollapsed={true}
               />
@@ -727,6 +899,74 @@ export default function WytWall() {
                 )}
               </Button>
             )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View All Responses Dialog (for post owners) - Facebook-style comments */}
+      <Dialog open={responsesDialogOpen} onOpenChange={(open) => {
+        setResponsesDialogOpen(open);
+        if (!open) {
+          setResponsesPost(null);
+          setAllResponses([]);
+        }
+      }}>
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-purple-600" />
+              All Responses
+            </DialogTitle>
+            <DialogDescription>
+              View and respond to all offers on your post. Each conversation is private between you and the responder.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {isLoadingResponses ? (
+            <div className="py-8 text-center">
+              <div className="animate-spin h-8 w-8 border-4 border-purple-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-sm text-gray-500">Loading responses...</p>
+            </div>
+          ) : responsesPost && (
+            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+              {/* Post Summary */}
+              <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                <h4 className="font-medium text-sm text-gray-900 dark:text-white mb-1">
+                  {responsesPost.title || responsesPost.description?.substring(0, 50)}
+                </h4>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  {responsesPost.description?.substring(0, 100)}{responsesPost.description?.length > 100 ? '...' : ''}
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">
+                    {allResponses.length} response{allResponses.length !== 1 ? 's' : ''}
+                  </Badge>
+                </div>
+              </div>
+              
+              {allResponses.length === 0 ? (
+                <div className="py-8 text-center">
+                  <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500">No responses yet. Share your post to get more visibility!</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {allResponses.map((offer: any) => (
+                    <ResponseThread key={offer.id} offer={offer} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setResponsesDialogOpen(false)}
+              data-testid="button-close-responses"
+            >
+              Close
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

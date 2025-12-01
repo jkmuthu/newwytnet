@@ -13,11 +13,12 @@ interface NeedCardProps {
   isAuthenticated: boolean;
   currentUserId?: string;
   onMakeOffer?: (need: any) => void;
+  onViewResponses?: (need: any) => void;
   onLogin?: () => void;
   isCollapsed?: boolean;
 }
 
-export default function NeedCard({ need, isAuthenticated, currentUserId, onMakeOffer, onLogin, isCollapsed = false }: NeedCardProps) {
+export default function NeedCard({ need, isAuthenticated, currentUserId, onMakeOffer, onViewResponses, onLogin, isCollapsed = false }: NeedCardProps) {
   const [expanded, setExpanded] = useState(!isCollapsed);
   const { toast } = useToast();
   
@@ -106,7 +107,14 @@ export default function NeedCard({ need, isAuthenticated, currentUserId, onMakeO
   const handleOfferClick = () => {
     if (!isAuthenticated) {
       onLogin?.();
+      return;
+    }
+    
+    if (isOwner) {
+      // Post owner wants to view all responses
+      onViewResponses?.(need);
     } else {
+      // User wants to make offer or continue existing conversation
       onMakeOffer?.(need);
     }
   };
@@ -220,7 +228,7 @@ export default function NeedCard({ need, isAuthenticated, currentUserId, onMakeO
                 </div>
               </div>
               
-              {/* Make Offer Button - Full Width */}
+              {/* Make Offer / View Responses Button - Full Width */}
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -228,24 +236,26 @@ export default function NeedCard({ need, isAuthenticated, currentUserId, onMakeO
                       <Button
                         onClick={handleOfferClick}
                         className={`w-full font-semibold text-xs sm:text-sm h-9 sm:h-10 ${
-                          isOwner || hasExistingOffer
-                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            : isAuthenticated
-                              ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md"
-                              : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                          isOwner
+                            ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-md"
+                            : hasExistingOffer
+                              ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md"
+                              : isAuthenticated
+                                ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md"
+                                : "bg-gray-200 hover:bg-gray-300 text-gray-700"
                         }`}
-                        disabled={isOwner || hasExistingOffer || checkingOffer || (!isAuthenticated && !onLogin)}
+                        disabled={checkingOffer || (!isAuthenticated && !onLogin)}
                         data-testid={`button-make-offer-${need.id}`}
                       >
                         {isOwner ? (
                           <>
-                            <Ban className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                            Your Post
+                            <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                            View Responses
                           </>
                         ) : hasExistingOffer ? (
                           <>
                             <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                            Already Offered
+                            Continue Chat
                           </>
                         ) : (
                           <>
@@ -259,8 +269,8 @@ export default function NeedCard({ need, isAuthenticated, currentUserId, onMakeO
                   {(isOwner || hasExistingOffer) && (
                     <TooltipContent>
                       {isOwner 
-                        ? "You cannot make an offer on your own post"
-                        : "You already have an active conversation on this post"
+                        ? "View all offers and conversations on your post"
+                        : "Continue your conversation with the post owner"
                       }
                     </TooltipContent>
                   )}
