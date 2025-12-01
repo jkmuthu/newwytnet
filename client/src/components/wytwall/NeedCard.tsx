@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, Clock, DollarSign, MessageSquare, Star, ChevronDown, ChevronUp, Users } from "lucide-react";
+import { MapPin, Clock, DollarSign, MessageSquare, Star, ChevronDown, ChevronUp, Users, ThumbsUp, Heart, Sparkles } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 interface NeedCardProps {
   need: any;
@@ -16,6 +17,59 @@ interface NeedCardProps {
 
 export default function NeedCard({ need, isAuthenticated, onMakeOffer, onLogin, isCollapsed = false }: NeedCardProps) {
   const [expanded, setExpanded] = useState(!isCollapsed);
+  const { toast } = useToast();
+  
+  // Reaction state (only for wytwall posts with isWytWallPost flag)
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(need.reactionCount || 0);
+  const [isLiking, setIsLiking] = useState(false);
+  
+  const isWytWallPost = need.isWytWallPost === true;
+  
+  // Fetch initial reaction state for wytwall posts
+  useEffect(() => {
+    if (isWytWallPost && isAuthenticated) {
+      fetch(`/api/wytwall/posts/${need.id}/reactions`, { credentials: 'include' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setLiked(data.userReacted);
+            setLikeCount(data.reactionCount);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [need.id, isWytWallPost, isAuthenticated]);
+
+  const handleLike = async () => {
+    if (!isAuthenticated) {
+      onLogin?.();
+      return;
+    }
+    
+    if (!isWytWallPost || isLiking) return;
+    
+    setIsLiking(true);
+    try {
+      const res = await fetch(`/api/wytwall/posts/${need.id}/react`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ reactionType: 'like' }),
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setLiked(data.userReacted);
+        setLikeCount(data.reactionCount);
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+    } finally {
+      setIsLiking(false);
+    }
+  };
+  
   const categoryColors: Record<string, string> = {
     jobs: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
     real_estate: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
@@ -112,18 +166,39 @@ export default function NeedCard({ need, isAuthenticated, onMakeOffer, onLogin, 
           </CardContent>
 
           <CardFooter className="px-3 sm:px-6 border-t border-gray-200 dark:border-gray-700 py-2.5 sm:py-3 bg-gray-50 dark:bg-gray-800/50">
-            <div className="w-full flex items-center gap-3">
-              {/* Response Count Badge */}
-              {(need.responseCount > 0 || need.offersCount > 0) && (
-                <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-700 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600">
-                  <Users className="h-3.5 w-3.5 text-blue-500" />
-                  <span className="font-medium">{need.responseCount || need.offersCount}</span>
-                  <span className="hidden sm:inline">response{(need.responseCount || need.offersCount) !== 1 ? 's' : ''}</span>
+            <div className="w-full flex flex-col gap-2">
+              {/* Social Action Bar - Like Facebook */}
+              <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
+                <div className="flex items-center gap-4">
+                  {/* Like Button with Count */}
+                  <button
+                    onClick={handleLike}
+                    disabled={isLiking || !isWytWallPost}
+                    className={`flex items-center gap-1.5 text-xs font-medium transition-all ${
+                      liked 
+                        ? 'text-blue-600 dark:text-blue-400' 
+                        : 'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
+                    } ${!isWytWallPost ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    data-testid={`button-like-${need.id}`}
+                  >
+                    <ThumbsUp className={`h-4 w-4 ${liked ? 'fill-blue-600 dark:fill-blue-400' : ''}`} />
+                    <span>{likeCount > 0 ? likeCount : ''}</span>
+                    <span className="hidden sm:inline">{liked ? 'Liked' : 'Like'}</span>
+                  </button>
+                  
+                  {/* Response Count */}
+                  <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                    <Users className="h-4 w-4" />
+                    <span className="font-medium">{need.responseCount || need.offersCount || 0}</span>
+                    <span className="hidden sm:inline">response{(need.responseCount || need.offersCount) !== 1 ? 's' : ''}</span>
+                  </div>
                 </div>
-              )}
+              </div>
+              
+              {/* Make Offer Button - Full Width */}
               <Button
                 onClick={handleOfferClick}
-                className={`flex-1 font-semibold text-xs sm:text-sm h-9 sm:h-10 ${
+                className={`w-full font-semibold text-xs sm:text-sm h-9 sm:h-10 ${
                   isAuthenticated
                     ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md"
                     : "bg-gray-200 hover:bg-gray-300 text-gray-700"
