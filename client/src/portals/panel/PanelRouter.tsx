@@ -258,6 +258,165 @@ function MyPanelDashboard() {
   );
 }
 
+// Post Responses List Component - Shows all offers with conversation threads in the dialog
+function PostResponsesList({ postId }: { postId: string }) {
+  const { toast } = useToast();
+  
+  const { data: responsesData, isLoading, refetch } = useQuery({
+    queryKey: ['/api/wytwall/posts', postId, 'all-responses'],
+    queryFn: async () => {
+      const res = await fetch(`/api/wytwall/posts/${postId}/all-responses`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch responses');
+      return res.json();
+    },
+  });
+
+  const offers = (responsesData as any)?.offers || [];
+  const summary = (responsesData as any)?.summary;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3 p-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-20 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
+        ))}
+      </div>
+    );
+  }
+
+  if (offers.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+          <MessageSquare className="h-8 w-8 text-gray-400" />
+        </div>
+        <h3 className="font-medium mb-2">No responses yet</h3>
+        <p className="text-sm text-muted-foreground">
+          When someone makes an offer on this post, you'll see them here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Summary Stats */}
+      {summary && (
+        <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+            {summary.pendingCount} pending
+          </Badge>
+          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+            {summary.acceptedCount} accepted
+          </Badge>
+          <span className="text-sm text-muted-foreground ml-auto">
+            {summary.totalResponders} total responder{summary.totalResponders !== 1 ? 's' : ''}
+          </span>
+        </div>
+      )}
+
+      {/* Offers List */}
+      <div className="space-y-3 max-h-[400px] overflow-y-auto">
+        {offers.map((offer: any) => (
+          <Card key={offer.id} className="p-4" data-testid={`response-offer-${offer.id}`}>
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={offer.offererProfileImage} />
+                  <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">
+                    {offer.offererName?.[0] || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <span className="font-medium text-sm">{offer.offererName || 'Anonymous'}</span>
+                  <span className="text-xs text-muted-foreground ml-2">
+                    {new Date(offer.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+              <Badge className={
+                offer.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                offer.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                'bg-red-100 text-red-800'
+              }>
+                {offer.status}
+              </Badge>
+            </div>
+
+            <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">{offer.message}</p>
+            
+            {offer.proposedPrice && (
+              <Badge variant="outline" className="text-green-700 border-green-300 mb-2">
+                Proposed: {offer.proposedPrice}
+              </Badge>
+            )}
+
+            {offer.messageCount > 0 && (
+              <div className="text-xs text-muted-foreground mb-2">
+                💬 {offer.messageCount} message{offer.messageCount !== 1 ? 's' : ''} in conversation
+              </div>
+            )}
+
+            {/* Accept/Reject buttons for pending offers */}
+            {offer.status === 'pending' && (
+              <div className="flex gap-2 mt-3 pt-3 border-t">
+                <Button 
+                  size="sm" 
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={async () => {
+                    try {
+                      await fetch(`/api/wytwall/offers/${offer.id}/respond`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ action: 'accept' })
+                      });
+                      toast({ title: "Offer accepted!" });
+                      refetch();
+                    } catch (e) {
+                      toast({ title: "Error", variant: "destructive" });
+                    }
+                  }}
+                  data-testid={`button-accept-response-${offer.id}`}
+                >
+                  <Check className="h-4 w-4 mr-1" />
+                  Accept
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="text-red-600 border-red-300 hover:bg-red-50"
+                  onClick={async () => {
+                    try {
+                      await fetch(`/api/wytwall/offers/${offer.id}/respond`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ action: 'reject' })
+                      });
+                      toast({ title: "Offer rejected" });
+                      refetch();
+                    } catch (e) {
+                      toast({ title: "Error", variant: "destructive" });
+                    }
+                  }}
+                  data-testid={`button-reject-response-${offer.id}`}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Reject
+                </Button>
+              </div>
+            )}
+
+            {/* Conversation Thread */}
+            <OfferConversation offerId={offer.id} isPostAuthor={true} />
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Post Engagement Badge Component - Shows messages/responders count (e.g., "22/7")
 function PostEngagementBadge({ postId }: { postId: string }) {
   const { data: metricsData, isLoading } = useQuery({
@@ -985,9 +1144,9 @@ function MyPanelWytWall() {
         </TabsContent>
       </Tabs>
 
-      {/* View/Edit Post Dialog */}
+      {/* View/Edit Post Dialog - Enhanced with Responses Tab */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {isEditMode ? 'Edit Post' : 'Post Details'}
@@ -1000,107 +1159,127 @@ function MyPanelWytWall() {
           </DialogHeader>
           
           {selectedPost && (
-            <div className="space-y-4 py-4">
-              {isEditMode ? (
-                <>
-                  <div className="space-y-2">
-                    <Label>Category</Label>
-                    <Select value={editCategory} onValueChange={setEditCategory}>
-                      <SelectTrigger data-testid="select-edit-category">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(selectedPost.postType === 'need' ? needCategories : offerCategories).map((cat) => (
-                          <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Description</Label>
-                    <Input
-                      value={editDescription}
-                      onChange={(e) => setEditDescription(e.target.value)}
-                      maxLength={200}
-                      data-testid="input-edit-description"
-                    />
-                    <p className="text-xs text-muted-foreground">{editDescription.length}/200 characters</p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-muted-foreground text-sm">Category</Label>
-                      <p className="font-medium">{getCategoryLabel(selectedPost.category)}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground text-sm">Status</Label>
-                      <div className="mt-1 flex gap-2">
-                        <Badge variant={selectedPost.status === 'active' ? 'default' : 'secondary'}>
-                          {selectedPost.status || 'active'}
-                        </Badge>
-                        {selectedPost.isPublic && (
-                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                            Public
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground text-sm">Description</Label>
-                    <p className="mt-1">{selectedPost.description}</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
-                    <div>Created: {new Date(selectedPost.createdAt).toLocaleDateString()}</div>
-                    <div>Expires: {new Date(selectedPost.expiresAt).toLocaleDateString()}</div>
+            <div className="flex-1 overflow-hidden">
+              <Tabs defaultValue="details" className="h-full flex flex-col">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="details">Post Details</TabsTrigger>
+                  <TabsTrigger value="responses" disabled={!selectedPost.isPublic}>
+                    Responses
+                    {selectedPost.isPublic && <PostEngagementBadge postId={selectedPost.id} />}
+                  </TabsTrigger>
+                </TabsList>
+                
+                {/* Post Details Tab */}
+                <TabsContent value="details" className="flex-1 overflow-y-auto mt-0">
+                  <div className="space-y-4 py-2">
+                    {isEditMode ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label>Category</Label>
+                          <Select value={editCategory} onValueChange={setEditCategory}>
+                            <SelectTrigger data-testid="select-edit-category">
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {(selectedPost.postType === 'need' ? needCategories : offerCategories).map((cat) => (
+                                <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Description</Label>
+                          <Input
+                            value={editDescription}
+                            onChange={(e) => setEditDescription(e.target.value)}
+                            maxLength={200}
+                            data-testid="input-edit-description"
+                          />
+                          <p className="text-xs text-muted-foreground">{editDescription.length}/200 characters</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-muted-foreground text-sm">Category</Label>
+                            <p className="font-medium">{getCategoryLabel(selectedPost.category)}</p>
+                          </div>
+                          <div>
+                            <Label className="text-muted-foreground text-sm">Status</Label>
+                            <div className="mt-1 flex gap-2">
+                              <Badge variant={selectedPost.status === 'active' ? 'default' : 'secondary'}>
+                                {selectedPost.status || 'active'}
+                              </Badge>
+                              {selectedPost.isPublic && (
+                                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                  Public
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-muted-foreground text-sm">Description</Label>
+                          <p className="mt-1">{selectedPost.description}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
+                          <div>Created: {new Date(selectedPost.createdAt).toLocaleDateString()}</div>
+                          <div>Expires: {new Date(selectedPost.expiresAt).toLocaleDateString()}</div>
+                        </div>
+                        
+                        {/* Publish to WytWall Section */}
+                        <div className="border-t pt-4 mt-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-sm">Public WytWall</p>
+                              <p className="text-xs text-muted-foreground">
+                                {selectedPost.isPublic 
+                                  ? "Your post is visible on the public marketplace" 
+                                  : "Publish to make visible to everyone"}
+                              </p>
+                            </div>
+                            <Button 
+                              size="sm" 
+                              variant={selectedPost.isPublic ? "outline" : "default"}
+                              onClick={handlePublishPost}
+                              data-testid="button-publish"
+                              className={selectedPost.isPublic ? "" : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"}
+                            >
+                              {selectedPost.isPublic ? "Unpublish" : "Publish to WytWall"}
+                            </Button>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                   
-                  {/* Publish to WytWall Section */}
-                  <div className="border-t pt-4 mt-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-sm">Public WytWall</p>
-                        <p className="text-xs text-muted-foreground">
-                          {selectedPost.isPublic 
-                            ? "Your post is visible on the public marketplace" 
-                            : "Publish to make visible to everyone"}
-                        </p>
-                      </div>
-                      <Button 
-                        size="sm" 
-                        variant={selectedPost.isPublic ? "outline" : "default"}
-                        onClick={handlePublishPost}
-                        data-testid="button-publish"
-                        className={selectedPost.isPublic ? "" : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"}
-                      >
-                        {selectedPost.isPublic ? "Unpublish" : "Publish to WytWall"}
-                      </Button>
-                    </div>
+                  <div className="flex justify-between pt-4 border-t mt-4">
+                    {isEditMode ? (
+                      <>
+                        <Button variant="outline" onClick={() => setIsEditMode(false)}>Cancel</Button>
+                        <Button onClick={handleEditPost} data-testid="button-save-edit">Save Changes</Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)} data-testid="button-delete">
+                          Delete
+                        </Button>
+                        <Button onClick={() => setIsEditMode(true)} data-testid="button-edit">
+                          Edit
+                        </Button>
+                      </>
+                    )}
                   </div>
-                </>
-              )}
+                </TabsContent>
+                
+                {/* Responses Tab - All offers with conversation threads */}
+                <TabsContent value="responses" className="flex-1 overflow-y-auto mt-0">
+                  <PostResponsesList postId={selectedPost.id} />
+                </TabsContent>
+              </Tabs>
             </div>
           )}
-          
-          <div className="flex justify-between">
-            {isEditMode ? (
-              <>
-                <Button variant="outline" onClick={() => setIsEditMode(false)}>Cancel</Button>
-                <Button onClick={handleEditPost} data-testid="button-save-edit">Save Changes</Button>
-              </>
-            ) : (
-              <>
-                <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)} data-testid="button-delete">
-                  Delete
-                </Button>
-                <Button onClick={() => setIsEditMode(true)} data-testid="button-edit">
-                  Edit
-                </Button>
-              </>
-            )}
-          </div>
         </DialogContent>
       </Dialog>
 
