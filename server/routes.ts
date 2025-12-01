@@ -103,6 +103,7 @@ import {
   wytWallPosts,
   wytWallPostOffers,
   wytWallOfferComments,
+  wytWallReactions,
   insertWytWallPostSchema,
   userAppInstallations,
   aiAppProjects,
@@ -11251,6 +11252,269 @@ When suggesting improvements, format your response with suggestions in a structu
     } catch (error: any) {
       console.error('Error creating offer comment:', error);
       res.status(500).json({ error: error.message || 'Failed to create comment' });
+    }
+  });
+
+  // ========================================
+  // WytWall Reactions (Like/Unlike System)
+  // ========================================
+
+  // Toggle like/reaction on a post
+  app.post('/api/wytwall/posts/:postId/react', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { postId } = req.params;
+      const { reactionType = 'like' } = req.body;
+      const principalId = String(principal.id);
+
+      // Check if post exists
+      const post = await db.select({ id: wytWallPosts.id })
+        .from(wytWallPosts)
+        .where(eq(wytWallPosts.id, postId))
+        .limit(1);
+
+      if (post.length === 0) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+
+      // Check if user already reacted
+      const existingReaction = await db.select({ id: wytWallReactions.id })
+        .from(wytWallReactions)
+        .where(and(
+          eq(wytWallReactions.postId, postId),
+          eq(wytWallReactions.userId, principalId)
+        ))
+        .limit(1);
+
+      let action = '';
+      if (existingReaction.length > 0) {
+        // Remove the reaction (unlike)
+        await db.delete(wytWallReactions)
+          .where(eq(wytWallReactions.id, existingReaction[0].id));
+        action = 'removed';
+      } else {
+        // Add the reaction (like)
+        await db.insert(wytWallReactions).values({
+          postId,
+          userId: principalId,
+          reactionType,
+        });
+        action = 'added';
+      }
+
+      // Get updated reaction count
+      const countResult = await db.select({
+        count: sql<number>`count(*)::int`,
+      })
+        .from(wytWallReactions)
+        .where(eq(wytWallReactions.postId, postId));
+
+      res.json({
+        success: true,
+        action,
+        reactionCount: countResult[0]?.count || 0,
+        userReacted: action === 'added',
+      });
+    } catch (error: any) {
+      console.error('Error toggling reaction:', error);
+      res.status(500).json({ error: error.message || 'Failed to toggle reaction' });
+    }
+  });
+
+  // Get reaction status and count for a post
+  app.get('/api/wytwall/posts/:postId/reactions', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      const { postId } = req.params;
+      const principalId = principal ? String(principal.id) : null;
+
+      // Get reaction count
+      const countResult = await db.select({
+        count: sql<number>`count(*)::int`,
+      })
+        .from(wytWallReactions)
+        .where(eq(wytWallReactions.postId, postId));
+
+      // Check if current user reacted
+      let userReacted = false;
+      if (principalId) {
+        const userReaction = await db.select({ id: wytWallReactions.id })
+          .from(wytWallReactions)
+          .where(and(
+            eq(wytWallReactions.postId, postId),
+            eq(wytWallReactions.userId, principalId)
+          ))
+          .limit(1);
+        userReacted = userReaction.length > 0;
+      }
+
+      res.json({
+        success: true,
+        reactionCount: countResult[0]?.count || 0,
+        userReacted,
+      });
+    } catch (error: any) {
+      console.error('Error fetching reactions:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch reactions' });
+    }
+  });
+
+  // Get post engagement metrics (for My Posts tab - messages/responders count)
+  app.get('/api/wytwall/posts/:postId/metrics', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { postId } = req.params;
+      const principalId = String(principal.id);
+
+      // Verify user owns the post
+      const post = await db.select({ userId: wytWallPosts.userId })
+        .from(wytWallPosts)
+        .where(eq(wytWallPosts.id, postId))
+        .limit(1);
+
+      if (post.length === 0) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+
+      if (post[0].userId !== principalId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      // Get offer count (unique responders)
+      const offersResult = await db.select({
+        count: sql<number>`count(distinct ${wytWallPostOffers.offererId})::int`,
+        total: sql<number>`count(*)::int`,
+      })
+        .from(wytWallPostOffers)
+        .where(eq(wytWallPostOffers.postId, postId));
+
+      // Get total message count across all offers
+      const messagesResult = await db.select({
+        count: sql<number>`count(*)::int`,
+      })
+        .from(wytWallOfferComments)
+        .innerJoin(wytWallPostOffers, eq(wytWallOfferComments.offerId, wytWallPostOffers.id))
+        .where(eq(wytWallPostOffers.postId, postId));
+
+      // Get reaction count
+      const reactionsResult = await db.select({
+        count: sql<number>`count(*)::int`,
+      })
+        .from(wytWallReactions)
+        .where(eq(wytWallReactions.postId, postId));
+
+      res.json({
+        success: true,
+        metrics: {
+          responders: offersResult[0]?.count || 0,
+          offers: offersResult[0]?.total || 0,
+          messages: messagesResult[0]?.count || 0,
+          reactions: reactionsResult[0]?.count || 0,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error fetching post metrics:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch metrics' });
+    }
+  });
+
+  // Get all offers and conversations for a specific post (for expanded view)
+  app.get('/api/wytwall/posts/:postId/all-responses', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { postId } = req.params;
+      const principalId = String(principal.id);
+
+      // Verify user owns the post
+      const post = await db.select({
+        id: wytWallPosts.id,
+        userId: wytWallPosts.userId,
+        postType: wytWallPosts.postType,
+        category: wytWallPosts.category,
+        description: wytWallPosts.description,
+        status: wytWallPosts.status,
+        createdAt: wytWallPosts.createdAt,
+      })
+        .from(wytWallPosts)
+        .where(eq(wytWallPosts.id, postId))
+        .limit(1);
+
+      if (post.length === 0) {
+        return res.status(404).json({ error: 'Post not found' });
+      }
+
+      if (post[0].userId !== principalId) {
+        return res.status(403).json({ error: 'Access denied - you can only view responses to your own posts' });
+      }
+
+      // Get all offers with offerer info
+      const offers = await db.select({
+        id: wytWallPostOffers.id,
+        offererId: wytWallPostOffers.offererId,
+        message: wytWallPostOffers.message,
+        proposedPrice: wytWallPostOffers.proposedPrice,
+        status: wytWallPostOffers.status,
+        responseMessage: wytWallPostOffers.responseMessage,
+        respondedAt: wytWallPostOffers.respondedAt,
+        createdAt: wytWallPostOffers.createdAt,
+        offererName: users.name,
+        offererProfileImage: users.profileImageUrl,
+      })
+        .from(wytWallPostOffers)
+        .leftJoin(users, eq(wytWallPostOffers.offererId, users.id))
+        .where(eq(wytWallPostOffers.postId, postId))
+        .orderBy(desc(wytWallPostOffers.createdAt));
+
+      // Get conversation counts for each offer
+      const offerIds = offers.map(o => o.id);
+      let conversationCounts: Record<string, number> = {};
+      
+      if (offerIds.length > 0) {
+        const countsResult = await db.select({
+          offerId: wytWallOfferComments.offerId,
+          count: sql<number>`count(*)::int`,
+        })
+          .from(wytWallOfferComments)
+          .where(inArray(wytWallOfferComments.offerId, offerIds))
+          .groupBy(wytWallOfferComments.offerId);
+        
+        countsResult.forEach(r => {
+          conversationCounts[r.offerId] = r.count;
+        });
+      }
+
+      // Add conversation count to each offer
+      const offersWithCounts = offers.map(offer => ({
+        ...offer,
+        messageCount: conversationCounts[offer.id] || 0,
+      }));
+
+      res.json({
+        success: true,
+        post: post[0],
+        offers: offersWithCounts,
+        summary: {
+          totalResponders: offers.length,
+          pendingCount: offers.filter(o => o.status === 'pending').length,
+          acceptedCount: offers.filter(o => o.status === 'accepted').length,
+          rejectedCount: offers.filter(o => o.status === 'rejected').length,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error fetching post responses:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch responses' });
     }
   });
 

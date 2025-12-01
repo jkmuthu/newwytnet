@@ -2700,6 +2700,19 @@ export const wytWallOfferComments = pgTable("wytwall_offer_comments", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// WytWall Reactions - Like/reaction system for social engagement (like Facebook)
+export const wytWallReactionTypeEnum = pgEnum("wytwall_reaction_type", ["like", "love", "helpful", "interested"]);
+
+export const wytWallReactions = pgTable("wytwall_reactions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  postId: uuid("post_id").notNull().references(() => wytWallPosts.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  reactionType: wytWallReactionTypeEnum("reaction_type").notNull().default("like"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  unique("unique_user_post_reaction").on(table.postId, table.userId),
+]);
+
 // ========================================
 // WYTSTAR GAMIFICATION SYSTEM
 // ========================================
