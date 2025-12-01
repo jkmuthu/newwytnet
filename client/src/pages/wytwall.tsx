@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Plus, Filter, Search, Sparkles, TrendingUp, Zap, Package, ChevronLeft, ChevronRight, MessageSquare, Send } from "lucide-react";
 import WytWallLayout from "@/components/wytwall/WytWallLayout";
 import FiltersPanel from "@/components/wytwall/FiltersPanel";
@@ -18,6 +20,127 @@ import PromotionsPanel from "@/components/wytwall/PromotionsPanel";
 import HomeContentSections from "@/components/wytwall/HomeContentSections";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+
+// Inline Conversation Component for WytWall Dialog (one thread per user per post)
+function OfferConversationInline({ offerId }: { offerId: string }) {
+  const { toast } = useToast();
+  const [newMessage, setNewMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+
+  const { data: commentsData, isLoading, refetch } = useQuery({
+    queryKey: ['/api/wytwall/offers', offerId, 'comments'],
+    queryFn: async () => {
+      const res = await fetch(`/api/wytwall/offers/${offerId}/comments`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch comments');
+      return res.json();
+    },
+  });
+
+  const comments = (commentsData as any)?.comments || [];
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim()) return;
+    
+    setIsSending(true);
+    try {
+      const res = await fetch(`/api/wytwall/offers/${offerId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ message: newMessage.trim() }),
+      });
+      
+      if (res.ok) {
+        setNewMessage("");
+        refetch();
+        toast({ title: "Message sent!" });
+      } else {
+        toast({ title: "Failed to send message", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error sending message", variant: "destructive" });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2 py-4">
+        {[1, 2].map((i) => (
+          <div key={i} className="h-12 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Messages List */}
+      <div className="max-h-[250px] overflow-y-auto space-y-2 pr-2">
+        {comments.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center py-4">
+            No messages yet. Start the conversation below.
+          </p>
+        ) : (
+          comments.map((comment: any) => (
+            <div
+              key={comment.id}
+              className={`p-3 rounded-lg ${
+                comment.isFromPostAuthor
+                  ? 'bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 ml-4'
+                  : 'bg-gray-100 dark:bg-gray-800 mr-4'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <Avatar className="h-5 w-5">
+                  <AvatarImage src={comment.user?.profileImageUrl} />
+                  <AvatarFallback className="text-[10px] bg-blue-100 text-blue-700">
+                    {comment.user?.name?.[0] || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                  {comment.user?.name || 'Anonymous'}
+                </span>
+                {comment.isFromPostAuthor && (
+                  <Badge className="text-[10px] px-1.5 py-0 bg-green-100 text-green-700">
+                    Post Owner
+                  </Badge>
+                )}
+                <span className="text-[10px] text-gray-400 ml-auto">
+                  {new Date(comment.createdAt).toLocaleString()}
+                </span>
+              </div>
+              <p className="text-sm text-gray-700 dark:text-gray-300">{comment.message}</p>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Reply Input */}
+      <div className="flex gap-2 pt-2 border-t">
+        <Input
+          placeholder="Type a message..."
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
+          disabled={isSending}
+          className="flex-1"
+          data-testid="input-conversation-message"
+        />
+        <Button
+          onClick={handleSendMessage}
+          disabled={isSending || !newMessage.trim()}
+          size="sm"
+          className="bg-blue-600 hover:bg-blue-700"
+          data-testid="button-send-message"
+        >
+          {isSending ? '...' : <Send className="h-4 w-4" />}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export default function WytWall() {
   const { user } = useAuthContext();
@@ -35,6 +158,11 @@ export default function WytWall() {
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [offerMessage, setOfferMessage] = useState("");
   const [offerPrice, setOfferPrice] = useState("");
+  
+  // Existing offer/conversation state (one thread per user per post)
+  const [existingOffer, setExistingOffer] = useState<any>(null);
+  const [isCheckingOffer, setIsCheckingOffer] = useState(false);
+  const [conversationMode, setConversationMode] = useState(false);
 
   // Build query URLs with proper query string parameters
   const needsUrl = user ? '/api/needs' : '/api/needs/public';
@@ -184,13 +312,34 @@ export default function WytWall() {
     },
   });
 
-  const handleMakeOffer = (post: any) => {
+  const handleMakeOffer = async (post: any) => {
     if (!user) {
       navigate('/login');
       return;
     }
+    
     setSelectedPost(post);
-    setOfferDialogOpen(true);
+    setIsCheckingOffer(true);
+    setExistingOffer(null);
+    setConversationMode(false);
+    
+    try {
+      // Check if user already has an offer on this post
+      const res = await fetch(`/api/wytwall/posts/${post.id}/my-offer`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.offer) {
+          // User has existing offer - show conversation mode
+          setExistingOffer(data.offer);
+          setConversationMode(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking existing offer:', error);
+    } finally {
+      setIsCheckingOffer(false);
+      setOfferDialogOpen(true);
+    }
   };
 
   const handleSubmitOffer = () => {
@@ -454,21 +603,37 @@ export default function WytWall() {
         rightPanel={rightPanel}
       />
       
-      {/* Make Offer Dialog */}
-      <Dialog open={offerDialogOpen} onOpenChange={setOfferDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+      {/* Make Offer / Continue Conversation Dialog */}
+      <Dialog open={offerDialogOpen} onOpenChange={(open) => {
+        setOfferDialogOpen(open);
+        if (!open) {
+          setExistingOffer(null);
+          setConversationMode(false);
+          setOfferMessage("");
+          setOfferPrice("");
+        }
+      }}>
+        <DialogContent className={conversationMode ? "sm:max-w-[600px] max-h-[80vh] overflow-hidden flex flex-col" : "sm:max-w-[500px]"}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-blue-600" />
-              Make an Offer
+              {conversationMode ? 'Your Conversation' : 'Make an Offer'}
             </DialogTitle>
             <DialogDescription>
-              Send your offer to the post owner. They will be notified and can respond to you.
+              {conversationMode 
+                ? "Continue your conversation with the post owner. You can only have one thread per post."
+                : "Send your offer to the post owner. They will be notified and can respond to you."
+              }
             </DialogDescription>
           </DialogHeader>
           
-          {selectedPost && (
-            <div className="space-y-4">
+          {isCheckingOffer ? (
+            <div className="py-8 text-center">
+              <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className="text-sm text-gray-500">Checking for existing conversation...</p>
+            </div>
+          ) : selectedPost && (
+            <div className={`space-y-4 ${conversationMode ? 'flex-1 overflow-y-auto' : ''}`}>
               {/* Post Summary */}
               <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <h4 className="font-medium text-sm text-gray-900 dark:text-white mb-1">
@@ -479,32 +644,59 @@ export default function WytWall() {
                 </p>
               </div>
               
-              {/* Offer Message */}
-              <div className="space-y-2">
-                <Label htmlFor="offer-message">Your Message *</Label>
-                <Textarea
-                  id="offer-message"
-                  placeholder="Describe your offer, qualifications, or how you can help..."
-                  value={offerMessage}
-                  onChange={(e) => setOfferMessage(e.target.value)}
-                  rows={4}
-                  className="resize-none"
-                  data-testid="textarea-offer-message"
-                />
-              </div>
-              
-              {/* Price (Optional) */}
-              <div className="space-y-2">
-                <Label htmlFor="offer-price">Proposed Price (Optional)</Label>
-                <Input
-                  id="offer-price"
-                  type="text"
-                  placeholder="e.g., ₹5000 or $100"
-                  value={offerPrice}
-                  onChange={(e) => setOfferPrice(e.target.value)}
-                  data-testid="input-offer-price"
-                />
-              </div>
+              {conversationMode && existingOffer ? (
+                /* Existing Conversation View */
+                <div className="space-y-4">
+                  {/* Your Original Offer */}
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-medium text-blue-700 dark:text-blue-300">Your Original Offer</span>
+                      <span className="text-xs text-gray-500">
+                        {new Date(existingOffer.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">{existingOffer.message}</p>
+                    {existingOffer.proposedPrice && (
+                      <p className="text-sm text-green-600 dark:text-green-400 mt-1 font-medium">
+                        Proposed: {existingOffer.proposedPrice}
+                      </p>
+                    )}
+                  </div>
+                  
+                  {/* Conversation Thread */}
+                  <OfferConversationInline offerId={existingOffer.id} />
+                </div>
+              ) : (
+                /* New Offer Form */
+                <>
+                  {/* Offer Message */}
+                  <div className="space-y-2">
+                    <Label htmlFor="offer-message">Your Message *</Label>
+                    <Textarea
+                      id="offer-message"
+                      placeholder="Describe your offer, qualifications, or how you can help..."
+                      value={offerMessage}
+                      onChange={(e) => setOfferMessage(e.target.value)}
+                      rows={4}
+                      className="resize-none"
+                      data-testid="textarea-offer-message"
+                    />
+                  </div>
+                  
+                  {/* Price (Optional) */}
+                  <div className="space-y-2">
+                    <Label htmlFor="offer-price">Proposed Price (Optional)</Label>
+                    <Input
+                      id="offer-price"
+                      type="text"
+                      placeholder="e.g., ₹5000 or $100"
+                      value={offerPrice}
+                      onChange={(e) => setOfferPrice(e.target.value)}
+                      data-testid="input-offer-price"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           )}
           
@@ -514,23 +706,25 @@ export default function WytWall() {
               onClick={() => setOfferDialogOpen(false)}
               data-testid="button-cancel-offer"
             >
-              Cancel
+              {conversationMode ? 'Close' : 'Cancel'}
             </Button>
-            <Button
-              onClick={handleSubmitOffer}
-              disabled={submitOfferMutation.isPending || !offerMessage.trim()}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-              data-testid="button-submit-offer"
-            >
-              {submitOfferMutation.isPending ? (
-                "Sending..."
-              ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  Send Offer
-                </>
-              )}
-            </Button>
+            {!conversationMode && (
+              <Button
+                onClick={handleSubmitOffer}
+                disabled={submitOfferMutation.isPending || !offerMessage.trim()}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                data-testid="button-submit-offer"
+              >
+                {submitOfferMutation.isPending ? (
+                  "Sending..."
+                ) : (
+                  <>
+                    <Send className="h-4 w-4 mr-2" />
+                    Send Offer
+                  </>
+                )}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

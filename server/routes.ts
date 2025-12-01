@@ -11426,6 +11426,43 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // Check if user has an existing offer on a post (for one thread per user per post)
+  app.get('/api/wytwall/posts/:postId/my-offer', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { postId } = req.params;
+      const principalId = String(principal.id);
+
+      // Find any existing offer from this user on this post
+      const existingOffer = await db.select({
+        id: wytWallPostOffers.id,
+        message: wytWallPostOffers.message,
+        proposedPrice: wytWallPostOffers.proposedPrice,
+        status: wytWallPostOffers.status,
+        responseMessage: wytWallPostOffers.responseMessage,
+        createdAt: wytWallPostOffers.createdAt,
+      })
+        .from(wytWallPostOffers)
+        .where(and(
+          eq(wytWallPostOffers.postId, postId),
+          eq(wytWallPostOffers.offererId, principalId)
+        ))
+        .limit(1);
+
+      res.json({
+        success: true,
+        offer: existingOffer.length > 0 ? existingOffer[0] : null,
+      });
+    } catch (error: any) {
+      console.error('Error checking existing offer:', error);
+      res.status(500).json({ error: error.message || 'Failed to check offer' });
+    }
+  });
+
   // Get all offers and conversations for a specific post (for expanded view)
   app.get('/api/wytwall/posts/:postId/all-responses', async (req: any, res) => {
     try {
