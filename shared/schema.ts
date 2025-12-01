@@ -2691,6 +2691,15 @@ export const wytWallPostOffers = pgTable("wytwall_post_offers", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// WytWall Offer Comments - Private conversation thread between post author and offerer (like Facebook comments)
+export const wytWallOfferComments = pgTable("wytwall_offer_comments", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  offerId: uuid("offer_id").notNull().references(() => wytWallPostOffers.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // ========================================
 // WYTSTAR GAMIFICATION SYSTEM
 // ========================================
