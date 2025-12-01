@@ -258,6 +258,46 @@ function MyPanelDashboard() {
   );
 }
 
+// Post Engagement Badge Component - Shows messages/responders count (e.g., "22/7")
+function PostEngagementBadge({ postId }: { postId: string }) {
+  const { data: metricsData, isLoading } = useQuery({
+    queryKey: ['/api/wytwall/posts', postId, 'metrics'],
+    queryFn: async () => {
+      const res = await fetch(`/api/wytwall/posts/${postId}/metrics`, { credentials: 'include' });
+      if (!res.ok) return { metrics: { messages: 0, responders: 0, reactions: 0 } };
+      return res.json();
+    },
+    staleTime: 30000, // Cache for 30 seconds
+  });
+
+  const metrics = (metricsData as any)?.metrics;
+
+  if (isLoading) {
+    return <span className="text-xs text-gray-400">...</span>;
+  }
+
+  if (!metrics || (metrics.messages === 0 && metrics.responders === 0)) {
+    return <span className="text-xs text-gray-400">-</span>;
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <div 
+        className="flex items-center gap-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 px-2 py-1 rounded-full font-medium cursor-help"
+        title={`${metrics.messages} messages from ${metrics.responders} responder${metrics.responders !== 1 ? 's' : ''}`}
+      >
+        <MessageSquare className="h-3 w-3" />
+        <span>{metrics.messages}/{metrics.responders}</span>
+      </div>
+      {metrics.reactions > 0 && (
+        <div className="flex items-center gap-1 text-xs bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300 px-2 py-1 rounded-full">
+          <span>👍 {metrics.reactions}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Offer Conversation Thread Component
 function OfferConversation({ offerId, isPostAuthor }: { offerId: string; isPostAuthor: boolean }) {
   const { toast } = useToast();
@@ -654,6 +694,7 @@ function MyPanelWytWall() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Engagement</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
                     </tr>
@@ -674,6 +715,13 @@ function MyPanelWytWall() {
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {new Date(post.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          {post.isPublic ? (
+                            <PostEngagementBadge postId={post.id} />
+                          ) : (
+                            <span className="text-xs text-gray-400">Private</span>
+                          )}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex gap-1">
