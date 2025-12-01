@@ -1,21 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, Clock, DollarSign, Star, Handshake, ChevronDown, ChevronUp } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { MapPin, Clock, DollarSign, Star, Handshake, ChevronDown, ChevronUp, Ban, MessageCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface OfferCardProps {
   offer: any;
   isAuthenticated: boolean;
+  currentUserId?: string;
   onViewOffer?: (offerId: string) => void;
   onLogin?: () => void;
   isCollapsed?: boolean;
 }
 
-export default function OfferCard({ offer, isAuthenticated, onViewOffer, onLogin, isCollapsed = false }: OfferCardProps) {
+export default function OfferCard({ offer, isAuthenticated, currentUserId, onViewOffer, onLogin, isCollapsed = false }: OfferCardProps) {
   const [expanded, setExpanded] = useState(!isCollapsed);
+  
+  // Check if current user is the post owner
+  const isOwner = currentUserId && offer.userId && String(currentUserId) === String(offer.userId);
   const categoryColors: Record<string, string> = {
     jobs: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300",
     real_estate: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300",
@@ -118,19 +123,43 @@ export default function OfferCard({ offer, isAuthenticated, onViewOffer, onLogin
           </CardContent>
 
           <CardFooter className="border-t border-gray-200 dark:border-gray-700 pt-3 bg-gray-50 dark:bg-gray-800/50">
-            <Button
-              onClick={handleViewClick}
-              className={`w-full font-semibold text-sm ${
-                isAuthenticated
-                  ? "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-md"
-                  : "bg-gray-200 hover:bg-gray-300 text-gray-700"
-              }`}
-              disabled={!isAuthenticated && !onLogin}
-              data-testid={`button-view-offer-${offer.id}`}
-            >
-              <Handshake className="h-4 w-4 mr-2" />
-              {isAuthenticated ? "I'm Interested" : "Login to View Offer"}
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="w-full">
+                    <Button
+                      onClick={handleViewClick}
+                      className={`w-full font-semibold text-sm ${
+                        isOwner
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : isAuthenticated
+                            ? "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white shadow-md"
+                            : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                      }`}
+                      disabled={isOwner || (!isAuthenticated && !onLogin)}
+                      data-testid={`button-view-offer-${offer.id}`}
+                    >
+                      {isOwner ? (
+                        <>
+                          <Ban className="h-4 w-4 mr-2" />
+                          Your Offer
+                        </>
+                      ) : (
+                        <>
+                          <Handshake className="h-4 w-4 mr-2" />
+                          {isAuthenticated ? "I'm Interested" : "Login to View Offer"}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                {isOwner && (
+                  <TooltipContent>
+                    You cannot respond to your own offer
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
           </CardFooter>
         </>
       )}

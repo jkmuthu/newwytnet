@@ -516,6 +516,7 @@ export default function WytWall() {
                 key={post.id}
                 need={post}
                 isAuthenticated={!!user}
+                currentUserId={user?.id}
                 onMakeOffer={handleMakeOffer}
                 onLogin={handleLogin}
                 isCollapsed={true}
@@ -525,6 +526,7 @@ export default function WytWall() {
                 key={post.id}
                 offer={post}
                 isAuthenticated={!!user}
+                currentUserId={user?.id}
                 onViewOffer={(offerId) => console.log('View offer:', offerId)}
                 onLogin={handleLogin}
                 isCollapsed={true}

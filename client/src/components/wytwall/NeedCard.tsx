@@ -3,19 +3,21 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, Clock, DollarSign, MessageSquare, Star, ChevronDown, ChevronUp, Users, ThumbsUp, Heart, Sparkles } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { MapPin, Clock, DollarSign, MessageSquare, Star, ChevronDown, ChevronUp, Users, ThumbsUp, Heart, Sparkles, Ban, MessageCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 interface NeedCardProps {
   need: any;
   isAuthenticated: boolean;
+  currentUserId?: string;
   onMakeOffer?: (need: any) => void;
   onLogin?: () => void;
   isCollapsed?: boolean;
 }
 
-export default function NeedCard({ need, isAuthenticated, onMakeOffer, onLogin, isCollapsed = false }: NeedCardProps) {
+export default function NeedCard({ need, isAuthenticated, currentUserId, onMakeOffer, onLogin, isCollapsed = false }: NeedCardProps) {
   const [expanded, setExpanded] = useState(!isCollapsed);
   const { toast } = useToast();
   
@@ -24,7 +26,14 @@ export default function NeedCard({ need, isAuthenticated, onMakeOffer, onLogin, 
   const [likeCount, setLikeCount] = useState(need.reactionCount || 0);
   const [isLiking, setIsLiking] = useState(false);
   
+  // Existing offer state - check if user already made an offer on this post
+  const [hasExistingOffer, setHasExistingOffer] = useState(false);
+  const [checkingOffer, setCheckingOffer] = useState(false);
+  
   const isWytWallPost = need.isWytWallPost === true;
+  
+  // Check if current user is the post owner
+  const isOwner = currentUserId && need.userId && String(currentUserId) === String(need.userId);
   
   // Fetch initial reaction state for wytwall posts
   useEffect(() => {
@@ -40,6 +49,22 @@ export default function NeedCard({ need, isAuthenticated, onMakeOffer, onLogin, 
         .catch(console.error);
     }
   }, [need.id, isWytWallPost, isAuthenticated]);
+  
+  // Check if user already has an offer on this post
+  useEffect(() => {
+    if (isWytWallPost && isAuthenticated && currentUserId && !isOwner) {
+      setCheckingOffer(true);
+      fetch(`/api/wytwall/posts/${need.id}/my-offer`, { credentials: 'include' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.offer) {
+            setHasExistingOffer(true);
+          }
+        })
+        .catch(console.error)
+        .finally(() => setCheckingOffer(false));
+    }
+  }, [need.id, isWytWallPost, isAuthenticated, currentUserId, isOwner]);
 
   const handleLike = async () => {
     if (!isAuthenticated) {
@@ -196,19 +221,51 @@ export default function NeedCard({ need, isAuthenticated, onMakeOffer, onLogin, 
               </div>
               
               {/* Make Offer Button - Full Width */}
-              <Button
-                onClick={handleOfferClick}
-                className={`w-full font-semibold text-xs sm:text-sm h-9 sm:h-10 ${
-                  isAuthenticated
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md"
-                    : "bg-gray-200 hover:bg-gray-300 text-gray-700"
-                }`}
-                disabled={!isAuthenticated && !onLogin}
-                data-testid={`button-make-offer-${need.id}`}
-              >
-                <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                {isAuthenticated ? "Make an Offer" : "Login to Make Offer"}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="w-full">
+                      <Button
+                        onClick={handleOfferClick}
+                        className={`w-full font-semibold text-xs sm:text-sm h-9 sm:h-10 ${
+                          isOwner || hasExistingOffer
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            : isAuthenticated
+                              ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md"
+                              : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                        }`}
+                        disabled={isOwner || hasExistingOffer || checkingOffer || (!isAuthenticated && !onLogin)}
+                        data-testid={`button-make-offer-${need.id}`}
+                      >
+                        {isOwner ? (
+                          <>
+                            <Ban className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                            Your Post
+                          </>
+                        ) : hasExistingOffer ? (
+                          <>
+                            <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                            Already Offered
+                          </>
+                        ) : (
+                          <>
+                            <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                            {isAuthenticated ? "Make an Offer" : "Login to Make Offer"}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </TooltipTrigger>
+                  {(isOwner || hasExistingOffer) && (
+                    <TooltipContent>
+                      {isOwner 
+                        ? "You cannot make an offer on your own post"
+                        : "You already have an active conversation on this post"
+                      }
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </CardFooter>
         </>
