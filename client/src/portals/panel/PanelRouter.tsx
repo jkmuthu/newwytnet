@@ -59,7 +59,9 @@ import {
   MessageSquare,
   Send,
   Check,
-  X
+  X,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
@@ -252,6 +254,135 @@ function MyPanelDashboard() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+// Offer Conversation Thread Component
+function OfferConversation({ offerId, isPostAuthor }: { offerId: string; isPostAuthor: boolean }) {
+  const { toast } = useToast();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [newMessage, setNewMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+
+  const { data: commentsData, isLoading, refetch } = useQuery({
+    queryKey: ['/api/wytwall/offers', offerId, 'comments'],
+    queryFn: async () => {
+      const res = await fetch(`/api/wytwall/offers/${offerId}/comments`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch comments');
+      return res.json();
+    },
+    enabled: isExpanded,
+  });
+
+  const comments = (commentsData as any)?.comments || [];
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim()) return;
+    
+    setIsSending(true);
+    try {
+      const res = await fetch(`/api/wytwall/offers/${offerId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ message: newMessage.trim() }),
+      });
+      
+      if (res.ok) {
+        setNewMessage("");
+        refetch();
+        toast({ title: "Reply sent!" });
+      } else {
+        toast({ title: "Failed to send reply", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error sending reply", variant: "destructive" });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return (
+    <div className="mt-3 border-t pt-3">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+        data-testid={`toggle-conversation-${offerId}`}
+      >
+        <MessageSquare className="h-4 w-4" />
+        {isExpanded ? 'Hide' : 'View'} Conversation
+        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+      </button>
+
+      {isExpanded && (
+        <div className="mt-3 space-y-3">
+          {isLoading ? (
+            <div className="text-sm text-muted-foreground">Loading conversation...</div>
+          ) : comments.length === 0 ? (
+            <div className="text-sm text-muted-foreground p-3 bg-gray-50 dark:bg-gray-800 rounded">
+              No messages yet. Start the conversation!
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {comments.map((comment: any) => (
+                <div 
+                  key={comment.id} 
+                  className="flex items-start gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded"
+                  data-testid={`comment-${comment.id}`}
+                >
+                  <Avatar className="h-6 w-6 flex-shrink-0">
+                    <AvatarImage src={comment.userProfileImage} />
+                    <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">
+                      {comment.userName?.[0] || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium">{comment.userName || 'Anonymous'}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(comment.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 break-words">
+                      {comment.message}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Reply Input */}
+          <div className="flex gap-2">
+            <Input
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Type your reply..."
+              className="flex-1"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              data-testid={`input-reply-${offerId}`}
+            />
+            <Button 
+              size="sm" 
+              onClick={handleSendMessage}
+              disabled={!newMessage.trim() || isSending}
+              data-testid={`button-send-reply-${offerId}`}
+            >
+              {isSending ? (
+                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -660,7 +791,7 @@ function MyPanelWytWall() {
                       )}
                     </div>
                     {offer.status === 'pending' && (
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-shrink-0">
                         <Button 
                           size="sm" 
                           className="bg-green-600 hover:bg-green-700"
@@ -709,6 +840,8 @@ function MyPanelWytWall() {
                       </div>
                     )}
                   </div>
+                  {/* Private Conversation Thread */}
+                  <OfferConversation offerId={offer.id} isPostAuthor={true} />
                 </Card>
               ))}
             </div>
@@ -789,12 +922,14 @@ function MyPanelWytWall() {
                       )}
                     </div>
                     {offer.status === 'accepted' && (
-                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 flex-shrink-0">
                         <Check className="h-3 w-3 mr-1" />
                         Accepted
                       </Badge>
                     )}
                   </div>
+                  {/* Private Conversation Thread */}
+                  <OfferConversation offerId={offer.id} isPostAuthor={false} />
                 </Card>
               ))}
             </div>
