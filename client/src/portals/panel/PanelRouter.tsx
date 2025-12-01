@@ -458,9 +458,9 @@ function PostEngagementBadge({ postId }: { postId: string }) {
 }
 
 // Offer Conversation Thread Component
-function OfferConversation({ offerId, isPostAuthor }: { offerId: string; isPostAuthor: boolean }) {
+function OfferConversation({ offerId, isPostAuthor, defaultExpanded = true }: { offerId: string; isPostAuthor: boolean; defaultExpanded?: boolean }) {
   const { toast } = useToast();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
 
