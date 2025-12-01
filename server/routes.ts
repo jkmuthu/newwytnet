@@ -10774,7 +10774,7 @@ When suggesting improvements, format your response with suggestions in a structu
           count: sql<number>`count(*)::int`,
         })
           .from(wytWallPostOffers)
-          .where(sql`${wytWallPostOffers.postId} = ANY(${postIds})`)
+          .where(inArray(wytWallPostOffers.postId, postIds))
           .groupBy(wytWallPostOffers.postId);
         
         countResults.forEach(row => {
@@ -11052,10 +11052,13 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
+      // Ensure principal.id is a string for comparison
+      const principalId = String(principal.id);
+
       // Get my posts with their offer counts
       const myPosts = await db.select({ id: wytWallPosts.id })
         .from(wytWallPosts)
-        .where(eq(wytWallPosts.userId, principal.id));
+        .where(eq(wytWallPosts.userId, principalId));
 
       const myPostIds = myPosts.map(p => p.id);
 
@@ -11068,7 +11071,7 @@ When suggesting improvements, format your response with suggestions in a structu
           pending: sql<number>`count(*) filter (where ${wytWallPostOffers.status} = 'pending')::int`,
         })
           .from(wytWallPostOffers)
-          .where(sql`${wytWallPostOffers.postId} = ANY(${myPostIds})`);
+          .where(inArray(wytWallPostOffers.postId, myPostIds));
 
         if (receivedResult.length > 0) {
           receivedCount = receivedResult[0].total;
@@ -11083,7 +11086,7 @@ When suggesting improvements, format your response with suggestions in a structu
         accepted: sql<number>`count(*) filter (where ${wytWallPostOffers.status} = 'accepted')::int`,
       })
         .from(wytWallPostOffers)
-        .where(eq(wytWallPostOffers.offererId, principal.id));
+        .where(eq(wytWallPostOffers.offererId, principalId));
 
       res.json({
         success: true,
