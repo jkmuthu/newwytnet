@@ -102,6 +102,7 @@ import {
   profileFieldWeights,
   wytWallPosts,
   wytWallPostOffers,
+  wytWallOfferComments,
   insertWytWallPostSchema,
   userAppInstallations,
   aiAppProjects,
@@ -11103,6 +11104,153 @@ When suggesting improvements, format your response with suggestions in a structu
     } catch (error: any) {
       console.error('Error fetching offer summary:', error);
       res.status(500).json({ error: error.message || 'Failed to fetch summary' });
+    }
+  });
+
+  // ========================================
+  // WytWall Offer Comments (Private Conversations)
+  // ========================================
+
+  // Get comments for an offer (only visible to post author and offerer)
+  app.get('/api/wytwall/offers/:offerId/comments', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { offerId } = req.params;
+      const principalId = String(principal.id);
+
+      // Verify the user is either the post author or the offerer
+      const offer = await db.select({
+        offerId: wytWallPostOffers.id,
+        offererId: wytWallPostOffers.offererId,
+        postId: wytWallPostOffers.postId,
+        postUserId: wytWallPosts.userId,
+      })
+        .from(wytWallPostOffers)
+        .leftJoin(wytWallPosts, eq(wytWallPostOffers.postId, wytWallPosts.id))
+        .where(eq(wytWallPostOffers.id, offerId))
+        .limit(1);
+
+      if (offer.length === 0) {
+        return res.status(404).json({ error: 'Offer not found' });
+      }
+
+      const isOfferer = offer[0].offererId === principalId;
+      const isPostAuthor = offer[0].postUserId === principalId;
+
+      if (!isOfferer && !isPostAuthor) {
+        return res.status(403).json({ error: 'Access denied - you must be the post author or the offerer to view this conversation' });
+      }
+
+      // Fetch comments with user info
+      const comments = await db.select({
+        id: wytWallOfferComments.id,
+        offerId: wytWallOfferComments.offerId,
+        userId: wytWallOfferComments.userId,
+        message: wytWallOfferComments.message,
+        createdAt: wytWallOfferComments.createdAt,
+        userName: users.name,
+        userProfileImage: users.profileImageUrl,
+      })
+        .from(wytWallOfferComments)
+        .leftJoin(users, eq(wytWallOfferComments.userId, users.id))
+        .where(eq(wytWallOfferComments.offerId, offerId))
+        .orderBy(asc(wytWallOfferComments.createdAt));
+
+      res.json({
+        success: true,
+        comments,
+        isOfferer,
+        isPostAuthor,
+      });
+    } catch (error: any) {
+      console.error('Error fetching offer comments:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch comments' });
+    }
+  });
+
+  // Add a comment to an offer (only post author and offerer can comment)
+  app.post('/api/wytwall/offers/:offerId/comments', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { offerId } = req.params;
+      const { message } = req.body;
+      const principalId = String(principal.id);
+
+      if (!message || message.trim() === '') {
+        return res.status(400).json({ error: 'Message is required' });
+      }
+
+      // Verify the user is either the post author or the offerer
+      const offer = await db.select({
+        offerId: wytWallPostOffers.id,
+        offererId: wytWallPostOffers.offererId,
+        postId: wytWallPostOffers.postId,
+        postUserId: wytWallPosts.userId,
+      })
+        .from(wytWallPostOffers)
+        .leftJoin(wytWallPosts, eq(wytWallPostOffers.postId, wytWallPosts.id))
+        .where(eq(wytWallPostOffers.id, offerId))
+        .limit(1);
+
+      if (offer.length === 0) {
+        return res.status(404).json({ error: 'Offer not found' });
+      }
+
+      const isOfferer = offer[0].offererId === principalId;
+      const isPostAuthor = offer[0].postUserId === principalId;
+
+      if (!isOfferer && !isPostAuthor) {
+        return res.status(403).json({ error: 'Access denied - you must be the post author or the offerer to comment' });
+      }
+
+      // Create the comment
+      const [newComment] = await db.insert(wytWallOfferComments).values({
+        offerId,
+        userId: principalId,
+        message: message.trim(),
+      }).returning();
+
+      // Get user info for the response
+      const userInfo = await db.select({
+        name: users.name,
+        profileImageUrl: users.profileImageUrl,
+      })
+        .from(users)
+        .where(eq(users.id, principalId))
+        .limit(1);
+
+      // Create notification for the other party
+      const notifyUserId = isOfferer ? offer[0].postUserId : offer[0].offererId;
+      if (notifyUserId) {
+        await db.insert(notifications).values({
+          userId: notifyUserId,
+          type: 'wytwall_comment',
+          title: 'New message on your WytWall offer',
+          message: `${principal.name || 'Someone'} replied: "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"`,
+          data: { offerId, postId: offer[0].postId, commentId: newComment.id },
+          isRead: false,
+        });
+      }
+
+      res.json({
+        success: true,
+        comment: {
+          ...newComment,
+          userName: userInfo[0]?.name || 'Anonymous',
+          userProfileImage: userInfo[0]?.profileImageUrl,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error creating offer comment:', error);
+      res.status(500).json({ error: error.message || 'Failed to create comment' });
     }
   });
 
