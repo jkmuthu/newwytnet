@@ -1209,14 +1209,9 @@ function MyPanelWytWall() {
                           <div>
                             <Label className="text-muted-foreground text-sm">Status</Label>
                             <div className="mt-1 flex gap-2">
-                              <Badge variant={selectedPost.status === 'active' ? 'default' : 'secondary'}>
-                                {selectedPost.status || 'active'}
+                              <Badge className={selectedPost.isActive !== false ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'}>
+                                {selectedPost.isActive !== false ? 'Active' : 'Disabled'}
                               </Badge>
-                              {selectedPost.isPublic && (
-                                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                  Public
-                                </Badge>
-                              )}
                             </div>
                           </div>
                         </div>
@@ -1229,25 +1224,25 @@ function MyPanelWytWall() {
                           <div>Expires: {new Date(selectedPost.expiresAt).toLocaleDateString()}</div>
                         </div>
                         
-                        {/* Publish to WytWall Section */}
+                        {/* Post Visibility Section */}
                         <div className="border-t pt-4 mt-4">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="font-medium text-sm">Public WytWall</p>
+                              <p className="font-medium text-sm">Post Visibility</p>
                               <p className="text-xs text-muted-foreground">
-                                {selectedPost.isPublic 
-                                  ? "Your post is visible on the public marketplace" 
-                                  : "Publish to make visible to everyone"}
+                                {selectedPost.isActive !== false 
+                                  ? "Your post is visible on WytWall marketplace" 
+                                  : "Your post is hidden from WytWall"}
                               </p>
                             </div>
                             <Button 
                               size="sm" 
-                              variant={selectedPost.isPublic ? "outline" : "default"}
-                              onClick={handlePublishPost}
-                              data-testid="button-publish"
-                              className={selectedPost.isPublic ? "" : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"}
+                              variant={selectedPost.isActive !== false ? "outline" : "default"}
+                              onClick={() => handleToggleActive(selectedPost.id)}
+                              data-testid="button-toggle-visibility"
+                              className={selectedPost.isActive !== false ? "" : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"}
                             >
-                              {selectedPost.isPublic ? "Unpublish" : "Publish to WytWall"}
+                              {selectedPost.isActive !== false ? "Disable Post" : "Enable Post"}
                             </Button>
                           </div>
                         </div>
