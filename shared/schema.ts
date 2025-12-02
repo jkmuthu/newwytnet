@@ -2790,6 +2790,10 @@ export const wytWallPosts = pgTable("wytwall_posts", {
   isActive: boolean("is_active").default(true), // User can enable/disable their post
   moderationStatus: varchar("moderation_status", { length: 20 }).default("approved"), // approved, pending, rejected
   moderationReason: text("moderation_reason"), // Reason if rejected by admin
+  closedAt: timestamp("closed_at"), // When the post was closed by user
+  closedReason: varchar("closed_reason", { length: 50 }), // done_wytnet, done_elsewhere, dropped, fulfilled
+  renewedCount: integer("renewed_count").default(0), // How many times the post has been renewed
+  renewedAt: timestamp("renewed_at"), // Last renewal timestamp
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
