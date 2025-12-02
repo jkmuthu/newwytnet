@@ -457,6 +457,148 @@ function PostEngagementBadge({ postId }: { postId: string }) {
   );
 }
 
+// Responded Post Card Component - Groups all conversations under one post
+function RespondedPostCard({
+  postId,
+  postOwnerName,
+  postOwnerProfileImage,
+  postDescription,
+  postType,
+  postCategory,
+  postCreatedAt,
+  offers,
+  hasAccepted,
+  getCategoryLabel
+}: {
+  postId: string;
+  postOwnerName: string;
+  postOwnerProfileImage?: string;
+  postDescription: string;
+  postType: string;
+  postCategory?: string;
+  postCreatedAt: string;
+  offers: any[];
+  hasAccepted: boolean;
+  getCategoryLabel: (cat: string) => string;
+}) {
+  const [isExpanded, setIsExpanded] = useState(true);
+  
+  return (
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow" data-testid={`responded-post-${postId}`}>
+      {/* Collapsible Post Header */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700 text-left hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        data-testid={`toggle-post-${postId}`}
+      >
+        <div className="flex items-start gap-3">
+          <Avatar className="h-10 w-10 flex-shrink-0">
+            <AvatarImage src={postOwnerProfileImage} />
+            <AvatarFallback className="bg-purple-100 text-purple-700">
+              {postOwnerName?.[0] || 'U'}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {postOwnerName || 'Anonymous'}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                posted {new Date(postCreatedAt).toLocaleDateString()}
+              </span>
+              <Badge className={
+                postType === 'need' 
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' 
+                  : 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'
+              } variant="secondary">
+                {postType === 'need' ? 'Need' : 'Offer'}
+              </Badge>
+            </div>
+            {/* Post Title/Description */}
+            <p className="mt-2 text-gray-900 dark:text-white font-medium line-clamp-2">
+              {postDescription || 'No description'}
+            </p>
+            {postCategory && (
+              <Badge variant="outline" className="mt-2 text-xs">
+                {getCategoryLabel(postCategory)}
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Conversation count badge */}
+            <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+              <MessageSquare className="h-3 w-3 mr-1" />
+              {offers.length}
+            </Badge>
+            {/* Status indicator */}
+            {hasAccepted && (
+              <Badge className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
+                <Check className="h-3 w-3 mr-1" />
+                Accepted
+              </Badge>
+            )}
+            {/* Expand/Collapse arrow */}
+            {isExpanded ? (
+              <ChevronUp className="h-5 w-5 text-gray-500" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-gray-500" />
+            )}
+          </div>
+        </div>
+      </button>
+      
+      {/* Collapsible Conversations Section */}
+      {isExpanded && (
+        <div className="divide-y divide-gray-100 dark:divide-gray-800">
+          {offers.map((offer: any, index: number) => (
+            <div key={offer.id} className="relative" data-testid={`conversation-${offer.id}`}>
+              {/* Timeline connector line */}
+              <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 to-purple-200 dark:from-blue-800 dark:to-purple-800" />
+              
+              {/* Your Response */}
+              <div className="p-4 pl-12 relative">
+                {/* Timeline dot */}
+                <div className="absolute left-4 top-6 w-4 h-4 rounded-full bg-blue-500 border-2 border-white dark:border-gray-900 shadow-sm z-10" />
+                
+                <div className="flex items-start gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Your Response</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(offer.createdAt).toLocaleDateString()}
+                      </span>
+                      <Badge className={`text-xs ${
+                        offer.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' :
+                        offer.status === 'accepted' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' :
+                        'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
+                      }`}>
+                        {offer.status}
+                      </Badge>
+                    </div>
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
+                      <p className="text-sm text-gray-800 dark:text-gray-200">{offer.message}</p>
+                      {offer.proposedPrice && (
+                        <Badge variant="outline" className="mt-2 text-green-700 border-green-300 dark:text-green-400 dark:border-green-700">
+                          Proposed: {offer.proposedPrice}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Conversation Thread */}
+                <div className="mt-3 ml-0">
+                  <OfferConversation offerId={offer.id} isPostAuthor={false} defaultExpanded={index === 0} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 // Offer Conversation Thread Component
 function OfferConversation({ offerId, isPostAuthor, defaultExpanded = true }: { offerId: string; isPostAuthor: boolean; defaultExpanded?: boolean }) {
   const { toast } = useToast();
@@ -925,7 +1067,7 @@ function MyPanelWytWall() {
           </Card>
         </TabsContent>
 
-        {/* Responded Tab - Facebook-style: Posts I've responded to with conversations */}
+        {/* Responded Tab - Grouped by Post with Collapsible Conversations */}
         <TabsContent value="sent" className="mt-6">
           {sentLoading ? (
             <Card>
@@ -948,96 +1090,47 @@ function MyPanelWytWall() {
             </Card>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
+              {/* Summary Stats */}
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                  {sentOffers.filter((o: any) => o.status === 'pending').length} pending
+                  {Object.keys(sentOffers.reduce((acc: any, o: any) => ({ ...acc, [o.postId]: true }), {})).length} posts
+                </Badge>
+                <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                  {sentOffers.length} conversations
                 </Badge>
                 <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                   {sentOffers.filter((o: any) => o.status === 'accepted').length} accepted
                 </Badge>
-                <span className="text-sm text-muted-foreground">{sentOffers.length} total</span>
               </div>
-              {sentOffers.map((offer: any) => (
-                <Card key={offer.id} className="overflow-hidden hover:shadow-lg transition-shadow" data-testid={`sent-offer-${offer.id}`}>
-                  {/* Facebook-style Post Header - Original Post Info */}
-                  <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-10 w-10 flex-shrink-0">
-                        <AvatarImage src={offer.postOwnerProfileImage} />
-                        <AvatarFallback className="bg-purple-100 text-purple-700">
-                          {offer.postOwnerName?.[0] || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-gray-900 dark:text-white">
-                            {offer.postOwnerName || 'Anonymous'}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            posted {new Date(offer.postCreatedAt || offer.createdAt).toLocaleDateString()}
-                          </span>
-                          <Badge className={
-                            offer.postType === 'need' 
-                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' 
-                              : 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'
-                          } variant="secondary">
-                            {offer.postType === 'need' ? 'Need' : 'Offer'}
-                          </Badge>
-                        </div>
-                        {/* Post Title/Description */}
-                        <p className="mt-2 text-gray-900 dark:text-white font-medium">
-                          {offer.postDescription || 'No description'}
-                        </p>
-                        {offer.postCategory && (
-                          <Badge variant="outline" className="mt-2 text-xs">
-                            {getCategoryLabel(offer.postCategory)}
-                          </Badge>
-                        )}
-                      </div>
-                      {/* Status Badge */}
-                      <Badge className={`flex-shrink-0 ${
-                        offer.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' :
-                        offer.status === 'accepted' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' :
-                        'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
-                      }`}>
-                        {offer.status === 'accepted' && <Check className="h-3 w-3 mr-1" />}
-                        {offer.status}
-                      </Badge>
-                    </div>
-                  </div>
-                  
-                  {/* Your Response - Conversation Subtopic */}
-                  <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-                    <div className="flex items-start gap-3">
-                      <div className="w-0.5 h-full bg-blue-300 dark:bg-blue-600 rounded-full absolute left-7 top-0 bottom-0"></div>
-                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0">
-                        <MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Your Response</span>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(offer.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
-                          <p className="text-sm text-gray-800 dark:text-gray-200">{offer.message}</p>
-                          {offer.proposedPrice && (
-                            <Badge variant="outline" className="mt-2 text-green-700 border-green-300 dark:text-green-400 dark:border-green-700">
-                              Proposed: {offer.proposedPrice}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Private Conversation Thread - Always expanded */}
-                  <div className="p-4 bg-gray-50/50 dark:bg-gray-900/30">
-                    <OfferConversation offerId={offer.id} isPostAuthor={false} defaultExpanded={true} />
-                  </div>
-                </Card>
-              ))}
+              
+              {/* Group offers by postId and render one card per post */}
+              {Object.entries(
+                sentOffers.reduce((groups: Record<string, any[]>, offer: any) => {
+                  const postId = offer.postId;
+                  if (!groups[postId]) groups[postId] = [];
+                  groups[postId].push(offer);
+                  return groups;
+                }, {} as Record<string, any[]>)
+              ).map(([postId, offersForPost]: [string, any[]]) => {
+                const firstOffer = offersForPost[0];
+                const hasAccepted = offersForPost.some((o: any) => o.status === 'accepted');
+                
+                return (
+                  <RespondedPostCard 
+                    key={postId}
+                    postId={postId}
+                    postOwnerName={firstOffer.postOwnerName}
+                    postOwnerProfileImage={firstOffer.postOwnerProfileImage}
+                    postDescription={firstOffer.postDescription}
+                    postType={firstOffer.postType}
+                    postCategory={firstOffer.postCategory}
+                    postCreatedAt={firstOffer.postCreatedAt || firstOffer.createdAt}
+                    offers={offersForPost}
+                    hasAccepted={hasAccepted}
+                    getCategoryLabel={getCategoryLabel}
+                  />
+                );
+              })}
             </div>
           )}
         </TabsContent>
