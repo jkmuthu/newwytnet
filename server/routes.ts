@@ -8614,6 +8614,288 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // ============================================
+  // ADMIN: All Posts Management (WytWall)
+  // ============================================
+  
+  // Get all WytWall posts (admin view with pagination, filters, search)
+  app.get('/api/admin/posts', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const user = req.user;
+
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Super Admin required'
+        });
+      }
+
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = (page - 1) * limit;
+      const search = req.query.search as string || '';
+      const postType = req.query.postType as string || '';
+      const status = req.query.status as string || '';
+      const category = req.query.category as string || '';
+
+      // Build conditions array
+      const conditions: any[] = [];
+      
+      if (search) {
+        conditions.push(
+          or(
+            sql`${wytWallPosts.description} ILIKE ${'%' + search + '%'}`,
+            sql`${wytWallPosts.category} ILIKE ${'%' + search + '%'}`
+          )
+        );
+      }
+      
+      if (postType) {
+        conditions.push(eq(wytWallPosts.postType, postType as any));
+      }
+      
+      if (status) {
+        conditions.push(eq(wytWallPosts.status, status));
+      }
+      
+      if (category) {
+        conditions.push(eq(wytWallPosts.category, category));
+      }
+
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+      const [postsResult, totalCount] = await Promise.all([
+        db.select({
+          id: wytWallPosts.id,
+          postType: wytWallPosts.postType,
+          postFor: wytWallPosts.postFor,
+          category: wytWallPosts.category,
+          description: wytWallPosts.description,
+          location: wytWallPosts.location,
+          validityDays: wytWallPosts.validityDays,
+          expiresAt: wytWallPosts.expiresAt,
+          status: wytWallPosts.status,
+          isPublic: wytWallPosts.isPublic,
+          createdAt: wytWallPosts.createdAt,
+          updatedAt: wytWallPosts.updatedAt,
+          userId: wytWallPosts.userId,
+          userName: users.firstName,
+          userEmail: users.email,
+          userProfileImage: users.profileImageUrl,
+        })
+        .from(wytWallPosts)
+        .leftJoin(users, eq(wytWallPosts.userId, users.id))
+        .where(whereClause)
+        .limit(limit)
+        .offset(offset)
+        .orderBy(desc(wytWallPosts.createdAt)),
+
+        db.select({ count: sql<number>`cast(count(*) as integer)` })
+          .from(wytWallPosts)
+          .where(whereClause)
+      ]);
+
+      // Get offer counts for each post
+      const postIds = postsResult.map(p => p.id);
+      let offerCounts: Record<string, number> = {};
+      let reactionCounts: Record<string, number> = {};
+      
+      if (postIds.length > 0) {
+        const offers = await db.select({
+          postId: wytWallPostOffers.postId,
+          count: sql<number>`cast(count(*) as integer)`
+        })
+        .from(wytWallPostOffers)
+        .where(sql`${wytWallPostOffers.postId} IN (${sql.join(postIds.map(id => sql`${id}::uuid`), sql`, `)})`)
+        .groupBy(wytWallPostOffers.postId);
+        
+        offerCounts = offers.reduce((acc, o) => {
+          acc[o.postId] = o.count;
+          return acc;
+        }, {} as Record<string, number>);
+
+        const reactions = await db.select({
+          postId: wytWallPostReactions.postId,
+          count: sql<number>`cast(count(*) as integer)`
+        })
+        .from(wytWallPostReactions)
+        .where(sql`${wytWallPostReactions.postId} IN (${sql.join(postIds.map(id => sql`${id}::uuid`), sql`, `)})`)
+        .groupBy(wytWallPostReactions.postId);
+        
+        reactionCounts = reactions.reduce((acc, r) => {
+          acc[r.postId] = r.count;
+          return acc;
+        }, {} as Record<string, number>);
+      }
+
+      // Enrich posts with counts
+      const enrichedPosts = postsResult.map(post => ({
+        ...post,
+        offersCount: offerCounts[post.id] || 0,
+        reactionsCount: reactionCounts[post.id] || 0,
+      }));
+
+      // Get category breakdown for filters
+      const categories = await db.select({
+        category: wytWallPosts.category,
+        count: sql<number>`cast(count(*) as integer)`
+      })
+      .from(wytWallPosts)
+      .groupBy(wytWallPosts.category);
+
+      res.json({
+        success: true,
+        posts: enrichedPosts,
+        categories: categories,
+        pagination: {
+          total: totalCount[0]?.count || 0,
+          page,
+          limit,
+          totalPages: Math.ceil((totalCount[0]?.count || 0) / limit)
+        }
+      });
+    } catch (error) {
+      console.error('Error loading posts for admin:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to load posts'
+      });
+    }
+  });
+
+  // Update post status (admin)
+  app.patch('/api/admin/posts/:postId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const user = req.user;
+
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Super Admin required'
+        });
+      }
+
+      const { postId } = req.params;
+      const { status, isPublic } = req.body;
+
+      const updateData: any = { updatedAt: new Date() };
+      if (status !== undefined) updateData.status = status;
+      if (isPublic !== undefined) updateData.isPublic = isPublic;
+
+      const [updatedPost] = await db.update(wytWallPosts)
+        .set(updateData)
+        .where(eq(wytWallPosts.id, postId))
+        .returning();
+
+      if (!updatedPost) {
+        return res.status(404).json({
+          success: false,
+          error: 'Post not found'
+        });
+      }
+
+      res.json({
+        success: true,
+        post: updatedPost
+      });
+    } catch (error) {
+      console.error('Error updating post:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update post'
+      });
+    }
+  });
+
+  // Delete post (admin)
+  app.delete('/api/admin/posts/:postId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const user = req.user;
+
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Super Admin required'
+        });
+      }
+
+      const { postId } = req.params;
+
+      // Check if post exists
+      const [existingPost] = await db.select()
+        .from(wytWallPosts)
+        .where(eq(wytWallPosts.id, postId))
+        .limit(1);
+
+      if (!existingPost) {
+        return res.status(404).json({
+          success: false,
+          error: 'Post not found'
+        });
+      }
+
+      // Delete post (cascades to offers, reactions, etc.)
+      await db.delete(wytWallPosts)
+        .where(eq(wytWallPosts.id, postId));
+
+      res.json({
+        success: true,
+        message: 'Post deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to delete post'
+      });
+    }
+  });
+
+  // Get post statistics (admin dashboard)
+  app.get('/api/admin/posts/stats', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const user = req.user;
+
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({
+          success: false,
+          error: 'Access denied: Super Admin required'
+        });
+      }
+
+      const [totalPosts, activePosts, needPosts, offerPosts, totalOffers] = await Promise.all([
+        db.select({ count: sql<number>`cast(count(*) as integer)` }).from(wytWallPosts),
+        db.select({ count: sql<number>`cast(count(*) as integer)` })
+          .from(wytWallPosts)
+          .where(eq(wytWallPosts.status, 'active')),
+        db.select({ count: sql<number>`cast(count(*) as integer)` })
+          .from(wytWallPosts)
+          .where(eq(wytWallPosts.postType, 'need')),
+        db.select({ count: sql<number>`cast(count(*) as integer)` })
+          .from(wytWallPosts)
+          .where(eq(wytWallPosts.postType, 'offer')),
+        db.select({ count: sql<number>`cast(count(*) as integer)` }).from(wytWallPostOffers)
+      ]);
+
+      res.json({
+        success: true,
+        stats: {
+          totalPosts: totalPosts[0]?.count || 0,
+          activePosts: activePosts[0]?.count || 0,
+          needPosts: needPosts[0]?.count || 0,
+          offerPosts: offerPosts[0]?.count || 0,
+          totalOffers: totalOffers[0]?.count || 0
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching post stats:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch post statistics'
+      });
+    }
+  });
+
   // Super Admin user management
   app.get('/api/admin/users', adminAuthMiddleware, async (req: any, res) => {
     try {
