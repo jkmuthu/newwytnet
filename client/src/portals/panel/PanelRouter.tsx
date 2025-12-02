@@ -731,7 +731,7 @@ function OfferConversation({ offerId, isPostAuthor, defaultExpanded = true }: { 
 // My WytWall - Personal Needs/Offers Stream with Tabs
 function MyPanelWytWall() {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("matches");
+  const [activeTab, setActiveTab] = useState("posts");
   const [defaultPostType, setDefaultPostType] = useState<"need" | "offer">("need");
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
@@ -3181,7 +3181,7 @@ function MyPanelWytGames() {
 }
 
 function OrgPanelWytWall() {
-  const [activeTab, setActiveTab] = useState("matches");
+  const [activeTab, setActiveTab] = useState("posts");
   const [postType, setPostType] = useState<"all" | "need" | "offer">("all");
   const [defaultPostType, setDefaultPostType] = useState<"need" | "offer">("need");
   
