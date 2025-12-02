@@ -810,6 +810,131 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Renew WytWall post - extend validity period
+  app.post('/api/wytwall/posts/:postId/renew', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { postId } = req.params;
+      const { validityDays } = req.body;
+      
+      // Validate validity days
+      const allowedDays = [7, 15, 30, 60, 90];
+      if (!validityDays || !allowedDays.includes(validityDays)) {
+        return res.status(400).json({ message: "Invalid validity days. Must be 7, 15, 30, 60, or 90" });
+      }
+      
+      // Verify the post belongs to the user
+      const [existingPost] = await db.select()
+        .from(wytWallPosts)
+        .where(
+          and(
+            eq(wytWallPosts.id, postId),
+            eq(wytWallPosts.userId, user.id)
+          )
+        );
+      
+      if (!existingPost) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      // Cannot renew a closed post
+      if (existingPost.status === 'closed') {
+        return res.status(400).json({ message: "Cannot renew a closed post" });
+      }
+      
+      const now = new Date();
+      const newExpiresAt = new Date(now.getTime() + validityDays * 24 * 60 * 60 * 1000);
+      
+      const [updatedPost] = await db.update(wytWallPosts)
+        .set({ 
+          validityDays: validityDays,
+          expiresAt: newExpiresAt,
+          status: 'active',
+          isActive: true,
+          renewedCount: (existingPost.renewedCount || 0) + 1,
+          renewedAt: now,
+          updatedAt: now
+        })
+        .where(eq(wytWallPosts.id, postId))
+        .returning();
+      
+      res.json({ 
+        success: true, 
+        post: updatedPost,
+        message: `Post renewed for ${validityDays} days`
+      });
+    } catch (error) {
+      console.error("Error renewing WytWall post:", error);
+      res.status(500).json({ message: "Failed to renew post" });
+    }
+  });
+
+  // Close WytWall post - mark as completed with reason
+  app.post('/api/wytwall/posts/:postId/close', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { postId } = req.params;
+      const { closedReason } = req.body;
+      
+      // Validate closure reason
+      const allowedReasons = ['done_wytnet', 'done_elsewhere', 'dropped', 'fulfilled'];
+      if (!closedReason || !allowedReasons.includes(closedReason)) {
+        return res.status(400).json({ 
+          message: "Invalid closure reason. Must be: done_wytnet, done_elsewhere, dropped, or fulfilled" 
+        });
+      }
+      
+      // Verify the post belongs to the user
+      const [existingPost] = await db.select()
+        .from(wytWallPosts)
+        .where(
+          and(
+            eq(wytWallPosts.id, postId),
+            eq(wytWallPosts.userId, user.id)
+          )
+        );
+      
+      if (!existingPost) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      // Cannot close an already closed post
+      if (existingPost.status === 'closed') {
+        return res.status(400).json({ message: "Post is already closed" });
+      }
+      
+      const now = new Date();
+      
+      const [updatedPost] = await db.update(wytWallPosts)
+        .set({ 
+          status: 'closed',
+          isActive: false,
+          closedAt: now,
+          closedReason: closedReason,
+          updatedAt: now
+        })
+        .where(eq(wytWallPosts.id, postId))
+        .returning();
+      
+      // Format closure reason for message
+      const reasonLabels: Record<string, string> = {
+        'done_wytnet': 'Done with WytNet',
+        'done_elsewhere': 'Done elsewhere',
+        'dropped': 'Dropped the plan',
+        'fulfilled': 'Request fulfilled'
+      };
+      
+      res.json({ 
+        success: true, 
+        post: updatedPost,
+        message: `Post closed: ${reasonLabels[closedReason]}`
+      });
+    } catch (error) {
+      console.error("Error closing WytWall post:", error);
+      res.status(500).json({ message: "Failed to close post" });
+    }
+  });
+
   // Get user's organizations (for WytWall post form)
   app.get('/api/organizations/my-orgs', isAuthenticated, async (req: any, res) => {
     try {
