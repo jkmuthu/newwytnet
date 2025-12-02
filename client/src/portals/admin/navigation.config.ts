@@ -183,6 +183,13 @@ export const navigationSections: NavigationSection[] = [
         description: "Hub management, domain routing, hub settings",
         keywords: ["hubs", "domains", "routing"],
         superAdminOnly: true
+      },
+      {
+        label: "All Posts",
+        icon: FileText,
+        href: "/engine/posts",
+        description: "WytWall posts management, needs & offers moderation",
+        keywords: ["posts", "wytwall", "needs", "offers", "marketplace"]
       }
     ]
   },
