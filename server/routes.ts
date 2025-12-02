@@ -8715,12 +8715,12 @@ When suggesting improvements, format your response with suggestions in a structu
         }, {} as Record<string, number>);
 
         const reactions = await db.select({
-          postId: wytWallPostReactions.postId,
+          postId: wytWallReactions.postId,
           count: sql<number>`cast(count(*) as integer)`
         })
-        .from(wytWallPostReactions)
-        .where(sql`${wytWallPostReactions.postId} IN (${sql.join(postIds.map(id => sql`${id}::uuid`), sql`, `)})`)
-        .groupBy(wytWallPostReactions.postId);
+        .from(wytWallReactions)
+        .where(sql`${wytWallReactions.postId} IN (${sql.join(postIds.map(id => sql`${id}::uuid`), sql`, `)})`)
+        .groupBy(wytWallReactions.postId);
         
         reactionCounts = reactions.reduce((acc, r) => {
           acc[r.postId] = r.count;
