@@ -824,28 +824,30 @@ function MyPanelWytWall() {
     }
   };
 
-  const handlePublishPost = async () => {
-    if (!selectedPost) return;
-    const newPublicStatus = !selectedPost.isPublic;
+  const handleToggleActive = async (postId: string) => {
     try {
-      const response = await fetch(`/api/wytwall/posts/${selectedPost.id}`, {
+      const response = await fetch(`/api/wytwall/posts/${postId}/toggle-active`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ isPublic: newPublicStatus }),
       });
       if (response.ok) {
+        const data = await response.json();
         toast({ 
-          title: newPublicStatus ? "Post published to WytWall!" : "Post unpublished from WytWall",
-          description: newPublicStatus ? "Your post is now visible on the public WytWall marketplace." : "Your post is now private."
+          title: data.message,
+          description: data.post.isActive 
+            ? "Your post is now visible on WytWall" 
+            : "Your post is now hidden from WytWall"
         });
-        setSelectedPost({ ...selectedPost, isPublic: newPublicStatus });
         refetchPosts();
+        if (selectedPost && selectedPost.id === postId) {
+          setSelectedPost(data.post);
+        }
       } else {
-        toast({ title: "Failed to update publish status", variant: "destructive" });
+        toast({ title: "Failed to update post status", variant: "destructive" });
       }
     } catch (error) {
-      toast({ title: "Error updating publish status", variant: "destructive" });
+      toast({ title: "Error updating post status", variant: "destructive" });
     }
   };
 
@@ -964,7 +966,7 @@ function MyPanelWytWall() {
           )}
         </TabsContent>
 
-        {/* Posts Tab Content */}
+        {/* Posts Tab Content - All posts are public, show enable/disable toggle */}
         <TabsContent value="posts" className="mt-6">
           {isLoading ? (
             <Card>
@@ -994,12 +996,13 @@ function MyPanelWytWall() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Engagement</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Active</th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {posts.map((post: any) => (
-                      <tr key={post.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50" data-testid={`post-row-${post.id}`}>
+                      <tr key={post.id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 ${post.isActive === false ? 'opacity-60' : ''}`} data-testid={`post-row-${post.id}`}>
                         <td className="px-4 py-3 whitespace-nowrap">
                           <Badge className={post.postType === 'need' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'}>
                             {post.postType === 'need' ? 'Need' : 'Offer'}
@@ -1015,23 +1018,48 @@ function MyPanelWytWall() {
                           {new Date(post.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          {post.isPublic ? (
+                          {post.isActive !== false ? (
                             <PostEngagementBadge postId={post.id} />
                           ) : (
-                            <span className="text-xs text-gray-400">Private</span>
+                            <span className="text-xs text-gray-400">Disabled</span>
                           )}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex gap-1">
+                          <div className="flex flex-col gap-1">
                             <Badge variant={post.status === 'active' ? 'default' : 'secondary'} className="text-xs">
                               {post.status || 'active'}
                             </Badge>
-                            {post.isPublic && (
-                              <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 text-xs">
-                                Public
+                            {/* Moderation Status */}
+                            {post.moderationStatus === 'pending' && (
+                              <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300 text-xs">
+                                Pending Review
+                              </Badge>
+                            )}
+                            {post.moderationStatus === 'rejected' && (
+                              <Badge className="bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 text-xs" title={post.moderationReason || 'Rejected by admin'}>
+                                Rejected
                               </Badge>
                             )}
                           </div>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-center">
+                          {/* Enable/Disable Toggle */}
+                          <button
+                            onClick={() => handleToggleActive(post.id)}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                              post.isActive !== false 
+                                ? 'bg-green-500' 
+                                : 'bg-gray-300 dark:bg-gray-600'
+                            }`}
+                            data-testid={`toggle-active-${post.id}`}
+                            title={post.isActive !== false ? 'Click to disable post' : 'Click to enable post'}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                post.isActive !== false ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                            />
+                          </button>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-right">
                           <Button 
