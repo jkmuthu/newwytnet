@@ -41,6 +41,26 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+const NEED_CATEGORIES = [
+  { value: "need_job", label: "Need a Job" },
+  { value: "house_for_rent", label: "House for Rent" },
+  { value: "require_service", label: "Require a Service" },
+  { value: "product_for_use", label: "Product for my Use" },
+  { value: "bulk_supply", label: "Product for Bulk Supply" },
+  { value: "other", label: "Other" },
+];
+
+const OFFER_CATEGORIES = [
+  { value: "selling_bike", label: "Selling my Bike" },
+  { value: "selling_car", label: "Selling my Car" },
+  { value: "selling_property", label: "Selling my Property" },
+  { value: "renting_house", label: "Renting my House" },
+  { value: "providing_service", label: "Providing Service" },
+  { value: "other", label: "Other" },
+];
+
+const ALL_CATEGORIES = [...NEED_CATEGORIES, ...OFFER_CATEGORIES.filter(c => c.value !== "other")];
+
 interface Post {
   id: string;
   postType: 'need' | 'offer';
@@ -156,20 +176,15 @@ export default function AllPosts() {
   const stats = statsData?.stats;
 
   const getCategoryLabel = (category: string) => {
-    const labels: Record<string, string> = {
-      need_job: "Need a Job",
-      house_for_rent: "House for Rent",
-      require_service: "Require a Service",
-      product_for_use: "Product for my Use",
-      bulk_supply: "Product for Bulk Supply",
-      selling_bike: "Selling my Bike",
-      selling_car: "Selling my Car",
-      selling_property: "Selling my Property",
-      renting_house: "Renting my House",
-      providing_service: "Providing Service",
-      other: "Other",
-    };
-    return labels[category] || category;
+    const allCats = [...NEED_CATEGORIES, ...OFFER_CATEGORIES];
+    const found = allCats.find(c => c.value === category);
+    return found?.label || category;
+  };
+
+  const getFilterCategories = () => {
+    if (postTypeFilter === 'need') return NEED_CATEGORIES;
+    if (postTypeFilter === 'offer') return OFFER_CATEGORIES;
+    return ALL_CATEGORIES;
   };
 
   const handleViewPost = (post: Post) => {
@@ -310,7 +325,7 @@ export default function AllPosts() {
               </Button>
             </div>
             <div className="flex gap-2 flex-wrap">
-              <Select value={postTypeFilter} onValueChange={(v) => { setPostTypeFilter(v === 'all' ? '' : v); setPage(1); }}>
+              <Select value={postTypeFilter} onValueChange={(v) => { setPostTypeFilter(v === 'all' ? '' : v); setCategoryFilter(''); setPage(1); }}>
                 <SelectTrigger className="w-[130px]" data-testid="select-post-type">
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
@@ -337,9 +352,9 @@ export default function AllPosts() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat.category} value={cat.category}>
-                      {getCategoryLabel(cat.category)} ({cat.count})
+                  {getFilterCategories().map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -378,7 +393,7 @@ export default function AllPosts() {
                 </TableHeader>
                 <TableBody>
                   {posts.map((post) => (
-                    <TableRow key={post.id} data-testid={`row-post-${post.id}`}>
+                    <TableRow key={post.id} data-testid={`row-post-${post.id}`} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewPost(post)}>
                       <TableCell>
                         <Badge variant={post.postType === 'need' ? 'default' : 'secondary'} className={post.postType === 'need' ? 'bg-purple-500' : 'bg-green-500'}>
                           {post.postType === 'need' ? 'Need' : 'Offer'}
@@ -419,7 +434,7 @@ export default function AllPosts() {
                           </span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                         <Switch
                           checked={post.isPublic}
                           onCheckedChange={() => handleTogglePublic(post)}
@@ -431,7 +446,7 @@ export default function AllPosts() {
                           {post.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" data-testid={`button-actions-${post.id}`}>
