@@ -537,7 +537,7 @@ export default function WytWall() {
     if (!user) {
       navigate('/login');
     } else {
-      console.log('Post new need');
+      navigate('/u/me/wytwall');
     }
   };
 
@@ -699,7 +699,7 @@ export default function WytWall() {
                 offer={post}
                 isAuthenticated={!!user}
                 currentUserId={user?.id}
-                onViewOffer={(offerId) => console.log('View offer:', offerId)}
+                onViewOffer={(offerId) => navigate(`/wytwall/${offerId}`)}
                 onLogin={handleLogin}
                 isCollapsed={false}
               />
