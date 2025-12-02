@@ -593,20 +593,54 @@ export async function registerRoutes(app: Express): Promise<void> {
       const user = req.user;
       const { postType } = req.query;
       
-      let query = db.select().from(wytWallPosts).where(eq(wytWallPosts.userId, user.id));
+      let whereConditions = eq(wytWallPosts.userId, user.id);
       
       if (postType && (postType === 'need' || postType === 'offer')) {
-        query = db.select().from(wytWallPosts).where(
-          and(
-            eq(wytWallPosts.userId, user.id),
-            eq(wytWallPosts.postType, postType)
-          )
-        );
+        whereConditions = and(
+          eq(wytWallPosts.userId, user.id),
+          eq(wytWallPosts.postType, postType)
+        ) as any;
       }
       
-      const posts = await query.orderBy(desc(wytWallPosts.createdAt));
+      const posts = await db.select().from(wytWallPosts).where(whereConditions).orderBy(desc(wytWallPosts.createdAt));
       
-      res.json({ posts });
+      // Check and update expired posts, calculate days remaining
+      const now = new Date();
+      const postsWithExpiry = posts.map(post => {
+        let effectiveStatus = post.status;
+        let daysRemaining: number | null = null;
+        
+        if (post.expiresAt) {
+          const expiresAt = new Date(post.expiresAt);
+          const diffTime = expiresAt.getTime() - now.getTime();
+          daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          // Mark as expired if past expiration and not already closed
+          if (daysRemaining <= 0 && post.status !== 'closed') {
+            effectiveStatus = 'expired';
+          }
+        }
+        
+        return {
+          ...post,
+          status: effectiveStatus,
+          daysRemaining: daysRemaining,
+          isExpiringSoon: daysRemaining !== null && daysRemaining > 0 && daysRemaining <= 3, // Warning when 3 days or less
+        };
+      });
+      
+      // Update any posts that should be marked as expired in the database
+      const expiredPostIds = postsWithExpiry
+        .filter(p => p.status === 'expired' && posts.find(op => op.id === p.id)?.status !== 'expired')
+        .map(p => p.id);
+      
+      if (expiredPostIds.length > 0) {
+        await db.update(wytWallPosts)
+          .set({ status: 'expired', updatedAt: now })
+          .where(sql`${wytWallPosts.id} IN (${sql.join(expiredPostIds.map(id => sql`${id}::uuid`), sql`, `)})`);
+      }
+      
+      res.json({ posts: postsWithExpiry });
     } catch (error) {
       console.error("Error fetching my WytWall posts:", error);
       res.status(500).json({ message: "Failed to fetch posts", posts: [] });
