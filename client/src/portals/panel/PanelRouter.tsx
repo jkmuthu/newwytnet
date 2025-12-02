@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import WytWallPostForm from "@/components/WytWallPostForm";
 import PaymentHistory from "@/components/payments/PaymentHistory";
 import MyPosts from "./pages/my-posts";
@@ -787,6 +788,21 @@ function MyPanelWytWall() {
     queryKey: ['/api/wytwall/offers/summary'],
   });
 
+  // Fetch metrics for selected post (to check if it has responses)
+  const { data: selectedPostMetrics } = useQuery({
+    queryKey: ['/api/wytwall/posts', selectedPost?.id, 'metrics'],
+    queryFn: async () => {
+      if (!selectedPost?.id) return { metrics: { messages: 0, responders: 0, reactions: 0 } };
+      const res = await fetch(`/api/wytwall/posts/${selectedPost.id}/metrics`, { credentials: 'include' });
+      if (!res.ok) return { metrics: { messages: 0, responders: 0, reactions: 0 } };
+      return res.json();
+    },
+    enabled: !!selectedPost?.id,
+    staleTime: 30000,
+  });
+
+  const hasResponses = ((selectedPostMetrics as any)?.metrics?.responders || 0) > 0;
+
   const posts = (postsData as any)?.posts || [];
   const bucketMatches = (matchesData as any)?.items || [];
   const receivedOffers = (receivedOffersData as any)?.offers || [];
@@ -1403,9 +1419,27 @@ function MyPanelWytWall() {
                       </>
                     ) : (
                       <>
-                        <Button variant="destructive" onClick={() => setIsDeleteDialogOpen(true)} data-testid="button-delete">
-                          Delete
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div>
+                                <Button 
+                                  variant="destructive" 
+                                  onClick={() => setIsDeleteDialogOpen(true)} 
+                                  disabled={hasResponses}
+                                  data-testid="button-delete"
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            </TooltipTrigger>
+                            {hasResponses && (
+                              <TooltipContent>
+                                <p>Cannot delete posts with active conversations</p>
+                              </TooltipContent>
+                            )}
+                          </Tooltip>
+                        </TooltipProvider>
                         <Button onClick={() => setIsEditMode(true)} data-testid="button-edit">
                           Edit
                         </Button>

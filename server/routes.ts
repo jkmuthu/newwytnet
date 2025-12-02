@@ -759,19 +759,16 @@ export async function registerRoutes(app: Express): Promise<void> {
         postFor: wytWallPosts.postFor,
         organizationId: wytWallPosts.organizationId,
         category: wytWallPosts.category,
-        title: wytWallPosts.title,
         description: wytWallPosts.description,
         location: wytWallPosts.location,
-        price: wytWallPosts.price,
-        currency: wytWallPosts.currency,
         status: wytWallPosts.status,
         isPublic: wytWallPosts.isPublic,
         isActive: wytWallPosts.isActive,
         validityDays: wytWallPosts.validityDays,
         expiresAt: wytWallPosts.expiresAt,
-        renewalCount: wytWallPosts.renewalCount,
+        renewedCount: wytWallPosts.renewedCount,
         closedAt: wytWallPosts.closedAt,
-        closeReason: wytWallPosts.closeReason,
+        closedReason: wytWallPosts.closedReason,
         createdAt: wytWallPosts.createdAt,
         updatedAt: wytWallPosts.updatedAt,
         userName: users.name,
@@ -794,9 +791,17 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(404).json({ message: "Post not found" });
       }
       
+      // Get offer count for this post
+      const [offerCount] = await db.select({
+        count: sql<number>`count(*)::int`
+      })
+        .from(wytWallPostOffers)
+        .where(eq(wytWallPostOffers.postId, post.id));
+      
       // Format the response
       const formattedPost = {
         ...post,
+        offersCount: offerCount?.count || 0,
         user: {
           name: post.userName,
           profileImageUrl: post.userProfileImageUrl,
