@@ -25,9 +25,9 @@ export default function WytWallPost() {
   const [offerMessage, setOfferMessage] = useState("");
 
   const { data: postData, isLoading } = useQuery({
-    queryKey: ['/api/wytwall/posts', postId, 'public'],
+    queryKey: ['/api/wytwall/public/posts', postId],
     queryFn: async () => {
-      const res = await fetch(`/api/wytwall/posts/${postId}`, { credentials: 'include' });
+      const res = await fetch(`/api/wytwall/public/posts/${postId}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch post');
       return res.json();
     },
@@ -100,7 +100,7 @@ export default function WytWallPost() {
           <Package className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium mb-2">Post not found</h3>
           <p className="text-muted-foreground mb-4">This post may have been deleted or doesn't exist.</p>
-          <Button onClick={() => navigate('/')} data-testid="button-back-home">
+          <Button onClick={() => navigate('/wytwall')} data-testid="button-back-home">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to WytWall
           </Button>
@@ -114,7 +114,7 @@ export default function WytWallPost() {
       <div className="max-w-4xl mx-auto p-4 md:p-6 space-y-6">
         <Button 
           variant="ghost" 
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/wytwall')}
           className="mb-2"
           data-testid="button-back"
         >

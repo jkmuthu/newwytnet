@@ -699,7 +699,7 @@ export default function WytWall() {
                 offer={post}
                 isAuthenticated={!!user}
                 currentUserId={user?.id}
-                onViewOffer={(offerId) => navigate(`/wytwall/${offerId}`)}
+                onViewOffer={() => navigate(`/wytwall/${post.displayId || post.id}`)}
                 onLogin={handleLogin}
                 isCollapsed={false}
               />

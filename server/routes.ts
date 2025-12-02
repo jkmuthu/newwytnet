@@ -685,8 +685,19 @@ export async function registerRoutes(app: Express): Promise<void> {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + validDays);
       
+      // Generate short displayId (WP + 5 chars base36)
+      const generateDisplayId = () => {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoid confusing chars like 0/O, 1/I
+        let result = 'WP';
+        for (let i = 0; i < 5; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+      };
+      
       const [newPost] = await db.insert(wytWallPosts).values({
         userId: user.id,
+        displayId: generateDisplayId(),
         postType,
         postFor: validPostFor,
         organizationId: validPostFor === 'organization' ? organizationId : null,
@@ -708,7 +719,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Get single WytWall post by ID
+  // Get single WytWall post by ID (for post owner only)
   app.get('/api/wytwall/posts/:postId', isAuthenticated, async (req: any, res) => {
     try {
       const user = req.user;
@@ -730,6 +741,71 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.json({ post });
     } catch (error) {
       console.error("Error fetching WytWall post:", error);
+      res.status(500).json({ message: "Failed to fetch post" });
+    }
+  });
+
+  // Public endpoint to view any WytWall post
+  app.get('/api/wytwall/public/posts/:postId', async (req: any, res) => {
+    try {
+      const { postId } = req.params;
+      
+      // Query with join to get user information
+      const [post] = await db.select({
+        id: wytWallPosts.id,
+        displayId: wytWallPosts.displayId,
+        userId: wytWallPosts.userId,
+        postType: wytWallPosts.postType,
+        postFor: wytWallPosts.postFor,
+        organizationId: wytWallPosts.organizationId,
+        category: wytWallPosts.category,
+        title: wytWallPosts.title,
+        description: wytWallPosts.description,
+        location: wytWallPosts.location,
+        price: wytWallPosts.price,
+        currency: wytWallPosts.currency,
+        status: wytWallPosts.status,
+        isPublic: wytWallPosts.isPublic,
+        isActive: wytWallPosts.isActive,
+        validityDays: wytWallPosts.validityDays,
+        expiresAt: wytWallPosts.expiresAt,
+        renewalCount: wytWallPosts.renewalCount,
+        closedAt: wytWallPosts.closedAt,
+        closeReason: wytWallPosts.closeReason,
+        createdAt: wytWallPosts.createdAt,
+        updatedAt: wytWallPosts.updatedAt,
+        userName: users.name,
+        userProfileImageUrl: users.profileImageUrl,
+      })
+        .from(wytWallPosts)
+        .leftJoin(users, eq(wytWallPosts.userId, users.id))
+        .where(
+          and(
+            or(
+              eq(wytWallPosts.id, postId),
+              eq(wytWallPosts.displayId, postId)
+            ),
+            eq(wytWallPosts.isPublic, true),
+            eq(wytWallPosts.isActive, true)
+          )
+        );
+      
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      // Format the response
+      const formattedPost = {
+        ...post,
+        user: {
+          name: post.userName,
+          profileImageUrl: post.userProfileImageUrl,
+        }
+      };
+      
+      res.json({ post: formattedPost });
+    } catch (error) {
+      console.error("Error fetching public WytWall post:", error);
       res.status(500).json({ message: "Failed to fetch post" });
     }
   });
@@ -11713,6 +11789,7 @@ When suggesting improvements, format your response with suggestions in a structu
       // First get the posts
       const rawPosts = await db.select({
         id: wytWallPosts.id,
+        displayId: wytWallPosts.displayId,
         postType: wytWallPosts.postType,
         category: wytWallPosts.category,
         description: wytWallPosts.description,

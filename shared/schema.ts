@@ -2775,6 +2775,7 @@ export const wytWallPostForEnum = pgEnum("wytwall_post_for", ["personal", "organ
 
 export const wytWallPosts = pgTable("wytwall_posts", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // WP00001 - Short ID for URLs
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   postType: wytWallPostTypeEnum("post_type").notNull(), // "need" or "offer"
   postFor: wytWallPostForEnum("post_for").notNull().default("personal"), // "personal" or "organization"
