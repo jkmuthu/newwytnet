@@ -61,7 +61,8 @@ import {
   Check,
   X,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  RefreshCw
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
@@ -737,8 +738,27 @@ function MyPanelWytWall() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isRenewDialogOpen, setIsRenewDialogOpen] = useState(false);
+  const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
+  const [renewDays, setRenewDays] = useState<number>(7);
+  const [closeReason, setCloseReason] = useState<string>("");
   const [editCategory, setEditCategory] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  
+  const CLOSE_REASONS = [
+    { value: "done_wytnet", label: "Done with WytNet", description: "Found what you needed through WytNet" },
+    { value: "done_elsewhere", label: "Done elsewhere", description: "Fulfilled outside WytNet" },
+    { value: "dropped", label: "Dropped the plan", description: "No longer needed" },
+    { value: "fulfilled", label: "Request fulfilled", description: "Successfully completed" },
+  ];
+  
+  const VALIDITY_OPTIONS = [
+    { value: 7, label: "7 days" },
+    { value: 15, label: "15 days" },
+    { value: 30, label: "30 days" },
+    { value: 60, label: "60 days" },
+    { value: 90, label: "90 days" },
+  ];
   
   const { data: postsData, isLoading, refetch: refetchPosts } = useQuery({
     queryKey: ['/api/wytwall/my-posts'],
@@ -849,6 +869,71 @@ function MyPanelWytWall() {
     } catch (error) {
       toast({ title: "Error updating post status", variant: "destructive" });
     }
+  };
+
+  const handleRenewPost = async () => {
+    if (!selectedPost || !renewDays) return;
+    try {
+      const response = await fetch(`/api/wytwall/posts/${selectedPost.id}/renew`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ validityDays: renewDays }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        toast({ title: "Success", description: data.message || "Post renewed successfully" });
+        refetchPosts();
+        setIsRenewDialogOpen(false);
+        setIsViewDialogOpen(false);
+        setSelectedPost(null);
+      } else {
+        const errorData = await response.json();
+        toast({ title: "Failed to renew post", description: errorData.error, variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error renewing post", variant: "destructive" });
+    }
+  };
+
+  const handleClosePost = async () => {
+    if (!selectedPost || !closeReason) return;
+    try {
+      const response = await fetch(`/api/wytwall/posts/${selectedPost.id}/close`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ closedReason: closeReason }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        toast({ title: "Success", description: data.message || "Post closed successfully" });
+        refetchPosts();
+        setIsCloseDialogOpen(false);
+        setIsViewDialogOpen(false);
+        setSelectedPost(null);
+      } else {
+        const errorData = await response.json();
+        toast({ title: "Failed to close post", description: errorData.error, variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Error closing post", variant: "destructive" });
+    }
+  };
+
+  const getDaysRemaining = (post: any) => {
+    if (!post?.expiresAt) return null;
+    const now = new Date();
+    const expiresAt = new Date(post.expiresAt);
+    const diffTime = expiresAt.getTime() - now.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const getEffectiveStatus = (post: any) => {
+    const daysRemaining = getDaysRemaining(post);
+    if (post?.status === 'closed') return 'closed';
+    if (daysRemaining !== null && daysRemaining <= 0) return 'expired';
+    return post?.status || 'active';
   };
 
   const needCategories = [
@@ -1246,6 +1331,66 @@ function MyPanelWytWall() {
                             </Button>
                           </div>
                         </div>
+                        
+                        {/* Post Lifecycle Section */}
+                        {getEffectiveStatus(selectedPost) !== 'closed' && (
+                          <div className="border-t pt-4 mt-4">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                              <div>
+                                <p className="font-medium text-sm">Post Lifecycle</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {getEffectiveStatus(selectedPost) === 'expired' 
+                                    ? "Your post has expired. Renew to make it visible again." 
+                                    : `${getDaysRemaining(selectedPost)} days remaining`}
+                                </p>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => { setRenewDays(7); setIsRenewDialogOpen(true); }}
+                                  data-testid="button-renew-post"
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                                >
+                                  <RefreshCw className="h-4 w-4 mr-1" />
+                                  Renew
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => { setCloseReason(""); setIsCloseDialogOpen(true); }}
+                                  data-testid="button-close-post"
+                                  className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                >
+                                  <X className="h-4 w-4 mr-1" />
+                                  Close Post
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Show closed status info */}
+                        {getEffectiveStatus(selectedPost) === 'closed' && (
+                          <div className="border-t pt-4 mt-4">
+                            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
+                              <div className="flex items-center gap-2 mb-2">
+                                <X className="h-4 w-4 text-gray-500" />
+                                <span className="font-medium text-gray-700 dark:text-gray-300">This post has been closed</span>
+                              </div>
+                              {selectedPost.closedReason && (
+                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  Reason: {CLOSE_REASONS.find(r => r.value === selectedPost.closedReason)?.label || selectedPost.closedReason}
+                                </p>
+                              )}
+                              {selectedPost.closedAt && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Closed on {new Date(selectedPost.closedAt).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
@@ -1294,6 +1439,106 @@ function MyPanelWytWall() {
               Delete
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Renew Post Dialog */}
+      <Dialog open={isRenewDialogOpen} onOpenChange={setIsRenewDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RefreshCw className="h-5 w-5 text-green-600" />
+              Renew Post
+            </DialogTitle>
+            <DialogDescription>
+              Extend the validity of your post to keep it active on WytWall.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="validity">Extend for</Label>
+              <Select 
+                value={renewDays.toString()} 
+                onValueChange={(value) => setRenewDays(parseInt(value))}
+              >
+                <SelectTrigger id="validity">
+                  <SelectValue placeholder="Select duration" />
+                </SelectTrigger>
+                <SelectContent>
+                  {VALIDITY_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value.toString()}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {selectedPost && (
+              <p className="text-sm text-muted-foreground">
+                Your post will be visible until {new Date(Date.now() + renewDays * 24 * 60 * 60 * 1000).toLocaleDateString()}
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRenewDialogOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handleRenewPost}
+              className="bg-green-600 hover:bg-green-700"
+              data-testid="button-confirm-renew"
+            >
+              <RefreshCw className="h-4 w-4 mr-1" />
+              Renew Post
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Close Post Dialog */}
+      <Dialog open={isCloseDialogOpen} onOpenChange={setIsCloseDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <X className="h-5 w-5 text-orange-600" />
+              Close Post
+            </DialogTitle>
+            <DialogDescription>
+              Closing this post will remove it from WytWall. Please select a reason.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Why are you closing this post?</Label>
+              <div className="space-y-2">
+                {CLOSE_REASONS.map((reason) => (
+                  <div
+                    key={reason.value}
+                    onClick={() => setCloseReason(reason.value)}
+                    className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                      closeReason === reason.value
+                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/20'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                    }`}
+                    data-testid={`close-reason-${reason.value}`}
+                  >
+                    <p className="font-medium text-sm">{reason.label}</p>
+                    <p className="text-xs text-muted-foreground">{reason.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCloseDialogOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handleClosePost}
+              disabled={!closeReason}
+              className="bg-orange-600 hover:bg-orange-700"
+              data-testid="button-confirm-close"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Close Post
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
