@@ -748,15 +748,12 @@ function MyPanelWytWall() {
         </CardContent>
       </Card>
 
-      {/* Tabs Navigation */}
+      {/* Tabs Navigation - Reorganized: My Posts, Responded, Matches, Add Post */}
       <Tabs defaultValue="posts" value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="posts" data-testid="tab-posts">My Posts</TabsTrigger>
-          <TabsTrigger value="matches" data-testid="tab-matches">Matches</TabsTrigger>
-          <TabsTrigger value="received" data-testid="tab-received" className="relative">
-            Received
-          </TabsTrigger>
           <TabsTrigger value="sent" data-testid="tab-sent">Responded</TabsTrigger>
+          <TabsTrigger value="matches" data-testid="tab-matches">Matches</TabsTrigger>
           <TabsTrigger value="add-post" data-testid="tab-add-post">Add Post</TabsTrigger>
         </TabsList>
 
@@ -928,134 +925,7 @@ function MyPanelWytWall() {
           </Card>
         </TabsContent>
 
-        {/* Received Offers Tab Content */}
-        <TabsContent value="received" className="mt-6">
-          {receivedLoading ? (
-            <Card>
-              <div className="p-6 space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-20 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
-                ))}
-              </div>
-            </Card>
-          ) : receivedOffers.length === 0 ? (
-            <Card className="p-12 text-center">
-              <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageSquare className="h-10 w-10 text-blue-500" />
-              </div>
-              <h3 className="text-lg font-medium mb-2">No offers received yet</h3>
-              <p className="text-muted-foreground mb-4">When someone makes an offer on your public posts, they'll appear here</p>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                    {receivedOffers.filter((o: any) => o.status === 'pending').length} pending
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">{receivedOffers.length} total offers</span>
-                </div>
-              </div>
-              {receivedOffers.map((offer: any) => (
-                <Card key={offer.id} className="p-4 hover:shadow-lg transition-shadow" data-testid={`received-offer-${offer.id}`}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={offer.offererProfileImage} />
-                          <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">
-                            {offer.offererName?.[0] || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <span className="font-medium text-sm">{offer.offererName || 'Anonymous'}</span>
-                          <span className="text-xs text-muted-foreground ml-2">
-                            {new Date(offer.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <Badge className={
-                          offer.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          offer.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                          'bg-red-100 text-red-800'
-                        }>
-                          {offer.status}
-                        </Badge>
-                      </div>
-                      <div className="text-xs text-muted-foreground mb-2">
-                        On: <span className="font-medium">{offer.postDescription?.substring(0, 50)}...</span>
-                      </div>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">{offer.message}</p>
-                      {offer.proposedPrice && (
-                        <Badge variant="outline" className="text-green-700 border-green-300">
-                          Proposed: {offer.proposedPrice}
-                        </Badge>
-                      )}
-                      {offer.responseMessage && (
-                        <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded text-sm">
-                          <span className="text-muted-foreground">Your response: </span>
-                          {offer.responseMessage}
-                        </div>
-                      )}
-                    </div>
-                    {offer.status === 'pending' && (
-                      <div className="flex gap-2 flex-shrink-0">
-                        <Button 
-                          size="sm" 
-                          className="bg-green-600 hover:bg-green-700"
-                          onClick={async () => {
-                            try {
-                              await fetch(`/api/wytwall/offers/${offer.id}/respond`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                credentials: 'include',
-                                body: JSON.stringify({ action: 'accept' })
-                              });
-                              toast({ title: "Offer accepted!" });
-                              refetchReceived();
-                            } catch (e) {
-                              toast({ title: "Error", variant: "destructive" });
-                            }
-                          }}
-                          data-testid={`button-accept-${offer.id}`}
-                        >
-                          <Check className="h-4 w-4 mr-1" />
-                          Accept
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="text-red-600 border-red-300 hover:bg-red-50"
-                          onClick={async () => {
-                            try {
-                              await fetch(`/api/wytwall/offers/${offer.id}/respond`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                credentials: 'include',
-                                body: JSON.stringify({ action: 'reject' })
-                              });
-                              toast({ title: "Offer rejected" });
-                              refetchReceived();
-                            } catch (e) {
-                              toast({ title: "Error", variant: "destructive" });
-                            }
-                          }}
-                          data-testid={`button-reject-${offer.id}`}
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Reject
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  {/* Private Conversation Thread */}
-                  <OfferConversation offerId={offer.id} isPostAuthor={true} />
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Responded Tab - Offers I've sent and their responses */}
+        {/* Responded Tab - Facebook-style: Posts I've responded to with conversations */}
         <TabsContent value="sent" className="mt-6">
           {sentLoading ? (
             <Card>
@@ -1071,7 +941,7 @@ function MyPanelWytWall() {
                 <Send className="h-10 w-10 text-purple-500" />
               </div>
               <h3 className="text-lg font-medium mb-2">No responses yet</h3>
-              <p className="text-muted-foreground mb-4">Offers you've sent and their responses will appear here</p>
+              <p className="text-muted-foreground mb-4">Posts you've responded to will appear here</p>
               <Button onClick={() => window.location.href = '/wytwall'} data-testid="button-browse-wytwall">
                 Browse WytWall
               </Button>
@@ -1088,55 +958,84 @@ function MyPanelWytWall() {
                 <span className="text-sm text-muted-foreground">{sentOffers.length} total</span>
               </div>
               {sentOffers.map((offer: any) => (
-                <Card key={offer.id} className="p-4 hover:shadow-lg transition-shadow" data-testid={`sent-offer-${offer.id}`}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={offer.postOwnerProfileImage} />
-                          <AvatarFallback className="bg-purple-100 text-purple-700 text-xs">
-                            {offer.postOwnerName?.[0] || 'U'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <span className="font-medium text-sm">To: {offer.postOwnerName || 'Anonymous'}</span>
-                          <span className="text-xs text-muted-foreground ml-2">
+                <Card key={offer.id} className="overflow-hidden hover:shadow-lg transition-shadow" data-testid={`sent-offer-${offer.id}`}>
+                  {/* Facebook-style Post Header - Original Post Info */}
+                  <div className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-b border-gray-200 dark:border-gray-700">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-10 w-10 flex-shrink-0">
+                        <AvatarImage src={offer.postOwnerProfileImage} />
+                        <AvatarFallback className="bg-purple-100 text-purple-700">
+                          {offer.postOwnerName?.[0] || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {offer.postOwnerName || 'Anonymous'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            posted {new Date(offer.postCreatedAt || offer.createdAt).toLocaleDateString()}
+                          </span>
+                          <Badge className={
+                            offer.postType === 'need' 
+                              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' 
+                              : 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'
+                          } variant="secondary">
+                            {offer.postType === 'need' ? 'Need' : 'Offer'}
+                          </Badge>
+                        </div>
+                        {/* Post Title/Description */}
+                        <p className="mt-2 text-gray-900 dark:text-white font-medium">
+                          {offer.postDescription || 'No description'}
+                        </p>
+                        {offer.postCategory && (
+                          <Badge variant="outline" className="mt-2 text-xs">
+                            {getCategoryLabel(offer.postCategory)}
+                          </Badge>
+                        )}
+                      </div>
+                      {/* Status Badge */}
+                      <Badge className={`flex-shrink-0 ${
+                        offer.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' :
+                        offer.status === 'accepted' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' :
+                        'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
+                      }`}>
+                        {offer.status === 'accepted' && <Check className="h-3 w-3 mr-1" />}
+                        {offer.status}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  {/* Your Response - Conversation Subtopic */}
+                  <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+                    <div className="flex items-start gap-3">
+                      <div className="w-0.5 h-full bg-blue-300 dark:bg-blue-600 rounded-full absolute left-7 top-0 bottom-0"></div>
+                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center flex-shrink-0">
+                        <MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Your Response</span>
+                          <span className="text-xs text-muted-foreground">
                             {new Date(offer.createdAt).toLocaleDateString()}
                           </span>
                         </div>
-                        <Badge className={
-                          offer.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          offer.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                          'bg-red-100 text-red-800'
-                        }>
-                          {offer.status}
-                        </Badge>
-                      </div>
-                      <div className="text-xs text-muted-foreground mb-2">
-                        Post: <span className="font-medium">{offer.postDescription?.substring(0, 50)}...</span>
-                      </div>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">{offer.message}</p>
-                      {offer.proposedPrice && (
-                        <Badge variant="outline" className="text-green-700 border-green-300">
-                          Proposed: {offer.proposedPrice}
-                        </Badge>
-                      )}
-                      {offer.responseMessage && (
-                        <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded text-sm border border-green-200 dark:border-green-800">
-                          <span className="font-medium text-green-700 dark:text-green-400">Response: </span>
-                          {offer.responseMessage}
+                        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-100 dark:border-blue-800">
+                          <p className="text-sm text-gray-800 dark:text-gray-200">{offer.message}</p>
+                          {offer.proposedPrice && (
+                            <Badge variant="outline" className="mt-2 text-green-700 border-green-300 dark:text-green-400 dark:border-green-700">
+                              Proposed: {offer.proposedPrice}
+                            </Badge>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
-                    {offer.status === 'accepted' && (
-                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 flex-shrink-0">
-                        <Check className="h-3 w-3 mr-1" />
-                        Accepted
-                      </Badge>
-                    )}
                   </div>
-                  {/* Private Conversation Thread */}
-                  <OfferConversation offerId={offer.id} isPostAuthor={false} />
+                  
+                  {/* Private Conversation Thread - Always expanded */}
+                  <div className="p-4 bg-gray-50/50 dark:bg-gray-900/30">
+                    <OfferConversation offerId={offer.id} isPostAuthor={false} defaultExpanded={true} />
+                  </div>
                 </Card>
               ))}
             </div>
