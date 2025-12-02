@@ -605,11 +605,11 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Create WytWall post
+  // Create WytWall post - All posts are public by default, directly visible on WytWall
   app.post('/api/wytwall/posts', isAuthenticated, async (req: any, res) => {
     try {
       const user = req.user;
-      const { postType, postFor, organizationId, category, description, validityDays } = req.body;
+      const { postType, postFor, organizationId, category, description, validityDays, location } = req.body;
       
       if (!postType || !category || !description) {
         return res.status(400).json({ message: "Missing required fields" });
@@ -649,10 +649,14 @@ export async function registerRoutes(app: Express): Promise<void> {
         postFor: validPostFor,
         organizationId: validPostFor === 'organization' ? organizationId : null,
         category,
-        description: description.substring(0, 200),
+        description: description.substring(0, 500),
+        location: location || null,
         validityDays: validDays,
         expiresAt,
         status: 'active',
+        isPublic: true,
+        isActive: true,
+        moderationStatus: 'approved',
       }).returning();
       
       res.json({ success: true, post: newPost });
@@ -693,7 +697,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const user = req.user;
       const { postId } = req.params;
-      const { category, description, isPublic } = req.body;
+      const { category, description, location, isActive } = req.body;
       
       // Verify the post belongs to the user
       const [existingPost] = await db.select()
@@ -709,10 +713,11 @@ export async function registerRoutes(app: Express): Promise<void> {
         return res.status(404).json({ message: "Post not found" });
       }
       
-      const updateData: any = {};
+      const updateData: any = { updatedAt: new Date() };
       if (category) updateData.category = category;
-      if (description) updateData.description = description.substring(0, 200);
-      if (typeof isPublic === 'boolean') updateData.isPublic = isPublic;
+      if (description) updateData.description = description.substring(0, 500);
+      if (location !== undefined) updateData.location = location;
+      if (typeof isActive === 'boolean') updateData.isActive = isActive;
       
       const [updatedPost] = await db.update(wytWallPosts)
         .set(updateData)
@@ -723,6 +728,47 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error) {
       console.error("Error updating WytWall post:", error);
       res.status(500).json({ message: "Failed to update post" });
+    }
+  });
+  
+  // Toggle post active status (enable/disable)
+  app.patch('/api/wytwall/posts/:postId/toggle-active', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { postId } = req.params;
+      
+      // Verify the post belongs to the user
+      const [existingPost] = await db.select()
+        .from(wytWallPosts)
+        .where(
+          and(
+            eq(wytWallPosts.id, postId),
+            eq(wytWallPosts.userId, user.id)
+          )
+        );
+      
+      if (!existingPost) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+      
+      const newActiveStatus = !existingPost.isActive;
+      
+      const [updatedPost] = await db.update(wytWallPosts)
+        .set({ 
+          isActive: newActiveStatus,
+          updatedAt: new Date()
+        })
+        .where(eq(wytWallPosts.id, postId))
+        .returning();
+      
+      res.json({ 
+        success: true, 
+        post: updatedPost,
+        message: newActiveStatus ? "Post enabled" : "Post disabled"
+      });
+    } catch (error) {
+      console.error("Error toggling WytWall post:", error);
+      res.status(500).json({ message: "Failed to toggle post status" });
     }
   });
 
