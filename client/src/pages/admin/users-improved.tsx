@@ -516,56 +516,56 @@ export default function AdminUsersImproved() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <Table>
+              <Table className="min-w-[500px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Last Update</TableHead>
-                    <TableHead>User ID</TableHead>
+                    <TableHead className="hidden md:table-cell">Last Update</TableHead>
+                    <TableHead className="hidden sm:table-cell">User ID</TableHead>
                     <TableHead>User</TableHead>
-                    <TableHead>Profile %</TableHead>
+                    <TableHead className="hidden lg:table-cell">Profile %</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.map((user) => (
                     <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          {user.updatedAt ? format(new Date(user.updatedAt), 'MMM dd, HH:mm') : format(new Date(user.createdAt), 'MMM dd, HH:mm')}
+                          <Clock className="h-4 w-4 flex-shrink-0" />
+                          <span className="whitespace-nowrap">{user.updatedAt ? format(new Date(user.updatedAt), 'MMM dd, HH:mm') : format(new Date(user.createdAt), 'MMM dd, HH:mm')}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         <div className="font-mono text-sm font-medium text-blue-600 dark:text-blue-400" data-testid={`text-display-id-${user.id}`}>
                           {user.displayId || 'N/A'}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                          <Avatar className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
                             {user.profileImageUrl && (
                               <AvatarImage src={user.profileImageUrl} alt={user.name} />
                             )}
-                            <AvatarFallback className="bg-blue-600 text-white">
+                            <AvatarFallback className="bg-blue-600 text-white text-xs sm:text-sm">
                               {getUserInitials(user.name)}
                             </AvatarFallback>
                           </Avatar>
-                          <div>
-                            <div className="font-medium flex items-center gap-2">
-                              {user.name}
+                          <div className="min-w-0">
+                            <div className="font-medium flex items-center gap-1 sm:gap-2 flex-wrap">
+                              <span className="truncate max-w-[120px] sm:max-w-none">{user.name}</span>
                               {user.isSuperAdmin && (
-                                <Badge variant="outline" className="border-yellow-500 text-yellow-600">
+                                <Badge variant="outline" className="border-yellow-500 text-yellow-600 text-xs flex-shrink-0">
                                   <Shield className="h-3 w-3 mr-1" />
                                   Super
                                 </Badge>
                               )}
                             </div>
-                            <div className="text-sm text-muted-foreground">{user.email}</div>
+                            <div className="text-xs sm:text-sm text-muted-foreground truncate max-w-[150px] sm:max-w-[200px]">{user.email}</div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="space-y-1 min-w-[100px]">
+                      <TableCell className="hidden lg:table-cell">
+                        <div className="space-y-1 min-w-[80px]">
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium">
                               {user.profileCompletionPercentage || 0}%
@@ -579,15 +579,16 @@ export default function AdminUsersImproved() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleViewUser(user)}
                             data-testid={`button-view-${user.id}`}
+                            className="h-8 px-2 sm:px-3"
                           >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
+                            <Eye className="h-4 w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">View</span>
                           </Button>
                           <Button
                             variant="outline"
@@ -595,9 +596,10 @@ export default function AdminUsersImproved() {
                             onClick={() => banMutation.mutate(user.id)}
                             disabled={banMutation.isPending}
                             data-testid={`button-ban-${user.id}`}
+                            className="h-8 px-2 sm:px-3"
                           >
-                            <Ban className="h-4 w-4 mr-1" />
-                            {userStatusFilter === 'banned' ? 'Unban' : 'Ban'}
+                            <Ban className="h-4 w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">{userStatusFilter === 'banned' ? 'Unban' : 'Ban'}</span>
                           </Button>
                         </div>
                       </TableCell>

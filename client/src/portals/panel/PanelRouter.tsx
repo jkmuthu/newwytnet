@@ -987,67 +987,67 @@ function MyPanelWytWall() {
           ) : (
             <Card>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[600px]">
                   <thead className="bg-gray-50 dark:bg-gray-800 border-b">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Engagement</th>
-                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Active</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell">Category</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">Date</th>
+                      <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden lg:table-cell">Eng.</th>
+                      <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Active</th>
+                      <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {posts.map((post: any) => (
                       <tr key={post.id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 ${post.isActive === false ? 'opacity-60' : ''}`} data-testid={`post-row-${post.id}`}>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <Badge className={post.postType === 'need' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'}>
+                        <td className="px-3 py-3">
+                          <Badge className={`text-xs ${post.postType === 'need' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'}`}>
                             {post.postType === 'need' ? 'Need' : 'Offer'}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                          {getCategoryLabel(post.category)}
+                        <td className="px-3 py-3 text-sm text-gray-600 dark:text-gray-300 hidden sm:table-cell">
+                          <span className="line-clamp-1">{getCategoryLabel(post.category)}</span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300 max-w-xs truncate">
-                          {post.description}
+                        <td className="px-3 py-3 text-sm text-gray-600 dark:text-gray-300 max-w-[200px]">
+                          <span className="line-clamp-2 break-words">{post.description}</span>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <td className="px-3 py-3 text-sm text-gray-500 dark:text-gray-400 hidden md:table-cell">
                           {new Date(post.createdAt).toLocaleDateString()}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-3 py-3 hidden lg:table-cell">
                           {post.isActive !== false ? (
                             <PostEngagementBadge postId={post.id} />
                           ) : (
-                            <span className="text-xs text-gray-400">Disabled</span>
+                            <span className="text-xs text-gray-400">-</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-center">
-                          {/* Enable/Disable Toggle */}
+                        <td className="px-3 py-3 text-center">
                           <button
                             onClick={() => handleToggleActive(post.id)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
                               post.isActive !== false 
                                 ? 'bg-green-500' 
                                 : 'bg-gray-300 dark:bg-gray-600'
                             }`}
                             data-testid={`toggle-active-${post.id}`}
-                            title={post.isActive !== false ? 'Click to disable post' : 'Click to enable post'}
+                            title={post.isActive !== false ? 'Click to disable' : 'Click to enable'}
                           >
                             <span
-                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                                post.isActive !== false ? 'translate-x-6' : 'translate-x-1'
+                              className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                                post.isActive !== false ? 'translate-x-5' : 'translate-x-1'
                               }`}
                             />
                           </button>
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-right">
+                        <td className="px-3 py-3 text-right">
                           <Button 
                             size="sm" 
                             variant="ghost"
                             onClick={() => handleViewPost(post)}
                             data-testid={`button-view-${post.id}`}
+                            className="h-8 px-2"
                           >
                             View
                           </Button>
