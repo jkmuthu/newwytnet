@@ -48,6 +48,7 @@ import SearchPage from "@/pages/search";
 import PaymentsPage from "@/pages/payments";
 import TestPaymentLink from "@/pages/test-payment-link";
 import WytWall from "@/pages/wytwall";
+import WytWallPost from "@/pages/wytwall-post";
 import WytLife from "@/pages/wytlife";
 import WytHubs from "@/pages/wythubs";
 
@@ -171,6 +172,7 @@ export default function PublicRouter() {
       <Route path="/test-payment" component={TestPaymentLink} />
 
       {/* WytWall Marketplace - Also available at /wytwall */}
+      <Route path="/wytwall/:postId" component={WytWallPost} />
       <Route path="/wytwall" component={WytWall} />
 
       {/* Coming Soon routes for tools in development */}

@@ -60,8 +60,13 @@ export default function Home() {
     return true;
   });
 
-  const handleMakeOffer = (needId: string) => {
-    console.log('Make offer on need:', needId);
+  const handleMakeOffer = (need: any) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    // Navigate to the post detail page to make an offer
+    navigate(`/wytwall/${need.id}`);
   };
 
   const handleLogin = () => {
@@ -72,7 +77,7 @@ export default function Home() {
     if (!user) {
       navigate('/login');
     } else {
-      navigate('/mypanel/posts');
+      navigate('/u/me/wytwall');
     }
   };
 
