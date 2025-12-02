@@ -220,85 +220,85 @@ export default function AllPosts() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <FileText className="h-8 w-8 text-primary" />
+          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2 md:gap-3">
+            <FileText className="h-6 w-6 md:h-8 md:w-8 text-primary" />
             All Posts
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage and moderate WytWall posts across the platform
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage and moderate WytWall posts
           </p>
         </div>
-        <Button onClick={() => refetch()} variant="outline" data-testid="button-refresh-posts">
+        <Button onClick={() => refetch()} variant="outline" size="sm" data-testid="button-refresh-posts">
           <RefreshCw className="h-4 w-4 mr-2" />
           Refresh
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-4">
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <FileText className="h-6 w-6 text-blue-600" />
+          <CardContent className="p-3 md:pt-6">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                <FileText className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats?.totalPosts || 0}</p>
-                <p className="text-sm text-muted-foreground">Total Posts</p>
+              <div className="min-w-0">
+                <p className="text-xl md:text-2xl font-bold">{stats?.totalPosts || 0}</p>
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Total</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
+          <CardContent className="p-3 md:pt-6">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
+                <CheckCircle className="h-5 w-5 md:h-6 md:w-6 text-green-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats?.activePosts || 0}</p>
-                <p className="text-sm text-muted-foreground">Active Posts</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <ShoppingBag className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats?.needPosts || 0}</p>
-                <p className="text-sm text-muted-foreground">Need Posts</p>
+              <div className="min-w-0">
+                <p className="text-xl md:text-2xl font-bold">{stats?.activePosts || 0}</p>
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Active</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                <Package className="h-6 w-6 text-orange-600" />
+          <CardContent className="p-3 md:pt-6">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
+                <ShoppingBag className="h-5 w-5 md:h-6 md:w-6 text-purple-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats?.offerPosts || 0}</p>
-                <p className="text-sm text-muted-foreground">Offer Posts</p>
+              <div className="min-w-0">
+                <p className="text-xl md:text-2xl font-bold">{stats?.needPosts || 0}</p>
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Needs</p>
               </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-lg bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center">
-                <MessageCircle className="h-6 w-6 text-pink-600" />
+          <CardContent className="p-3 md:pt-6">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
+                <Package className="h-5 w-5 md:h-6 md:w-6 text-orange-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{stats?.totalOffers || 0}</p>
-                <p className="text-sm text-muted-foreground">Total Responses</p>
+              <div className="min-w-0">
+                <p className="text-xl md:text-2xl font-bold">{stats?.offerPosts || 0}</p>
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Offers</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="col-span-2 sm:col-span-1">
+          <CardContent className="p-3 md:pt-6">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="h-10 w-10 md:h-12 md:w-12 rounded-lg bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center shrink-0">
+                <MessageCircle className="h-5 w-5 md:h-6 md:w-6 text-pink-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xl md:text-2xl font-bold">{stats?.totalOffers || 0}</p>
+                <p className="text-xs md:text-sm text-muted-foreground truncate">Responses</p>
               </div>
             </div>
           </CardContent>
@@ -306,10 +306,10 @@ export default function AllPosts() {
       </div>
 
       <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <div className="flex-1 flex gap-2">
-              <div className="relative flex-1 max-w-md">
+        <CardHeader className="p-3 md:p-6">
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search posts..."
@@ -320,13 +320,13 @@ export default function AllPosts() {
                   data-testid="input-search-posts"
                 />
               </div>
-              <Button onClick={handleSearch} data-testid="button-search">
+              <Button onClick={handleSearch} size="icon" data-testid="button-search">
                 <Search className="h-4 w-4" />
               </Button>
             </div>
             <div className="flex gap-2 flex-wrap">
               <Select value={postTypeFilter} onValueChange={(v) => { setPostTypeFilter(v === 'all' ? '' : v); setCategoryFilter(''); setPage(1); }}>
-                <SelectTrigger className="w-[130px]" data-testid="select-post-type">
+                <SelectTrigger className="w-[100px] md:w-[120px]" data-testid="select-post-type">
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -336,7 +336,7 @@ export default function AllPosts() {
                 </SelectContent>
               </Select>
               <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v === 'all' ? '' : v); setPage(1); }}>
-                <SelectTrigger className="w-[130px]" data-testid="select-status">
+                <SelectTrigger className="w-[100px] md:w-[120px]" data-testid="select-status">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -347,7 +347,7 @@ export default function AllPosts() {
                 </SelectContent>
               </Select>
               <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v === 'all' ? '' : v); setPage(1); }}>
-                <SelectTrigger className="w-[180px]" data-testid="select-category">
+                <SelectTrigger className="w-[120px] md:w-[160px]" data-testid="select-category">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -359,14 +359,13 @@ export default function AllPosts() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="outline" onClick={resetFilters} data-testid="button-reset-filters">
-                <Filter className="h-4 w-4 mr-2" />
-                Reset
+              <Button variant="outline" size="icon" onClick={resetFilters} data-testid="button-reset-filters" title="Reset filters">
+                <Filter className="h-4 w-4" />
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 md:p-6">
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">Loading posts...</div>
           ) : posts.length === 0 ? (
@@ -377,129 +376,134 @@ export default function AllPosts() {
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead className="max-w-[300px]">Description</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-center">Eng.</TableHead>
-                    <TableHead className="text-center">Public</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {posts.map((post) => (
-                    <TableRow key={post.id} data-testid={`row-post-${post.id}`} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewPost(post)}>
-                      <TableCell>
-                        <Badge variant={post.postType === 'need' ? 'default' : 'secondary'} className={post.postType === 'need' ? 'bg-purple-500' : 'bg-green-500'}>
-                          {post.postType === 'need' ? 'Need' : 'Offer'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm">{getCategoryLabel(post.category)}</span>
-                      </TableCell>
-                      <TableCell className="max-w-[300px]">
-                        <p className="truncate text-sm" title={post.description}>{post.description}</p>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={post.userProfileImage || undefined} />
-                            <AvatarFallback>{post.userName?.[0] || 'U'}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-sm font-medium">{post.userName || 'Unknown'}</p>
-                            <p className="text-xs text-muted-foreground">{post.userEmail}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {format(new Date(post.createdAt), 'MMM d, yyyy')}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <MessageCircle className="h-3 w-3" />
-                            {post.offersCount}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Heart className="h-3 w-3" />
-                            {post.reactionsCount}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
-                        <Switch
-                          checked={post.isPublic}
-                          onCheckedChange={() => handleTogglePublic(post)}
-                          data-testid={`switch-public-${post.id}`}
-                        />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant={post.status === 'active' ? 'default' : 'secondary'} className={post.status === 'active' ? 'bg-green-500' : ''}>
-                          {post.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" data-testid={`button-actions-${post.id}`}>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewPost(post)} data-testid={`menu-view-${post.id}`}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleToggleStatus(post)} data-testid={`menu-toggle-${post.id}`}>
-                              {post.status === 'active' ? (
-                                <>
-                                  <ToggleLeft className="h-4 w-4 mr-2" />
-                                  Deactivate
-                                </>
-                              ) : (
-                                <>
-                                  <ToggleRight className="h-4 w-4 mr-2" />
-                                  Activate
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleDeletePost(post)} className="text-red-600" data-testid={`menu-delete-${post.id}`}>
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[70px]">Type</TableHead>
+                      <TableHead className="min-w-[100px]">Category</TableHead>
+                      <TableHead className="min-w-[150px] max-w-[250px]">Description</TableHead>
+                      <TableHead className="min-w-[140px]">User</TableHead>
+                      <TableHead className="hidden md:table-cell w-[90px]">Date</TableHead>
+                      <TableHead className="hidden lg:table-cell text-center w-[80px]">Eng.</TableHead>
+                      <TableHead className="text-center w-[60px]">Public</TableHead>
+                      <TableHead className="text-center w-[80px]">Status</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {posts.map((post) => (
+                      <TableRow key={post.id} data-testid={`row-post-${post.id}`} className="cursor-pointer hover:bg-muted/50" onClick={() => handleViewPost(post)}>
+                        <TableCell className="py-2">
+                          <Badge variant={post.postType === 'need' ? 'default' : 'secondary'} className={`text-xs ${post.postType === 'need' ? 'bg-purple-500' : 'bg-green-500'}`}>
+                            {post.postType === 'need' ? 'Need' : 'Offer'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-2">
+                          <span className="text-xs md:text-sm line-clamp-2">{getCategoryLabel(post.category)}</span>
+                        </TableCell>
+                        <TableCell className="py-2 max-w-[250px]">
+                          <p className="text-xs md:text-sm line-clamp-2" title={post.description}>{post.description}</p>
+                        </TableCell>
+                        <TableCell className="py-2">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-7 w-7 md:h-8 md:w-8 shrink-0">
+                              <AvatarImage src={post.userProfileImage || undefined} />
+                              <AvatarFallback className="text-xs">{post.userName?.[0] || 'U'}</AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <p className="text-xs md:text-sm font-medium truncate">{post.userName || 'Unknown'}</p>
+                              <p className="text-[10px] md:text-xs text-muted-foreground truncate hidden sm:block">{post.userEmail}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell py-2">
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">
+                            {format(new Date(post.createdAt), 'MMM d, yy')}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell text-center py-2">
+                          <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-0.5">
+                              <MessageCircle className="h-3 w-3" />
+                              {post.offersCount}
+                            </span>
+                            <span className="flex items-center gap-0.5">
+                              <Heart className="h-3 w-3" />
+                              {post.reactionsCount}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center py-2" onClick={(e) => e.stopPropagation()}>
+                          <Switch
+                            checked={post.isPublic}
+                            onCheckedChange={() => handleTogglePublic(post)}
+                            className="scale-90"
+                            data-testid={`switch-public-${post.id}`}
+                          />
+                        </TableCell>
+                        <TableCell className="text-center py-2">
+                          <Badge variant={post.status === 'active' ? 'default' : 'secondary'} className={`text-xs ${post.status === 'active' ? 'bg-green-500' : ''}`}>
+                            {post.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="py-2" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" data-testid={`button-actions-${post.id}`}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleViewPost(post)} data-testid={`menu-view-${post.id}`}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleToggleStatus(post)} data-testid={`menu-toggle-${post.id}`}>
+                                {post.status === 'active' ? (
+                                  <>
+                                    <ToggleLeft className="h-4 w-4 mr-2" />
+                                    Deactivate
+                                  </>
+                                ) : (
+                                  <>
+                                    <ToggleRight className="h-4 w-4 mr-2" />
+                                    Activate
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleDeletePost(post)} className="text-red-600" data-testid={`menu-delete-${post.id}`}>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
               {pagination && pagination.totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                  <p className="text-sm text-muted-foreground">
-                    Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, pagination.total)} of {pagination.total} posts
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 px-4 md:px-0 pb-4 md:pb-0">
+                  <p className="text-xs md:text-sm text-muted-foreground text-center sm:text-left">
+                    {((page - 1) * limit) + 1}-{Math.min(page * limit, pagination.total)} of {pagination.total}
                   </p>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
+                      size="sm"
                       onClick={() => setPage(p => Math.max(1, p - 1))}
                       disabled={page === 1}
                       data-testid="button-prev-page"
                     >
-                      Previous
+                      Prev
                     </Button>
                     <Button
                       variant="outline"
+                      size="sm"
                       onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
                       disabled={page >= pagination.totalPages}
                       data-testid="button-next-page"
