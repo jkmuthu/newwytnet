@@ -691,7 +691,7 @@ export default function WytWall() {
                 onMakeOffer={handleMakeOffer}
                 onViewResponses={handleViewResponses}
                 onLogin={handleLogin}
-                isCollapsed={true}
+                isCollapsed={false}
               />
             ) : (
               <OfferCard
@@ -701,7 +701,7 @@ export default function WytWall() {
                 currentUserId={user?.id}
                 onViewOffer={(offerId) => console.log('View offer:', offerId)}
                 onLogin={handleLogin}
-                isCollapsed={true}
+                isCollapsed={false}
               />
             )
           ))}
