@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,7 +10,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, User, Building2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, User, Building2, MapPin, X } from "lucide-react";
 
 // Category options based on post type
 const NEED_CATEGORIES = [
@@ -99,6 +100,52 @@ export default function WytWallPostForm({ defaultPostType = "need", onSuccess }:
   const { toast } = useToast();
   const [selectedPostType, setSelectedPostType] = useState<"need" | "offer">(defaultPostType);
   const [postFor, setPostFor] = useState<"personal" | "organization">("personal");
+  
+  // Location search state
+  const [locationSearch, setLocationSearch] = useState("");
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const [showLocationDropdown, setShowLocationDropdown] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const locationInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Debounced location search
+  useEffect(() => {
+    if (locationSearch.length < 2) {
+      setLocationSuggestions([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsSearchingLocation(true);
+      try {
+        const res = await fetch(`/api/mappls/search?q=${encodeURIComponent(locationSearch)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setLocationSuggestions(data.suggestedLocations || []);
+        }
+      } catch (error) {
+        console.error('Location search error:', error);
+      } finally {
+        setIsSearchingLocation(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [locationSearch]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node) &&
+          locationInputRef.current && !locationInputRef.current.contains(e.target as Node)) {
+        setShowLocationDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Fetch user's organizations (using the working endpoint)
   const { data: orgsData } = useQuery({
@@ -117,6 +164,7 @@ export default function WytWallPostForm({ defaultPostType = "need", onSuccess }:
       category: "",
       description: "",
       validityDays: 7,
+      location: "",
     },
   });
 
@@ -136,8 +184,11 @@ export default function WytWallPostForm({ defaultPostType = "need", onSuccess }:
         category: "",
         description: "",
         validityDays: 7,
+        location: "",
       });
       setPostFor("personal");
+      setSelectedLocation("");
+      setLocationSearch("");
       queryClient.invalidateQueries({ queryKey: ["/api/wytwall/posts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/wytwall/my-posts"] });
       onSuccess?.();
@@ -365,6 +416,110 @@ export default function WytWallPostForm({ defaultPostType = "need", onSuccess }:
                   {field.value?.length || 0}/200
                 </span>
               </div>
+            </FormItem>
+          )}
+        />
+
+        {/* Location Field with Mappls API */}
+        <FormField
+          control={form.control}
+          name="location"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Location
+              </FormLabel>
+              <FormControl>
+                <div className="relative">
+                  {selectedLocation ? (
+                    <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                          {selectedLocation}
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedLocation("");
+                          setLocationSearch("");
+                          field.onChange("");
+                        }}
+                        className="h-6 w-6 p-0 hover:bg-blue-100 dark:hover:bg-blue-800"
+                        data-testid="button-clear-location"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          ref={locationInputRef}
+                          type="text"
+                          placeholder="Search for a location..."
+                          value={locationSearch}
+                          onChange={(e) => {
+                            setLocationSearch(e.target.value);
+                            setShowLocationDropdown(true);
+                          }}
+                          onFocus={() => setShowLocationDropdown(true)}
+                          className="pl-10"
+                          data-testid="input-location"
+                        />
+                        {isSearchingLocation && (
+                          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                        )}
+                      </div>
+                      
+                      {/* Location Suggestions Dropdown */}
+                      {showLocationDropdown && locationSuggestions.length > 0 && (
+                        <div
+                          ref={dropdownRef}
+                          className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                        >
+                          {locationSuggestions.map((suggestion, index) => (
+                            <button
+                              key={suggestion.eLoc || index}
+                              type="button"
+                              onClick={() => {
+                                const locationName = suggestion.placeName || suggestion.placeAddress;
+                                setSelectedLocation(locationName);
+                                setLocationSearch("");
+                                setShowLocationDropdown(false);
+                                field.onChange(locationName);
+                              }}
+                              className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-start gap-3 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                              data-testid={`location-suggestion-${index}`}
+                            >
+                              <MapPin className="h-4 w-4 mt-0.5 text-blue-600 flex-shrink-0" />
+                              <div>
+                                <div className="font-medium text-sm text-gray-900 dark:text-white">
+                                  {suggestion.placeName || suggestion.placeAddress}
+                                </div>
+                                {suggestion.placeAddress && suggestion.placeName && (
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    {suggestion.placeAddress}
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </FormControl>
+              <p className="text-xs text-muted-foreground">
+                Add your location to help others find your post nearby
+              </p>
+              <FormMessage />
             </FormItem>
           )}
         />
