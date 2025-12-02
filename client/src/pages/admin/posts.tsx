@@ -80,7 +80,18 @@ interface Post {
   userProfileImage: string | null;
   offersCount: number;
   reactionsCount: number;
+  closedAt?: string | null;
+  closedReason?: string | null;
+  renewedCount?: number | null;
+  renewedAt?: string | null;
 }
+
+const CLOSE_REASONS: Record<string, string> = {
+  done_wytnet: "Done with WytNet",
+  done_elsewhere: "Done elsewhere",
+  dropped: "Dropped the plan",
+  fulfilled: "Request fulfilled",
+};
 
 interface PostStats {
   totalPosts: number;
@@ -344,6 +355,7 @@ export default function AllPosts() {
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="inactive">Inactive</SelectItem>
                   <SelectItem value="expired">Expired</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v === 'all' ? '' : v); setPage(1); }}>
@@ -443,9 +455,20 @@ export default function AllPosts() {
                           />
                         </TableCell>
                         <TableCell className="text-center py-2">
-                          <Badge variant={post.status === 'active' ? 'default' : 'secondary'} className={`text-xs ${post.status === 'active' ? 'bg-green-500' : ''}`}>
-                            {post.status}
-                          </Badge>
+                          <div className="flex flex-col items-center gap-1">
+                            <Badge variant={post.status === 'active' ? 'default' : 'secondary'} className={`text-xs ${
+                              post.status === 'active' ? 'bg-green-500' : 
+                              post.status === 'expired' ? 'bg-red-500 text-white' :
+                              post.status === 'closed' ? 'bg-gray-500 text-white' : ''
+                            }`}>
+                              {post.status}
+                            </Badge>
+                            {post.renewedCount && post.renewedCount > 0 && (
+                              <span className="text-[10px] text-purple-600 dark:text-purple-400">
+                                {post.renewedCount}x renewed
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="py-2" onClick={(e) => e.stopPropagation()}>
                           <DropdownMenu>
@@ -552,7 +575,11 @@ export default function AllPosts() {
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Status</p>
-                  <Badge variant={selectedPost.status === 'active' ? 'default' : 'secondary'}>
+                  <Badge variant={selectedPost.status === 'active' ? 'default' : 'secondary'} className={
+                    selectedPost.status === 'active' ? 'bg-green-500 text-white' : 
+                    selectedPost.status === 'expired' ? 'bg-red-500 text-white' :
+                    selectedPost.status === 'closed' ? 'bg-gray-500 text-white' : ''
+                  }>
                     {selectedPost.status}
                   </Badge>
                 </div>
@@ -570,6 +597,32 @@ export default function AllPosts() {
                   <p className="text-sm text-muted-foreground">Engagement</p>
                   <p className="font-medium">{selectedPost.offersCount} responses, {selectedPost.reactionsCount} reactions</p>
                 </div>
+                {selectedPost.renewedCount && selectedPost.renewedCount > 0 && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Renewals</p>
+                    <p className="font-medium text-purple-600 dark:text-purple-400">
+                      {selectedPost.renewedCount} time{selectedPost.renewedCount !== 1 ? 's' : ''}
+                      {selectedPost.renewedAt && (
+                        <span className="text-xs text-muted-foreground ml-1">
+                          (last: {format(new Date(selectedPost.renewedAt), 'MMM d')})
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                )}
+                {selectedPost.status === 'closed' && selectedPost.closedReason && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Closure Reason</p>
+                    <p className="font-medium text-gray-600 dark:text-gray-400">
+                      {CLOSE_REASONS[selectedPost.closedReason] || selectedPost.closedReason}
+                    </p>
+                    {selectedPost.closedAt && (
+                      <p className="text-xs text-muted-foreground">
+                        Closed: {format(new Date(selectedPost.closedAt), 'MMM d, yyyy')}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
               
               <div>

@@ -8841,6 +8841,10 @@ When suggesting improvements, format your response with suggestions in a structu
           userName: users.firstName,
           userEmail: users.email,
           userProfileImage: users.profileImageUrl,
+          closedAt: wytWallPosts.closedAt,
+          closedReason: wytWallPosts.closedReason,
+          renewedCount: wytWallPosts.renewedCount,
+          renewedAt: wytWallPosts.renewedAt,
         })
         .from(wytWallPosts)
         .leftJoin(users, eq(wytWallPosts.userId, users.id))
