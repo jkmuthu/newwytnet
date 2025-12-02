@@ -995,7 +995,6 @@ function MyPanelWytWall() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Engagement</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Active</th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
                     </tr>
@@ -1023,24 +1022,6 @@ function MyPanelWytWall() {
                           ) : (
                             <span className="text-xs text-gray-400">Disabled</span>
                           )}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex flex-col gap-1">
-                            <Badge variant={post.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                              {post.status || 'active'}
-                            </Badge>
-                            {/* Moderation Status */}
-                            {post.moderationStatus === 'pending' && (
-                              <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300 text-xs">
-                                Pending Review
-                              </Badge>
-                            )}
-                            {post.moderationStatus === 'rejected' && (
-                              <Badge className="bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 text-xs" title={post.moderationReason || 'Rejected by admin'}>
-                                Rejected
-                              </Badge>
-                            )}
-                          </div>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-center">
                           {/* Enable/Disable Toggle */}
