@@ -55,6 +55,7 @@ import FeaturesChecklistPage from "@/pages/admin/features-checklist";
 import QATestingTrackerPage from "@/pages/admin/qa-testing-tracker";
 import ApiLibraryPage from "@/pages/admin/api-library";
 import AllLogsPage from '@/pages/admin/all-logs';
+import AdminPosts from "@/pages/admin/posts";
 
 /**
  * AdminRouter (now EngineRouter) - Handles all Engine admin routes
@@ -88,6 +89,7 @@ export default function AdminRouter() {
           <Route path="/engine/datasets" component={AdminDatasetManagement} />
           <Route path="/engine/trademarks" component={TrademarkManagement} />
           <Route path="/engine/objects" component={AdminObjects} />
+          <Route path="/engine/posts" component={AdminPosts} />
           <Route path="/engine/media" component={AdminMedia} />
 
           {/* Platform Management Routes */}
