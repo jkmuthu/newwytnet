@@ -2668,11 +2668,16 @@ export const wytWallPosts = pgTable("wytwall_posts", {
   postFor: wytWallPostForEnum("post_for").notNull().default("personal"), // "personal" or "organization"
   organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: 'set null' }), // Only if postFor = "organization"
   category: varchar("category", { length: 100 }).notNull(), // Dynamic based on postType
-  description: varchar("description", { length: 200 }).notNull(),
+  description: varchar("description", { length: 500 }).notNull(), // Increased from 200 to 500
+  location: varchar("location", { length: 500 }), // Location field
+  locationDetails: jsonb("location_details").default({}), // Mappls location data
   validityDays: integer("validity_days").notNull().default(7), // 7, 15, 60, or 90 days
   expiresAt: timestamp("expires_at"), // Calculated: createdAt + validityDays
-  status: varchar("status", { length: 20 }).notNull().default("active"), // active, expired, closed
-  isPublic: boolean("is_public").default(false), // If true, visible on public WytWall marketplace
+  status: varchar("status", { length: 20 }).notNull().default("active"), // active, inactive, expired, closed
+  isPublic: boolean("is_public").default(true), // All posts are public by default (visible on WytWall marketplace)
+  isActive: boolean("is_active").default(true), // User can enable/disable their post
+  moderationStatus: varchar("moderation_status", { length: 20 }).default("approved"), // approved, pending, rejected
+  moderationReason: text("moderation_reason"), // Reason if rejected by admin
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
