@@ -156,8 +156,8 @@ export const profileFieldWeights = pgTable("profile_field_weights", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Bucket List - User goals and aspirations that can be matched with opportunities
-export const bucketList = pgTable("bucket_list", {
+// Wish List - User goals and aspirations that can be matched with opportunities (renamed from bucket_list)
+export const wishList = pgTable("wish_list", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
   title: varchar("title", { length: 100 }).notNull(),
@@ -166,6 +166,81 @@ export const bucketList = pgTable("bucket_list", {
   targetDate: timestamp("target_date"),
   isDone: boolean("is_done").default(false),
   isPublic: boolean("is_public").default(true), // For WytMatch matching
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User Education - Educational background (like LinkedIn)
+export const userEducation = pgTable("user_education", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  institution: varchar("institution", { length: 255 }).notNull(),
+  degree: varchar("degree", { length: 100 }), // e.g., Bachelor's, Master's, PhD - from dataset
+  fieldOfStudy: varchar("field_of_study", { length: 255 }), // e.g., Computer Science - from dataset
+  startYear: integer("start_year"),
+  endYear: integer("end_year"), // null if currently studying
+  isCurrent: boolean("is_current").default(false),
+  grade: varchar("grade", { length: 50 }), // e.g., First Class, 3.8 GPA
+  activities: text("activities"), // Extracurricular activities, societies
+  description: text("description"),
+  location: varchar("location", { length: 255 }),
+  country: varchar("country", { length: 10 }).default('IN'), // Country code from dataset
+  isVerified: boolean("is_verified").default(false),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User Works - Work experience (like LinkedIn)
+export const userWorks = pgTable("user_works", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  company: varchar("company", { length: 255 }).notNull(),
+  role: varchar("role", { length: 255 }).notNull(),
+  employmentType: varchar("employment_type", { length: 50 }), // Full-time, Part-time, Contract, etc. - from dataset
+  industry: varchar("industry", { length: 100 }), // Industry category - from dataset
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"), // null if current
+  isCurrent: boolean("is_current").default(false),
+  location: varchar("location", { length: 255 }),
+  country: varchar("country", { length: 10 }).default('IN'),
+  description: text("description"),
+  skills: jsonb("skills").default([]), // Array of skills used in this role
+  achievements: jsonb("achievements").default([]), // Key achievements
+  isVerified: boolean("is_verified").default(false),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User Socials - Social media profiles (like Linktree)
+export const userSocials = pgTable("user_socials", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  platform: varchar("platform", { length: 50 }).notNull(), // e.g., linkedin, twitter, instagram - from dataset
+  username: varchar("username", { length: 255 }), // Username on the platform
+  profileUrl: varchar("profile_url", { length: 500 }).notNull(),
+  isVerified: boolean("is_verified").default(false),
+  isPublic: boolean("is_public").default(true),
+  followerCount: integer("follower_count"),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  uniquePlatformPerUser: unique().on(table.userId, table.platform),
+}));
+
+// User Interests - Hobbies and interests (like social profiles)
+export const userInterests = pgTable("user_interests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  category: varchar("category", { length: 100 }).notNull(), // e.g., Sports, Music, Travel - from dataset
+  interest: varchar("interest", { length: 255 }).notNull(), // Specific interest
+  level: varchar("level", { length: 50 }), // Beginner, Intermediate, Expert
+  yearsOfExperience: integer("years_of_experience"),
+  description: text("description"),
+  isPublic: boolean("is_public").default(true),
+  sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -1404,8 +1479,8 @@ export const selectUserProfileSchema = createSelectSchema(userProfiles);
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 
-// Bucket List schemas
-export const insertBucketListSchema = createInsertSchema(bucketList).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+// Wish List schemas (renamed from Bucket List)
+export const insertWishListSchema = createInsertSchema(wishList).omit({ id: true, createdAt: true, updatedAt: true }).extend({
   title: z.string().min(1, "Title is required").max(100, "Title must be 100 characters or less"),
   description: z.string().max(200, "Description must be 200 characters or less").optional(),
   targetDate: z.string().refine((val) => {
@@ -1416,9 +1491,46 @@ export const insertBucketListSchema = createInsertSchema(bucketList).omit({ id: 
     return selectedDate >= today;
   }, { message: "Target date must be today or in the future" }).optional(),
 });
-export const selectBucketListSchema = createSelectSchema(bucketList);
-export type BucketListItem = typeof bucketList.$inferSelect;
-export type InsertBucketListItem = z.infer<typeof insertBucketListSchema>;
+export const selectWishListSchema = createSelectSchema(wishList);
+export type WishListItem = typeof wishList.$inferSelect;
+export type InsertWishListItem = z.infer<typeof insertWishListSchema>;
+
+// User Education schemas
+export const insertUserEducationSchema = createInsertSchema(userEducation).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  institution: z.string().min(1, "Institution name is required").max(255),
+  startYear: z.number().int().min(1900).max(new Date().getFullYear() + 10).optional(),
+  endYear: z.number().int().min(1900).max(new Date().getFullYear() + 10).optional().nullable(),
+});
+export const selectUserEducationSchema = createSelectSchema(userEducation);
+export type UserEducationItem = typeof userEducation.$inferSelect;
+export type InsertUserEducationItem = z.infer<typeof insertUserEducationSchema>;
+
+// User Works schemas
+export const insertUserWorksSchema = createInsertSchema(userWorks).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  company: z.string().min(1, "Company name is required").max(255),
+  role: z.string().min(1, "Role is required").max(255),
+});
+export const selectUserWorksSchema = createSelectSchema(userWorks);
+export type UserWorksItem = typeof userWorks.$inferSelect;
+export type InsertUserWorksItem = z.infer<typeof insertUserWorksSchema>;
+
+// User Socials schemas
+export const insertUserSocialsSchema = createInsertSchema(userSocials).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  platform: z.string().min(1, "Platform is required"),
+  profileUrl: z.string().url("Please enter a valid URL"),
+});
+export const selectUserSocialsSchema = createSelectSchema(userSocials);
+export type UserSocialsItem = typeof userSocials.$inferSelect;
+export type InsertUserSocialsItem = z.infer<typeof insertUserSocialsSchema>;
+
+// User Interests schemas
+export const insertUserInterestsSchema = createInsertSchema(userInterests).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  category: z.string().min(1, "Category is required"),
+  interest: z.string().min(1, "Interest is required"),
+});
+export const selectUserInterestsSchema = createSelectSchema(userInterests);
+export type UserInterestsItem = typeof userInterests.$inferSelect;
+export type InsertUserInterestsItem = z.infer<typeof insertUserInterestsSchema>;
 
 // User Needs schemas
 export const insertUserNeedSchema = createInsertSchema(userNeeds).omit({ id: true, createdAt: true, updatedAt: true, responseCount: true });

@@ -84,10 +84,18 @@ import {
   orders,
   wytLifeApplications,
   userProfiles,
-  bucketList,
+  wishList,
   organizations,
   organizationMembers,
-  insertBucketListSchema,
+  insertWishListSchema,
+  userEducation,
+  userWorks,
+  userSocials,
+  userInterests,
+  insertUserEducationSchema,
+  insertUserWorksSchema,
+  insertUserSocialsSchema,
+  insertUserInterestsSchema,
   userNeeds,
   userOffers,
   insertUserProfileSchema,
@@ -825,34 +833,500 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Get public bucket list items (for matching)
-  app.get('/api/bucket-list/public', isAuthenticated, async (req: any, res) => {
+  // Get public wish list items (for matching)
+  app.get('/api/wish-list/public', isAuthenticated, async (req: any, res) => {
     try {
       const user = req.user;
       
-      // Get public bucket list items from other users
+      // Get public wish list items from other users
       const items = await db.select({
-        id: bucketList.id,
-        title: bucketList.title,
-        description: bucketList.description,
-        category: bucketList.category,
-        targetDate: bucketList.targetDate,
-        isDone: bucketList.isDone,
+        id: wishList.id,
+        title: wishList.title,
+        description: wishList.description,
+        category: wishList.category,
+        targetDate: wishList.targetDate,
+        isDone: wishList.isDone,
       })
-        .from(bucketList)
+        .from(wishList)
         .where(
           and(
-            eq(bucketList.isPublic, true),
-            not(eq(bucketList.userId, user.id))
+            eq(wishList.isPublic, true),
+            not(eq(wishList.userId, user.id))
           )
         )
-        .orderBy(desc(bucketList.createdAt))
+        .orderBy(desc(wishList.createdAt))
         .limit(20);
       
       res.json({ items });
     } catch (error) {
-      console.error("Error fetching public bucket list:", error);
+      console.error("Error fetching public wish list:", error);
       res.json({ items: [] });
+    }
+  });
+
+  // ========================================
+  // USER PROFILE - WISH LIST API
+  // ========================================
+  
+  // Get user's wish list
+  app.get('/api/wish-list', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const items = await db.select()
+        .from(wishList)
+        .where(eq(wishList.userId, user.id))
+        .orderBy(desc(wishList.createdAt));
+      
+      res.json({ items });
+    } catch (error) {
+      console.error("Error fetching wish list:", error);
+      res.status(500).json({ message: "Failed to fetch wish list" });
+    }
+  });
+
+  // Create wish list item
+  app.post('/api/wish-list', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const validatedData = insertWishListSchema.parse(req.body);
+      
+      const [newItem] = await db.insert(wishList)
+        .values({
+          ...validatedData,
+          userId: user.id,
+          targetDate: validatedData.targetDate ? new Date(validatedData.targetDate) : null,
+        })
+        .returning();
+      
+      res.json(newItem);
+    } catch (error: any) {
+      console.error("Error creating wish list item:", error);
+      res.status(400).json({ message: error.message || "Failed to create wish list item" });
+    }
+  });
+
+  // Update wish list item
+  app.patch('/api/wish-list/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { id } = req.params;
+      
+      // Verify ownership
+      const [existing] = await db.select()
+        .from(wishList)
+        .where(and(eq(wishList.id, id), eq(wishList.userId, user.id)));
+      
+      if (!existing) {
+        return res.status(404).json({ message: "Wish list item not found" });
+      }
+      
+      const updateData: any = { ...req.body, updatedAt: new Date() };
+      if (updateData.targetDate) {
+        updateData.targetDate = new Date(updateData.targetDate);
+      }
+      
+      const [updated] = await db.update(wishList)
+        .set(updateData)
+        .where(eq(wishList.id, id))
+        .returning();
+      
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating wish list item:", error);
+      res.status(400).json({ message: error.message || "Failed to update wish list item" });
+    }
+  });
+
+  // Delete wish list item
+  app.delete('/api/wish-list/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { id } = req.params;
+      
+      // Verify ownership
+      const [existing] = await db.select()
+        .from(wishList)
+        .where(and(eq(wishList.id, id), eq(wishList.userId, user.id)));
+      
+      if (!existing) {
+        return res.status(404).json({ message: "Wish list item not found" });
+      }
+      
+      await db.delete(wishList).where(eq(wishList.id, id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting wish list item:", error);
+      res.status(500).json({ message: "Failed to delete wish list item" });
+    }
+  });
+
+  // ========================================
+  // USER PROFILE - EDUCATION API
+  // ========================================
+  
+  // Get user's education
+  app.get('/api/user-education', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const items = await db.select()
+        .from(userEducation)
+        .where(eq(userEducation.userId, user.id))
+        .orderBy(desc(userEducation.endYear), desc(userEducation.startYear));
+      
+      res.json({ items });
+    } catch (error) {
+      console.error("Error fetching education:", error);
+      res.status(500).json({ message: "Failed to fetch education" });
+    }
+  });
+
+  // Create education entry
+  app.post('/api/user-education', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const validatedData = insertUserEducationSchema.parse(req.body);
+      
+      const [newItem] = await db.insert(userEducation)
+        .values({
+          ...validatedData,
+          userId: user.id,
+        })
+        .returning();
+      
+      res.json(newItem);
+    } catch (error: any) {
+      console.error("Error creating education:", error);
+      res.status(400).json({ message: error.message || "Failed to create education entry" });
+    }
+  });
+
+  // Update education entry
+  app.patch('/api/user-education/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { id } = req.params;
+      
+      const [existing] = await db.select()
+        .from(userEducation)
+        .where(and(eq(userEducation.id, id), eq(userEducation.userId, user.id)));
+      
+      if (!existing) {
+        return res.status(404).json({ message: "Education entry not found" });
+      }
+      
+      const [updated] = await db.update(userEducation)
+        .set({ ...req.body, updatedAt: new Date() })
+        .where(eq(userEducation.id, id))
+        .returning();
+      
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating education:", error);
+      res.status(400).json({ message: error.message || "Failed to update education entry" });
+    }
+  });
+
+  // Delete education entry
+  app.delete('/api/user-education/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { id } = req.params;
+      
+      const [existing] = await db.select()
+        .from(userEducation)
+        .where(and(eq(userEducation.id, id), eq(userEducation.userId, user.id)));
+      
+      if (!existing) {
+        return res.status(404).json({ message: "Education entry not found" });
+      }
+      
+      await db.delete(userEducation).where(eq(userEducation.id, id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting education:", error);
+      res.status(500).json({ message: "Failed to delete education entry" });
+    }
+  });
+
+  // ========================================
+  // USER PROFILE - WORKS API
+  // ========================================
+  
+  // Get user's work experience
+  app.get('/api/user-works', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const items = await db.select()
+        .from(userWorks)
+        .where(eq(userWorks.userId, user.id))
+        .orderBy(desc(userWorks.isCurrent), desc(userWorks.endDate), desc(userWorks.startDate));
+      
+      res.json({ items });
+    } catch (error) {
+      console.error("Error fetching works:", error);
+      res.status(500).json({ message: "Failed to fetch work experience" });
+    }
+  });
+
+  // Create work experience entry
+  app.post('/api/user-works', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const validatedData = insertUserWorksSchema.parse(req.body);
+      
+      const [newItem] = await db.insert(userWorks)
+        .values({
+          ...validatedData,
+          userId: user.id,
+          startDate: validatedData.startDate ? new Date(validatedData.startDate as any) : null,
+          endDate: validatedData.endDate ? new Date(validatedData.endDate as any) : null,
+        })
+        .returning();
+      
+      res.json(newItem);
+    } catch (error: any) {
+      console.error("Error creating work experience:", error);
+      res.status(400).json({ message: error.message || "Failed to create work experience" });
+    }
+  });
+
+  // Update work experience entry
+  app.patch('/api/user-works/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { id } = req.params;
+      
+      const [existing] = await db.select()
+        .from(userWorks)
+        .where(and(eq(userWorks.id, id), eq(userWorks.userId, user.id)));
+      
+      if (!existing) {
+        return res.status(404).json({ message: "Work experience not found" });
+      }
+      
+      const updateData: any = { ...req.body, updatedAt: new Date() };
+      if (updateData.startDate) updateData.startDate = new Date(updateData.startDate);
+      if (updateData.endDate) updateData.endDate = new Date(updateData.endDate);
+      
+      const [updated] = await db.update(userWorks)
+        .set(updateData)
+        .where(eq(userWorks.id, id))
+        .returning();
+      
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating work experience:", error);
+      res.status(400).json({ message: error.message || "Failed to update work experience" });
+    }
+  });
+
+  // Delete work experience entry
+  app.delete('/api/user-works/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { id } = req.params;
+      
+      const [existing] = await db.select()
+        .from(userWorks)
+        .where(and(eq(userWorks.id, id), eq(userWorks.userId, user.id)));
+      
+      if (!existing) {
+        return res.status(404).json({ message: "Work experience not found" });
+      }
+      
+      await db.delete(userWorks).where(eq(userWorks.id, id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting work experience:", error);
+      res.status(500).json({ message: "Failed to delete work experience" });
+    }
+  });
+
+  // ========================================
+  // USER PROFILE - SOCIALS API
+  // ========================================
+  
+  // Get user's social profiles
+  app.get('/api/user-socials', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const items = await db.select()
+        .from(userSocials)
+        .where(eq(userSocials.userId, user.id))
+        .orderBy(asc(userSocials.sortOrder));
+      
+      res.json({ items });
+    } catch (error) {
+      console.error("Error fetching socials:", error);
+      res.status(500).json({ message: "Failed to fetch social profiles" });
+    }
+  });
+
+  // Create social profile entry
+  app.post('/api/user-socials', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const validatedData = insertUserSocialsSchema.parse(req.body);
+      
+      // Check if platform already exists for this user
+      const [existing] = await db.select()
+        .from(userSocials)
+        .where(and(
+          eq(userSocials.userId, user.id),
+          eq(userSocials.platform, validatedData.platform)
+        ));
+      
+      if (existing) {
+        return res.status(400).json({ message: "This social platform is already added" });
+      }
+      
+      const [newItem] = await db.insert(userSocials)
+        .values({
+          ...validatedData,
+          userId: user.id,
+        })
+        .returning();
+      
+      res.json(newItem);
+    } catch (error: any) {
+      console.error("Error creating social profile:", error);
+      res.status(400).json({ message: error.message || "Failed to create social profile" });
+    }
+  });
+
+  // Update social profile entry
+  app.patch('/api/user-socials/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { id } = req.params;
+      
+      const [existing] = await db.select()
+        .from(userSocials)
+        .where(and(eq(userSocials.id, id), eq(userSocials.userId, user.id)));
+      
+      if (!existing) {
+        return res.status(404).json({ message: "Social profile not found" });
+      }
+      
+      const [updated] = await db.update(userSocials)
+        .set({ ...req.body, updatedAt: new Date() })
+        .where(eq(userSocials.id, id))
+        .returning();
+      
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating social profile:", error);
+      res.status(400).json({ message: error.message || "Failed to update social profile" });
+    }
+  });
+
+  // Delete social profile entry
+  app.delete('/api/user-socials/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { id } = req.params;
+      
+      const [existing] = await db.select()
+        .from(userSocials)
+        .where(and(eq(userSocials.id, id), eq(userSocials.userId, user.id)));
+      
+      if (!existing) {
+        return res.status(404).json({ message: "Social profile not found" });
+      }
+      
+      await db.delete(userSocials).where(eq(userSocials.id, id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting social profile:", error);
+      res.status(500).json({ message: "Failed to delete social profile" });
+    }
+  });
+
+  // ========================================
+  // USER PROFILE - INTERESTS API
+  // ========================================
+  
+  // Get user's interests
+  app.get('/api/user-interests', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const items = await db.select()
+        .from(userInterests)
+        .where(eq(userInterests.userId, user.id))
+        .orderBy(asc(userInterests.category), asc(userInterests.sortOrder));
+      
+      res.json({ items });
+    } catch (error) {
+      console.error("Error fetching interests:", error);
+      res.status(500).json({ message: "Failed to fetch interests" });
+    }
+  });
+
+  // Create interest entry
+  app.post('/api/user-interests', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const validatedData = insertUserInterestsSchema.parse(req.body);
+      
+      const [newItem] = await db.insert(userInterests)
+        .values({
+          ...validatedData,
+          userId: user.id,
+        })
+        .returning();
+      
+      res.json(newItem);
+    } catch (error: any) {
+      console.error("Error creating interest:", error);
+      res.status(400).json({ message: error.message || "Failed to create interest" });
+    }
+  });
+
+  // Update interest entry
+  app.patch('/api/user-interests/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { id } = req.params;
+      
+      const [existing] = await db.select()
+        .from(userInterests)
+        .where(and(eq(userInterests.id, id), eq(userInterests.userId, user.id)));
+      
+      if (!existing) {
+        return res.status(404).json({ message: "Interest not found" });
+      }
+      
+      const [updated] = await db.update(userInterests)
+        .set({ ...req.body, updatedAt: new Date() })
+        .where(eq(userInterests.id, id))
+        .returning();
+      
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating interest:", error);
+      res.status(400).json({ message: error.message || "Failed to update interest" });
+    }
+  });
+
+  // Delete interest entry
+  app.delete('/api/user-interests/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      const { id } = req.params;
+      
+      const [existing] = await db.select()
+        .from(userInterests)
+        .where(and(eq(userInterests.id, id), eq(userInterests.userId, user.id)));
+      
+      if (!existing) {
+        return res.status(404).json({ message: "Interest not found" });
+      }
+      
+      await db.delete(userInterests).where(eq(userInterests.id, id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting interest:", error);
+      res.status(500).json({ message: "Failed to delete interest" });
     }
   });
 
