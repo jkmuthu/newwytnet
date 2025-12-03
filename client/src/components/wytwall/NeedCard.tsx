@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { MapPin, Clock, DollarSign, MessageSquare, Star, ChevronDown, ChevronUp, Users, ThumbsUp, Heart, Sparkles, Ban, MessageCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { MapPin, Clock, DollarSign, MessageSquare, Star, ChevronDown, ChevronUp, Users, ThumbsUp, Send, MessageCircle, Loader2, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -20,6 +22,11 @@ interface NeedCardProps {
 
 export default function NeedCard({ need, isAuthenticated, currentUserId, onMakeOffer, onViewResponses, onLogin, isCollapsed = false }: NeedCardProps) {
   const [expanded, setExpanded] = useState(!isCollapsed);
+  const [showConversation, setShowConversation] = useState(false);
+  const [message, setMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [conversationData, setConversationData] = useState<any>(null);
+  const [loadingConversation, setLoadingConversation] = useState(false);
   const { toast } = useToast();
   
   // Reaction state (only for wytwall posts with isWytWallPost flag)
@@ -29,6 +36,7 @@ export default function NeedCard({ need, isAuthenticated, currentUserId, onMakeO
   
   // Existing offer state - check if user already made an offer on this post
   const [hasExistingOffer, setHasExistingOffer] = useState(false);
+  const [existingOfferId, setExistingOfferId] = useState<string | null>(null);
   const [checkingOffer, setCheckingOffer] = useState(false);
   
   const isWytWallPost = need.isWytWallPost === true;
@@ -60,12 +68,36 @@ export default function NeedCard({ need, isAuthenticated, currentUserId, onMakeO
         .then(data => {
           if (data.success && data.offer) {
             setHasExistingOffer(true);
+            setExistingOfferId(data.offer.id);
           }
         })
         .catch(console.error)
         .finally(() => setCheckingOffer(false));
     }
   }, [need.id, isWytWallPost, isAuthenticated, currentUserId, isOwner]);
+
+  // Fetch conversation when expanded
+  useEffect(() => {
+    if (showConversation && existingOfferId && isAuthenticated) {
+      loadConversation();
+    }
+  }, [showConversation, existingOfferId]);
+
+  const loadConversation = async () => {
+    if (!existingOfferId) return;
+    setLoadingConversation(true);
+    try {
+      const res = await fetch(`/api/wytwall/offers/${existingOfferId}/comments`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setConversationData(data);
+      }
+    } catch (error) {
+      console.error('Error loading conversation:', error);
+    } finally {
+      setLoadingConversation(false);
+    }
+  };
 
   const handleLike = async () => {
     if (!isAuthenticated) {
@@ -104,20 +136,75 @@ export default function NeedCard({ need, isAuthenticated, currentUserId, onMakeO
     other: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
   };
 
-  const handleOfferClick = () => {
+  const handleInterestClick = () => {
     if (!isAuthenticated) {
       onLogin?.();
       return;
     }
     
     if (isOwner) {
-      // Post owner wants to view all responses
+      // Post owner wants to view all responses - this opens panel view
       onViewResponses?.(need);
     } else {
-      // User wants to make offer or continue existing conversation
-      onMakeOffer?.(need);
+      // Toggle inline conversation view
+      setShowConversation(!showConversation);
     }
   };
+
+  const handleSendMessage = async () => {
+    if (!message.trim() || isSending) return;
+    
+    setIsSending(true);
+    try {
+      if (hasExistingOffer && existingOfferId) {
+        // Add comment to existing offer
+        const res = await fetch(`/api/wytwall/offers/${existingOfferId}/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ message: message.trim() }),
+        });
+        
+        if (res.ok) {
+          setMessage("");
+          loadConversation();
+          toast({ title: "Message sent!" });
+        } else {
+          toast({ title: "Failed to send message", variant: "destructive" });
+        }
+      } else {
+        // Create new offer with first message
+        const res = await fetch('/api/wytwall/offers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ 
+            postId: need.id, 
+            message: message.trim() 
+          }),
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          setMessage("");
+          setHasExistingOffer(true);
+          setExistingOfferId(data.offer.id);
+          toast({ title: "Your interest has been sent!" });
+          // Load conversation after creating offer
+          setTimeout(() => loadConversation(), 500);
+        } else {
+          const errData = await res.json();
+          toast({ title: errData.error || "Failed to send message", variant: "destructive" });
+        }
+      }
+    } catch (error) {
+      toast({ title: "Error sending message", variant: "destructive" });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const comments = conversationData?.comments || [];
 
   return (
     <Card className="group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:shadow-xl hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 overflow-hidden rounded-xl sm:rounded-2xl" data-testid={`need-card-${need.id}`}>
@@ -153,6 +240,9 @@ export default function NeedCard({ need, isAuthenticated, currentUserId, onMakeO
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300 font-semibold text-[10px] sm:text-xs px-2 sm:px-2.5 py-0.5">
+              Need
+            </Badge>
             <Badge className={`${categoryColors[need.category] || categoryColors.other} font-semibold text-[10px] sm:text-xs px-2 sm:px-2.5 py-0.5`}>
               {need.category.replace('_', ' ')}
             </Badge>
@@ -198,85 +288,156 @@ export default function NeedCard({ need, isAuthenticated, currentUserId, onMakeO
             </div>
           </CardContent>
 
-          <CardFooter className="px-3 sm:px-6 border-t border-gray-200 dark:border-gray-700 py-2.5 sm:py-3 bg-gray-50 dark:bg-gray-800/50">
-            <div className="w-full flex flex-col gap-2">
-              {/* Social Action Bar - Like Facebook */}
-              <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-2">
-                <div className="flex items-center gap-4">
-                  {/* Like Button with Count */}
-                  <button
-                    onClick={handleLike}
-                    disabled={isLiking || !isWytWallPost}
-                    className={`flex items-center gap-1.5 text-xs font-medium transition-all ${
-                      liked 
-                        ? 'text-blue-600 dark:text-blue-400' 
-                        : 'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
-                    } ${!isWytWallPost ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    data-testid={`button-like-${need.id}`}
-                  >
-                    <ThumbsUp className={`h-4 w-4 ${liked ? 'fill-blue-600 dark:fill-blue-400' : ''}`} />
-                    <span>{likeCount > 0 ? likeCount : ''}</span>
-                    <span className="hidden sm:inline">{liked ? 'Liked' : 'Like'}</span>
-                  </button>
-                  
-                  {/* Response Count */}
-                  <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
-                    <Users className="h-4 w-4" />
-                    <span className="font-medium">{need.responseCount || need.offersCount || 0}</span>
-                    <span className="hidden sm:inline">response{(need.responseCount || need.offersCount) !== 1 ? 's' : ''}</span>
-                  </div>
+          <CardFooter className="px-3 sm:px-6 border-t border-gray-200 dark:border-gray-700 py-2.5 sm:py-3 bg-gray-50 dark:bg-gray-800/50 flex-col">
+            {/* Social Action Bar */}
+            <div className="w-full flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-2 mb-2">
+              <div className="flex items-center gap-4">
+                {/* Like Button */}
+                <button
+                  onClick={handleLike}
+                  disabled={isLiking || !isWytWallPost}
+                  className={`flex items-center gap-1.5 text-xs font-medium transition-all ${
+                    liked 
+                      ? 'text-blue-600 dark:text-blue-400' 
+                      : 'text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400'
+                  } ${!isWytWallPost ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  data-testid={`button-like-${need.id}`}
+                >
+                  <ThumbsUp className={`h-4 w-4 ${liked ? 'fill-blue-600 dark:fill-blue-400' : ''}`} />
+                  <span>{likeCount > 0 ? likeCount : ''}</span>
+                  <span className="hidden sm:inline">{liked ? 'Liked' : 'Like'}</span>
+                </button>
+                
+                {/* Response Count */}
+                <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                  <Users className="h-4 w-4" />
+                  <span className="font-medium">{need.responseCount || need.offersCount || 0}</span>
+                  <span className="hidden sm:inline">response{(need.responseCount || need.offersCount) !== 1 ? 's' : ''}</span>
                 </div>
               </div>
-              
-              {/* Make Offer / View Responses Button - Full Width */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="w-full">
-                      <Button
-                        onClick={handleOfferClick}
-                        className={`w-full font-semibold text-xs sm:text-sm h-9 sm:h-10 ${
-                          isOwner
-                            ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-md"
-                            : hasExistingOffer
-                              ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md"
-                              : isAuthenticated
-                                ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md"
-                                : "bg-gray-200 hover:bg-gray-300 text-gray-700"
-                        }`}
-                        disabled={checkingOffer || (!isAuthenticated && !onLogin)}
-                        data-testid={`button-make-offer-${need.id}`}
-                      >
-                        {isOwner ? (
-                          <>
-                            <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                            View Responses
-                          </>
-                        ) : hasExistingOffer ? (
-                          <>
-                            <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                            Continue Chat
-                          </>
-                        ) : (
-                          <>
-                            <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-                            {isAuthenticated ? "Make an Offer" : "Login to Make Offer"}
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </TooltipTrigger>
-                  {(isOwner || hasExistingOffer) && (
-                    <TooltipContent>
-                      {isOwner 
-                        ? "View all offers and conversations on your post"
-                        : "Continue your conversation with the post owner"
-                      }
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
             </div>
+            
+            {/* I'm Interested Button */}
+            <div className="w-full">
+              <Button
+                onClick={handleInterestClick}
+                className={`w-full font-semibold text-xs sm:text-sm h-9 sm:h-10 ${
+                  isOwner
+                    ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-md"
+                    : showConversation
+                      ? "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+                      : hasExistingOffer
+                        ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md"
+                        : isAuthenticated
+                          ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md"
+                          : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                }`}
+                disabled={checkingOffer || (!isAuthenticated && !onLogin)}
+                data-testid={`button-interested-${need.id}`}
+              >
+                {isOwner ? (
+                  <>
+                    <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                    View Responses
+                  </>
+                ) : showConversation ? (
+                  <>
+                    <X className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                    Close
+                  </>
+                ) : hasExistingOffer ? (
+                  <>
+                    <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                    Continue Chat
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                    {isAuthenticated ? "I'm Interested" : "Login to Respond"}
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Inline Conversation Area - Facebook style */}
+            {showConversation && !isOwner && (
+              <div className="w-full mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                {/* Existing Conversation Thread */}
+                {loadingConversation ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                    <span className="ml-2 text-sm text-gray-500">Loading conversation...</span>
+                  </div>
+                ) : comments.length > 0 ? (
+                  <div className="max-h-[200px] overflow-y-auto space-y-2 mb-3 pr-1">
+                    {comments.map((comment: any) => (
+                      <div
+                        key={comment.id}
+                        className={`p-2.5 rounded-lg ${
+                          comment.isFromPostAuthor
+                            ? 'bg-green-50 dark:bg-green-900/20 border-l-2 border-green-500 ml-4'
+                            : 'bg-gray-100 dark:bg-gray-700/50 mr-4'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Avatar className="h-5 w-5">
+                            <AvatarImage src={comment.user?.profileImageUrl} />
+                            <AvatarFallback className="text-[9px] bg-blue-100 text-blue-700">
+                              {comment.user?.name?.[0] || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                            {comment.user?.name || 'Anonymous'}
+                          </span>
+                          {comment.isFromPostAuthor && (
+                            <Badge className="text-[9px] px-1.5 py-0 bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200">
+                              Owner
+                            </Badge>
+                          )}
+                          <span className="text-[10px] text-gray-400 ml-auto">
+                            {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-700 dark:text-gray-300 pl-7">{comment.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : hasExistingOffer ? (
+                  <p className="text-xs text-gray-500 text-center py-2 mb-2">
+                    Your interest was sent. Waiting for response...
+                  </p>
+                ) : null}
+
+                {/* Message Input */}
+                <div className="flex gap-2">
+                  <Textarea
+                    placeholder={hasExistingOffer ? "Add a message..." : "Hi, I'm interested in your post. I can help with..."}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    className="flex-1 text-sm min-h-[60px] max-h-[100px] resize-none"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    data-testid={`input-message-${need.id}`}
+                  />
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={!message.trim() || isSending}
+                    className="bg-blue-600 hover:bg-blue-700 h-auto px-3"
+                    data-testid={`button-send-${need.id}`}
+                  >
+                    {isSending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardFooter>
         </>
       )}
