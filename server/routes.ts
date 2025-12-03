@@ -2088,17 +2088,33 @@ export async function registerRoutes(app: Express): Promise<void> {
       const fileName = `${Date.now()}-${req.file.originalname}`;
       const filePath = `${directory}/${fileName}`;
 
-      // Upload to object storage
-      await objectStorageClient.uploadFile(
-        req.file.buffer,
-        filePath,
-        {
-          contentType: req.file.mimetype,
-          isPublic: true,
-        }
-      );
+      // Get the public object search paths for upload
+      const publicPaths = process.env.PUBLIC_OBJECT_SEARCH_PATHS?.split(',')[0]?.trim();
+      if (!publicPaths) {
+        return res.status(500).json({ error: 'Object storage not configured' });
+      }
 
-      const url = await objectStorageClient.getPublicUrl(filePath);
+      // Parse bucket name from path (format: /bucket-name/path)
+      const pathParts = publicPaths.split('/').filter(Boolean);
+      const bucketName = pathParts[0];
+      const basePath = pathParts.slice(1).join('/');
+      const fullObjectName = basePath ? `${basePath}/${filePath}` : filePath;
+
+      // Upload to GCS bucket
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(fullObjectName);
+
+      await file.save(req.file.buffer, {
+        metadata: {
+          contentType: req.file.mimetype,
+        },
+      });
+
+      // Make the file publicly accessible
+      await file.makePublic();
+
+      // Get the public URL
+      const url = `https://storage.googleapis.com/${bucketName}/${fullObjectName}`;
 
       res.json({ 
         success: true, 
@@ -2140,17 +2156,33 @@ export async function registerRoutes(app: Express): Promise<void> {
       const extension = req.file.originalname.split('.').pop() || 'jpg';
       const fileName = `profile-photos/${userId}-${Date.now()}.${extension}`;
 
-      // Upload to object storage
-      await objectStorageClient.uploadFile(
-        req.file.buffer,
-        fileName,
-        {
-          contentType: req.file.mimetype,
-          isPublic: true,
-        }
-      );
+      // Get the public object search paths for upload
+      const publicPaths = process.env.PUBLIC_OBJECT_SEARCH_PATHS?.split(',')[0]?.trim();
+      if (!publicPaths) {
+        return res.status(500).json({ error: 'Object storage not configured' });
+      }
 
-      const url = await objectStorageClient.getPublicUrl(fileName);
+      // Parse bucket name from path (format: /bucket-name/path)
+      const pathParts = publicPaths.split('/').filter(Boolean);
+      const bucketName = pathParts[0];
+      const basePath = pathParts.slice(1).join('/');
+      const fullObjectName = basePath ? `${basePath}/${fileName}` : fileName;
+
+      // Upload to GCS bucket
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(fullObjectName);
+
+      await file.save(req.file.buffer, {
+        metadata: {
+          contentType: req.file.mimetype,
+        },
+      });
+
+      // Make the file publicly accessible
+      await file.makePublic();
+
+      // Get the public URL
+      const url = `https://storage.googleapis.com/${bucketName}/${fullObjectName}`;
 
       // Update user profile with new photo URL
       const existingProfile = await db.select()
