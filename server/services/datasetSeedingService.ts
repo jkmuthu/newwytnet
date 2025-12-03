@@ -33,16 +33,152 @@ export class DatasetSeedingService {
     
     try {
       await this.seedGlobalLocations();
+      await this.seedCountries();
       await this.seedLanguages();
       await this.seedCurrencies();
       await this.seedIndustries();
       await this.seedCompanySizes();
       await this.seedJobRoles();
+      await this.seedProfileDatasets();
       
       console.log('✅ WytData datasets initialized successfully');
     } catch (error) {
       console.error('❌ Error initializing datasets:', error);
     }
+  }
+
+  /**
+   * Seed Profile-related datasets (gender, marital status, degree types, etc.)
+   */
+  private async seedProfileDatasets() {
+    // Gender
+    const genderId = await this.createCollection({
+      key: 'gender',
+      name: 'Gender',
+      description: 'Gender options for profiles',
+      scope: 'global',
+      metadata: { icon: '👤' }
+    });
+
+    await this.createItems(genderId, [
+      { code: 'male', label: 'Male', sortOrder: 1 },
+      { code: 'female', label: 'Female', sortOrder: 2 },
+      { code: 'non-binary', label: 'Non-binary', sortOrder: 3 },
+      { code: 'other', label: 'Other', sortOrder: 4 },
+      { code: 'prefer-not-to-say', label: 'Prefer not to say', sortOrder: 5 }
+    ]);
+    console.log('  ✓ Seeded gender options');
+
+    // Marital Status
+    const maritalId = await this.createCollection({
+      key: 'marital-status',
+      name: 'Marital Status',
+      description: 'Marital status options',
+      scope: 'global',
+      metadata: { icon: '💍' }
+    });
+
+    await this.createItems(maritalId, [
+      { code: 'single', label: 'Single', sortOrder: 1 },
+      { code: 'married', label: 'Married', sortOrder: 2 },
+      { code: 'divorced', label: 'Divorced', sortOrder: 3 },
+      { code: 'widowed', label: 'Widowed', sortOrder: 4 },
+      { code: 'separated', label: 'Separated', sortOrder: 5 },
+      { code: 'prefer-not-to-say', label: 'Prefer not to say', sortOrder: 6 }
+    ]);
+    console.log('  ✓ Seeded marital status options');
+
+    // Degree Types
+    const degreeId = await this.createCollection({
+      key: 'degree-types',
+      name: 'Degree Types',
+      description: 'Educational degree types',
+      scope: 'global',
+      metadata: { icon: '🎓' }
+    });
+
+    await this.createItems(degreeId, [
+      { code: 'high-school', label: 'High School', sortOrder: 1 },
+      { code: 'diploma', label: 'Diploma', sortOrder: 2 },
+      { code: 'associate', label: 'Associate Degree', sortOrder: 3 },
+      { code: 'bachelor', label: "Bachelor's Degree", sortOrder: 4 },
+      { code: 'master', label: "Master's Degree", sortOrder: 5 },
+      { code: 'doctorate', label: 'Doctorate (PhD)', sortOrder: 6 },
+      { code: 'professional', label: 'Professional Degree (MD, JD, etc.)', sortOrder: 7 },
+      { code: 'certificate', label: 'Certificate/Certification', sortOrder: 8 },
+      { code: 'other', label: 'Other', sortOrder: 9 }
+    ]);
+    console.log('  ✓ Seeded degree types');
+
+    // Employment Types
+    const employmentId = await this.createCollection({
+      key: 'employment-types',
+      name: 'Employment Types',
+      description: 'Types of employment',
+      scope: 'global',
+      metadata: { icon: '💼' }
+    });
+
+    await this.createItems(employmentId, [
+      { code: 'full-time', label: 'Full-time', sortOrder: 1 },
+      { code: 'part-time', label: 'Part-time', sortOrder: 2 },
+      { code: 'contract', label: 'Contract', sortOrder: 3 },
+      { code: 'freelance', label: 'Freelance/Self-employed', sortOrder: 4 },
+      { code: 'internship', label: 'Internship', sortOrder: 5 },
+      { code: 'temporary', label: 'Temporary', sortOrder: 6 },
+      { code: 'volunteer', label: 'Volunteer', sortOrder: 7 }
+    ]);
+    console.log('  ✓ Seeded employment types');
+
+    // Social Platforms
+    const socialId = await this.createCollection({
+      key: 'social-platforms',
+      name: 'Social Platforms',
+      description: 'Social media and professional platforms',
+      scope: 'global',
+      metadata: { icon: '🌐' }
+    });
+
+    await this.createItems(socialId, [
+      { code: 'linkedin', label: 'LinkedIn', sortOrder: 1, metadata: { urlPrefix: 'https://linkedin.com/in/' } },
+      { code: 'twitter', label: 'X (Twitter)', sortOrder: 2, metadata: { urlPrefix: 'https://x.com/' } },
+      { code: 'facebook', label: 'Facebook', sortOrder: 3, metadata: { urlPrefix: 'https://facebook.com/' } },
+      { code: 'instagram', label: 'Instagram', sortOrder: 4, metadata: { urlPrefix: 'https://instagram.com/' } },
+      { code: 'github', label: 'GitHub', sortOrder: 5, metadata: { urlPrefix: 'https://github.com/' } },
+      { code: 'youtube', label: 'YouTube', sortOrder: 6, metadata: { urlPrefix: 'https://youtube.com/@' } },
+      { code: 'website', label: 'Personal Website', sortOrder: 7, metadata: { urlPrefix: '' } },
+      { code: 'blog', label: 'Blog', sortOrder: 8, metadata: { urlPrefix: '' } },
+      { code: 'other', label: 'Other', sortOrder: 9, metadata: { urlPrefix: '' } }
+    ]);
+    console.log('  ✓ Seeded social platforms');
+
+    // Interest Categories
+    const interestId = await this.createCollection({
+      key: 'interest-categories',
+      name: 'Interest Categories',
+      description: 'Categories for personal interests',
+      scope: 'global',
+      metadata: { icon: '⭐' }
+    });
+
+    await this.createItems(interestId, [
+      { code: 'technology', label: 'Technology', sortOrder: 1 },
+      { code: 'sports', label: 'Sports & Fitness', sortOrder: 2 },
+      { code: 'music', label: 'Music', sortOrder: 3 },
+      { code: 'art', label: 'Art & Design', sortOrder: 4 },
+      { code: 'travel', label: 'Travel', sortOrder: 5 },
+      { code: 'reading', label: 'Reading & Books', sortOrder: 6 },
+      { code: 'cooking', label: 'Cooking & Food', sortOrder: 7 },
+      { code: 'gaming', label: 'Gaming', sortOrder: 8 },
+      { code: 'photography', label: 'Photography', sortOrder: 9 },
+      { code: 'movies', label: 'Movies & TV', sortOrder: 10 },
+      { code: 'outdoors', label: 'Outdoors & Nature', sortOrder: 11 },
+      { code: 'business', label: 'Business & Entrepreneurship', sortOrder: 12 },
+      { code: 'health', label: 'Health & Wellness', sortOrder: 13 },
+      { code: 'education', label: 'Education & Learning', sortOrder: 14 },
+      { code: 'other', label: 'Other', sortOrder: 15 }
+    ]);
+    console.log('  ✓ Seeded interest categories');
   }
 
   /**

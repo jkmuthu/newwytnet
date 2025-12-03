@@ -2112,6 +2112,73 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
+  // Profile photo upload for authenticated users
+  const profilePhotoUpload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed'));
+      }
+    }
+  });
+
+  app.post('/api/upload/profile-photo', profilePhotoUpload.single('photo'), async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file provided' });
+      }
+
+      const userId = principal.id;
+      const extension = req.file.originalname.split('.').pop() || 'jpg';
+      const fileName = `profile-photos/${userId}-${Date.now()}.${extension}`;
+
+      // Upload to object storage
+      await objectStorageClient.uploadFile(
+        req.file.buffer,
+        fileName,
+        {
+          contentType: req.file.mimetype,
+          isPublic: true,
+        }
+      );
+
+      const url = await objectStorageClient.getPublicUrl(fileName);
+
+      // Update user profile with new photo URL
+      const existingProfile = await db.select()
+        .from(userProfiles)
+        .where(eq(userProfiles.userId, userId))
+        .limit(1);
+
+      if (existingProfile.length > 0) {
+        await db.update(userProfiles)
+          .set({ profilePhoto: url })
+          .where(eq(userProfiles.userId, userId));
+      } else {
+        await db.insert(userProfiles).values({
+          userId,
+          profilePhoto: url,
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        url,
+      });
+    } catch (error: any) {
+      console.error('Profile photo upload error:', error);
+      res.status(500).json({ error: 'Upload failed' });
+    }
+  });
+
   // Admin Pages CRUD - For Engine Admin Panel
   app.get('/api/admin/pages', async (req, res) => {
     try {
