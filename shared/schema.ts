@@ -107,6 +107,7 @@ export const userProfiles = pgTable("user_profiles", {
   username: varchar("username", { length: 50 }).unique(),
   
   // Personal Information (Personal Tab)
+  fullName: varchar("full_name", { length: 255 }),
   profilePhoto: varchar("profile_photo", { length: 500 }),
   nickName: varchar("nick_name", { length: 100 }),
   bio: text("bio"),

@@ -12817,7 +12817,7 @@ When suggesting improvements, format your response with suggestions in a structu
   // ACCOUNT MANAGEMENT ROUTES
   // ========================================
 
-  // Update user profile (name, email, profileImageUrl)
+  // Update user profile (comprehensive update for My Profile page)
   app.patch('/api/account/profile', async (req: any, res) => {
     try {
       const principal = await getPrincipal(req);
@@ -12825,20 +12825,63 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
-      const { name, email, profileImageUrl } = req.body;
+      const { 
+        name, email, profileImageUrl,
+        fullName, profilePhoto, nickName, bio, mobileNumber, gender, dateOfBirth, 
+        maritalStatus, motherTongue, location, languagesKnown, privacySettings
+      } = req.body;
 
-      // Update user in database
-      const [updatedUser] = await db
-        .update(users)
-        .set({
-          name: name || null,
-          email: email || null,
-          profileImageUrl: profileImageUrl || null,
-        })
-        .where(eq(users.id, principal.id))
-        .returning();
+      // Update basic user info in users table
+      if (name !== undefined || email !== undefined || profileImageUrl !== undefined) {
+        await db
+          .update(users)
+          .set({
+            ...(name !== undefined && { name: name || null }),
+            ...(email !== undefined && { email: email || null }),
+            ...(profileImageUrl !== undefined && { profileImageUrl: profileImageUrl || null }),
+          })
+          .where(eq(users.id, principal.id));
+      }
 
-      res.json({ success: true, user: updatedUser });
+      // Check if user has a profile in userProfiles table
+      const [existingProfile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, principal.id));
+
+      // Build profile update data
+      const profileData: any = {};
+      if (fullName !== undefined) profileData.fullName = fullName || null;
+      if (profilePhoto !== undefined) profileData.profilePhoto = profilePhoto || null;
+      if (nickName !== undefined) profileData.nickName = nickName || null;
+      if (bio !== undefined) profileData.bio = bio || null;
+      if (mobileNumber !== undefined) profileData.mobileNumber = mobileNumber || null;
+      if (gender !== undefined) profileData.gender = gender || null;
+      if (dateOfBirth !== undefined) profileData.dateOfBirth = dateOfBirth ? new Date(dateOfBirth) : null;
+      if (maritalStatus !== undefined) profileData.maritalStatus = maritalStatus || null;
+      if (motherTongue !== undefined) profileData.motherTongue = motherTongue || null;
+      if (location !== undefined) profileData.location = location || null;
+      if (languagesKnown !== undefined) profileData.languagesKnown = languagesKnown || [];
+      if (privacySettings !== undefined) profileData.privacySettings = privacySettings || {};
+
+      if (Object.keys(profileData).length > 0) {
+        if (existingProfile) {
+          // Update existing profile
+          await db
+            .update(userProfiles)
+            .set({ ...profileData, updatedAt: new Date() })
+            .where(eq(userProfiles.userId, principal.id));
+        } else {
+          // Create new profile
+          await db.insert(userProfiles).values({
+            userId: principal.id,
+            ...profileData,
+          });
+        }
+      }
+
+      // Fetch updated data
+      const [updatedUser] = await db.select().from(users).where(eq(users.id, principal.id));
+      const [updatedProfile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, principal.id));
+
+      res.json({ success: true, user: updatedUser, profile: updatedProfile });
     } catch (error: any) {
       console.error('Error updating profile:', error);
       res.status(500).json({ error: error.message || 'Failed to update profile' });
@@ -12882,7 +12925,7 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Get account profile (includes username from userProfiles)
+  // Get account profile (includes all profile data from userProfiles)
   app.get('/api/account/profile', async (req: any, res) => {
     try {
       const principal = await getPrincipal(req);
@@ -12897,10 +12940,8 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.status(404).json({ error: 'User not found' });
       }
 
-      // Get username from userProfiles
-      const [profile] = await db.select({
-        username: userProfiles.username,
-      }).from(userProfiles).where(eq(userProfiles.userId, principal.id));
+      // Get full profile from userProfiles
+      const [profile] = await db.select().from(userProfiles).where(eq(userProfiles.userId, principal.id));
 
       res.json({
         id: user.id,
@@ -12908,6 +12949,19 @@ When suggesting improvements, format your response with suggestions in a structu
         name: user.name,
         email: user.email,
         profileImageUrl: user.profileImageUrl,
+        // Profile data from userProfiles table
+        fullName: profile?.fullName || null,
+        profilePhoto: profile?.profilePhoto || null,
+        nickName: profile?.nickName || null,
+        bio: profile?.bio || null,
+        mobileNumber: profile?.mobileNumber || null,
+        gender: profile?.gender || null,
+        dateOfBirth: profile?.dateOfBirth ? profile.dateOfBirth.toISOString().split('T')[0] : null,
+        maritalStatus: profile?.maritalStatus || null,
+        motherTongue: profile?.motherTongue || 'Tamil',
+        location: profile?.location || null,
+        languagesKnown: profile?.languagesKnown || [],
+        privacySettings: profile?.privacySettings || {},
       });
     } catch (error: any) {
       console.error('Error fetching profile:', error);
