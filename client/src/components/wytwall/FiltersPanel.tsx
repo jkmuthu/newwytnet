@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Briefcase, Home, Package, Wrench, Grid, MapPin, ChevronDown, X } from "lucide-react";
+import { Briefcase, Home, Package, Wrench, Grid, MapPin, ChevronDown, X, Loader2, ShoppingBag, Car, Laptop, GraduationCap, Heart, Utensils, Building } from "lucide-react";
 import {
   Command,
   CommandEmpty,
@@ -29,14 +29,39 @@ interface FiltersPanelProps {
   locationCounts?: Record<string, number>;
 }
 
-const CATEGORIES = [
-  { id: "all", label: "All Offers", icon: Grid },
-  { id: "jobs", label: "Jobs", icon: Briefcase },
-  { id: "real_estate", label: "Real Estate", icon: Home },
-  { id: "b2b_supply", label: "B2B Supply", icon: Package },
-  { id: "service", label: "Services", icon: Wrench },
-  { id: "other", label: "Other", icon: Grid },
-];
+const CATEGORY_ICONS: Record<string, any> = {
+  jobs: Briefcase,
+  real_estate: Home,
+  selling_property: Home,
+  b2b_supply: Package,
+  service: Wrench,
+  require_service: Wrench,
+  require_product: ShoppingBag,
+  automotive: Car,
+  technology: Laptop,
+  education: GraduationCap,
+  healthcare: Heart,
+  food: Utensils,
+  business: Building,
+  other: Grid,
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  jobs: "Jobs",
+  real_estate: "Real Estate",
+  selling_property: "Selling Property",
+  b2b_supply: "B2B Supply",
+  service: "Services",
+  require_service: "Services Needed",
+  require_product: "Products Needed",
+  automotive: "Automotive",
+  technology: "Technology",
+  education: "Education",
+  healthcare: "Healthcare",
+  food: "Food & Dining",
+  business: "Business",
+  other: "Other",
+};
 
 export default function FiltersPanel({ 
   selectedCategory, 
@@ -47,25 +72,31 @@ export default function FiltersPanel({
   locationCounts = {}
 }: FiltersPanelProps) {
   const [categoriesOpen, setCategoriesOpen] = useState(true);
-  const [locationOpen, setLocationOpen] = useState(false);
   const [locationSearch, setLocationSearch] = useState("");
   const [showCityDropdown, setShowCityDropdown] = useState(false);
 
-  // Fetch India cities from WytData module
-  const { data: citiesData, isLoading: citiesLoading } = useQuery<any>({
-    queryKey: ['/api/modules/wytdata/india-cities'],
-    staleTime: 1000 * 60 * 60, // 1 hour
+  // Fetch locations with post counts from API
+  const { data: locationsData, isLoading: locationsLoading } = useQuery<any>({
+    queryKey: ['/api/wytwall/filters/locations'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const cities = citiesData?.items || [];
+  // Fetch categories with post counts from API
+  const { data: categoriesData, isLoading: categoriesLoading } = useQuery<any>({
+    queryKey: ['/api/wytwall/filters/categories'],
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
-  // Filter cities based on search
-  const filteredCities = cities.filter((city: any) => {
-    const cityName = city.label || city.name || '';
-    const cityState = city.metadata?.state || city.state || '';
-    return cityName.toLowerCase().includes(locationSearch.toLowerCase()) ||
-      cityState.toLowerCase().includes(locationSearch.toLowerCase());
-  }).slice(0, 10);
+  const locations = locationsData?.locations || [];
+  const dynamicCategories = categoriesData?.categories || [];
+
+  // Filter locations based on search
+  const filteredLocations = locations.filter((loc: any) => 
+    loc.name?.toLowerCase().includes(locationSearch.toLowerCase())
+  );
+
+  // Calculate total posts for "All" option
+  const totalPosts = dynamicCategories.reduce((sum: number, cat: any) => sum + cat.count, 0);
 
   const handleCitySelect = (cityName: string) => {
     onLocationChange?.(cityName);
@@ -81,7 +112,7 @@ export default function FiltersPanel({
     <>
       <CardContent className="pt-6 space-y-4">
         
-        {/* Location Filter - Now at top */}
+        {/* Location Filter - Dynamic locations with posts only */}
         <div className="space-y-2">
           {selectedLocation ? (
             <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
@@ -117,51 +148,42 @@ export default function FiltersPanel({
               <PopoverContent className="w-[280px] p-0" align="start">
                 <Command>
                   <CommandInput 
-                    placeholder="Search cities..." 
+                    placeholder="Search locations..." 
                     value={locationSearch}
                     onValueChange={setLocationSearch}
                     data-testid="input-location-search"
                   />
                   <CommandList>
-                    <CommandEmpty>
-                      {citiesLoading ? "Loading cities..." : "No city found."}
-                    </CommandEmpty>
-                    <CommandGroup>
-                      {/* Nearby option first */}
-                      <CommandItem
-                        value="nearby"
-                        onSelect={() => handleCitySelect("Nearby")}
-                        data-testid="location-option-nearby"
-                      >
-                        <MapPin className="mr-2 h-4 w-4 text-blue-600" />
-                        <span className="font-medium">Nearby</span>
-                        <span className="ml-auto text-xs text-gray-500">
-                          Use my location
-                        </span>
-                      </CommandItem>
-                      
-                      {/* City options */}
-                      {filteredCities.map((city: any) => {
-                        const cityName = city.label || city.name;
-                        const postCount = locationCounts[cityName] || 0;
-                        return (
+                    {locationsLoading ? (
+                      <div className="p-4 flex items-center justify-center">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <span className="text-sm text-gray-500">Loading locations...</span>
+                      </div>
+                    ) : filteredLocations.length === 0 ? (
+                      <CommandEmpty>
+                        {locationSearch ? "No matching locations found." : "No locations with posts yet."}
+                      </CommandEmpty>
+                    ) : (
+                      <CommandGroup heading="Locations with posts">
+                        {filteredLocations.map((location: any) => (
                           <CommandItem
-                            key={city.code || cityName}
-                            value={cityName}
-                            onSelect={() => handleCitySelect(cityName)}
-                            data-testid={`location-option-${cityName.toLowerCase().replace(/\s+/g, '-')}`}
+                            key={location.name}
+                            value={location.name}
+                            onSelect={() => handleCitySelect(location.name)}
+                            data-testid={`location-option-${location.name.toLowerCase().replace(/\s+/g, '-')}`}
+                            className="flex items-center justify-between"
                           >
-                            <MapPin className="mr-2 h-4 w-4" />
-                            <span>{cityName}</span>
-                            {postCount > 0 && (
-                              <span className="ml-auto text-xs font-medium text-blue-600 dark:text-blue-400">
-                                {postCount} {postCount === 1 ? 'post' : 'posts'}
-                              </span>
-                            )}
+                            <div className="flex items-center">
+                              <MapPin className="mr-2 h-4 w-4 text-gray-400" />
+                              <span>{location.name}</span>
+                            </div>
+                            <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                              {location.count}
+                            </Badge>
                           </CommandItem>
-                        );
-                      })}
-                    </CommandGroup>
+                        ))}
+                      </CommandGroup>
+                    )}
                   </CommandList>
                 </Command>
               </PopoverContent>
@@ -171,7 +193,7 @@ export default function FiltersPanel({
 
         <Separator className="dark:bg-gray-700" />
 
-        {/* Category Filters - Collapsible */}
+        {/* Category Filters - Dynamic from API */}
         <Collapsible open={categoriesOpen} onOpenChange={setCategoriesOpen}>
           <CollapsibleTrigger className="flex items-center justify-between w-full group">
             <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -180,37 +202,84 @@ export default function FiltersPanel({
             <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${categoriesOpen ? 'rotate-180' : ''}`} />
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-3">
-            <div className="space-y-2">
-              {CATEGORIES.map((category) => {
-                const Icon = category.icon;
-                const count = categoryCounts[category.id] || 0;
-                const isSelected = selectedCategory === category.id;
-                
-                return (
+            <div className="space-y-1">
+              {categoriesLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <span className="text-sm text-gray-500">Loading categories...</span>
+                </div>
+              ) : (
+                <>
+                  {/* All Categories Option */}
                   <Button
-                    key={category.id}
-                    variant={isSelected ? "default" : "ghost"}
-                    className={`w-full justify-start text-left ${
-                      isSelected 
+                    variant={selectedCategory === "all" ? "default" : "ghost"}
+                    className={`w-full justify-start text-left h-9 ${
+                      selectedCategory === "all"
                         ? "bg-blue-600 text-white hover:bg-blue-700" 
                         : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                     }`}
-                    onClick={() => onCategoryChange(category.id)}
-                    data-testid={`filter-category-${category.id}`}
+                    onClick={() => onCategoryChange("all")}
+                    data-testid="filter-category-all"
                   >
-                    <Icon className="h-4 w-4 mr-2" />
-                    <span className="flex-1">{category.label}</span>
-                    {count > 0 && (
-                      <Badge 
-                        variant={isSelected ? "secondary" : "outline"}
-                        className={`ml-2 ${isSelected ? "bg-blue-500 text-white border-blue-400" : ""}`}
-                      >
-                        {count}
-                      </Badge>
-                    )}
+                    <Grid className="h-4 w-4 mr-2" />
+                    <span className="flex-1">All Posts</span>
+                    <Badge 
+                      variant={selectedCategory === "all" ? "secondary" : "outline"}
+                      className={`ml-2 text-xs ${selectedCategory === "all" ? "bg-blue-500 text-white border-blue-400" : ""}`}
+                    >
+                      {totalPosts}
+                    </Badge>
                   </Button>
-                );
-              })}
+
+                  {/* Dynamic Categories - Only show categories that have posts */}
+                  {dynamicCategories.map((category: any) => {
+                    const Icon = CATEGORY_ICONS[category.name] || Grid;
+                    const label = CATEGORY_LABELS[category.name] || category.name.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+                    const isSelected = selectedCategory === category.name;
+                    
+                    return (
+                      <Button
+                        key={category.name}
+                        variant={isSelected ? "default" : "ghost"}
+                        className={`w-full justify-start text-left h-9 ${
+                          isSelected 
+                            ? "bg-blue-600 text-white hover:bg-blue-700" 
+                            : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        }`}
+                        onClick={() => onCategoryChange(category.name)}
+                        data-testid={`filter-category-${category.name}`}
+                      >
+                        <Icon className="h-4 w-4 mr-2" />
+                        <span className="flex-1 truncate">{label}</span>
+                        <div className="flex items-center gap-1 ml-2">
+                          {category.needs > 0 && (
+                            <Badge 
+                              variant="outline"
+                              className={`text-[10px] px-1.5 ${isSelected ? "bg-orange-500/20 text-orange-100 border-orange-400" : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-orange-200"}`}
+                            >
+                              {category.needs} N
+                            </Badge>
+                          )}
+                          {category.offers > 0 && (
+                            <Badge 
+                              variant="outline"
+                              className={`text-[10px] px-1.5 ${isSelected ? "bg-green-500/20 text-green-100 border-green-400" : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 border-green-200"}`}
+                            >
+                              {category.offers} O
+                            </Badge>
+                          )}
+                        </div>
+                      </Button>
+                    );
+                  })}
+                  
+                  {dynamicCategories.length === 0 && (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      No categories with posts yet.
+                    </p>
+                  )}
+                </>
+              )}
             </div>
           </CollapsibleContent>
         </Collapsible>
