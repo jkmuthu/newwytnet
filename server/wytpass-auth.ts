@@ -88,13 +88,16 @@ export function setupWytPassAuth(app: Express) {
     if (req.user && req.session) {
       const user = req.user as any;
       
+      // Determine super admin status - check flag or email
+      const isSuperAdmin = user.isSuperAdmin === true || user.email === 'jkm@jkmuthu.com';
+      
       // Populate wytpassPrincipal with all necessary flags for panel detection
       (req.session as any).wytpassPrincipal = {
         id: user.id,
         name: user.name,
         email: user.email,
         role: user.role,
-        isSuperAdmin: user.isSuperAdmin || false,
+        isSuperAdmin: isSuperAdmin,
         isHubAdmin: user._hasHubAdminRole || false,
         loginType: user.socialProviders?.[0] || 'password',
         profileImageUrl: user.profileImageUrl,
@@ -108,7 +111,7 @@ export function setupWytPassAuth(app: Express) {
       panels.push('wytnet');
       
       // Super Admins get Engine Admin panel
-      if (user.isSuperAdmin) {
+      if (isSuperAdmin) {
         panels.push('engine_admin');
       }
       
@@ -207,12 +210,20 @@ export function setupWytPassAuth(app: Express) {
                 authMethods.push("google");
               }
 
+              // Get name from Google profile if user's name is missing
+              const googleName = profile.displayName || 
+                (profile.name?.givenName && profile.name?.familyName 
+                  ? `${profile.name.givenName} ${profile.name.familyName}` 
+                  : null);
+
               const [updatedUser] = await db
                 .update(users)
                 .set({
                   socialIds,
                   socialProviders,
                   authMethods,
+                  // Update name from Google if it's missing in database
+                  name: existingUser.name || googleName || existingUser.name,
                   profileImageUrl: profile.photos?.[0]?.value || existingUser.profileImageUrl,
                   lastLoginAt: new Date(),
                   updatedAt: new Date(),
