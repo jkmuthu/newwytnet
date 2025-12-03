@@ -2154,19 +2154,19 @@ export async function registerRoutes(app: Express): Promise<void> {
 
       const userId = principal.id;
       const extension = req.file.originalname.split('.').pop() || 'jpg';
-      const fileName = `profile-photos/${userId}-${Date.now()}.${extension}`;
+      const uniqueFileName = `${userId}-${Date.now()}.${extension}`;
 
-      // Get the public object search paths for upload
-      const publicPaths = process.env.PUBLIC_OBJECT_SEARCH_PATHS?.split(',')[0]?.trim();
-      if (!publicPaths) {
+      // Get the private object directory for upload
+      const privateDir = process.env.PRIVATE_OBJECT_DIR?.trim();
+      if (!privateDir) {
         return res.status(500).json({ error: 'Object storage not configured' });
       }
 
       // Parse bucket name from path (format: /bucket-name/path)
-      const pathParts = publicPaths.split('/').filter(Boolean);
+      const pathParts = privateDir.split('/').filter(Boolean);
       const bucketName = pathParts[0];
       const basePath = pathParts.slice(1).join('/');
-      const fullObjectName = basePath ? `${basePath}/${fileName}` : fileName;
+      const fullObjectName = basePath ? `${basePath}/profile-photos/${uniqueFileName}` : `profile-photos/${uniqueFileName}`;
 
       // Upload to GCS bucket
       const bucket = objectStorageClient.bucket(bucketName);
@@ -2178,11 +2178,8 @@ export async function registerRoutes(app: Express): Promise<void> {
         },
       });
 
-      // Make the file publicly accessible
-      await file.makePublic();
-
-      // Get the public URL
-      const url = `https://storage.googleapis.com/${bucketName}/${fullObjectName}`;
+      // Store the internal path and serve via our API (since bucket has public access prevention)
+      const url = `/api/profile-photo/${encodeURIComponent(uniqueFileName)}`;
 
       // Update user profile with new photo URL
       const existingProfile = await db.select()
@@ -2208,6 +2205,41 @@ export async function registerRoutes(app: Express): Promise<void> {
     } catch (error: any) {
       console.error('Profile photo upload error:', error);
       res.status(500).json({ error: 'Upload failed' });
+    }
+  });
+
+  // Serve profile photos from object storage
+  app.get('/api/profile-photo/:fileName', async (req, res) => {
+    try {
+      const { fileName } = req.params;
+      const privateDir = process.env.PRIVATE_OBJECT_DIR?.trim();
+      if (!privateDir) {
+        return res.status(500).json({ error: 'Object storage not configured' });
+      }
+
+      const pathParts = privateDir.split('/').filter(Boolean);
+      const bucketName = pathParts[0];
+      const basePath = pathParts.slice(1).join('/');
+      const fullObjectName = basePath ? `${basePath}/profile-photos/${fileName}` : `profile-photos/${fileName}`;
+
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(fullObjectName);
+
+      const [exists] = await file.exists();
+      if (!exists) {
+        return res.status(404).json({ error: 'Photo not found' });
+      }
+
+      const [metadata] = await file.getMetadata();
+      res.set({
+        'Content-Type': metadata.contentType || 'image/jpeg',
+        'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
+      });
+
+      file.createReadStream().pipe(res);
+    } catch (error: any) {
+      console.error('Profile photo serve error:', error);
+      res.status(500).json({ error: 'Failed to serve photo' });
     }
   });
 
