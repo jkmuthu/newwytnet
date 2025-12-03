@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Filter, Search, Sparkles, TrendingUp, Zap, Package, ChevronLeft, ChevronRight, MessageSquare, Send, Users } from "lucide-react";
+import { Plus, Filter, Search, Sparkles, TrendingUp, Zap, Package, ChevronLeft, ChevronRight, MessageSquare, Send, Users, Briefcase, Home, ShoppingBag, Wrench, LayoutGrid } from "lucide-react";
 import WytWallLayout from "@/components/wytwall/WytWallLayout";
 import FiltersPanel from "@/components/wytwall/FiltersPanel";
 import NeedCard from "@/components/wytwall/NeedCard";
@@ -276,6 +276,40 @@ function ResponseThread({ offer }: { offer: any }) {
     </div>
   );
 }
+
+// Category filter groups with icons and display names
+const CATEGORY_FILTERS = [
+  { 
+    id: 'all', 
+    label: 'All', 
+    icon: LayoutGrid,
+    categories: [] // Empty means all categories
+  },
+  { 
+    id: 'jobs', 
+    label: 'Jobs', 
+    icon: Briefcase,
+    categories: ['need_job', 'job_offer', 'jobs']
+  },
+  { 
+    id: 'real_estate', 
+    label: 'Property', 
+    icon: Home,
+    categories: ['house_for_rent', 'renting_house', 'selling_property', 'real_estate']
+  },
+  { 
+    id: 'b2b_supply', 
+    label: 'B2B', 
+    icon: ShoppingBag,
+    categories: ['bulk_supply', 'product_for_use', 'b2b_supply']
+  },
+  { 
+    id: 'service', 
+    label: 'Services', 
+    icon: Wrench,
+    categories: ['require_service', 'providing_service', 'service']
+  },
+];
 
 export default function WytWall() {
   const { user } = useAuthContext();
@@ -621,24 +655,53 @@ export default function WytWall() {
         </CardContent>
       </Card>
 
-      {/* Category Pills for Mobile */}
-      <div className="lg:hidden flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {['all', 'jobs', 'real_estate', 'b2b_supply', 'service'].map((cat) => (
-          <Button
-            key={cat}
-            variant={selectedCategory === cat ? "default" : "outline"}
-            size="sm"
-            onClick={() => handleCategoryChange(cat)}
-            className={`whitespace-nowrap rounded-full px-5 py-2 font-bold transition-all ${
-              selectedCategory === cat
-                ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-xl border-0 scale-105"
-                : "bg-white/60 dark:bg-gray-800/60 backdrop-blur-xl border-0 text-gray-700 dark:text-gray-300 hover:scale-105"
-            }`}
-            data-testid={`mobile-category-${cat}`}
-          >
-            {cat === 'all' ? 'All' : cat.replace('_', ' ')}
-          </Button>
-        ))}
+      {/* Category Pills for Mobile/Tablet - Improved UI */}
+      <div className="lg:hidden relative">
+        {/* Fade edges for scroll indication */}
+        <div className="absolute left-0 top-0 bottom-2 w-4 bg-gradient-to-r from-gray-50 dark:from-gray-900 to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-2 w-4 bg-gradient-to-l from-gray-50 dark:from-gray-900 to-transparent z-10 pointer-events-none" />
+        
+        <div className="flex gap-2 overflow-x-auto pb-2 px-1 scrollbar-hide snap-x snap-mandatory">
+          {CATEGORY_FILTERS.map((filter) => {
+            const Icon = filter.icon;
+            const isSelected = selectedCategory === filter.id;
+            
+            // Calculate count for this filter group
+            const filterCount = filter.id === 'all' 
+              ? Object.values(counts).reduce((a: number, b: number) => a + b, 0)
+              : filter.categories.reduce((sum: number, cat: string) => sum + (counts[cat] || 0), 0);
+            
+            return (
+              <Button
+                key={filter.id}
+                variant={isSelected ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleCategoryChange(filter.id)}
+                className={`whitespace-nowrap rounded-full px-4 py-2 font-semibold transition-all snap-start flex items-center gap-2 ${
+                  isSelected
+                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg border-0 scale-105"
+                    : "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:scale-102"
+                }`}
+                data-testid={`mobile-category-${filter.id}`}
+              >
+                <Icon className={`h-4 w-4 ${isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`} />
+                <span>{filter.label}</span>
+                {filterCount > 0 && (
+                  <Badge 
+                    variant="secondary" 
+                    className={`ml-1 h-5 min-w-[20px] px-1.5 text-xs font-bold rounded-full ${
+                      isSelected 
+                        ? 'bg-white/20 text-white border-0' 
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                    }`}
+                  >
+                    {filterCount}
+                  </Badge>
+                )}
+              </Button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Needs Stream */}
@@ -665,7 +728,7 @@ export default function WytWall() {
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-lg mx-auto mb-8">
               {selectedCategory === 'all' 
                 ? "Be the first to post on WytWall and connect with the community!" 
-                : `No posts in the ${selectedCategory.replace('_', ' ')} category yet. Be the pioneer!`}
+                : `No posts in the ${CATEGORY_FILTERS.find(f => f.id === selectedCategory)?.label || selectedCategory} category yet. Be the pioneer!`}
             </p>
             {user && (
               <Button
