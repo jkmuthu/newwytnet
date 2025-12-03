@@ -251,24 +251,12 @@ export default function FiltersPanel({
                       >
                         <Icon className="h-4 w-4 mr-2" />
                         <span className="flex-1 truncate">{label}</span>
-                        <div className="flex items-center gap-1 ml-2">
-                          {category.needs > 0 && (
-                            <Badge 
-                              variant="outline"
-                              className={`text-[10px] px-1.5 ${isSelected ? "bg-orange-500/20 text-orange-100 border-orange-400" : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300 border-orange-200"}`}
-                            >
-                              {category.needs} N
-                            </Badge>
-                          )}
-                          {category.offers > 0 && (
-                            <Badge 
-                              variant="outline"
-                              className={`text-[10px] px-1.5 ${isSelected ? "bg-green-500/20 text-green-100 border-green-400" : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 border-green-200"}`}
-                            >
-                              {category.offers} O
-                            </Badge>
-                          )}
-                        </div>
+                        <Badge 
+                          variant={isSelected ? "secondary" : "outline"}
+                          className={`ml-2 text-xs ${isSelected ? "bg-blue-500 text-white border-blue-400" : ""}`}
+                        >
+                          {category.count}
+                        </Badge>
                       </Button>
                     );
                   })}
