@@ -13073,6 +13073,59 @@ When suggesting improvements, format your response with suggestions in a structu
   // MAPPLS LOCATION API
   // ========================================
   
+  // Mappls OAuth token cache
+  let mapplsToken: { token: string; expiresAt: number } | null = null;
+  
+  async function getMapplsToken(): Promise<string | null> {
+    const MAPPLS_API_KEY = process.env.MAPPLS_API_KEY;
+    if (!MAPPLS_API_KEY) return null;
+    
+    // Check if we have a valid cached token
+    if (mapplsToken && mapplsToken.expiresAt > Date.now()) {
+      return mapplsToken.token;
+    }
+    
+    try {
+      // The MAPPLS_API_KEY format can be "client_id,client_secret" or just an API key
+      let clientId = MAPPLS_API_KEY;
+      let clientSecret = MAPPLS_API_KEY;
+      
+      if (MAPPLS_API_KEY.includes(',')) {
+        const parts = MAPPLS_API_KEY.split(',');
+        clientId = parts[0].trim();
+        clientSecret = parts[1]?.trim() || '';
+      }
+      
+      // Get OAuth token from Mappls
+      const tokenResponse = await fetch('https://outpost.mappls.com/api/security/oauth/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
+        },
+        body: `grant_type=client_credentials&client_id=${encodeURIComponent(clientId)}&client_secret=${encodeURIComponent(clientSecret)}`,
+      });
+      
+      if (tokenResponse.ok) {
+        const tokenData = await tokenResponse.json();
+        if (tokenData.access_token) {
+          // Cache token with 23 hour expiry (tokens last 24 hours)
+          mapplsToken = {
+            token: tokenData.access_token,
+            expiresAt: Date.now() + (23 * 60 * 60 * 1000),
+          };
+          return tokenData.access_token;
+        }
+      }
+      
+      console.error('Failed to get Mappls token:', await tokenResponse.text());
+      return null;
+    } catch (error) {
+      console.error('Mappls token error:', error);
+      return null;
+    }
+  }
+  
   // Mappls location search API
   app.get('/api/mappls/search', async (req, res) => {
     try {
@@ -13082,39 +13135,60 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.status(400).json({ error: 'Query parameter q is required' });
       }
       
-      const MAPPLS_API_KEY = process.env.MAPPLS_API_KEY;
-      if (!MAPPLS_API_KEY) {
-        // Return mock data if API key not configured
+      const token = await getMapplsToken();
+      
+      if (!token) {
+        // Return mock data with common Indian cities if no API configured
+        const searchLower = q.toLowerCase();
+        const mockCities = [
+          { name: 'Chennai', state: 'Tamil Nadu' },
+          { name: 'Coimbatore', state: 'Tamil Nadu' },
+          { name: 'Madurai', state: 'Tamil Nadu' },
+          { name: 'Bangalore', state: 'Karnataka' },
+          { name: 'Hyderabad', state: 'Telangana' },
+          { name: 'Mumbai', state: 'Maharashtra' },
+          { name: 'Delhi', state: 'Delhi' },
+          { name: 'Kolkata', state: 'West Bengal' },
+          { name: 'Pune', state: 'Maharashtra' },
+          { name: 'Ahmedabad', state: 'Gujarat' },
+        ];
+        
+        const matching = mockCities.filter(c => 
+          c.name.toLowerCase().includes(searchLower) || 
+          c.state.toLowerCase().includes(searchLower)
+        );
+        
+        const suggestions = matching.length > 0 ? matching : [{ name: q, state: 'India' }];
+        
         return res.json({
-          suggestedLocations: [
-            {
-              eLoc: 'mock_1',
-              placeName: q,
-              placeAddress: `${q}, India`,
-              type: 'CITY',
-            }
-          ]
+          suggestedLocations: suggestions.map((city, i) => ({
+            eLoc: `mock_${i}`,
+            placeName: city.name,
+            placeAddress: `${city.name}, ${city.state}, India`,
+            type: 'CITY',
+          }))
         });
       }
       
-      // Call Mappls Atlas API for place search
+      // Call Mappls Atlas autosuggest API
       const response = await fetch(
-        `https://atlas.mappls.com/api/places/search/json?query=${encodeURIComponent(q)}&region=IND`,
+        `https://atlas.mappls.com/api/places/search/json?query=${encodeURIComponent(q)}&region=IND&pod=CITY`,
         {
           headers: {
-            'Authorization': `Bearer ${MAPPLS_API_KEY}`,
+            'Authorization': `Bearer ${token}`,
           },
         }
       );
       
       if (!response.ok) {
+        console.error('Mappls search error:', response.status, await response.text());
         // Fallback: return the search query as a suggestion
         return res.json({
           suggestedLocations: [
             {
               eLoc: 'fallback_1',
               placeName: q,
-              placeAddress: q,
+              placeAddress: `${q}, India`,
               type: 'CUSTOM',
             }
           ]
