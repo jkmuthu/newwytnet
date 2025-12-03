@@ -47,6 +47,14 @@ interface ContextsResponse {
   count: number;
 }
 
+interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  profilePhoto?: string | null;
+  profileImageUrl?: string | null;
+}
+
 /**
  * UniversalAuthHeader - Unified header component for all panels
  * Returns left-side elements and right-side elements separately for flexible layout
@@ -126,6 +134,16 @@ export function HeaderRightSection() {
     gcTime: 10 * 60 * 1000,
   });
 
+  // Fetch user profile to get profile photo
+  const { data: userProfile } = useQuery<UserProfile>({
+    queryKey: ["/api/account/profile"],
+    retry: false,
+    refetchOnWindowFocus: true,
+    staleTime: 60 * 1000, // 1 minute - refresh more often for profile changes
+    gcTime: 5 * 60 * 1000,
+    enabled: (contextsData?.contexts?.length ?? 0) > 0, // Only fetch if authenticated
+  });
+
   const contexts = contextsData?.contexts || [];
   const hasAuth = contexts.length > 0;
   
@@ -135,6 +153,9 @@ export function HeaderRightSection() {
   
   const activeContext = contexts.find(c => c.active);
   const userInfo = activeContext?.user || userContext?.user || contexts[0]?.user;
+  
+  // Get profile photo URL from userProfile
+  const profilePhotoUrl = userProfile?.profilePhoto || userProfile?.profileImageUrl;
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
@@ -253,6 +274,7 @@ export function HeaderRightSection() {
               data-testid="button-mobile-menu"
             >
               <Avatar className="h-8 w-8">
+                {profilePhotoUrl && <AvatarImage src={profilePhotoUrl} alt={userInfo?.name || 'User'} />}
                 <AvatarFallback className="text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold">
                   {getUserInitials(userInfo?.name)}
                 </AvatarFallback>
@@ -265,6 +287,7 @@ export function HeaderRightSection() {
               <div className="p-4 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12 border-2 border-white/30">
+                    {profilePhotoUrl && <AvatarImage src={profilePhotoUrl} alt={userInfo?.name || 'User'} />}
                     <AvatarFallback className="bg-white/20 text-white font-semibold">
                       {getUserInitials(userInfo?.name)}
                     </AvatarFallback>
@@ -344,6 +367,7 @@ export function HeaderRightSection() {
             data-testid="button-user-menu"
           >
             <Avatar className="h-8 w-8">
+              {profilePhotoUrl && <AvatarImage src={profilePhotoUrl} alt={userInfo?.name || 'User'} />}
               <AvatarFallback className="text-sm bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold">
                 {getUserInitials(userInfo?.name)}
               </AvatarFallback>

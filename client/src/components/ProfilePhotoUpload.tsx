@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Camera, Upload, Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 interface Point {
   x: number;
@@ -138,6 +139,9 @@ export default function ProfilePhotoUpload({ currentPhoto, onPhotoChange }: Prof
       
       // Update parent with new photo URL
       onPhotoChange(data.url);
+
+      // Invalidate profile cache so header updates immediately
+      await queryClient.invalidateQueries({ queryKey: ["/api/account/profile"] });
 
       toast({
         title: "Success",
