@@ -22,6 +22,7 @@ import {
   Building2, Calendar, MapPin, ExternalLink, Star
 } from "lucide-react";
 import ProfilePhotoUpload from "@/components/ProfilePhotoUpload";
+import MapplsLocationPicker from "@/components/MapplsLocationPicker";
 import { 
   Dialog,
   DialogContent,
@@ -44,6 +45,7 @@ import {
 
 const personalFormSchema = z.object({
   profilePhoto: z.string().optional(),
+  fullName: z.string().optional(),
   nickName: z.string().optional(),
   bio: z.string().optional(),
   mobileNumber: z.string().optional(),
@@ -51,9 +53,7 @@ const personalFormSchema = z.object({
   dateOfBirth: z.string().optional(),
   maritalStatus: z.string().optional(),
   motherTongue: z.string().optional(),
-  homeLocation: z.string().optional(),
-  livingIn: z.string().optional(),
-  country: z.string().optional(),
+  location: z.string().optional(),
   languagesKnown: z.array(z.object({
     code: z.string(),
     name: z.string(),
@@ -470,6 +470,7 @@ export default function MyProfile() {
     resolver: zodResolver(personalFormSchema),
     defaultValues: {
       profilePhoto: "",
+      fullName: "",
       nickName: "",
       bio: "",
       mobileNumber: "",
@@ -477,9 +478,7 @@ export default function MyProfile() {
       dateOfBirth: "",
       maritalStatus: "",
       motherTongue: "Tamil",
-      homeLocation: "",
-      livingIn: "",
-      country: "IN",
+      location: "",
       languagesKnown: [],
     },
   });
@@ -724,6 +723,7 @@ export default function MyProfile() {
     if (profile) {
       form.reset({
         profilePhoto: profile.profilePhoto || "",
+        fullName: (profile as any).fullName || "",
         nickName: profile.nickName || "",
         bio: profile.bio || "",
         mobileNumber: profile.mobileNumber || "",
@@ -731,9 +731,7 @@ export default function MyProfile() {
         dateOfBirth: profile.dateOfBirth || "",
         maritalStatus: profile.maritalStatus || "",
         motherTongue: profile.motherTongue || "Tamil",
-        homeLocation: profile.homeLocation || "",
-        livingIn: profile.livingIn || "",
-        country: profile.country || "IN",
+        location: (profile as any).location || "",
         languagesKnown: profile.languagesKnown || [],
       });
       setPrivacySettings(profile.privacySettings || {});
@@ -1224,6 +1222,23 @@ export default function MyProfile() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
+                      name="fullName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center justify-between">
+                            <FormLabel>Full Name</FormLabel>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => togglePrivacy('fullName')}>
+                              {privacySettings.fullName === 'private' ? <Lock className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                          <FormControl>
+                            <Input placeholder="Your full name" {...field} data-testid="input-fullname" />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
                       name="nickName"
                       render={({ field }) => (
                         <FormItem>
@@ -1239,6 +1254,9 @@ export default function MyProfile() {
                         </FormItem>
                       )}
                     />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
                       name="mobileNumber"
@@ -1253,6 +1271,31 @@ export default function MyProfile() {
                           <FormControl>
                             <Input placeholder="+91 98765 43210" {...field} data-testid="input-mobile" />
                           </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="location"
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-center justify-between">
+                            <FormLabel>Location</FormLabel>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => togglePrivacy('location')}>
+                              {privacySettings.location === 'private' ? <Lock className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                          <FormControl>
+                            <MapplsLocationPicker
+                              value={field.value || ""}
+                              onChange={field.onChange}
+                              placeholder="Search for your location..."
+                              data-testid="input-location"
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Start typing to search for cities, towns, or areas
+                          </FormDescription>
                         </FormItem>
                       )}
                     />
@@ -1338,81 +1381,31 @@ export default function MyProfile() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="country"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Country</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger data-testid="select-country">
-                                <SelectValue placeholder="Select country" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {(countriesData?.items || [{ code: 'IN', label: 'India' }]).map((item) => (
-                                <SelectItem key={item.code} value={item.code}>{item.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="motherTongue"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Mother Tongue</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger data-testid="select-mother-tongue">
-                                <SelectValue placeholder="Select language" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {(languagesData?.items || [
-                                { code: 'Tamil', label: 'Tamil' },
-                                { code: 'English', label: 'English' },
-                                { code: 'Hindi', label: 'Hindi' },
-                              ]).map((item) => (
-                                <SelectItem key={item.code} value={item.code}>{item.label}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="homeLocation"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Home Location</FormLabel>
+                  <FormField
+                    control={form.control}
+                    name="motherTongue"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mother Tongue</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
-                            <Input placeholder="Your hometown" {...field} data-testid="input-home-location" />
+                            <SelectTrigger data-testid="select-mother-tongue">
+                              <SelectValue placeholder="Select language" />
+                            </SelectTrigger>
                           </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="livingIn"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Currently Living In</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Current city" {...field} data-testid="input-living-in" />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                          <SelectContent>
+                            {(languagesData?.items || [
+                              { code: 'Tamil', label: 'Tamil' },
+                              { code: 'English', label: 'English' },
+                              { code: 'Hindi', label: 'Hindi' },
+                            ]).map((item) => (
+                              <SelectItem key={item.code} value={item.code}>{item.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
                 </CardContent>
               </Card>
 
