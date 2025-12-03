@@ -339,39 +339,39 @@ export default function MyProfile() {
   });
 
   const { data: countriesData } = useQuery<{ items: DatasetItem[] }>({
-    queryKey: ["/api/datasets/countries"],
+    queryKey: ["/api/profile-datasets/countries"],
   });
 
   const { data: languagesData } = useQuery<{ items: DatasetItem[] }>({
-    queryKey: ["/api/datasets/languages"],
+    queryKey: ["/api/profile-datasets/languages"],
   });
 
   const { data: genderData } = useQuery<{ items: DatasetItem[] }>({
-    queryKey: ["/api/datasets/gender"],
+    queryKey: ["/api/profile-datasets/gender"],
   });
 
   const { data: maritalStatusData } = useQuery<{ items: DatasetItem[] }>({
-    queryKey: ["/api/datasets/marital-status"],
+    queryKey: ["/api/profile-datasets/marital-status"],
   });
 
   const { data: degreeTypesData } = useQuery<{ items: DatasetItem[] }>({
-    queryKey: ["/api/datasets/degree-types"],
+    queryKey: ["/api/profile-datasets/degree-types"],
   });
 
   const { data: employmentTypesData } = useQuery<{ items: DatasetItem[] }>({
-    queryKey: ["/api/datasets/employment-types"],
+    queryKey: ["/api/profile-datasets/employment-types"],
   });
 
   const { data: socialPlatformsData } = useQuery<{ items: DatasetItem[] }>({
-    queryKey: ["/api/datasets/social-platforms"],
+    queryKey: ["/api/profile-datasets/social-platforms"],
   });
 
   const { data: interestCategoriesData } = useQuery<{ items: DatasetItem[] }>({
-    queryKey: ["/api/datasets/interest-categories"],
+    queryKey: ["/api/profile-datasets/interest-categories"],
   });
 
   const { data: industriesData } = useQuery<{ items: DatasetItem[] }>({
-    queryKey: ["/api/datasets/industries"],
+    queryKey: ["/api/profile-datasets/industries"],
   });
 
   const { data: wishListData, isLoading: wishLoading } = useQuery<{ items: WishListItem[] }>({

@@ -11294,6 +11294,60 @@ When suggesting improvements, format your response with suggestions in a structu
   // ========================================
 
   // ========================================
+  // PROFILE DATASETS API - For authenticated users (profile dropdowns)
+  // ========================================
+
+  const profileDatasetKeys = [
+    'gender', 'genders', 'languages', 'countries', 'marital-status',
+    'degree-types', 'employment-types', 'social-platforms', 
+    'interest-categories', 'industries', 'job-roles'
+  ];
+
+  // Get dataset items for profile dropdowns (authenticated users only)
+  app.get('/api/profile-datasets/:key', async (req: any, res) => {
+    try {
+      const principal = await getPrincipal(req);
+      if (!principal) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const { key } = req.params;
+      
+      if (!profileDatasetKeys.includes(key)) {
+        return res.status(404).json({ error: 'Dataset not available' });
+      }
+
+      const collection = await db.select()
+        .from(datasetCollections)
+        .where(and(
+          eq(datasetCollections.key, key),
+          eq(datasetCollections.scope, 'global')
+        ))
+        .limit(1);
+
+      if (collection.length === 0) {
+        return res.status(404).json({ error: 'Dataset not found' });
+      }
+
+      const items = await db.select({
+        code: datasetItems.code,
+        label: datasetItems.label,
+      })
+        .from(datasetItems)
+        .where(eq(datasetItems.collectionId, collection[0].id))
+        .orderBy(datasetItems.sortOrder, datasetItems.label);
+
+      res.json({
+        success: true,
+        items,
+      });
+    } catch (error) {
+      console.error('Error fetching profile dataset:', error);
+      res.status(500).json({ error: 'Failed to fetch dataset' });
+    }
+  });
+
+  // ========================================
   // PUBLIC DATASET API - For External Developers
   // ========================================
 
