@@ -11863,6 +11863,78 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // Get locations with post counts (only locations that have active posts)
+  app.get('/api/wytwall/filters/locations', async (req: any, res) => {
+    try {
+      const locationCounts = await db.select({
+        location: wytWallPosts.location,
+        count: sql<number>`count(*)::int`,
+      })
+        .from(wytWallPosts)
+        .where(and(
+          eq(wytWallPosts.isPublic, true),
+          eq(wytWallPosts.status, 'active'),
+          sql`${wytWallPosts.location} IS NOT NULL AND ${wytWallPosts.location} != ''`
+        ))
+        .groupBy(wytWallPosts.location)
+        .orderBy(desc(sql<number>`count(*)`));
+
+      const locations = locationCounts.map(row => ({
+        name: row.location,
+        count: row.count
+      }));
+
+      res.json({ success: true, locations });
+    } catch (error: any) {
+      console.error('Error fetching location filters:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch locations' });
+    }
+  });
+
+  // Get categories with post counts (only categories that have active posts)
+  app.get('/api/wytwall/filters/categories', async (req: any, res) => {
+    try {
+      const categoryCounts = await db.select({
+        category: wytWallPosts.category,
+        postType: wytWallPosts.postType,
+        count: sql<number>`count(*)::int`,
+      })
+        .from(wytWallPosts)
+        .where(and(
+          eq(wytWallPosts.isPublic, true),
+          eq(wytWallPosts.status, 'active')
+        ))
+        .groupBy(wytWallPosts.category, wytWallPosts.postType)
+        .orderBy(desc(sql<number>`count(*)`));
+
+      // Aggregate by category (combining needs and offers)
+      const categoryMap: Record<string, { total: number; needs: number; offers: number }> = {};
+      categoryCounts.forEach(row => {
+        if (!categoryMap[row.category]) {
+          categoryMap[row.category] = { total: 0, needs: 0, offers: 0 };
+        }
+        categoryMap[row.category].total += row.count;
+        if (row.postType === 'need') {
+          categoryMap[row.category].needs += row.count;
+        } else {
+          categoryMap[row.category].offers += row.count;
+        }
+      });
+
+      const categories = Object.entries(categoryMap).map(([name, data]) => ({
+        name,
+        count: data.total,
+        needs: data.needs,
+        offers: data.offers
+      })).sort((a, b) => b.count - a.count);
+
+      res.json({ success: true, categories });
+    } catch (error: any) {
+      console.error('Error fetching category filters:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch categories' });
+    }
+  });
+
   // Create an offer on a public WytWall post
   app.post('/api/wytwall/offers', async (req: any, res) => {
     try {
