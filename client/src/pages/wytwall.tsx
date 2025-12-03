@@ -339,30 +339,22 @@ export default function WytWall() {
   const [allResponses, setAllResponses] = useState<any[]>([]);
   const [isLoadingResponses, setIsLoadingResponses] = useState(false);
 
-  // Build query URLs with proper query string parameters
+  // Build query URLs - always fetch all posts for client-side category group filtering
   const needsUrl = user ? '/api/needs' : '/api/needs/public';
   const offersUrl = user ? '/api/offers' : '/api/offers/public';
+  const wytWallPublicUrl = '/api/wytwall/public';
   
-  const needsQueryUrl = selectedCategory !== 'all' 
-    ? `${needsUrl}?category=${selectedCategory}` 
-    : needsUrl;
-  
-  const offersQueryUrl = selectedCategory !== 'all' 
-    ? `${offersUrl}?category=${selectedCategory}` 
-    : offersUrl;
-
-  // Also fetch public wytwall posts (user-published posts)
-  const wytWallPublicUrl = selectedCategory !== 'all'
-    ? `/api/wytwall/public?category=${selectedCategory}`
-    : '/api/wytwall/public';
+  // Get the categories for the selected filter group
+  const selectedFilterGroup = CATEGORY_FILTERS.find(f => f.id === selectedCategory);
+  const filterCategories = selectedFilterGroup?.categories || [];
 
   const { data: needsData, isLoading: needsLoading } = useQuery({
-    queryKey: [needsQueryUrl],
+    queryKey: [needsUrl],
     enabled: postType === "all" || postType === "needs",
   });
 
   const { data: offersData, isLoading: offersLoading } = useQuery({
-    queryKey: [offersQueryUrl],
+    queryKey: [offersUrl],
     enabled: postType === "all" || postType === "offers",
   });
 
@@ -415,11 +407,18 @@ export default function WytWall() {
 
   let filteredPosts = allPosts;
 
+  // Apply category group filter (client-side filtering based on category groups)
+  if (selectedCategory !== 'all' && filterCategories.length > 0) {
+    filteredPosts = filteredPosts.filter((post: any) =>
+      filterCategories.includes(post.category)
+    );
+  }
+
   // Apply search filter
   if (searchQuery.trim()) {
     filteredPosts = filteredPosts.filter((post: any) =>
-      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.description.toLowerCase().includes(searchQuery.toLowerCase())
+      post.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.description?.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }
 
