@@ -459,6 +459,50 @@ export const hubs = pgTable("hubs", {
   index("idx_hubs_deleted_at").on(table.deletedAt),
 ]);
 
+// Hub Templates - Pre-built configurations for creating new hubs
+export const hubTemplates = pgTable("hub_templates", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // HT00001
+  name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  category: varchar("category", { length: 50 }).notNull().default('general'), // 'general', 'community', 'marketplace', 'directory', 'learning', 'event'
+  
+  // Template Content
+  thumbnail: varchar("thumbnail", { length: 500 }), // Preview image URL
+  previewImages: jsonb("preview_images").default([]), // Multiple preview screenshots
+  
+  // Default Configurations
+  defaultModules: jsonb("default_modules").default([]), // ['wytpass-auth', 'wytwall', 'notifications'] - Module IDs to auto-activate
+  defaultTheme: jsonb("default_theme").default({}), // { primaryColor: '#...', favicon: '...', etc. }
+  defaultSettings: jsonb("default_settings").default({}), // Hub-specific settings
+  defaultPages: jsonb("default_pages").default([]), // Pre-built pages like ['home', 'about', 'contact']
+  
+  // Feature Flags
+  features: jsonb("features").default([]), // ['user-profiles', 'posts', 'marketplace', 'events']
+  
+  // Access Control
+  isPublic: boolean("is_public").default(true), // Show in public template gallery
+  requiresWytDev: boolean("requires_wyt_dev").default(true), // Requires WytDev app to use
+  allowedPlans: jsonb("allowed_plans").default(['free', 'pro', 'enterprise']), // Which subscription plans can use
+  
+  // Metadata
+  usageCount: integer("usage_count").default(0), // How many hubs created from this template
+  rating: decimal("rating", { precision: 2, scale: 1 }).default('0.0'),
+  isActive: boolean("is_active").default(true),
+  sortOrder: integer("sort_order").default(0),
+  
+  // Audit
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_hub_templates_slug").on(table.slug),
+  index("idx_hub_templates_category").on(table.category),
+  index("idx_hub_templates_is_active").on(table.isActive),
+  index("idx_hub_templates_sort_order").on(table.sortOrder),
+]);
+
 // Platform Modules - Context-Aware Plugins (like WordPress plugins)
 // Modules are small, focused plugins that can be activated in different contexts
 export const platformModules = pgTable("platform_modules", {
@@ -1453,6 +1497,10 @@ export type SelectNavigationMenu = typeof navigationMenus.$inferSelect;
 export const insertAppSchema = createInsertSchema(apps);
 export const insertAppInstallSchema = createInsertSchema(appInstalls);
 export const insertHubSchema = createInsertSchema(hubs);
+export const insertHubTemplateSchema = createInsertSchema(hubTemplates).omit({ id: true, displayId: true, createdAt: true, updatedAt: true });
+export const selectHubTemplateSchema = createSelectSchema(hubTemplates);
+export type HubTemplate = typeof hubTemplates.$inferSelect;
+export type InsertHubTemplate = z.infer<typeof insertHubTemplateSchema>;
 export const insertPlanSchema = createInsertSchema(plans);
 
 // Payment schemas
