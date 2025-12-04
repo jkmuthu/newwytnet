@@ -45,6 +45,14 @@ import {
   Copy,
   ExternalLink,
   AlertCircle,
+  LayoutTemplate,
+  RefreshCw,
+  Store,
+  GraduationCap,
+  Calendar,
+  Users2,
+  FolderOpen,
+  Sparkles,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -101,13 +109,39 @@ interface DNSRecord {
   priority: number | null;
 }
 
+interface HubTemplate {
+  id: string;
+  displayId: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  category: string;
+  thumbnail: string | null;
+  defaultModules: string[];
+  defaultTheme: Record<string, any>;
+  defaultSettings: Record<string, any>;
+  defaultPages: string[];
+  features: string[];
+  isPublic: boolean;
+  requiresWytDev: boolean;
+  usageCount: number;
+  rating: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+}
+
 export default function AdminPlatformHubs() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedHub, setSelectedHub] = useState<PlatformHub | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [createHubOpen, setCreateHubOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all-hubs' | 'trash' | 'configurations'>('all-hubs');
+  const [activeTab, setActiveTab] = useState<'all-hubs' | 'templates' | 'trash' | 'configurations'>('all-hubs');
+  const [createFromTemplateOpen, setCreateFromTemplateOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<HubTemplate | null>(null);
+  const [newHubName, setNewHubName] = useState("");
+  const [newHubSlug, setNewHubSlug] = useState("");
 
   // Fetch platform hubs
   const { data: hubsData, isLoading: hubsLoading } = useQuery<{ success: boolean; hubs: PlatformHub[] }>({
@@ -156,6 +190,47 @@ export default function AdminPlatformHubs() {
     queryKey: ["/api/admin/users"],
   });
 
+  // Hub Templates
+  const { data: templatesData, isLoading: templatesLoading } = useQuery<HubTemplate[]>({
+    queryKey: ["/api/engine/hub-templates"],
+  });
+
+  const seedTemplatesMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest('/api/engine/hub-templates/seed', 'POST');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/engine/hub-templates'] });
+      toast({ title: "Success", description: "Hub templates seeded successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Failed to seed templates", variant: "destructive" });
+    }
+  });
+
+  const createHubFromTemplateMutation = useMutation({
+    mutationFn: async ({ templateId, hubName, hubSlug }: { templateId: string; hubName: string; hubSlug: string }) => {
+      return await apiRequest('/api/engine/hubs/from-template', 'POST', { templateId, hubName, hubSlug });
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/platform-hubs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/engine/hub-templates'] });
+      setCreateFromTemplateOpen(false);
+      setSelectedTemplate(null);
+      setNewHubName("");
+      setNewHubSlug("");
+      toast({ 
+        title: "Hub Created!", 
+        description: `Your hub is now available at ${data.url}` 
+      });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Error", description: error.message || "Failed to create hub from template", variant: "destructive" });
+    }
+  });
+
+  const templates = templatesData || [];
+
   const hubs = hubsData?.hubs || [];
   const users = usersData?.users || [];
 
@@ -186,10 +261,14 @@ export default function AdminPlatformHubs() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
+        <TabsList className="grid w-full grid-cols-4 lg:w-[800px]">
           <TabsTrigger value="all-hubs" data-testid="tab-all-hubs">
             <Building2 className="h-4 w-4 mr-2" />
             All Hubs ({hubs.length})
+          </TabsTrigger>
+          <TabsTrigger value="templates" data-testid="tab-templates">
+            <LayoutTemplate className="h-4 w-4 mr-2" />
+            Templates ({templates.length})
           </TabsTrigger>
           <TabsTrigger value="trash" data-testid="tab-trash">
             Trash ({trashHubsData?.count || 0})
@@ -313,6 +392,134 @@ export default function AdminPlatformHubs() {
                     ))}
                   </TableBody>
                 </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Templates Tab */}
+        <TabsContent value="templates" className="space-y-4 mt-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <LayoutTemplate className="h-5 w-5" />
+                    Hub Templates
+                  </CardTitle>
+                  <CardDescription>
+                    Pre-built hub configurations to quickly create new hubs
+                  </CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => seedTemplatesMutation.mutate()}
+                  disabled={seedTemplatesMutation.isPending}
+                  data-testid="button-seed-templates"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${seedTemplatesMutation.isPending ? 'animate-spin' : ''}`} />
+                  {seedTemplatesMutation.isPending ? 'Seeding...' : 'Seed Templates'}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {templatesLoading ? (
+                <div className="text-center py-8">Loading templates...</div>
+              ) : templates.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <LayoutTemplate className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                  <h3 className="text-lg font-medium mb-2">No templates available</h3>
+                  <p className="mb-4">Click "Seed Templates" to add the default hub templates</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {templates.map((template) => {
+                    const getCategoryIcon = (category: string) => {
+                      switch (category) {
+                        case 'community': return <Users2 className="h-6 w-6" />;
+                        case 'marketplace': return <Store className="h-6 w-6" />;
+                        case 'directory': return <FolderOpen className="h-6 w-6" />;
+                        case 'learning': return <GraduationCap className="h-6 w-6" />;
+                        case 'event': return <Calendar className="h-6 w-6" />;
+                        default: return <Sparkles className="h-6 w-6" />;
+                      }
+                    };
+                    
+                    const getCategoryColor = (category: string) => {
+                      switch (category) {
+                        case 'community': return 'bg-green-500/10 text-green-600 border-green-200';
+                        case 'marketplace': return 'bg-amber-500/10 text-amber-600 border-amber-200';
+                        case 'directory': return 'bg-blue-500/10 text-blue-600 border-blue-200';
+                        case 'learning': return 'bg-purple-500/10 text-purple-600 border-purple-200';
+                        case 'event': return 'bg-pink-500/10 text-pink-600 border-pink-200';
+                        default: return 'bg-indigo-500/10 text-indigo-600 border-indigo-200';
+                      }
+                    };
+                    
+                    return (
+                      <Card 
+                        key={template.id} 
+                        className={`relative overflow-hidden transition-all hover:shadow-lg hover:border-primary/50 ${!template.isActive ? 'opacity-60' : ''}`}
+                        data-testid={`card-template-${template.slug}`}
+                      >
+                        <div className={`absolute top-0 left-0 right-0 h-2 ${getCategoryColor(template.category).split(' ')[0]}`} />
+                        <CardHeader className="pt-6">
+                          <div className="flex items-start justify-between">
+                            <div className={`p-3 rounded-xl ${getCategoryColor(template.category)}`}>
+                              {getCategoryIcon(template.category)}
+                            </div>
+                            <Badge variant="secondary" className="capitalize">
+                              {template.category}
+                            </Badge>
+                          </div>
+                          <CardTitle className="text-lg mt-4">{template.name}</CardTitle>
+                          <CardDescription className="line-clamp-2">
+                            {template.description}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="flex flex-wrap gap-1">
+                            {(template.features as string[])?.slice(0, 4).map((feature, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs">
+                                {feature.replace(/-/g, ' ')}
+                              </Badge>
+                            ))}
+                            {(template.features as string[])?.length > 4 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{(template.features as string[]).length - 4} more
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center justify-between text-sm text-muted-foreground">
+                            <span>{template.usageCount || 0} hubs created</span>
+                            {template.requiresWytDev && (
+                              <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
+                                WytDev Required
+                              </Badge>
+                            )}
+                          </div>
+
+                          <Button 
+                            className="w-full" 
+                            onClick={() => {
+                              setSelectedTemplate(template);
+                              setNewHubName('');
+                              setNewHubSlug('');
+                              setCreateFromTemplateOpen(true);
+                            }}
+                            disabled={!template.isActive}
+                            data-testid={`button-use-template-${template.slug}`}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Use Template
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
               )}
             </CardContent>
           </Card>
@@ -445,6 +652,106 @@ export default function AdminPlatformHubs() {
 
       {/* Create Hub Dialog */}
       <CreateHubDialog open={createHubOpen} onOpenChange={setCreateHubOpen} />
+
+      {/* Create from Template Dialog */}
+      <Dialog open={createFromTemplateOpen} onOpenChange={setCreateFromTemplateOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <LayoutTemplate className="h-5 w-5" />
+              Create Hub from Template
+            </DialogTitle>
+            <DialogDescription>
+              {selectedTemplate ? (
+                <>Using the <strong>{selectedTemplate.name}</strong> template</>
+              ) : (
+                'Select a template to create your hub'
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedTemplate && (
+            <div className="space-y-4">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  This will create a new hub with pre-configured modules: {(selectedTemplate.defaultModules as string[])?.join(', ') || 'None'}
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-2">
+                <Label htmlFor="hub-name">Hub Name *</Label>
+                <Input
+                  id="hub-name"
+                  placeholder="My Awesome Hub"
+                  value={newHubName}
+                  onChange={(e) => {
+                    setNewHubName(e.target.value);
+                    setNewHubSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''));
+                  }}
+                  data-testid="input-template-hub-name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="hub-slug">Hub URL Slug *</Label>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">/h/</span>
+                  <Input
+                    id="hub-slug"
+                    placeholder="my-awesome-hub"
+                    value={newHubSlug}
+                    onChange={(e) => setNewHubSlug(e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''))}
+                    data-testid="input-template-hub-slug"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Your hub will be accessible at /h/{newHubSlug || 'your-slug'}
+                </p>
+              </div>
+
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setCreateFromTemplateOpen(false);
+                    setSelectedTemplate(null);
+                    setNewHubName("");
+                    setNewHubSlug("");
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (selectedTemplate && newHubName && newHubSlug) {
+                      createHubFromTemplateMutation.mutate({
+                        templateId: selectedTemplate.id,
+                        hubName: newHubName,
+                        hubSlug: newHubSlug
+                      });
+                    }
+                  }}
+                  disabled={!newHubName || !newHubSlug || createHubFromTemplateMutation.isPending}
+                  data-testid="button-create-from-template"
+                >
+                  {createHubFromTemplateMutation.isPending ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Hub
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

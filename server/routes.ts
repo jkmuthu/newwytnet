@@ -65,6 +65,7 @@ import {
   hubs,
   seoSettings,
   insertSeoSettingSchema,
+  hubTemplates,
   assessmentCategories,
   assessmentQuestions,
   assessmentOptions,
@@ -2663,6 +2664,170 @@ export async function registerRoutes(app: Express): Promise<void> {
       }
       console.error("Error creating hub:", error);
       res.status(500).json({ message: "Failed to create hub" });
+    }
+  });
+
+  // Hub Templates CRUD
+  app.get('/api/engine/hub-templates', isAuthenticated, async (req: any, res) => {
+    try {
+      const { category, isActive } = req.query;
+      const templates = await db.select()
+        .from(hubTemplates)
+        .where(
+          and(
+            category ? eq(hubTemplates.category, category as string) : undefined,
+            isActive !== undefined ? eq(hubTemplates.isActive, isActive === 'true') : eq(hubTemplates.isActive, true)
+          )
+        )
+        .orderBy(hubTemplates.sortOrder, hubTemplates.name);
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching hub templates:", error);
+      res.status(500).json({ message: "Failed to fetch hub templates" });
+    }
+  });
+
+  app.get('/api/engine/hub-templates/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const template = await db.select()
+        .from(hubTemplates)
+        .where(eq(hubTemplates.id, id))
+        .limit(1);
+      
+      if (template.length === 0) {
+        return res.status(404).json({ message: "Hub template not found" });
+      }
+      
+      res.json(template[0]);
+    } catch (error) {
+      console.error("Error fetching hub template:", error);
+      res.status(500).json({ message: "Failed to fetch hub template" });
+    }
+  });
+
+  app.post('/api/engine/hub-templates', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const existingCount = await db.select({ count: sql`count(*)` })
+        .from(hubTemplates);
+      const displayId = `HT${String(parseInt(existingCount[0]?.count as string || '0') + 1).padStart(5, '0')}`;
+      
+      const [template] = await db.insert(hubTemplates).values({
+        ...req.body,
+        displayId,
+        createdBy: userId
+      }).returning();
+      
+      res.json(template);
+    } catch (error) {
+      console.error("Error creating hub template:", error);
+      res.status(500).json({ message: "Failed to create hub template" });
+    }
+  });
+
+  app.patch('/api/engine/hub-templates/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const [template] = await db.update(hubTemplates)
+        .set({ ...req.body, updatedAt: new Date() })
+        .where(eq(hubTemplates.id, id))
+        .returning();
+      
+      if (!template) {
+        return res.status(404).json({ message: "Hub template not found" });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error("Error updating hub template:", error);
+      res.status(500).json({ message: "Failed to update hub template" });
+    }
+  });
+
+  app.delete('/api/engine/hub-templates/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await db.delete(hubTemplates).where(eq(hubTemplates.id, id));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting hub template:", error);
+      res.status(500).json({ message: "Failed to delete hub template" });
+    }
+  });
+
+  app.post('/api/engine/hub-templates/seed', isAuthenticated, async (req: any, res) => {
+    try {
+      const { hubTemplatesSeedingService } = await import('./services/hubTemplatesSeedingService');
+      await hubTemplatesSeedingService.seedTemplates();
+      res.json({ success: true, message: "Hub templates seeded successfully" });
+    } catch (error) {
+      console.error("Error seeding hub templates:", error);
+      res.status(500).json({ message: "Failed to seed hub templates" });
+    }
+  });
+
+  app.post('/api/engine/hubs/from-template', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { templateId, hubName, hubSlug, customSettings } = req.body;
+      
+      if (!templateId || !hubName || !hubSlug) {
+        return res.status(400).json({ message: "templateId, hubName, and hubSlug are required" });
+      }
+      
+      const existingHub = await db.select()
+        .from(hubs)
+        .where(eq(hubs.key, hubSlug))
+        .limit(1);
+      
+      if (existingHub.length > 0) {
+        return res.status(400).json({ message: "A hub with this slug already exists" });
+      }
+      
+      const [template] = await db.select()
+        .from(hubTemplates)
+        .where(eq(hubTemplates.id, templateId))
+        .limit(1);
+      
+      if (!template) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+      
+      const hubCount = await db.select({ count: sql`count(*)` }).from(hubs);
+      const displayId = `HB${String(parseInt(hubCount[0]?.count as string || '0') + 1).padStart(3, '0')}`;
+      
+      const [newHub] = await db.insert(hubs).values({
+        displayId,
+        key: hubSlug,
+        name: hubName,
+        description: template.description,
+        type: template.category,
+        config: {
+          templateId: template.id,
+          templateSlug: template.slug,
+          theme: template.defaultTheme,
+          pages: template.defaultPages,
+          modules: template.defaultModules,
+          settings: { ...template.defaultSettings as object, ...(customSettings || {}) }
+        },
+        status: 'active',
+        createdBy: userId
+      }).returning();
+      
+      await db.update(hubTemplates)
+        .set({ usageCount: sql`${hubTemplates.usageCount} + 1` })
+        .where(eq(hubTemplates.id, templateId));
+      
+      res.json({ 
+        success: true, 
+        hub: newHub,
+        url: `/h/${hubSlug}`
+      });
+    } catch (error: any) {
+      console.error("Error creating hub from template:", error);
+      res.status(500).json({ message: "Failed to create hub from template", error: error.message });
     }
   });
 
