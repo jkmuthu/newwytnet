@@ -292,21 +292,32 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
 
   const progress = (currentStep / 6) * 100;
 
+  // Get the app name for the title (from form or existing data)
+  const currentAppName = form.watch("name") || existingApp?.name || "WytApp";
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-purple-500" />
-            {mode === "create" ? "Create New WytApp" : "Update WytApp"}
+            {mode === "create" ? "Create New WytApp" : `Update ${currentAppName}`}
           </DialogTitle>
           <DialogDescription>
             {mode === "create" 
               ? "Build your app step-by-step with our intelligent wizard"
-              : "Update your app configuration using the wizard"}
+              : `Update your app configuration using the wizard`}
           </DialogDescription>
         </DialogHeader>
-
+        
+        {/* Loading state for update mode */}
+        {mode === "update" && isLoadingApp ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span className="ml-2 text-muted-foreground">Loading app data...</span>
+          </div>
+        ) : (
+          <>
         {/* Progress Bar */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-muted-foreground">
@@ -415,6 +426,8 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
             </Button>
           </div>
         </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

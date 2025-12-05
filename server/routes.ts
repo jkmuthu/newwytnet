@@ -2422,69 +2422,100 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Get single app details
+  // Get single app details with pricing plans
+  // Uses the unified 'apps' table with dynamic pricing system
   app.get('/api/admin/apps/:id', adminAuthMiddleware, async (req, res) => {
     try {
       const appId = req.params.id;
 
-      const appWithModules = await db
-        .select({
-          id: appsRegistry.id,
-          name: appsRegistry.name,
-          slug: appsRegistry.slug,
-          description: appsRegistry.description,
-          icon: appsRegistry.icon,
-          category: appsRegistry.category,
-          route: appsRegistry.route,
-          status: appsRegistry.status,
-          isActive: appsRegistry.isActive,
-          configData: appsRegistry.configData,
-          metadata: appsRegistry.metadata,
-          createdAt: appsRegistry.createdAt,
-          updatedAt: appsRegistry.updatedAt,
-          deletedAt: appsRegistry.deletedAt,
-        })
-        .from(appsRegistry)
+      // Fetch from the new apps table (with pricing support)
+      const appData = await db
+        .select()
+        .from(apps)
         .where(and(
-          eq(appsRegistry.id, appId),
-          isNull(appsRegistry.deletedAt)
+          eq(apps.id, appId),
+          isNull(apps.deletedAt)
         ))
         .limit(1);
 
-      if (appWithModules.length === 0) {
+      if (appData.length === 0) {
         return res.status(404).json({ message: 'App not found' });
       }
 
-      const app = appWithModules[0];
+      const appRecord = appData[0];
 
-      // Get app modules
-      const appModulesData = await db
-        .select({
-          moduleId: appModules.moduleId,
-          name: platformModules.name,
-          isRequired: appModules.isRequired,
-        })
-        .from(appModules)
-        .innerJoin(platformModules, eq(appModules.moduleId, platformModules.id))
-        .where(eq(appModules.appId, app.id));
+      // Fetch pricing plans for this app
+      const pricingPlansData = await db
+        .select()
+        .from(appPricingPlans)
+        .where(and(
+          eq(appPricingPlans.appId, appRecord.id),
+          eq(appPricingPlans.isActive, true)
+        ))
+        .orderBy(appPricingPlans.sortOrder);
 
-      // Extract wizard fields from configData
-      const configData = (app.configData as any) || {};
+      // Get category from categories array (use first one or empty)
+      const categoryArray = appRecord.categories as string[] || [];
+      const category = categoryArray[0] || '';
 
+      // Build result with all wizard fields
       const result = {
-        ...app,
-        moduleCount: appModulesData.length,
-        modules: appModulesData,
-        moduleIds: appModulesData.map((m: any) => m.moduleId),
-        // Wizard fields from configData
-        visibilityMode: configData.visibilityMode || 'engine_only',
-        selectedHubs: configData.selectedHubs || [],
-        accessPanels: configData.accessPanels || [],
-        features: configData.features || [],
-        pricingModel: configData.pricingModel || 'free',
-        pricingDetails: configData.pricingDetails || {},
-        version: configData.version || '1.0.0',
-        changelog: configData.changelog || '',
+        id: appRecord.id,
+        displayId: appRecord.displayId,
+        name: appRecord.name,
+        slug: appRecord.slug || appRecord.key,
+        description: appRecord.description || '',
+        icon: appRecord.icon || '',
+        category: category,
+        categories: categoryArray,
+        version: appRecord.version || '1.0.0',
+        route: appRecord.route,
+        contexts: appRecord.contexts,
+        status: appRecord.status,
+        isActive: appRecord.status === 'active',
+        
+        // Dynamic Pricing Fields
+        appType: appRecord.appType || 'premium',
+        isCoreApp: appRecord.isCoreApp || false,
+        isAutoAssigned: appRecord.isAutoAssigned || false,
+        pricingModel: appRecord.pricingModel || 'free',
+        pricingDetails: appRecord.pricingDetails || {},
+        pricingPlans: pricingPlansData.map(plan => ({
+          id: plan.id,
+          planName: plan.planName,
+          planSlug: plan.planSlug,
+          planType: plan.planType,
+          price: plan.price,
+          currency: plan.currency,
+          usageLimit: plan.usageLimit,
+          usageUnit: plan.usageUnit,
+          features: plan.features,
+          isDefault: plan.isDefault,
+        })),
+        
+        // Visibility & Access Control
+        visibilityMode: appRecord.visibilityMode || 'engine_only',
+        selectedHubs: appRecord.selectedHubs || [],
+        accessPanels: appRecord.accessPanels || [],
+        customRoutes: appRecord.customRoutes || {},
+        
+        // Features
+        features: appRecord.features || [],
+        
+        // Wizard State
+        wizardCompleted: appRecord.wizardCompleted || false,
+        wizardStep: appRecord.wizardStep || 1,
+        
+        // Version Control
+        versionHistory: appRecord.versionHistory || [],
+        changelog: appRecord.changelog || '',
+        
+        // Timestamps
+        createdAt: appRecord.createdAt,
+        updatedAt: appRecord.updatedAt,
+        deletedAt: appRecord.deletedAt,
+        deletedBy: appRecord.deletedBy,
+        deleteReason: appRecord.deleteReason,
       };
 
       res.json(result);
