@@ -40,8 +40,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Check,
   Sparkles,
   Package,
@@ -58,6 +64,55 @@ import {
   Layers,
   Zap,
   X,
+  Copy,
+  ExternalLink,
+  Image as ImageIcon,
+  Shield,
+  FileText,
+  Bell,
+  Settings,
+  Database,
+  Cloud,
+  Key,
+  Mail,
+  MessageSquare,
+  Calendar,
+  BarChart3,
+  PieChart,
+  TrendingUp,
+  Wallet,
+  CreditCard,
+  ShoppingCart,
+  Tag,
+  Star,
+  Heart,
+  Bookmark,
+  Share2,
+  Link2,
+  QrCode,
+  Smartphone,
+  Monitor,
+  Server,
+  Cpu,
+  HardDrive,
+  Wifi,
+  Activity,
+  Briefcase,
+  GraduationCap,
+  Building,
+  Home,
+  Map,
+  Navigation,
+  Search,
+  Filter,
+  List,
+  Grid,
+  Layout,
+  Palette,
+  Code,
+  Terminal,
+  FileCode,
+  FolderOpen,
 } from "lucide-react";
 
 // Wizard schema for all 6 screens
@@ -453,8 +508,170 @@ function getStepFields(step: number): (keyof WizardFormData)[] {
   }
 }
 
-// Screen 1: Basic Info
+// Lucide Icon Picker Component
+const ICON_OPTIONS = [
+  { name: "package", icon: Package, label: "Package" },
+  { name: "shield", icon: Shield, label: "Shield" },
+  { name: "file-text", icon: FileText, label: "Document" },
+  { name: "bell", icon: Bell, label: "Notifications" },
+  { name: "settings", icon: Settings, label: "Settings" },
+  { name: "database", icon: Database, label: "Database" },
+  { name: "cloud", icon: Cloud, label: "Cloud" },
+  { name: "key", icon: Key, label: "Key" },
+  { name: "mail", icon: Mail, label: "Mail" },
+  { name: "message-square", icon: MessageSquare, label: "Chat" },
+  { name: "calendar", icon: Calendar, label: "Calendar" },
+  { name: "bar-chart", icon: BarChart3, label: "Analytics" },
+  { name: "pie-chart", icon: PieChart, label: "Reports" },
+  { name: "trending-up", icon: TrendingUp, label: "Growth" },
+  { name: "wallet", icon: Wallet, label: "Wallet" },
+  { name: "credit-card", icon: CreditCard, label: "Payments" },
+  { name: "shopping-cart", icon: ShoppingCart, label: "Cart" },
+  { name: "tag", icon: Tag, label: "Tag" },
+  { name: "star", icon: Star, label: "Star" },
+  { name: "heart", icon: Heart, label: "Favorite" },
+  { name: "bookmark", icon: Bookmark, label: "Bookmark" },
+  { name: "share", icon: Share2, label: "Share" },
+  { name: "link", icon: Link2, label: "Link" },
+  { name: "qr-code", icon: QrCode, label: "QR Code" },
+  { name: "smartphone", icon: Smartphone, label: "Mobile" },
+  { name: "monitor", icon: Monitor, label: "Desktop" },
+  { name: "server", icon: Server, label: "Server" },
+  { name: "cpu", icon: Cpu, label: "Processing" },
+  { name: "hard-drive", icon: HardDrive, label: "Storage" },
+  { name: "wifi", icon: Wifi, label: "Network" },
+  { name: "activity", icon: Activity, label: "Activity" },
+  { name: "briefcase", icon: Briefcase, label: "Business" },
+  { name: "graduation-cap", icon: GraduationCap, label: "Education" },
+  { name: "building", icon: Building, label: "Organization" },
+  { name: "home", icon: Home, label: "Home" },
+  { name: "map", icon: Map, label: "Map" },
+  { name: "navigation", icon: Navigation, label: "Navigation" },
+  { name: "search", icon: Search, label: "Search" },
+  { name: "filter", icon: Filter, label: "Filter" },
+  { name: "list", icon: List, label: "List" },
+  { name: "grid", icon: Grid, label: "Grid" },
+  { name: "layout", icon: Layout, label: "Layout" },
+  { name: "palette", icon: Palette, label: "Design" },
+  { name: "code", icon: Code, label: "Code" },
+  { name: "terminal", icon: Terminal, label: "Terminal" },
+  { name: "file-code", icon: FileCode, label: "Script" },
+  { name: "folder", icon: FolderOpen, label: "Folder" },
+  { name: "users", icon: Users, label: "Users" },
+  { name: "user", icon: User, label: "User" },
+  { name: "lock", icon: Lock, label: "Security" },
+  { name: "globe", icon: Globe, label: "Web" },
+  { name: "zap", icon: Zap, label: "Power" },
+  { name: "layers", icon: Layers, label: "Layers" },
+  { name: "eye", icon: Eye, label: "View" },
+  { name: "sparkles", icon: Sparkles, label: "AI" },
+];
+
+function LucideIconPicker({ 
+  value, 
+  onChange 
+}: { 
+  value?: string; 
+  onChange: (iconName: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  const filteredIcons = ICON_OPTIONS.filter(icon => 
+    icon.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    icon.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  const selectedIcon = ICON_OPTIONS.find(i => i.name === value);
+  const IconComponent = selectedIcon?.icon || Package;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <div 
+          className={`w-16 h-16 rounded-xl border-2 flex items-center justify-center cursor-pointer transition-all ${
+            value ? 'border-primary bg-primary/10' : 'border-dashed border-muted-foreground/30 hover:border-primary/50'
+          }`}
+          onClick={() => setIsOpen(!isOpen)}
+          data-testid="button-select-icon"
+        >
+          <IconComponent className={`h-8 w-8 ${value ? 'text-primary' : 'text-muted-foreground'}`} />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-medium">{selectedIcon?.label || 'Select an icon'}</p>
+          <p className="text-xs text-muted-foreground">Click to choose from library</p>
+        </div>
+        {value && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onChange("")}
+            data-testid="button-clear-icon"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+
+      {isOpen && (
+        <Card className="mt-2">
+          <CardContent className="p-3">
+            <Input
+              placeholder="Search icons..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="mb-3"
+              data-testid="input-search-icons"
+            />
+            <div className="grid grid-cols-8 gap-2 max-h-48 overflow-y-auto">
+              {filteredIcons.map((iconOption) => {
+                const Icon = iconOption.icon;
+                return (
+                  <div
+                    key={iconOption.name}
+                    className={`p-2 rounded-lg cursor-pointer transition-all flex items-center justify-center ${
+                      value === iconOption.name 
+                        ? 'bg-primary text-primary-foreground' 
+                        : 'hover:bg-muted'
+                    }`}
+                    onClick={() => {
+                      onChange(iconOption.name);
+                      setIsOpen(false);
+                      setSearchTerm("");
+                    }}
+                    title={iconOption.label}
+                    data-testid={`icon-option-${iconOption.name}`}
+                  >
+                    <Icon className="h-5 w-5" />
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// Screen 1: Basic Info - Improved Layout
 function Screen1BasicInfo({ form, onNameChange }: { form: any; onNameChange: (name: string) => void }) {
+  const [visualAssetsOpen, setVisualAssetsOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  
+  const slugValue = form.watch("slug");
+  const descriptionValue = form.watch("description") || "";
+  const MAX_DESCRIPTION_LENGTH = 500;
+  
+  const fullUrl = slugValue ? `wytnet.com/apps/${slugValue}` : "wytnet.com/apps/your-app-slug";
+  
+  const copyUrl = () => {
+    navigator.clipboard.writeText(`https://${fullUrl}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="space-y-6" data-testid="wizard-screen-1">
       <div>
@@ -467,63 +684,133 @@ function Screen1BasicInfo({ form, onNameChange }: { form: any; onNameChange: (na
         </p>
       </div>
 
-      <FormField
-        control={form.control}
-        name="name"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>App Name *</FormLabel>
-            <FormControl>
-              <Input
-                {...field}
-                placeholder="e.g., Invoice Generator"
-                onChange={(e) => {
-                  field.onChange(e);
-                  onNameChange(e.target.value);
-                }}
-                data-testid="input-app-name"
-              />
-            </FormControl>
-            <FormDescription>
-              A clear, descriptive name for your application
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {/* Two Column Layout for Name/Slug and Category */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Left Column */}
+        <div className="space-y-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>App Name *</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="e.g., Invoice Generator"
+                    onChange={(e) => {
+                      field.onChange(e);
+                      onNameChange(e.target.value);
+                    }}
+                    data-testid="input-app-name"
+                  />
+                </FormControl>
+                <FormDescription>
+                  A clear, descriptive name for your application
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-      <FormField
-        control={form.control}
-        name="slug"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>URL Slug *</FormLabel>
-            <FormControl>
-              <Input
-                {...field}
-                placeholder="invoice-generator"
-                data-testid="input-app-slug"
-              />
-            </FormControl>
-            <FormDescription>
-              Auto-generated from name. Used in URLs (lowercase, hyphens only)
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+          <FormField
+            control={form.control}
+            name="slug"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>URL Slug *</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="invoice-generator"
+                    data-testid="input-app-slug"
+                  />
+                </FormControl>
+                <FormDescription>
+                  Auto-generated from name. Used in URLs (lowercase, hyphens only)
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
+          {/* URL Preview */}
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
+            <ExternalLink className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <code className="text-sm flex-1 truncate">{fullUrl}</code>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={copyUrl}
+              className="flex-shrink-0"
+              data-testid="button-copy-url"
+            >
+              {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+            </Button>
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div className="space-y-4">
+          <FormField
+            control={form.control}
+            name="category"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Category</FormLabel>
+                <CategorySelector 
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Icon Selection */}
+          <FormField
+            control={form.control}
+            name="icon"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>App Icon</FormLabel>
+                <LucideIconPicker
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                />
+                <FormDescription>
+                  Choose an icon from the library or upload a custom one below
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+      </div>
+
+      {/* Description - Full Width with Character Counter */}
       <FormField
         control={form.control}
         name="description"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Description</FormLabel>
+            <div className="flex items-center justify-between">
+              <FormLabel>Description</FormLabel>
+              <span className={`text-xs ${
+                descriptionValue.length > MAX_DESCRIPTION_LENGTH 
+                  ? 'text-red-500' 
+                  : 'text-muted-foreground'
+              }`}>
+                {descriptionValue.length}/{MAX_DESCRIPTION_LENGTH}
+              </span>
+            </div>
             <FormControl>
               <Textarea
                 {...field}
-                placeholder="Describe what your app does..."
-                rows={4}
+                placeholder="Describe what your app does, its key features, and who it's for..."
+                rows={3}
+                className="resize-none"
                 data-testid="textarea-app-description"
               />
             </FormControl>
@@ -535,94 +822,77 @@ function Screen1BasicInfo({ form, onNameChange }: { form: any; onNameChange: (na
         )}
       />
 
-      <FormField
-        control={form.control}
-        name="category"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Category</FormLabel>
-            <CategorySelector 
-              value={field.value}
-              onChange={field.onChange}
-            />
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
       <Separator />
 
-      <div>
-        <h4 className="text-md font-semibold mb-4">Visual Assets</h4>
-        <p className="text-sm text-muted-foreground mb-4">
-          Add icons, logos, and banners to make your app stand out
-        </p>
+      {/* Collapsible Visual Assets Section */}
+      <Collapsible open={visualAssetsOpen} onOpenChange={setVisualAssetsOpen}>
+        <CollapsibleTrigger asChild>
+          <div 
+            className="flex items-center justify-between p-4 rounded-lg bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors"
+            data-testid="collapsible-visual-assets"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <ImageIcon className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h4 className="text-md font-semibold">Visual Assets</h4>
+                <p className="text-sm text-muted-foreground">
+                  Add custom images for logo and banner (optional)
+                </p>
+              </div>
+            </div>
+            <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${visualAssetsOpen ? 'rotate-180' : ''}`} />
+          </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border rounded-lg bg-card">
+            <FormField
+              control={form.control}
+              name="image"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>App Logo</FormLabel>
+                  <FormDescription className="text-xs">
+                    Primary logo (recommended: 1200x600px)
+                  </FormDescription>
+                  <ImageUploadCrop
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    aspectRatio={2}
+                    label="Upload Logo"
+                    width={180}
+                    height={90}
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-        <div className="space-y-6">
-          <FormField
-            control={form.control}
-            name="icon"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>App Icon</FormLabel>
-                <FormDescription>
-                  Square icon that represents your app (recommended: 512x512px)
-                </FormDescription>
-                <ImageUploadCrop
-                  value={field.value || ""}
-                  onChange={field.onChange}
-                  aspect={1}
-                  cropShape="square"
-                  label="Upload Icon"
-                />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="image"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>App Logo</FormLabel>
-                <FormDescription>
-                  Primary logo for your app (recommended: 1200x600px)
-                </FormDescription>
-                <ImageUploadCrop
-                  value={field.value || ""}
-                  onChange={field.onChange}
-                  aspect={2}
-                  cropShape="rect"
-                  label="Upload Logo"
-                />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="banner"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Banner Image</FormLabel>
-                <FormDescription>
-                  Wide banner for app pages and marketing (recommended: 1920x600px)
-                </FormDescription>
-                <ImageUploadCrop
-                  value={field.value || ""}
-                  onChange={field.onChange}
-                  aspect={16/9}
-                  cropShape="rect"
-                  label="Upload Banner"
-                />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-      </div>
+            <FormField
+              control={form.control}
+              name="banner"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Banner Image</FormLabel>
+                  <FormDescription className="text-xs">
+                    Wide banner for marketing (recommended: 1920x600px)
+                  </FormDescription>
+                  <ImageUploadCrop
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                    aspectRatio={16/5}
+                    label="Upload Banner"
+                    width={180}
+                    height={56}
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }
