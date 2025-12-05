@@ -503,8 +503,8 @@ export const appPricingHistory = pgTable("app_pricing_history", {
   changedAtIdx: index("app_pricing_history_date_idx").on(table.changedAt),
 }));
 
-// User App Subscriptions - Track user's active subscriptions per app
-export const userAppSubscriptions = pgTable("user_app_subscriptions", {
+// App Plan Subscriptions - Track user's active plan subscriptions per WytApp
+export const appPlanSubscriptions = pgTable("app_plan_subscriptions", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   appId: uuid("app_id").notNull().references(() => apps.id, { onDelete: 'cascade' }),
@@ -536,10 +536,10 @@ export const userAppSubscriptions = pgTable("user_app_subscriptions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
-  userIdx: index("user_app_subs_user_idx").on(table.userId),
-  appIdx: index("user_app_subs_app_idx").on(table.appId),
-  statusIdx: index("user_app_subs_status_idx").on(table.status),
-  uniqueUserAppSub: unique("unique_user_app_subscription").on(table.userId, table.appId),
+  userIdx: index("app_plan_subs_user_idx").on(table.userId),
+  appIdx: index("app_plan_subs_app_idx").on(table.appId),
+  statusIdx: index("app_plan_subs_status_idx").on(table.status),
+  uniqueUserAppPlanSub: unique("unique_user_app_plan_subscription").on(table.userId, table.appId),
 }));
 
 // Hubs
@@ -1606,6 +1606,25 @@ export type InsertNavigationMenu = z.infer<typeof insertNavigationMenuSchema>;
 export type SelectNavigationMenu = typeof navigationMenus.$inferSelect;
 export const insertAppSchema = createInsertSchema(apps);
 export const insertAppInstallSchema = createInsertSchema(appInstalls);
+
+// App Pricing Plans schemas
+export const insertAppPricingPlanSchema = createInsertSchema(appPricingPlans).omit({ id: true, displayId: true, createdAt: true, updatedAt: true });
+export const selectAppPricingPlanSchema = createSelectSchema(appPricingPlans);
+export type AppPricingPlan = typeof appPricingPlans.$inferSelect;
+export type InsertAppPricingPlan = z.infer<typeof insertAppPricingPlanSchema>;
+
+// App Pricing History schemas
+export const insertAppPricingHistorySchema = createInsertSchema(appPricingHistory).omit({ id: true, changedAt: true });
+export const selectAppPricingHistorySchema = createSelectSchema(appPricingHistory);
+export type AppPricingHistoryRecord = typeof appPricingHistory.$inferSelect;
+export type InsertAppPricingHistory = z.infer<typeof insertAppPricingHistorySchema>;
+
+// App Plan Subscriptions schemas
+export const insertAppPlanSubscriptionSchema = createInsertSchema(appPlanSubscriptions).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectAppPlanSubscriptionSchema = createSelectSchema(appPlanSubscriptions);
+export type AppPlanSubscription = typeof appPlanSubscriptions.$inferSelect;
+export type InsertAppPlanSubscription = z.infer<typeof insertAppPlanSubscriptionSchema>;
+
 export const insertHubSchema = createInsertSchema(hubs);
 export const insertHubTemplateSchema = createInsertSchema(hubTemplates).omit({ id: true, displayId: true, createdAt: true, updatedAt: true });
 export const selectHubTemplateSchema = createSelectSchema(hubTemplates);
