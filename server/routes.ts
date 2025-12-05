@@ -130,6 +130,9 @@ import {
   pricingPlanEditHistory,
   pricingPlanTypes,
   userSubscriptions,
+  appPricingPlans,
+  appPricingHistory,
+  appPlanSubscriptions,
   usageTracking,
   paymentTransactions,
   appFeatures,
@@ -2547,39 +2550,90 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Get all apps with modules
+  // Get all apps with modules and pricing plans
+  // Uses the unified 'apps' table with dynamic pricing system
   app.get('/api/admin/apps', adminAuthMiddleware, async (req, res) => {
     try {
+      // Fetch from the new apps table (with pricing support)
       const allApps = await db
         .select()
-        .from(appsRegistry)
-        .where(isNull(appsRegistry.deletedAt))
-        .orderBy(appsRegistry.name);
+        .from(apps)
+        .where(isNull(apps.deletedAt))
+        .orderBy(apps.name);
 
-      // Get module counts for each app
-      const appsWithModules = await Promise.all(
+      // Get pricing plans for each app
+      const appsWithPricing = await Promise.all(
         allApps.map(async (app) => {
-          const modules = await db
-            .select({
-              moduleId: appModules.moduleId,
-              name: platformModules.name,
-              isRequired: appModules.isRequired,
-            })
-            .from(appModules)
-            .innerJoin(platformModules, eq(appModules.moduleId, platformModules.id))
-            .where(eq(appModules.appId, app.id));
+          // Fetch pricing plans for this app
+          const pricingPlansData = await db
+            .select()
+            .from(appPricingPlans)
+            .where(and(
+              eq(appPricingPlans.appId, app.id),
+              eq(appPricingPlans.isActive, true)
+            ))
+            .orderBy(appPricingPlans.sortOrder);
+
+          // Get category from categories array (use first one or 'other')
+          const categoryArray = app.categories as string[] || [];
+          const category = categoryArray[0] || 'other';
 
           return {
-            ...app,
-            moduleCount: modules.length,
-            modules: modules
+            id: app.id,
+            displayId: app.displayId,
+            name: app.name,
+            slug: app.slug || app.key,
+            description: app.description,
+            icon: app.icon || '📦',
+            category: category,
+            categories: categoryArray,
+            version: app.version,
+            route: app.route,
+            contexts: app.contexts,
+            status: app.status,
+            isActive: app.status === 'active',
+            
+            // Dynamic Pricing Fields
+            appType: app.appType || 'premium',
+            isCoreApp: app.isCoreApp || false,
+            isAutoAssigned: app.isAutoAssigned || false,
+            pricingModel: app.pricingModel || 'free',
+            pricingPlans: pricingPlansData.map(plan => ({
+              id: plan.id,
+              planName: plan.planName,
+              planSlug: plan.planSlug,
+              planType: plan.planType,
+              price: plan.price,
+              currency: plan.currency,
+              usageLimit: plan.usageLimit,
+              usageUnit: plan.usageUnit,
+              features: plan.features,
+              isDefault: plan.isDefault,
+            })),
+            
+            // Visibility & Access
+            visibilityMode: app.visibilityMode,
+            accessPanels: app.accessPanels,
+            features: app.features,
+            
+            // Wizard State
+            wizardCompleted: app.wizardCompleted,
+            wizardStep: app.wizardStep,
+            
+            // Timestamps
+            createdAt: app.createdAt,
+            updatedAt: app.updatedAt,
+            deletedAt: app.deletedAt,
+            deletedBy: app.deletedBy,
+            deleteReason: app.deleteReason,
           };
         })
       );
 
       res.json({
         success: true,
-        apps: appsWithModules
+        apps: appsWithPricing,
+        count: appsWithPricing.length
       });
     } catch (error) {
       console.error('Error fetching apps:', error);

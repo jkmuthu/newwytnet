@@ -23,24 +23,58 @@ import {
   Info, FileText, Route as RouteIcon, Settings, 
   Shield, Globe, History, CheckCircle2, Grid, List,
   Brain, Calculator, FileSignature, QrCode, Users, Grid3x3, Bot,
-  Edit2, Save, X
+  Edit2, Save, X, DollarSign, Lock, Zap, CreditCard, Star
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TrashView } from "@/components/shared/TrashView";
 import { WytAppWizard } from "@/components/admin/WytAppWizard";
 
-// App interface with new fields
+// Pricing Plan interface
+interface PricingPlan {
+  id: string;
+  planName: string;
+  planSlug: string;
+  planType: 'free' | 'monthly' | 'yearly' | 'one_time' | 'pay_per_use';
+  price: string;
+  currency: string;
+  usageLimit?: number;
+  usageUnit?: string;
+  features: any[];
+  isDefault: boolean;
+}
+
+// App interface with dynamic pricing fields
 interface AppDefinition {
   id: string;
+  displayId?: string;
   slug?: string;
   name: string;
   description?: string;
   icon?: string;
   category?: string;
+  categories?: string[];
   version?: string;
   route?: string;
   contexts?: Array<'hub' | 'app'>;
+  status?: string;
+  
+  // Dynamic Pricing Fields
+  appType?: 'mandatory' | 'premium' | 'standard';
+  isCoreApp?: boolean;
+  isAutoAssigned?: boolean;
+  pricingModel?: 'free' | 'one_time' | 'subscription' | 'pay_per_use' | 'custom';
+  pricingPlans?: PricingPlan[];
+  
+  // Visibility
+  visibilityMode?: string;
+  accessPanels?: string[];
+  features?: any[];
+  
+  // Wizard State
+  wizardCompleted?: boolean;
+  wizardStep?: number;
+  
   versionHistory?: Array<{
     version: string;
     date: string;
@@ -85,6 +119,10 @@ const getAppIcon = (iconName?: string) => {
     'users': <Users className="h-5 w-5 text-orange-600" />,
     'grid-3×3': <Grid3x3 className="h-5 w-5 text-teal-600" />,
     'clipboard-check': <Package className="h-5 w-5 text-indigo-600" />,
+    'shield': <Shield className="h-5 w-5 text-blue-600" />,
+    'lock': <Lock className="h-5 w-5 text-blue-600" />,
+    'credit-card': <CreditCard className="h-5 w-5 text-green-600" />,
+    'zap': <Zap className="h-5 w-5 text-yellow-600" />,
   };
 
   // If it's a known icon name, return the mapped icon
@@ -94,6 +132,47 @@ const getAppIcon = (iconName?: string) => {
 
   // Otherwise, treat it as an emoji
   return <span className="text-xl" role="img" aria-label="app icon">{iconName}</span>;
+};
+
+// Helper to format pricing display
+const formatPricing = (app: AppDefinition) => {
+  if (app.appType === 'mandatory' || app.pricingModel === 'free') {
+    return { label: 'Free', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' };
+  }
+  
+  const defaultPlan = app.pricingPlans?.find(p => p.isDefault) || app.pricingPlans?.[0];
+  if (!defaultPlan) {
+    return { label: 'Free', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' };
+  }
+  
+  const price = parseFloat(defaultPlan.price || '0');
+  if (price === 0) {
+    return { label: 'Free', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' };
+  }
+  
+  switch (defaultPlan.planType) {
+    case 'monthly':
+      return { label: `₹${price}/mo`, color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100' };
+    case 'yearly':
+      return { label: `₹${price}/yr`, color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100' };
+    case 'pay_per_use':
+      return { label: `₹${price}/use`, color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100' };
+    case 'one_time':
+      return { label: `₹${price}`, color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-100' };
+    default:
+      return { label: `₹${price}`, color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100' };
+  }
+};
+
+// Helper to get app type badge
+const getAppTypeBadge = (app: AppDefinition) => {
+  if (app.appType === 'mandatory' || app.isCoreApp) {
+    return { label: 'Core', icon: <Lock className="h-3 w-3" />, color: 'bg-blue-600 text-white' };
+  }
+  if (app.isAutoAssigned) {
+    return { label: 'Auto', icon: <Zap className="h-3 w-3" />, color: 'bg-purple-600 text-white' };
+  }
+  return { label: 'Premium', icon: <Star className="h-3 w-3" />, color: 'bg-amber-500 text-white' };
 };
 
 export default function AdminApps() {
@@ -607,6 +686,7 @@ export default function AdminApps() {
               {filteredApps.map((app: AppDefinition) => (
                 <Card key={app.id} className={cn(
                   "hover:shadow-lg transition-all duration-200 border-l-4",
+                  app.appType === 'mandatory' ? "border-l-blue-500" : 
                   app.isActive ? "border-l-green-500" : "border-l-gray-300"
                 )} data-testid={`card-app-${app.id}`}>
                   <CardHeader>
@@ -620,6 +700,24 @@ export default function AdminApps() {
                           {app.isActive && <CheckCircle2 className="h-4 w-4 text-green-600" />}
                         </div>
                         <div className="flex gap-2 mb-2 flex-wrap">
+                          {(() => {
+                            const typeBadge = getAppTypeBadge(app);
+                            return (
+                              <Badge className={cn("text-xs flex items-center gap-1", typeBadge.color)} data-testid={`badge-type-${app.id}`}>
+                                {typeBadge.icon}
+                                {typeBadge.label}
+                              </Badge>
+                            );
+                          })()}
+                          {(() => {
+                            const pricing = formatPricing(app);
+                            return (
+                              <Badge className={cn("text-xs", pricing.color)} data-testid={`badge-pricing-${app.id}`}>
+                                <DollarSign className="h-3 w-3 mr-1" />
+                                {pricing.label}
+                              </Badge>
+                            );
+                          })()}
                           {app.category && (
                             <Badge variant="secondary" data-testid={`badge-category-${app.id}`}>
                               {app.category}
@@ -755,9 +853,9 @@ export default function AdminApps() {
                   <TableRow>
                     <TableHead>App Name</TableHead>
                     <TableHead>Description</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Pricing</TableHead>
                     <TableHead>Category</TableHead>
-                    <TableHead>Version</TableHead>
-                    <TableHead>Module Count</TableHead>
                     <TableHead>Updated</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -773,22 +871,44 @@ export default function AdminApps() {
                               {app.name}
                               {app.isActive && <CheckCircle2 className="h-3 w-3 text-green-600" />}
                             </div>
-                            {app.contexts && app.contexts.length > 0 && (
-                              <div className="flex gap-1 mt-1">
-                                {app.contexts.map(context => (
-                                  <Badge key={context} variant="outline" className="text-xs">
-                                    {context}
-                                  </Badge>
-                                ))}
+                            {app.slug && (
+                              <div className="text-xs text-muted-foreground font-mono">
+                                {app.slug}
                               </div>
                             )}
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="max-w-md">
+                      <TableCell className="max-w-xs">
                         <div className="truncate text-sm text-muted-foreground">
                           {app.description || "No description"}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const typeBadge = getAppTypeBadge(app);
+                          return (
+                            <Badge className={cn("text-xs flex items-center gap-1 w-fit", typeBadge.color)} data-testid={`list-badge-type-${app.id}`}>
+                              {typeBadge.icon}
+                              {typeBadge.label}
+                            </Badge>
+                          );
+                        })()}
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const pricing = formatPricing(app);
+                          return (
+                            <Badge className={cn("text-xs w-fit", pricing.color)} data-testid={`list-badge-pricing-${app.id}`}>
+                              {pricing.label}
+                            </Badge>
+                          );
+                        })()}
+                        {app.pricingPlans && app.pricingPlans.length > 1 && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            +{app.pricingPlans.length - 1} more plans
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         {app.category && (
@@ -796,19 +916,6 @@ export default function AdminApps() {
                             {app.category}
                           </Badge>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        {app.version && (
-                          <Badge variant="outline" className="text-xs" data-testid={`list-badge-version-${app.id}`}>
-                            v{app.version}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Package className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{app.moduleCount || 0}</span>
-                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
