@@ -139,6 +139,7 @@ import {
   platformModuleActivations,
   hubModuleActivations,
   appModuleActivations,
+  hubModules,
   moduleEditHistory,
   appEditHistory,
   media,
@@ -292,6 +293,10 @@ export async function registerRoutes(app: Express): Promise<void> {
   // Initialize WytData datasets
   const { datasetSeedingService } = await import('./services/datasetSeedingService');
   await datasetSeedingService.initializeDatasets();
+
+  // Initialize WytHub datasets
+  const { hubDatasetSeedingService } = await import('./services/hubDatasetSeedingService');
+  await hubDatasetSeedingService.initializeHubDatasets();
 
   // Register Roles & Permissions Management Router
   app.use('/api', rolesRouter);
@@ -2816,6 +2821,36 @@ export async function registerRoutes(app: Express): Promise<void> {
         createdBy: userId
       }).returning();
       
+      // Auto-activate modules from template
+      const defaultModuleIds = (template.defaultModules as string[]) || [];
+      const activatedModules: string[] = [];
+      
+      if (defaultModuleIds.length > 0) {
+        // Get all matching modules from platform_modules table
+        const availableModules = await db.select()
+          .from(platformModules)
+          .where(inArray(platformModules.id, defaultModuleIds));
+        
+        // Insert hub_modules for each available module
+        for (let i = 0; i < availableModules.length; i++) {
+          const module = availableModules[i];
+          try {
+            await db.insert(hubModules).values({
+              hubId: newHub.id,
+              moduleId: module.id,
+              isActive: true,
+              sortOrder: i + 1,
+              metadata: { activatedFromTemplate: template.slug }
+            }).onConflictDoNothing();
+            activatedModules.push(module.id);
+          } catch (err) {
+            console.warn(`Could not activate module ${module.id} for hub ${newHub.id}:`, err);
+          }
+        }
+        
+        console.log(`✅ Activated ${activatedModules.length} modules for hub ${hubSlug}:`, activatedModules);
+      }
+      
       await db.update(hubTemplates)
         .set({ usageCount: sql`${hubTemplates.usageCount} + 1` })
         .where(eq(hubTemplates.id, templateId));
@@ -2823,7 +2858,8 @@ export async function registerRoutes(app: Express): Promise<void> {
       res.json({ 
         success: true, 
         hub: newHub,
-        url: `/h/${hubSlug}`
+        url: `/h/${hubSlug}`,
+        activatedModules
       });
     } catch (error: any) {
       console.error("Error creating hub from template:", error);

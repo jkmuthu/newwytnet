@@ -51,7 +51,7 @@ const HUB_TEMPLATES: HubTemplateDefinition[] = [
     slug: "community",
     description: "Build vibrant communities with discussions, member profiles, and social features. Ideal for interest groups, clubs, and associations.",
     category: "community",
-    defaultModules: ["wytpass-auth", "wytwall", "notifications", "user-profiles", "messaging"],
+    defaultModules: ["wytpass-auth", "wytwall", "notifications", "hub-members", "hub-discussions", "messaging"],
     defaultTheme: {
       primaryColor: "#10b981",
       secondaryColor: "#059669",
@@ -75,7 +75,7 @@ const HUB_TEMPLATES: HubTemplateDefinition[] = [
     slug: "marketplace",
     description: "Create a thriving marketplace connecting buyers and sellers. Perfect for e-commerce, services, and B2B platforms.",
     category: "marketplace",
-    defaultModules: ["wytpass-auth", "wytwall", "notifications", "razorpay-payment", "user-profiles"],
+    defaultModules: ["wytpass-auth", "wytwall", "notifications", "razorpay-payment", "hub-members", "hub-listings", "hub-reviews", "hub-subscriptions"],
     defaultTheme: {
       primaryColor: "#f59e0b",
       secondaryColor: "#d97706",
@@ -99,7 +99,7 @@ const HUB_TEMPLATES: HubTemplateDefinition[] = [
     slug: "directory",
     description: "Comprehensive directory for businesses, professionals, or organizations. Features search, filters, and detailed profiles.",
     category: "directory",
-    defaultModules: ["wytpass-auth", "notifications", "user-profiles", "search"],
+    defaultModules: ["wytpass-auth", "notifications", "hub-members", "hub-listings", "hub-reviews", "search"],
     defaultTheme: {
       primaryColor: "#3b82f6",
       secondaryColor: "#2563eb",
@@ -123,7 +123,7 @@ const HUB_TEMPLATES: HubTemplateDefinition[] = [
     slug: "learning",
     description: "Educational platform for courses, tutorials, and knowledge sharing. Perfect for training centers, academies, and skill development.",
     category: "learning",
-    defaultModules: ["wytpass-auth", "notifications", "user-profiles", "content-management"],
+    defaultModules: ["wytpass-auth", "notifications", "hub-members", "hub-courses", "hub-discussions", "hub-subscriptions"],
     defaultTheme: {
       primaryColor: "#8b5cf6",
       secondaryColor: "#7c3aed",
@@ -147,7 +147,7 @@ const HUB_TEMPLATES: HubTemplateDefinition[] = [
     slug: "event",
     description: "Host and manage events with registrations, schedules, and attendee management. Great for conferences, meetups, and workshops.",
     category: "event",
-    defaultModules: ["wytpass-auth", "notifications", "user-profiles", "calendar", "razorpay-payment"],
+    defaultModules: ["wytpass-auth", "notifications", "hub-members", "hub-events", "calendar", "razorpay-payment", "hub-subscriptions"],
     defaultTheme: {
       primaryColor: "#ec4899",
       secondaryColor: "#db2777",
