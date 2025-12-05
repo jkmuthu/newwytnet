@@ -10,7 +10,7 @@
 
 import { db } from "../db";
 import { apps, appPricingPlans, appPricingHistory } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 interface AppDefinition {
   key: string;
@@ -265,19 +265,36 @@ const APP_PRICING_PLANS: Record<string, PricingPlanDefinition[]> = {
 };
 
 export class WytAppsSeedingService {
-  private displayIdCounter = 1;
-  private planDisplayIdCounter = 1;
-
-  private generateAppDisplayId(): string {
-    const id = `WA${String(this.displayIdCounter).padStart(5, '0')}`;
-    this.displayIdCounter++;
-    return id;
+  private async getNextAppDisplayId(): Promise<string> {
+    const [result] = await db.select({ displayId: apps.displayId })
+      .from(apps)
+      .orderBy(sql`display_id DESC NULLS LAST`)
+      .limit(1);
+    
+    let nextNum = 1;
+    if (result?.displayId) {
+      const match = result.displayId.match(/WA(\d+)/);
+      if (match) {
+        nextNum = parseInt(match[1], 10) + 1;
+      }
+    }
+    return `WA${String(nextNum).padStart(5, '0')}`;
   }
 
-  private generatePlanDisplayId(): string {
-    const id = `PP${String(this.planDisplayIdCounter).padStart(5, '0')}`;
-    this.planDisplayIdCounter++;
-    return id;
+  private async getNextPlanDisplayId(): Promise<string> {
+    const [result] = await db.select({ displayId: appPricingPlans.displayId })
+      .from(appPricingPlans)
+      .orderBy(sql`display_id DESC NULLS LAST`)
+      .limit(1);
+    
+    let nextNum = 1;
+    if (result?.displayId) {
+      const match = result.displayId.match(/PP(\d+)/);
+      if (match) {
+        nextNum = parseInt(match[1], 10) + 1;
+      }
+    }
+    return `PP${String(nextNum).padStart(5, '0')}`;
   }
 
   async seedWytApps(systemUserId: string) {
@@ -321,7 +338,7 @@ export class WytAppsSeedingService {
         } else {
           // Create new app
           const [newApp] = await db.insert(apps).values({
-            displayId: this.generateAppDisplayId(),
+            displayId: await this.getNextAppDisplayId(),
             key: appDef.key,
             slug: appDef.slug,
             name: appDef.name,
@@ -364,7 +381,7 @@ export class WytAppsSeedingService {
           if (existingPlan.length === 0) {
             // Create new pricing plan
             const [newPlan] = await db.insert(appPricingPlans).values({
-              displayId: this.generatePlanDisplayId(),
+              displayId: await this.getNextPlanDisplayId(),
               appId: appId,
               planName: planDef.planName,
               planSlug: planDef.planSlug,

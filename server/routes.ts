@@ -298,6 +298,14 @@ export async function registerRoutes(app: Express): Promise<void> {
   const { hubDatasetSeedingService } = await import('./services/hubDatasetSeedingService');
   await hubDatasetSeedingService.initializeHubDatasets();
 
+  // Initialize WytApps with dynamic pricing plans
+  const { wytAppsSeedingService } = await import('./services/wytAppsSeedingService');
+  // Get system user for seeding (first admin or create system account)
+  const systemUser = await db.select().from(users).where(eq(users.role, 'admin')).limit(1);
+  if (systemUser.length > 0) {
+    await wytAppsSeedingService.seedWytApps(systemUser[0].id);
+  }
+
   // Register Roles & Permissions Management Router
   app.use('/api', rolesRouter);
 
