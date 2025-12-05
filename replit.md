@@ -2,7 +2,13 @@
 
 **WytNet.com** is an all-in-one digital platform designed to enhance both lifestyle and workstyle for individuals and organizations. Its mission is to create a connected digital ecosystem emphasizing speed, security, and scalability by unifying productivity, social networking, and intelligent automation. The platform aims to build a world where every task, connection, and opportunity is managed within a smart, trustworthy environment.
 
-**Recent Updates (Nov 26, 2025):**
+**Recent Updates (Dec 5, 2025):**
+- ✅ WytApp Dynamic Pricing System: Fully configurable pricing per app with multiple plan types (free, monthly, yearly, pay-per-use, one-time)
+- ✅ Mandatory Apps Auto-Assignment: WytPass and WytWall auto-assigned to all users on registration with free plans
+- ✅ Premium Apps with Flexible Pricing: WytQRC and WytAssessor with pay-per-use (₹10), monthly (₹10/month), yearly (₹100/year) plans
+- ✅ Complete Pricing Audit Trail: All pricing changes tracked with previous/new values, who changed, and change reason
+
+**Previous Updates (Nov 26, 2025):**
 - ✅ Light mode set as default theme (dark mode no longer system preference override)
 - ✅ File organization completed - documentation, setup, and config files organized into dedicated folders
 - ✅ Professional investor presentation (14 slides) with WytLife branding and $300B+ market opportunity
@@ -73,6 +79,7 @@ Security measures include PostgreSQL Row Level Security, session-based authentic
 - **WytNet DevDoc (Developer Documentation System)**: Comprehensive bilingual (Tamil + English) technical documentation built with VitePress with **4-level RBAC** (Public, Developer, Internal, Admin) integrated with WytNet's permission system. Features API reference, architecture docs, workflow diagrams, implementation guides, **PRD (Project Requirements Documentation)**, **Chat History Archive**, and business strategy. Access managed through Engine Admin Panel with dual-layer authentication (WytPass + password backward compatibility).
 - **Features Checklist System**: Project management tool with a dual-testing workflow for tracking feature implementations, accessible in the Engine Admin portal.
 - **Content Architecture**: Features a robust system for WytApps (39 apps across 17 categories with flexible pricing), WytSuites (3 app bundles), WytModules (51 modules across 9 categories with various pricing models), and WytHubs (5 active hubs with multi-domain routing and hub-level RBAC).
+- **WytApp Dynamic Pricing System**: Fully configurable pricing system for WytApps with multiple plan types (free, monthly, yearly, pay-per-use, one-time). Features mandatory core apps (WytPass, WytWall) auto-assigned on registration, premium apps with flexible pricing (₹10/use, ₹10/month, ₹100/year), complete pricing audit trail, and per-app subscription management. Database tables: `app_pricing_plans`, `app_pricing_history`, `app_plan_subscriptions`.
 - **WytData Management System (All Datasets)**: Consolidated dataset management interface at `/engine/datasets` for managing global reference data collections. Includes 38+ dataset collections (Countries, Cities, Languages, Currencies, Industries, etc.) with CRUD operations, import/export functionality, and hierarchical data management. The "All Datasets" page serves as the unified WytData management hub with collection-level and item-level editing capabilities.
 - **Self-Service Platform Initiative (Phase 1-3 Roadmap)**: Strategic 3-phase transformation to enable Super Admins to autonomously build features without developer dependency. Phase 1: Engine Panel Consolidation (standardize navigation, APIs, routing). Phase 2: WytAI Agent Full Page (transform floating widget to comprehensive full-page interface with voice, files, code execution, deep context integration). Phase 3: WytBuilder Platform (visual drag-drop CRUD builders for modules, apps, pages, hubs with AI-powered code generation). Documentation includes comprehensive PRD, architecture docs (WytBuilder, WytAI Agent), and step-by-step implementation guides for all 3 phases.
 
