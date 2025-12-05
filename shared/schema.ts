@@ -384,6 +384,11 @@ export const apps = pgTable("apps", {
   isPublic: boolean("is_public").default(false),
   pricing: jsonb("pricing").default({}),
   
+  // App Classification & Auto-Assignment
+  appType: varchar("app_type", { length: 20 }).default('premium'), // 'mandatory', 'premium', 'standard'
+  isCoreApp: boolean("is_core_app").default(false), // Platform-level core apps (WytPass, WytWall)
+  isAutoAssigned: boolean("is_auto_assigned").default(false), // Auto-assign to new users
+  
   // Route & Context Support (like Modules)
   route: varchar("route", { length: 255 }), // App route/URL
   contexts: jsonb("contexts").default(['hub', 'app']), // Where app can be activated
@@ -396,7 +401,7 @@ export const apps = pgTable("apps", {
   
   // Wizard: Features & Pricing
   features: jsonb("features").default([]), // [{ name: 'Feature 1', description: '...', enabled: true }]
-  pricingModel: varchar("pricing_model", { length: 50 }).default('free'), // 'free', 'one_time', 'subscription', 'custom'
+  pricingModel: varchar("pricing_model", { length: 50 }).default('free'), // 'free', 'one_time', 'subscription', 'pay_per_use', 'custom'
   pricingDetails: jsonb("pricing_details").default({}), // Model-specific pricing data
   
   // Wizard: State Management
@@ -431,6 +436,111 @@ export const appInstalls = pgTable("app_installs", {
   installedAt: timestamp("installed_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// App Pricing Plans - Dynamic pricing per app (fully configurable, no hardcoding)
+export const appPricingPlans = pgTable("app_pricing_plans", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // PP00001
+  appId: uuid("app_id").notNull().references(() => apps.id, { onDelete: 'cascade' }),
+  
+  // Plan Identification
+  planName: varchar("plan_name", { length: 100 }).notNull(), // 'Free', 'Starter', 'Pro', 'Enterprise', custom names
+  planSlug: varchar("plan_slug", { length: 100 }).notNull(), // 'free', 'starter', 'pro', 'enterprise'
+  description: text("description"),
+  
+  // Pricing Type & Amount
+  planType: varchar("plan_type", { length: 30 }).notNull().default('free'), // 'free', 'monthly', 'yearly', 'one_time', 'pay_per_use'
+  price: decimal("price", { precision: 10, scale: 2 }).default('0'), // e.g., 10.00, 100.00
+  currency: varchar("currency", { length: 3 }).default('INR'),
+  
+  // Usage Limits (for pay-per-use or tiered limits)
+  usageLimit: integer("usage_limit"), // null = unlimited, e.g., 10 for "10 QR codes"
+  usageUnit: varchar("usage_unit", { length: 50 }), // 'qr_codes', 'assessments', 'api_calls', etc.
+  
+  // Features included in this plan
+  features: jsonb("features").default([]), // [{ name: 'Branding', included: true }, { name: 'Analytics', included: false }]
+  limits: jsonb("limits").default({}), // { maxUsers: 5, maxStorage: '1GB', etc. }
+  
+  // Plan Availability
+  isActive: boolean("is_active").default(true),
+  isDefault: boolean("is_default").default(false), // Default plan for new users
+  sortOrder: integer("sort_order").default(0),
+  
+  // Effective Dates (for time-limited pricing or promotions)
+  effectiveFrom: timestamp("effective_from").defaultNow(),
+  effectiveTo: timestamp("effective_to"), // null = no expiry
+  
+  // Audit
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  appIdx: index("app_pricing_plans_app_idx").on(table.appId),
+  activeIdx: index("app_pricing_plans_active_idx").on(table.isActive),
+  uniqueAppPlan: unique("unique_app_plan_slug").on(table.appId, table.planSlug),
+}));
+
+// App Pricing History - Audit trail for all price changes
+export const appPricingHistory = pgTable("app_pricing_history", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  appId: uuid("app_id").notNull().references(() => apps.id, { onDelete: 'cascade' }),
+  planId: uuid("plan_id").references(() => appPricingPlans.id, { onDelete: 'set null' }),
+  
+  // Change Details
+  changeType: varchar("change_type", { length: 30 }).notNull(), // 'created', 'price_updated', 'features_updated', 'deactivated', 'reactivated'
+  previousPrice: decimal("previous_price", { precision: 10, scale: 2 }),
+  newPrice: decimal("new_price", { precision: 10, scale: 2 }),
+  previousData: jsonb("previous_data").default({}), // Full snapshot of previous state
+  newData: jsonb("new_data").default({}), // Full snapshot of new state
+  
+  // Audit
+  changedBy: varchar("changed_by").notNull().references(() => users.id),
+  changeReason: text("change_reason"),
+  changedAt: timestamp("changed_at").defaultNow().notNull(),
+}, (table) => ({
+  appIdx: index("app_pricing_history_app_idx").on(table.appId),
+  planIdx: index("app_pricing_history_plan_idx").on(table.planId),
+  changedAtIdx: index("app_pricing_history_date_idx").on(table.changedAt),
+}));
+
+// User App Subscriptions - Track user's active subscriptions per app
+export const userAppSubscriptions = pgTable("user_app_subscriptions", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  appId: uuid("app_id").notNull().references(() => apps.id, { onDelete: 'cascade' }),
+  planId: uuid("plan_id").notNull().references(() => appPricingPlans.id),
+  
+  // Subscription Status
+  status: varchar("status", { length: 20 }).notNull().default('active'), // 'active', 'expired', 'cancelled', 'suspended'
+  
+  // Billing Cycle
+  billingCycle: varchar("billing_cycle", { length: 20 }), // 'monthly', 'yearly', 'one_time', 'pay_per_use'
+  startDate: timestamp("start_date").defaultNow().notNull(),
+  endDate: timestamp("end_date"), // null for lifetime/pay-per-use
+  
+  // Usage Tracking (for pay-per-use plans)
+  usageBalance: integer("usage_balance").default(0), // Remaining uses for pay-per-use
+  totalUsed: integer("total_used").default(0), // Total usage count
+  lastUsedAt: timestamp("last_used_at"),
+  
+  // Payment Info
+  lastPaymentAt: timestamp("last_payment_at"),
+  nextPaymentAt: timestamp("next_payment_at"),
+  
+  // Auto-assignment tracking
+  isAutoAssigned: boolean("is_auto_assigned").default(false), // Was this auto-assigned on registration?
+  
+  // Metadata
+  metadata: jsonb("metadata").default({}),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("user_app_subs_user_idx").on(table.userId),
+  appIdx: index("user_app_subs_app_idx").on(table.appId),
+  statusIdx: index("user_app_subs_status_idx").on(table.status),
+  uniqueUserAppSub: unique("unique_user_app_subscription").on(table.userId, table.appId),
+}));
 
 // Hubs
 export const hubs = pgTable("hubs", {
