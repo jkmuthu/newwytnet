@@ -2525,37 +2525,177 @@ export async function registerRoutes(app: Express): Promise<void> {
     }
   });
 
-  // Update app
-  app.put('/api/admin/apps/:id', adminAuthMiddleware, async (req, res) => {
+  // Update app with dynamic pricing support
+  // Uses the unified 'apps' table with pricing plans
+  app.put('/api/admin/apps/:id', adminAuthMiddleware, async (req: any, res) => {
     try {
       const appId = req.params.id;
       const updateData = req.body;
+      const adminId = req.admin?.id || req.user?.id || 'system';
 
-      // Store wizard data in configData
-      const configData = {
-        visibilityMode: updateData.visibilityMode,
-        selectedHubs: updateData.selectedHubs,
-        accessPanels: updateData.accessPanels,
-        features: updateData.features,
-        pricingModel: updateData.pricingModel,
-        pricingDetails: updateData.pricingDetails,
-        version: updateData.version,
-        changelog: updateData.changelog,
-      };
+      // Check if app exists in apps table
+      const existingApp = await db
+        .select()
+        .from(apps)
+        .where(eq(apps.id, appId))
+        .limit(1);
 
-      // Update app in registry
+      if (existingApp.length === 0) {
+        return res.status(404).json({ success: false, message: 'App not found' });
+      }
+
+      const currentApp = existingApp[0];
+
+      // Update the app in the apps table
       await db
-        .update(appsRegistry)
+        .update(apps)
         .set({
           name: updateData.name,
           slug: updateData.slug,
           description: updateData.description,
           icon: updateData.icon,
-          category: updateData.category,
-          configData: configData as any,
+          categories: updateData.category ? [updateData.category] : currentApp.categories,
+          version: updateData.version || currentApp.version,
+          changelog: updateData.changelog || currentApp.changelog,
+          
+          // Visibility & Access
+          visibilityMode: updateData.visibilityMode || currentApp.visibilityMode,
+          selectedHubs: updateData.selectedHubs || currentApp.selectedHubs,
+          accessPanels: updateData.accessPanels || currentApp.accessPanels,
+          
+          // Features
+          features: updateData.features || currentApp.features,
+          
+          // Pricing Model
+          pricingModel: updateData.pricingModel || currentApp.pricingModel,
+          pricingDetails: updateData.pricingDetails || currentApp.pricingDetails,
+          
+          // App Type
+          appType: updateData.appType || currentApp.appType,
+          isCoreApp: updateData.isCoreApp ?? currentApp.isCoreApp,
+          isAutoAssigned: updateData.isAutoAssigned ?? currentApp.isAutoAssigned,
+          
+          // Wizard State
+          wizardCompleted: updateData.wizardCompleted ?? true,
+          wizardStep: updateData.wizardStep || 6,
+          
           updatedAt: new Date(),
         })
-        .where(eq(appsRegistry.id, appId));
+        .where(eq(apps.id, appId));
+
+      // Handle pricing plans if provided
+      if (updateData.pricingPlans && Array.isArray(updateData.pricingPlans)) {
+        // Get existing pricing plans for comparison
+        const existingPlans = await db
+          .select()
+          .from(appPricingPlans)
+          .where(eq(appPricingPlans.appId, appId));
+
+        // Process each pricing plan
+        for (const plan of updateData.pricingPlans) {
+          if (plan.id) {
+            // Update existing plan
+            const existingPlan = existingPlans.find(p => p.id === plan.id);
+            
+            if (existingPlan) {
+              // Check if price changed - create history entry
+              if (existingPlan.price !== plan.price) {
+                await db.insert(appPricingHistory).values({
+                  appId: appId,
+                  planId: plan.id,
+                  previousPrice: existingPlan.price,
+                  newPrice: plan.price,
+                  previousPlanType: existingPlan.planType,
+                  newPlanType: plan.planType || existingPlan.planType,
+                  changedBy: adminId,
+                  changeReason: plan.changeReason || 'Price updated via wizard',
+                });
+              }
+
+              // Update the plan
+              await db
+                .update(appPricingPlans)
+                .set({
+                  planName: plan.planName,
+                  planSlug: plan.planSlug,
+                  planType: plan.planType,
+                  price: plan.price,
+                  currency: plan.currency || 'INR',
+                  billingInterval: plan.billingInterval,
+                  usageLimit: plan.usageLimit,
+                  usageUnit: plan.usageUnit,
+                  features: plan.features || [],
+                  isDefault: plan.isDefault ?? false,
+                  isActive: plan.isActive ?? true,
+                  sortOrder: plan.sortOrder || 0,
+                  updatedAt: new Date(),
+                })
+                .where(eq(appPricingPlans.id, plan.id));
+            }
+          } else {
+            // Create new plan
+            const planSlug = plan.planSlug || plan.planName?.toLowerCase().replace(/\s+/g, '-') || 'default';
+            
+            await db.insert(appPricingPlans).values({
+              appId: appId,
+              planName: plan.planName || 'Default Plan',
+              planSlug: planSlug,
+              planType: plan.planType || 'free',
+              price: plan.price || '0',
+              currency: plan.currency || 'INR',
+              billingInterval: plan.billingInterval,
+              usageLimit: plan.usageLimit,
+              usageUnit: plan.usageUnit,
+              features: plan.features || [],
+              isDefault: plan.isDefault ?? true,
+              isActive: true,
+              sortOrder: plan.sortOrder || 0,
+              createdBy: adminId,
+            });
+
+            // Create history entry for new plan
+            await db.insert(appPricingHistory).values({
+              appId: appId,
+              previousPrice: '0',
+              newPrice: plan.price || '0',
+              previousPlanType: 'none',
+              newPlanType: plan.planType || 'free',
+              changedBy: adminId,
+              changeReason: 'New pricing plan created via wizard',
+            });
+          }
+        }
+
+        // Handle plan deletions - deactivate plans not in the update list
+        const updatedPlanIds = updateData.pricingPlans
+          .filter((p: any) => p.id)
+          .map((p: any) => p.id);
+        
+        for (const existingPlan of existingPlans) {
+          if (!updatedPlanIds.includes(existingPlan.id)) {
+            // Deactivate the plan instead of deleting
+            await db
+              .update(appPricingPlans)
+              .set({ 
+                isActive: false,
+                updatedAt: new Date(),
+              })
+              .where(eq(appPricingPlans.id, existingPlan.id));
+
+            // Create history entry for deactivation
+            await db.insert(appPricingHistory).values({
+              appId: appId,
+              planId: existingPlan.id,
+              previousPrice: existingPlan.price,
+              newPrice: '0',
+              previousPlanType: existingPlan.planType,
+              newPlanType: 'deactivated',
+              changedBy: adminId,
+              changeReason: 'Plan deactivated via wizard',
+            });
+          }
+        }
+      }
 
       // Handle module updates if provided
       if (updateData.moduleIds && Array.isArray(updateData.moduleIds)) {
@@ -2574,7 +2714,7 @@ export async function registerRoutes(app: Express): Promise<void> {
         }
       }
 
-      res.json({ success: true, message: "App updated successfully" });
+      res.json({ success: true, message: "App updated successfully with pricing" });
     } catch (error: any) {
       console.error('Error updating app:', error);
       res.status(500).json({ success: false, message: error.message });

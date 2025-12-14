@@ -143,12 +143,28 @@ const wizardSchema = z.object({
     enabled: z.boolean().default(true),
   })).default([]),
 
-  // Screen 5: Pricing Models
-  pricingModel: z.enum(["free", "one_time", "subscription", "custom"]).default("free"),
+  // Screen 5: Dynamic Pricing
+  pricingModel: z.enum(["free", "one_time", "subscription", "pay_per_use", "custom"]).default("free"),
+  appType: z.enum(["core", "premium"]).default("premium"),
+  isCoreApp: z.boolean().default(false),
+  isAutoAssigned: z.boolean().default(false),
+  pricingPlans: z.array(z.object({
+    id: z.string().optional(),
+    planName: z.string(),
+    planSlug: z.string().optional(),
+    planType: z.enum(["free", "monthly", "yearly", "one_time", "pay_per_use"]),
+    price: z.string(),
+    currency: z.string().default("INR"),
+    billingInterval: z.string().optional(),
+    usageLimit: z.number().optional(),
+    usageUnit: z.string().optional(),
+    features: z.array(z.string()).optional(),
+    isDefault: z.boolean().default(false),
+  })).default([]),
   pricingDetails: z.object({
     amount: z.number().optional(),
     currency: z.string().default("INR"),
-    interval: z.string().optional(), // 'monthly', 'yearly' for subscription
+    interval: z.string().optional(),
   }).optional(),
 
   // Screen 6: Versioning
@@ -208,6 +224,10 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
       moduleIds: [],
       features: [],
       pricingModel: "free",
+      appType: "premium",
+      isCoreApp: false,
+      isAutoAssigned: false,
+      pricingPlans: [],
       version: "1.0.0",
       changelog: "",
     },
@@ -238,6 +258,10 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
         moduleIds: [],
         features: [],
         pricingModel: "free",
+        appType: "premium",
+        isCoreApp: false,
+        isAutoAssigned: false,
+        pricingPlans: [],
         version: "1.0.0",
         changelog: "",
       });
@@ -263,9 +287,13 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
         moduleIds: existingApp.moduleIds || [],
         features: existingApp.features || [],
         pricingModel: (existingApp.pricingModel as any) || "free",
+        appType: (existingApp as any).appType || "premium",
+        isCoreApp: (existingApp as any).isCoreApp || false,
+        isAutoAssigned: (existingApp as any).isAutoAssigned || false,
+        pricingPlans: (existingApp as any).pricingPlans || [],
         pricingDetails: existingApp.pricingDetails,
         version: existingApp.version || "1.0.0",
-        changelog: existingApp.changelog || "",
+        changelog: (existingApp as any).changelog || "",
       });
     }
   }, [existingApp, mode, appId, open]);
@@ -1267,81 +1295,201 @@ function Screen4Features({ form }: { form: any }) {
   );
 }
 
-// Screen 5: Pricing (stub)
+// Screen 5: Dynamic Pricing with Plans
 function Screen5Pricing({ form }: { form: any }) {
+  const pricingPlans = form.watch("pricingPlans") || [];
+  const pricingModel = form.watch("pricingModel");
+  const isCoreApp = form.watch("isCoreApp");
+
+  const addPlan = (planType: string) => {
+    const newPlan = {
+      planName: planType === "free" ? "Free" : planType === "monthly" ? "Monthly" : planType === "yearly" ? "Yearly" : "Pay Per Use",
+      planSlug: planType,
+      planType: planType,
+      price: planType === "free" ? "0" : "10",
+      currency: "INR",
+      isDefault: pricingPlans.length === 0,
+    };
+    form.setValue("pricingPlans", [...pricingPlans, newPlan]);
+  };
+
+  const updatePlan = (index: number, field: string, value: any) => {
+    const updated = [...pricingPlans];
+    updated[index] = { ...updated[index], [field]: value };
+    form.setValue("pricingPlans", updated);
+  };
+
+  const removePlan = (index: number) => {
+    const updated = pricingPlans.filter((_: any, i: number) => i !== index);
+    form.setValue("pricingPlans", updated);
+  };
+
   return (
     <div className="space-y-6" data-testid="wizard-screen-5">
       <div>
         <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
           <DollarSign className="h-5 w-5" />
-          Pricing Model
+          Dynamic Pricing
         </h3>
         <p className="text-sm text-muted-foreground">
-          Choose how users will pay for your app
+          Configure pricing plans for your app. Changes are tracked with full audit trail.
         </p>
       </div>
 
-      <FormField
-        control={form.control}
-        name="pricingModel"
-        render={({ field }) => (
-          <FormItem className="space-y-3">
-            <FormControl>
-              <RadioGroup
-                onValueChange={field.onChange}
-                defaultValue={field.value}
-                className="space-y-2"
-                data-testid="radio-group-pricing-model"
-              >
-                <Card className={`cursor-pointer ${field.value === "free" ? "border-primary" : ""}`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <RadioGroupItem value="free" id="free" />
-                      <Label htmlFor="free" className="cursor-pointer font-semibold">
-                        Free
-                      </Label>
-                    </div>
-                  </CardContent>
-                </Card>
+      {/* App Type Selection */}
+      <div className="grid grid-cols-2 gap-4">
+        <Card 
+          className={`cursor-pointer transition-all ${isCoreApp ? "border-green-500 bg-green-50 dark:bg-green-950/20" : "hover:border-primary/50"}`}
+          onClick={() => {
+            form.setValue("isCoreApp", true);
+            form.setValue("isAutoAssigned", true);
+            form.setValue("appType", "core");
+            form.setValue("pricingModel", "free");
+            form.setValue("pricingPlans", [{ planName: "Free", planSlug: "free", planType: "free", price: "0", currency: "INR", isDefault: true }]);
+          }}
+          data-testid="card-core-app"
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                <Shield className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="font-semibold">Core App</p>
+                <p className="text-xs text-muted-foreground">Free & auto-assigned to all users</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-                <Card className={`cursor-pointer ${field.value === "one_time" ? "border-primary" : ""}`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <RadioGroupItem value="one_time" id="one_time" />
-                      <Label htmlFor="one_time" className="cursor-pointer font-semibold">
-                        One-Time Purchase
-                      </Label>
-                    </div>
-                  </CardContent>
-                </Card>
+        <Card 
+          className={`cursor-pointer transition-all ${!isCoreApp ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" : "hover:border-primary/50"}`}
+          onClick={() => {
+            form.setValue("isCoreApp", false);
+            form.setValue("isAutoAssigned", false);
+            form.setValue("appType", "premium");
+          }}
+          data-testid="card-premium-app"
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                <Star className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="font-semibold">Premium App</p>
+                <p className="text-xs text-muted-foreground">Configurable pricing plans</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-                <Card className={`cursor-pointer ${field.value === "subscription" ? "border-primary" : ""}`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <RadioGroupItem value="subscription" id="subscription" />
-                      <Label htmlFor="subscription" className="cursor-pointer font-semibold">
-                        Subscription
-                      </Label>
-                    </div>
-                  </CardContent>
-                </Card>
+      {/* Pricing Plans */}
+      {!isCoreApp && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label className="text-base font-semibold">Pricing Plans</Label>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => addPlan("free")} data-testid="button-add-free-plan">
+                + Free
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => addPlan("monthly")} data-testid="button-add-monthly-plan">
+                + Monthly
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => addPlan("yearly")} data-testid="button-add-yearly-plan">
+                + Yearly
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => addPlan("pay_per_use")} data-testid="button-add-payperuse-plan">
+                + Pay Per Use
+              </Button>
+            </div>
+          </div>
 
-                <Card className={`cursor-pointer ${field.value === "custom" ? "border-primary" : ""}`}>
+          {pricingPlans.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="p-6 text-center text-muted-foreground">
+                <DollarSign className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No pricing plans configured</p>
+                <p className="text-sm">Add plans using the buttons above</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {pricingPlans.map((plan: any, index: number) => (
+                <Card key={index} className="relative">
                   <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
-                      <RadioGroupItem value="custom" id="custom" />
-                      <Label htmlFor="custom" className="cursor-pointer font-semibold">
-                        Custom Pricing
-                      </Label>
+                    <div className="grid grid-cols-4 gap-4 items-end">
+                      <div>
+                        <Label className="text-xs">Plan Name</Label>
+                        <Input
+                          value={plan.planName}
+                          onChange={(e) => updatePlan(index, "planName", e.target.value)}
+                          placeholder="Plan name"
+                          data-testid={`input-plan-name-${index}`}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Type</Label>
+                        <Select value={plan.planType} onValueChange={(v) => updatePlan(index, "planType", v)}>
+                          <SelectTrigger data-testid={`select-plan-type-${index}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="free">Free</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                            <SelectItem value="yearly">Yearly</SelectItem>
+                            <SelectItem value="one_time">One-Time</SelectItem>
+                            <SelectItem value="pay_per_use">Pay Per Use</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Price (₹)</Label>
+                        <Input
+                          type="number"
+                          value={plan.price}
+                          onChange={(e) => updatePlan(index, "price", e.target.value)}
+                          placeholder="0"
+                          disabled={plan.planType === "free"}
+                          data-testid={`input-plan-price-${index}`}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removePlan(index)}
+                          className="text-red-500 hover:text-red-700"
+                          data-testid={`button-remove-plan-${index}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
-              </RadioGroup>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Pricing Summary */}
+      <Card className="bg-muted/30">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <Activity className="h-5 w-5 text-primary mt-0.5" />
+            <div>
+              <p className="font-semibold text-sm">Pricing Audit Trail</p>
+              <p className="text-xs text-muted-foreground">
+                All pricing changes are automatically tracked with previous/new values, timestamps, and who made the change.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
