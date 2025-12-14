@@ -8386,18 +8386,23 @@ When suggesting improvements, format your response with suggestions in a structu
   // USER APP INSTALLATIONS - WytApps Marketplace
   // ========================================
 
-  // Get apps catalog for marketplace (public)
+  // Get apps catalog for marketplace (public) - Now fetching from real 'apps' table
   app.get('/api/apps/catalog', async (req, res) => {
     try {
-      const { category, pricing } = req.query;
+      const { category } = req.query;
 
-      let query = db
+      // Fetch real apps from 'apps' table (same as Engine Admin)
+      // Only show apps that are published or active and public
+      const realApps = await db
         .select()
-        .from(appsRegistry)
-        .where(eq(appsRegistry.isActive, true))
-        .orderBy(appsRegistry.name);
-
-      const apps = await query;
+        .from(apps)
+        .where(
+          and(
+            or(eq(apps.status, 'active'), eq(apps.status, 'published')),
+            eq(apps.isPublic, true)
+          )
+        )
+        .orderBy(apps.name);
 
       // Default color mappings based on category
       const categoryColors: Record<string, string> = {
@@ -8411,22 +8416,39 @@ When suggesting improvements, format your response with suggestions in a structu
         'lifestyle': 'rose',
         'core-platform': 'indigo',
         'web-development': 'teal',
+        'identity': 'purple',
+        'security': 'indigo',
+        'assessment': 'orange',
       };
 
-      // Enhance apps with default values for missing fields
-      const enhancedApps = apps.map((app: any) => ({
-        ...app,
-        color: app.metadata?.color || categoryColors[app.category] || 'blue',
-        pricing: app.metadata?.pricing || 'free',
-        price: app.metadata?.price || 0,
-        currency: app.metadata?.currency || 'INR',
-        features: app.metadata?.features || [
-          'Easy to use interface',
-          'Secure and reliable',
-          'Regular updates'
-        ],
-        route: app.route || app.metadata?.route || `/app/${app.slug}`,
-      }));
+      // Transform apps to expected format for frontend
+      const enhancedApps = realApps.map((app: any) => {
+        const pricingData = app.pricing || {};
+        const categories = Array.isArray(app.categories) ? app.categories : [];
+        const firstCategory = categories[0] || 'utility';
+        
+        return {
+          id: app.id,
+          slug: app.slug || app.key,
+          name: app.name,
+          description: app.description || '',
+          icon: app.icon || 'Package',
+          color: pricingData.color || categoryColors[firstCategory] || 'blue',
+          category: firstCategory,
+          pricing: pricingData.type || 'free',
+          price: pricingData.price || 0,
+          currency: pricingData.currency || 'INR',
+          features: pricingData.features || [
+            'Easy to use interface',
+            'Secure and reliable',
+            'Regular updates'
+          ],
+          route: app.route || `/app/${app.slug || app.key}`,
+          status: app.status,
+          appType: app.appType,
+          isCoreApp: app.isCoreApp,
+        };
+      });
 
       // Filter by category if provided
       let filteredApps = enhancedApps;
@@ -8448,7 +8470,7 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Get user's installed apps
+  // Get user's installed apps - Now joining with real 'apps' table
   app.get('/api/apps/my-apps', async (req: any, res) => {
     try {
       // Check if user is authenticated (Passport or custom session)
@@ -8462,19 +8484,57 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
+      // Join user installations with real apps table
       const userApps = await db
         .select({
           installation: userAppInstallations,
-          app: appsRegistry
+          app: apps
         })
         .from(userAppInstallations)
-        .innerJoin(appsRegistry, eq(userAppInstallations.appSlug, appsRegistry.slug))
+        .innerJoin(apps, eq(userAppInstallations.appSlug, apps.slug))
         .where(eq(userAppInstallations.userId, userId));
+
+      // Transform to frontend expected format
+      const categoryColors: Record<string, string> = {
+        'productivity': 'purple',
+        'utility': 'blue',
+        'finance': 'green',
+        'social': 'pink',
+        'identity': 'purple',
+        'security': 'indigo',
+        'assessment': 'orange',
+      };
+
+      const formattedApps = userApps.map((item: any) => {
+        const app = item.app;
+        const pricingData = app.pricing || {};
+        const categories = Array.isArray(app.categories) ? app.categories : [];
+        const firstCategory = categories[0] || 'utility';
+        
+        return {
+          installation: item.installation,
+          app: {
+            id: app.id,
+            slug: app.slug || app.key,
+            name: app.name,
+            description: app.description || '',
+            icon: app.icon || 'Package',
+            color: pricingData.color || categoryColors[firstCategory] || 'blue',
+            category: firstCategory,
+            pricing: pricingData.type || 'free',
+            price: pricingData.price || 0,
+            currency: pricingData.currency || 'INR',
+            features: pricingData.features || ['Easy to use interface', 'Secure and reliable'],
+            route: app.route || `/app/${app.slug || app.key}`,
+            status: app.status,
+          }
+        };
+      });
 
       res.json({
         success: true,
-        apps: userApps,
-        total: userApps.length
+        apps: formattedApps,
+        total: formattedApps.length
       });
     } catch (error) {
       console.error('Error fetching user apps:', error);
@@ -8485,7 +8545,7 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Get user's added apps for panel (same as my-apps but with different structure)
+  // Get user's added apps for panel - Now using real 'apps' table
   app.get('/api/panel/apps/added', async (req: any, res) => {
     try {
       // Check if user is authenticated (Passport or custom session)
@@ -8502,18 +8562,18 @@ When suggesting improvements, format your response with suggestions in a structu
       const userApps = await db
         .select()
         .from(userAppInstallations)
-        .innerJoin(appsRegistry, eq(userAppInstallations.appSlug, appsRegistry.slug))
+        .innerJoin(apps, eq(userAppInstallations.appSlug, apps.slug))
         .where(eq(userAppInstallations.userId, userId));
 
-      const apps = userApps.map((item: any) => ({
-        ...item.apps_registry,
+      const formattedApps = userApps.map((item: any) => ({
+        ...item.apps,
         installedAt: item.user_app_installations.installedAt
       }));
 
       res.json({
         success: true,
-        apps,
-        total: apps.length
+        apps: formattedApps,
+        total: formattedApps.length
       });
     } catch (error) {
       console.error('Error fetching user added apps:', error);
@@ -8524,7 +8584,7 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Install an app for user
+  // Install an app for user - Now using real 'apps' table
   app.post('/api/apps/install', async (req: any, res) => {
     try {
       // Check if user is authenticated (Passport or custom session)
@@ -8547,21 +8607,21 @@ When suggesting improvements, format your response with suggestions in a structu
         });
       }
 
-      // Check if app exists and is active
-      const app = await db
+      // Check if app exists and is active/published in real apps table
+      const appRecord = await db
         .select()
-        .from(appsRegistry)
-        .where(eq(appsRegistry.slug, appSlug))
+        .from(apps)
+        .where(eq(apps.slug, appSlug))
         .limit(1);
 
-      if (app.length === 0) {
+      if (appRecord.length === 0) {
         return res.status(404).json({
           success: false,
           error: 'App not found'
         });
       }
 
-      if (!app[0].isActive) {
+      if (appRecord[0].status !== 'active' && appRecord[0].status !== 'published') {
         return res.status(400).json({
           success: false,
           error: 'App is not available for installation'
@@ -8601,7 +8661,7 @@ When suggesting improvements, format your response with suggestions in a structu
       res.json({
         success: true,
         installation: installation[0],
-        message: `${app[0].name} installed successfully`
+        message: `${appRecord[0].name} installed successfully`
       });
     } catch (error) {
       console.error('Error installing app:', error);
