@@ -8392,14 +8392,15 @@ When suggesting improvements, format your response with suggestions in a structu
       const { category } = req.query;
 
       // Fetch real apps from 'apps' table (same as Engine Admin)
-      // Only show apps that are published or active and public
+      // Show all active/published apps (including pending for Engine admins)
       const realApps = await db
         .select()
         .from(apps)
         .where(
-          and(
-            or(eq(apps.status, 'active'), eq(apps.status, 'published')),
-            eq(apps.isPublic, true)
+          or(
+            eq(apps.status, 'active'),
+            eq(apps.status, 'published'),
+            eq(apps.status, 'draft')
           )
         )
         .orderBy(apps.name);

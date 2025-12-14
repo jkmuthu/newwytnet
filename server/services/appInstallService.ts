@@ -1,32 +1,29 @@
 import { db } from "../db";
-import { userAppInstallations, platformModules } from "@shared/schema";
+import { userAppInstallations, apps } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 
 /**
- * Auto-install core free apps for new users
- * Core apps: WytScore, WytWallet, WytPoints, WytDuty
+ * Auto-install mandatory/core apps for new users
+ * Mandatory apps: WytPass, WytWall (apps with appType='mandatory' and isAutoAssigned=true)
  */
 export async function autoInstallCoreApps(userId: string): Promise<void> {
   try {
-    // Core app IDs that should be auto-installed
-    const coreAppIds = ['wytscore', 'wytwallet', 'wytpoints', 'wytduty'];
-
-    // Fetch core apps from platform modules
-    const coreApps = await db
+    // Fetch mandatory apps from apps table (appType='mandatory' and isAutoAssigned=true)
+    const mandatoryApps = await db
       .select()
-      .from(platformModules)
+      .from(apps)
       .where(
         and(
-          eq(platformModules.status, 'enabled'),
-          eq(platformModules.pricing, 'free')
+          eq(apps.appType, 'mandatory'),
+          eq(apps.isAutoAssigned, true),
+          eq(apps.status, 'active')
         )
       );
 
-    // Filter to only core apps
-    const appsToInstall = coreApps.filter(app => coreAppIds.includes(app.id));
+    console.log(`🔒 Found ${mandatoryApps.length} mandatory apps to auto-install for user ${userId}`);
 
-    // Install each core app
-    for (const app of appsToInstall as any[]) {
+    // Install each mandatory app
+    for (const app of mandatoryApps) {
       try {
         // Check if already installed
         const [existing] = await db
@@ -35,7 +32,7 @@ export async function autoInstallCoreApps(userId: string): Promise<void> {
           .where(
             and(
               eq(userAppInstallations.userId, userId),
-              eq(userAppInstallations.appSlug, app.id)
+              eq(userAppInstallations.appSlug, app.slug || app.key)
             )
           )
           .limit(1);
@@ -43,21 +40,42 @@ export async function autoInstallCoreApps(userId: string): Promise<void> {
         if (!existing) {
           await db.insert(userAppInstallations).values({
             userId,
-            appSlug: app.id,
+            appSlug: app.slug || app.key,
             status: 'active',
             subscriptionTier: 'free',
+            installedAt: new Date(),
+            updatedAt: new Date(),
           });
-          console.log(`✅ Auto-installed ${app.name} for user ${userId}`);
+          console.log(`  ✓ Auto-installed ${app.name} for user ${userId}`);
+        } else {
+          console.log(`  ~ ${app.name} already installed for user ${userId}`);
         }
       } catch (error) {
         console.error(`Failed to auto-install ${app.name}:`, error);
-        // Continue with other apps even if one fails
       }
     }
 
-    console.log(`✅ Core apps installation completed for user ${userId}`);
+    console.log(`✅ Mandatory apps installation completed for user ${userId}`);
   } catch (error) {
-    console.error('Error auto-installing core apps:', error);
-    // Don't throw - user creation succeeded
+    console.error('Error auto-installing mandatory apps:', error);
   }
+}
+
+/**
+ * Check if an app is mandatory/core (cannot be removed)
+ */
+export async function isMandatoryApp(appSlug: string): Promise<boolean> {
+  const [app] = await db
+    .select()
+    .from(apps)
+    .where(
+      and(
+        eq(apps.slug, appSlug),
+        eq(apps.appType, 'mandatory'),
+        eq(apps.isCoreApp, true)
+      )
+    )
+    .limit(1);
+  
+  return !!app;
 }
