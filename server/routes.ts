@@ -8528,6 +8528,8 @@ When suggesting improvements, format your response with suggestions in a structu
             features: pricingData.features || ['Easy to use interface', 'Secure and reliable'],
             route: app.route || `/app/${app.slug || app.key}`,
             status: app.status,
+            appType: app.appType,
+            isCoreApp: app.isCoreApp,
           }
         };
       });
@@ -8723,6 +8725,36 @@ When suggesting improvements, format your response with suggestions in a structu
       res.status(500).json({
         success: false,
         error: 'Failed to uninstall app'
+      });
+    }
+  });
+
+  // Sync mandatory apps for existing user (install WytPass, WytWall if not already installed)
+  app.post('/api/apps/sync-mandatory', async (req: any, res) => {
+    try {
+      // Check if user is authenticated
+      if (!req.user && !req.session?.user) {
+        return res.status(401).json({ message: 'Unauthorized' });
+      }
+
+      const userId = req.user?.id || req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      // Import and call the auto-install function
+      const { autoInstallCoreApps } = await import('./services/appInstallService');
+      await autoInstallCoreApps(userId);
+
+      res.json({
+        success: true,
+        message: 'Mandatory apps synced successfully'
+      });
+    } catch (error) {
+      console.error('Error syncing mandatory apps:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to sync mandatory apps'
       });
     }
   });

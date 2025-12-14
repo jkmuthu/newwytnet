@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -63,6 +63,21 @@ interface UserApp {
 export default function MyWytApps() {
   const { toast } = useToast();
   const [appToRemove, setAppToRemove] = useState<{ slug: string; name: string } | null>(null);
+  const [hasSynced, setHasSynced] = useState(false);
+
+  // Sync mandatory apps on component mount (for existing users)
+  useEffect(() => {
+    if (!hasSynced) {
+      apiRequest('/api/apps/sync-mandatory', 'POST', {})
+        .then(() => {
+          setHasSynced(true);
+          queryClient.invalidateQueries({ queryKey: ['/api/apps/my-apps'] });
+        })
+        .catch(() => {
+          setHasSynced(true);
+        });
+    }
+  }, [hasSynced]);
 
   // Fetch apps catalog
   const { data: catalogData, isLoading: catalogLoading } = useQuery({
@@ -78,13 +93,8 @@ export default function MyWytApps() {
   const myApps: UserApp[] = (myAppsData as any)?.apps || [];
   const installedSlugs = new Set(myApps.map(ua => ua.app?.slug || ua.installation?.appSlug));
   
-  // Filter to show only WytApps (exclude WytHubs and admin modules)
-  const wytAppsOnly = allApps.filter(app => 
-    app.category === 'wytapps' || app.category === 'social' || 
-    app.category === 'utility' || app.category === 'utilities' ||
-    app.category === 'productivity' || app.category === 'finance'
-  );
-  const availableApps = wytAppsOnly.filter(app => !installedSlugs.has(app.slug));
+  // Show all available apps (not already installed)
+  const availableApps = allApps.filter(app => !installedSlugs.has(app.slug));
 
   // Install app mutation
   const installMutation = useMutation({
