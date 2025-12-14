@@ -2603,10 +2603,11 @@ export async function registerRoutes(app: Express): Promise<void> {
                 await db.insert(appPricingHistory).values({
                   appId: appId,
                   planId: plan.id,
+                  changeType: 'price_updated',
                   previousPrice: existingPlan.price,
                   newPrice: plan.price,
-                  previousPlanType: existingPlan.planType,
-                  newPlanType: plan.planType || existingPlan.planType,
+                  previousData: { planType: existingPlan.planType, price: existingPlan.price },
+                  newData: { planType: plan.planType || existingPlan.planType, price: plan.price },
                   changedBy: adminId,
                   changeReason: plan.changeReason || 'Price updated via wizard',
                 });
@@ -2656,10 +2657,11 @@ export async function registerRoutes(app: Express): Promise<void> {
             // Create history entry for new plan
             await db.insert(appPricingHistory).values({
               appId: appId,
+              changeType: 'created',
               previousPrice: '0',
               newPrice: plan.price || '0',
-              previousPlanType: 'none',
-              newPlanType: plan.planType || 'free',
+              previousData: {},
+              newData: { planType: plan.planType || 'free', price: plan.price || '0' },
               changedBy: adminId,
               changeReason: 'New pricing plan created via wizard',
             });
@@ -2686,10 +2688,11 @@ export async function registerRoutes(app: Express): Promise<void> {
             await db.insert(appPricingHistory).values({
               appId: appId,
               planId: existingPlan.id,
+              changeType: 'deactivated',
               previousPrice: existingPlan.price,
               newPrice: '0',
-              previousPlanType: existingPlan.planType,
-              newPlanType: 'deactivated',
+              previousData: { planType: existingPlan.planType, price: existingPlan.price },
+              newData: { planType: 'deactivated', price: '0' },
               changedBy: adminId,
               changeReason: 'Plan deactivated via wizard',
             });
