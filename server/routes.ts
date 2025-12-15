@@ -194,6 +194,7 @@ import organizationsRouter from "./routes/organizations";
 import platformSettingsRouter from "./routes/platform-settings";
 import mediaRouter from "./routes/media";
 import trashRouter from "./routes/trash";
+import QRCode from "qrcode";
 import devdocRouter from "./routes/devdoc";
 import { setupFeaturesChecklistRoutes } from "./routes/features-checklist";
 import { setupQATestingTrackerRoutes } from "./routes/qa-testing-tracker";
@@ -13937,8 +13938,6 @@ When suggesting improvements, format your response with suggestions in a structu
       if (!content) {
         return res.status(400).json({ error: 'Content is required' });
       }
-
-      const QRCode = require('qrcode');
       
       const dataUrl = await QRCode.toDataURL(content, {
         width: 512,
