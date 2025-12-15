@@ -542,6 +542,31 @@ export const appPlanSubscriptions = pgTable("app_plan_subscriptions", {
   uniqueUserAppPlanSub: unique("unique_user_app_plan_subscription").on(table.userId, table.appId),
 }));
 
+// App Usage Logs - Audit trail for all app usage (pay-per-use tracking)
+export const appUsageLogs = pgTable("app_usage_logs", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  appId: uuid("app_id").notNull().references(() => apps.id),
+  subscriptionId: uuid("subscription_id").references(() => appPlanSubscriptions.id),
+  
+  // Usage Details
+  action: varchar("action", { length: 100 }).notNull(), // 'qr_generate', 'assessment_submit', 'api_call'
+  pointsDeducted: integer("points_deducted").default(0),
+  status: varchar("status", { length: 20 }).notNull(), // 'success', 'failed', 'insufficient_funds'
+  
+  // Context
+  metadata: jsonb("metadata").default({}), // { qrType: 'url', content: '...', etc. }
+  errorMessage: text("error_message"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("app_usage_logs_user_idx").on(table.userId),
+  appIdx: index("app_usage_logs_app_idx").on(table.appId),
+  actionIdx: index("app_usage_logs_action_idx").on(table.action),
+  statusIdx: index("app_usage_logs_status_idx").on(table.status),
+  createdAtIdx: index("app_usage_logs_created_at_idx").on(table.createdAt),
+}));
+
 // Hubs
 export const hubs = pgTable("hubs", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1624,6 +1649,12 @@ export const insertAppPlanSubscriptionSchema = createInsertSchema(appPlanSubscri
 export const selectAppPlanSubscriptionSchema = createSelectSchema(appPlanSubscriptions);
 export type AppPlanSubscription = typeof appPlanSubscriptions.$inferSelect;
 export type InsertAppPlanSubscription = z.infer<typeof insertAppPlanSubscriptionSchema>;
+
+// App Usage Logs schemas
+export const insertAppUsageLogSchema = createInsertSchema(appUsageLogs).omit({ id: true, createdAt: true });
+export const selectAppUsageLogSchema = createSelectSchema(appUsageLogs);
+export type AppUsageLog = typeof appUsageLogs.$inferSelect;
+export type InsertAppUsageLog = z.infer<typeof insertAppUsageLogSchema>;
 
 export const insertHubSchema = createInsertSchema(hubs);
 export const insertHubTemplateSchema = createInsertSchema(hubTemplates).omit({ id: true, displayId: true, createdAt: true, updatedAt: true });
