@@ -166,15 +166,52 @@ export default function MyWytApps() {
     return colorMap[color] || 'from-blue-500 to-purple-600';
   };
 
-  const AppCard = ({ app, isInstalled }: { app: App; isInstalled: boolean }) => (
+  const getPricingBadge = (app: App) => {
+    // Core apps are always free
+    if (app.isCoreApp) {
+      return { text: 'FREE', variant: 'default' as const };
+    }
+    
+    const pricing = app.pricing?.toLowerCase() || 'free';
+    const price = app.price || 0;
+    const currency = app.currency || '₹';
+    
+    if (pricing === 'free' || price === 0) {
+      return { text: 'FREE', variant: 'default' as const };
+    }
+    
+    if (pricing === 'pay_per_use') {
+      return { text: `₹${price}/use`, variant: 'secondary' as const };
+    }
+    
+    if (pricing === 'monthly') {
+      return { text: `₹${price}/mo`, variant: 'secondary' as const };
+    }
+    
+    if (pricing === 'yearly') {
+      return { text: `₹${price}/yr`, variant: 'secondary' as const };
+    }
+    
+    if (pricing === 'one_time') {
+      return { text: `₹${price}`, variant: 'secondary' as const };
+    }
+    
+    // Default: show price
+    return { text: `${currency} ${price}`, variant: 'secondary' as const };
+  };
+
+  const AppCard = ({ app, isInstalled }: { app: App; isInstalled: boolean }) => {
+    const pricingBadge = getPricingBadge(app);
+    
+    return (
     <Card className="hover:shadow-lg transition-shadow" data-testid={`card-app-${app.id}`}>
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className={`h-12 w-12 bg-gradient-to-br ${getColorClass(app.color)} rounded-xl flex items-center justify-center text-white shadow-md`}>
             {getIconComponent(app.icon)}
           </div>
-          <Badge variant={app.pricing === 'free' ? 'default' : 'secondary'}>
-            {app.pricing === 'free' ? 'FREE' : `${app.currency} ${app.price}`}
+          <Badge variant={pricingBadge.variant}>
+            {pricingBadge.text}
           </Badge>
         </div>
         <CardTitle className="mt-4">{app.name}</CardTitle>
@@ -231,6 +268,7 @@ export default function MyWytApps() {
       </CardContent>
     </Card>
   );
+  };
 
   return (
     <div className="space-y-6">

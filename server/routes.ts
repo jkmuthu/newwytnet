@@ -8387,7 +8387,7 @@ When suggesting improvements, format your response with suggestions in a structu
   // USER APP INSTALLATIONS - WytApps Marketplace
   // ========================================
 
-  // Get apps catalog for marketplace (public) - Now fetching from real 'apps' table
+  // Get apps catalog for marketplace (public) - Now fetching from real 'apps' table with pricing plans
   app.get('/api/apps/catalog', async (req, res) => {
     try {
       const { category } = req.query;
@@ -8405,6 +8405,21 @@ When suggesting improvements, format your response with suggestions in a structu
           )
         )
         .orderBy(apps.name);
+
+      // Fetch all active pricing plans for these apps
+      const allPricingPlans = await db
+        .select()
+        .from(appPricingPlans)
+        .where(eq(appPricingPlans.isActive, true));
+
+      // Group pricing plans by appId
+      const plansByAppId: Record<string, typeof allPricingPlans> = {};
+      allPricingPlans.forEach(plan => {
+        if (!plansByAppId[plan.appId]) {
+          plansByAppId[plan.appId] = [];
+        }
+        plansByAppId[plan.appId].push(plan);
+      });
 
       // Default color mappings based on category
       const categoryColors: Record<string, string> = {
@@ -8424,31 +8439,57 @@ When suggesting improvements, format your response with suggestions in a structu
       };
 
       // Transform apps to expected format for frontend
-      const enhancedApps = realApps.map((app: any) => {
-        const pricingData = app.pricing || {};
-        const categories = Array.isArray(app.categories) ? app.categories : [];
+      const enhancedApps = realApps.map((appRecord: any) => {
+        const categories = Array.isArray(appRecord.categories) ? appRecord.categories : [];
         const firstCategory = categories[0] || 'utility';
         
+        // Get pricing plans for this app from appPricingPlans table
+        const appPlans = plansByAppId[appRecord.id] || [];
+        
+        // Determine pricing display based on plans
+        let pricing = 'free';
+        let price = 0;
+        let currency = 'INR';
+        
+        if (appRecord.isCoreApp) {
+          pricing = 'free';
+          price = 0;
+        } else if (appPlans.length > 0) {
+          // Get the default plan or first plan
+          const defaultPlan = appPlans.find(p => p.isDefault) || appPlans[0];
+          pricing = defaultPlan.planType || 'free';
+          price = parseFloat(defaultPlan.price || '0');
+          currency = defaultPlan.currency || 'INR';
+        }
+        
         return {
-          id: app.id,
-          slug: app.slug || app.key,
-          name: app.name,
-          description: app.description || '',
-          icon: app.icon || 'Package',
-          color: pricingData.color || categoryColors[firstCategory] || 'blue',
+          id: appRecord.id,
+          slug: appRecord.slug || appRecord.key,
+          name: appRecord.name,
+          description: appRecord.description || '',
+          icon: appRecord.icon || 'Package',
+          color: categoryColors[firstCategory] || 'blue',
           category: firstCategory,
-          pricing: pricingData.type || 'free',
-          price: pricingData.price || 0,
-          currency: pricingData.currency || 'INR',
-          features: pricingData.features || [
+          pricing: pricing,
+          price: price,
+          currency: currency,
+          features: appRecord.features || [
             'Easy to use interface',
             'Secure and reliable',
             'Regular updates'
           ],
-          route: app.route || `/app/${app.slug || app.key}`,
-          status: app.status,
-          appType: app.appType,
-          isCoreApp: app.isCoreApp,
+          route: appRecord.route || `/app/${appRecord.slug || appRecord.key}`,
+          status: appRecord.status,
+          appType: appRecord.appType,
+          isCoreApp: appRecord.isCoreApp,
+          pricingPlans: appPlans.map(plan => ({
+            id: plan.id,
+            planName: plan.planName,
+            planType: plan.planType,
+            price: plan.price,
+            currency: plan.currency,
+            isDefault: plan.isDefault,
+          })),
         };
       });
 
@@ -8472,7 +8513,76 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Get user's installed apps - Now joining with real 'apps' table
+  // Get pricing plans for a specific app (public endpoint for app panels like WytQRC)
+  app.get('/api/apps/:slug/pricing', async (req, res) => {
+    try {
+      const { slug } = req.params;
+      
+      // Find the app by slug
+      const appData = await db
+        .select()
+        .from(apps)
+        .where(eq(apps.slug, slug))
+        .limit(1);
+
+      if (appData.length === 0) {
+        return res.status(404).json({ success: false, error: 'App not found' });
+      }
+
+      const appRecord = appData[0];
+
+      // Fetch pricing plans for this app
+      const pricingPlansData = await db
+        .select()
+        .from(appPricingPlans)
+        .where(and(
+          eq(appPricingPlans.appId, appRecord.id),
+          eq(appPricingPlans.isActive, true)
+        ))
+        .orderBy(appPricingPlans.sortOrder);
+
+      // Get the default plan or first plan
+      const defaultPlan = pricingPlansData.find(p => p.isDefault) || pricingPlansData[0];
+      
+      res.json({
+        success: true,
+        appId: appRecord.id,
+        appSlug: slug,
+        appName: appRecord.name,
+        isCoreApp: appRecord.isCoreApp,
+        appType: appRecord.appType,
+        pricingModel: appRecord.pricingModel || 'free',
+        defaultPlan: defaultPlan ? {
+          id: defaultPlan.id,
+          planName: defaultPlan.planName,
+          planType: defaultPlan.planType,
+          price: defaultPlan.price,
+          currency: defaultPlan.currency,
+          usageUnit: defaultPlan.usageUnit,
+        } : null,
+        plans: pricingPlansData.map(plan => ({
+          id: plan.id,
+          planName: plan.planName,
+          planSlug: plan.planSlug,
+          planType: plan.planType,
+          price: plan.price,
+          currency: plan.currency,
+          usageLimit: plan.usageLimit,
+          usageUnit: plan.usageUnit,
+          features: plan.features,
+          isDefault: plan.isDefault,
+        })),
+      });
+    } catch (error) {
+      console.error('Error fetching app pricing:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch app pricing'
+      });
+    }
+  });
+
+  // Get user's installed apps - Now joining with real 'apps' table with pricing plans
   app.get('/api/apps/my-apps', async (req: any, res) => {
     try {
       // Check if user is authenticated (Passport or custom session)
@@ -8496,6 +8606,25 @@ When suggesting improvements, format your response with suggestions in a structu
         .innerJoin(apps, eq(userAppInstallations.appSlug, apps.slug))
         .where(eq(userAppInstallations.userId, userId));
 
+      // Fetch all active pricing plans for user's installed apps
+      const appIds = userApps.map((item: any) => item.app.id);
+      let allPricingPlans: any[] = [];
+      if (appIds.length > 0) {
+        allPricingPlans = await db
+          .select()
+          .from(appPricingPlans)
+          .where(eq(appPricingPlans.isActive, true));
+      }
+
+      // Group pricing plans by appId
+      const plansByAppId: Record<string, typeof allPricingPlans> = {};
+      allPricingPlans.forEach(plan => {
+        if (!plansByAppId[plan.appId]) {
+          plansByAppId[plan.appId] = [];
+        }
+        plansByAppId[plan.appId].push(plan);
+      });
+
       // Transform to frontend expected format
       const categoryColors: Record<string, string> = {
         'productivity': 'purple',
@@ -8508,29 +8637,55 @@ When suggesting improvements, format your response with suggestions in a structu
       };
 
       const formattedApps = userApps.map((item: any) => {
-        const app = item.app;
-        const pricingData = app.pricing || {};
-        const categories = Array.isArray(app.categories) ? app.categories : [];
+        const appRecord = item.app;
+        const categories = Array.isArray(appRecord.categories) ? appRecord.categories : [];
         const firstCategory = categories[0] || 'utility';
+        
+        // Get pricing plans for this app from appPricingPlans table
+        const appPlans = plansByAppId[appRecord.id] || [];
+        
+        // Determine pricing display based on plans
+        let pricing = 'free';
+        let price = 0;
+        let currency = 'INR';
+        
+        if (appRecord.isCoreApp) {
+          pricing = 'free';
+          price = 0;
+        } else if (appPlans.length > 0) {
+          // Get the default plan or first plan
+          const defaultPlan = appPlans.find((p: any) => p.isDefault) || appPlans[0];
+          pricing = defaultPlan.planType || 'free';
+          price = parseFloat(defaultPlan.price || '0');
+          currency = defaultPlan.currency || 'INR';
+        }
         
         return {
           installation: item.installation,
           app: {
-            id: app.id,
-            slug: app.slug || app.key,
-            name: app.name,
-            description: app.description || '',
-            icon: app.icon || 'Package',
-            color: pricingData.color || categoryColors[firstCategory] || 'blue',
+            id: appRecord.id,
+            slug: appRecord.slug || appRecord.key,
+            name: appRecord.name,
+            description: appRecord.description || '',
+            icon: appRecord.icon || 'Package',
+            color: categoryColors[firstCategory] || 'blue',
             category: firstCategory,
-            pricing: pricingData.type || 'free',
-            price: pricingData.price || 0,
-            currency: pricingData.currency || 'INR',
-            features: pricingData.features || ['Easy to use interface', 'Secure and reliable'],
-            route: app.route || `/app/${app.slug || app.key}`,
-            status: app.status,
-            appType: app.appType,
-            isCoreApp: app.isCoreApp,
+            pricing: pricing,
+            price: price,
+            currency: currency,
+            features: appRecord.features || ['Easy to use interface', 'Secure and reliable'],
+            route: appRecord.route || `/app/${appRecord.slug || appRecord.key}`,
+            status: appRecord.status,
+            appType: appRecord.appType,
+            isCoreApp: appRecord.isCoreApp,
+            pricingPlans: appPlans.map((plan: any) => ({
+              id: plan.id,
+              planName: plan.planName,
+              planType: plan.planType,
+              price: plan.price,
+              currency: plan.currency,
+              isDefault: plan.isDefault,
+            })),
           }
         };
       });

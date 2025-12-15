@@ -311,8 +311,30 @@ const qrTypeOptions = [
 ];
 
 
+interface PricingPlan {
+  id: string;
+  planName: string;
+  planType: string;
+  price: string;
+  currency: string;
+  usageUnit?: string;
+  isDefault?: boolean;
+}
+
+interface AppPricing {
+  success: boolean;
+  appSlug: string;
+  appName: string;
+  isCoreApp: boolean;
+  pricingModel: string;
+  defaultPlan: PricingPlan | null;
+  plans: PricingPlan[];
+}
+
 function WytQRCDashboard() {
   const [savedCodes, setSavedCodes] = useState<QRCodeData[]>([]);
+  const [pricing, setPricing] = useState<AppPricing | null>(null);
+  const [loadingPricing, setLoadingPricing] = useState(true);
 
   useEffect(() => {
     const stored = localStorage.getItem('wytqrc_codes');
@@ -320,6 +342,40 @@ function WytQRCDashboard() {
       setSavedCodes(JSON.parse(stored));
     }
   }, []);
+
+  useEffect(() => {
+    fetch('/api/apps/wytqrc/pricing')
+      .then(res => res.json())
+      .then(data => {
+        setPricing(data);
+        setLoadingPricing(false);
+      })
+      .catch(() => setLoadingPricing(false));
+  }, []);
+
+  const getDefaultPlan = () => {
+    if (pricing?.defaultPlan) {
+      return pricing.defaultPlan;
+    }
+    if (pricing?.plans && pricing.plans.length > 0) {
+      return pricing.plans.find(p => p.isDefault) || pricing.plans[0];
+    }
+    return null;
+  };
+
+  const defaultPlan = getDefaultPlan();
+  const planPrice = defaultPlan ? parseFloat(defaultPlan.price || '0') : 0;
+  const planType = defaultPlan?.planType || 'free';
+  const planName = defaultPlan?.planName || 'Free';
+  const usageUnit = defaultPlan?.usageUnit || 'download';
+
+  const getPlanDescription = () => {
+    if (planType === 'free') return 'Free to use';
+    if (planType === 'pay_per_use') return `Create QR codes for free, pay only when you ${usageUnit}`;
+    if (planType === 'monthly') return 'Monthly subscription plan';
+    if (planType === 'yearly') return 'Yearly subscription plan';
+    return 'Premium plan';
+  };
 
   return (
     <div className="space-y-6">
@@ -348,13 +404,32 @@ function WytQRCDashboard() {
                 <CreditCard className="h-8 w-8 text-teal-600 dark:text-teal-400" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-teal-800 dark:text-teal-200">Your Plan: Pay-Per-Download</h3>
-                <p className="text-sm text-teal-600 dark:text-teal-400">Create QR codes for free, pay only when you download</p>
+                <h3 className="text-lg font-semibold text-teal-800 dark:text-teal-200">
+                  Your Plan: {loadingPricing ? 'Loading...' : planName}
+                </h3>
+                <p className="text-sm text-teal-600 dark:text-teal-400">
+                  {loadingPricing ? 'Fetching plan details...' : getPlanDescription()}
+                </p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-3xl font-bold text-teal-700 dark:text-teal-300">₹10</p>
-              <p className="text-sm text-teal-600 dark:text-teal-400">per download</p>
+              {loadingPricing ? (
+                <div className="animate-pulse">
+                  <div className="h-8 w-16 bg-teal-200 dark:bg-teal-800 rounded mb-1"></div>
+                  <div className="h-4 w-20 bg-teal-200 dark:bg-teal-800 rounded"></div>
+                </div>
+              ) : planType === 'free' ? (
+                <p className="text-3xl font-bold text-green-600 dark:text-green-400">FREE</p>
+              ) : (
+                <>
+                  <p className="text-3xl font-bold text-teal-700 dark:text-teal-300">₹{planPrice}</p>
+                  <p className="text-sm text-teal-600 dark:text-teal-400">
+                    {planType === 'pay_per_use' ? `per ${usageUnit}` : 
+                     planType === 'monthly' ? 'per month' : 
+                     planType === 'yearly' ? 'per year' : ''}
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </CardContent>
