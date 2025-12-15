@@ -191,26 +191,26 @@ export default function MyWytApps() {
         </div>
 {isInstalled ? (
           <div className="space-y-2">
-            <Link href={`/apppanel/${app.id}`} className="block">
-              <Button className="w-full" variant="default" data-testid={`button-switch-${app.id}`}>
+            <Link href={`/apppanel/${app.slug}`} className="block">
+              <Button className="w-full" variant="default" data-testid={`button-switch-${app.slug}`}>
                 <Package className="h-4 w-4 mr-2" />
                 Switch to App
               </Button>
             </Link>
             <div className="flex gap-2">
-              <Link href={app.route || `/mypanel/wytapps/${app.id}`} className="flex-1">
-                <Button variant="outline" className="w-full" data-testid={`button-open-${app.id}`}>
+              <Link href={app.route || `/mypanel/wytapps/${app.slug}`} className="flex-1">
+                <Button variant="outline" className="w-full" data-testid={`button-open-${app.slug}`}>
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Quick View
                 </Button>
               </Link>
-              {!app.isCoreApp && (
+              {!app.isCoreApp && app.appType !== 'mandatory' && (
                 <Button
                   variant="outline"
                   className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                  onClick={() => setAppToRemove({ slug: app.id, name: app.name })}
+                  onClick={() => setAppToRemove({ slug: app.slug, name: app.name })}
                   disabled={uninstallMutation.isPending}
-                  data-testid={`button-remove-${app.id}`}
+                  data-testid={`button-remove-${app.slug}`}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
