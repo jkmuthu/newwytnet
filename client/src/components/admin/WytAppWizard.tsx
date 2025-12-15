@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Form,
   FormControl,
@@ -45,10 +45,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import {
-  ChevronLeft,
-  ChevronRight,
   ChevronDown,
-  Check,
   Sparkles,
   Package,
   Eye,
@@ -205,7 +202,6 @@ interface WytAppWizardProps {
 }
 
 export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWizardProps) {
-  const [currentStep, setCurrentStep] = useState(1);
   const { toast } = useToast();
 
   const form = useForm<WizardFormData>({
@@ -239,11 +235,9 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
     enabled: !!appId && mode === "update" && open,
   });
 
-  // Reset wizard state when dialog closes or appId changes
+  // Reset form state when dialog closes
   useEffect(() => {
     if (!open) {
-      // Reset form and step when dialog closes
-      setCurrentStep(1);
       form.reset({
         name: "",
         slug: "",
@@ -272,7 +266,6 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
   useEffect(() => {
     if (existingApp && mode === "update" && open) {
       console.log("Loading existing app data:", existingApp);
-      setCurrentStep(1); // Reset to first step
       form.reset({
         name: existingApp.name || "",
         slug: existingApp.slug || "",
@@ -318,8 +311,7 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
       
       const payload = {
         ...data,
-        wizardCompleted: currentStep === 6,
-        wizardStep: currentStep,
+        wizardCompleted: true,
       };
       
       console.log(`Saving app (${method} ${endpoint}):`, payload);
@@ -333,9 +325,7 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
         description: `WytApp ${mode === "create" ? "created" : "updated"} successfully!`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/apps"] });
-      if (mode === "create" || currentStep === 6) {
-        onClose();
-      }
+      onClose();
     },
     onError: (error: any) => {
       console.error("Save error:", error);
@@ -347,33 +337,9 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
     },
   });
 
-  const handleNext = async () => {
-    // Validate current step fields
-    const fieldsToValidate = getStepFields(currentStep);
-    const isValid = await form.trigger(fieldsToValidate);
-
-    if (isValid) {
-      if (currentStep < 6) {
-        setCurrentStep(currentStep + 1);
-      } else {
-        // Final step - save everything
-        form.handleSubmit((data) => saveMutation.mutate(data))();
-      }
-    }
+  const handleSave = () => {
+    form.handleSubmit((data) => saveMutation.mutate(data))();
   };
-
-  const handlePrevious = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const handleSaveDraft = () => {
-    const data = form.getValues();
-    saveMutation.mutate(data);
-  };
-
-  const progress = (currentStep / 6) * 100;
 
   // Get the app name for the title (from form or existing data)
   const currentAppName = form.watch("name") || existingApp?.name || "WytApp";
@@ -388,8 +354,8 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
           </DialogTitle>
           <DialogDescription>
             {mode === "create" 
-              ? "Build your app step-by-step with our intelligent wizard"
-              : `Update your app configuration using the wizard`}
+              ? "Configure your app settings across different sections"
+              : `Update your app configuration`}
           </DialogDescription>
         </DialogHeader>
         
@@ -401,118 +367,73 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
           </div>
         ) : (
           <>
-        {/* Progress Bar */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>Step {currentStep} of 6</span>
-            <span>{Math.round(progress)}% Complete</span>
-          </div>
-          <Progress value={progress} className="h-2" />
-        </div>
+            {/* Tab-based Editor */}
+            <Form {...form}>
+              <form className="space-y-6">
+                <Tabs defaultValue="basic-info" className="w-full">
+                  <TabsList className="grid w-full grid-cols-6">
+                    <TabsTrigger value="basic-info" className="flex items-center gap-1" data-testid="tab-basic-info">
+                      <Package className="h-4 w-4" />
+                      <span className="hidden md:inline">Basic</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="visibility" className="flex items-center gap-1" data-testid="tab-visibility">
+                      <Eye className="h-4 w-4" />
+                      <span className="hidden md:inline">Visibility</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="modules" className="flex items-center gap-1" data-testid="tab-modules">
+                      <Layers className="h-4 w-4" />
+                      <span className="hidden md:inline">Modules</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="features" className="flex items-center gap-1" data-testid="tab-features">
+                      <Zap className="h-4 w-4" />
+                      <span className="hidden md:inline">Features</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="pricing" className="flex items-center gap-1" data-testid="tab-pricing">
+                      <DollarSign className="h-4 w-4" />
+                      <span className="hidden md:inline">Pricing</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="version" className="flex items-center gap-1" data-testid="tab-version">
+                      <GitBranch className="h-4 w-4" />
+                      <span className="hidden md:inline">Version</span>
+                    </TabsTrigger>
+                  </TabsList>
 
-        {/* Step Indicators */}
-        <div className="flex justify-between items-center py-4">
-          {[
-            { num: 1, label: "Basic Info", icon: Package },
-            { num: 2, label: "Visibility", icon: Eye },
-            { num: 3, label: "Modules", icon: Layers },
-            { num: 4, label: "Features", icon: Zap },
-            { num: 5, label: "Pricing", icon: DollarSign },
-            { num: 6, label: "Version", icon: GitBranch },
-          ].map((step) => (
-            <div
-              key={step.num}
-              className={`flex flex-col items-center gap-1 ${
-                currentStep === step.num
-                  ? "text-primary"
-                  : currentStep > step.num
-                  ? "text-green-500"
-                  : "text-muted-foreground"
-              }`}
-            >
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
-                  currentStep === step.num
-                    ? "border-primary bg-primary/10"
-                    : currentStep > step.num
-                    ? "border-green-500 bg-green-500/10"
-                    : "border-muted"
-                }`}
-                data-testid={`wizard-step-indicator-${step.num}`}
+                  <div className="mt-6">
+                    <TabsContent value="basic-info">
+                      <Screen1BasicInfo form={form} onNameChange={handleNameChange} />
+                    </TabsContent>
+                    <TabsContent value="visibility">
+                      <Screen2Visibility form={form} />
+                    </TabsContent>
+                    <TabsContent value="modules">
+                      <Screen3Modules form={form} />
+                    </TabsContent>
+                    <TabsContent value="features">
+                      <Screen4Features form={form} />
+                    </TabsContent>
+                    <TabsContent value="pricing">
+                      <Screen5Pricing form={form} />
+                    </TabsContent>
+                    <TabsContent value="version">
+                      <Screen6Versioning form={form} />
+                    </TabsContent>
+                  </div>
+                </Tabs>
+              </form>
+            </Form>
+
+            {/* Save Button */}
+            <div className="flex justify-end pt-4 border-t">
+              <Button
+                type="button"
+                onClick={handleSave}
+                disabled={saveMutation.isPending}
+                data-testid="button-save-app"
               >
-                {currentStep > step.num ? (
-                  <Check className="h-5 w-5" />
-                ) : (
-                  <step.icon className="h-5 w-5" />
-                )}
-              </div>
-              <span className="text-xs hidden md:block">{step.label}</span>
+                <Save className="h-4 w-4 mr-1" />
+                {saveMutation.isPending ? "Saving..." : (mode === "create" ? "Create App" : "Save Changes")}
+              </Button>
             </div>
-          ))}
-        </div>
-
-        <Separator />
-
-        {/* Form Content */}
-        <Form {...form}>
-          <form className="space-y-6">
-            {currentStep === 1 && <Screen1BasicInfo form={form} onNameChange={handleNameChange} />}
-            {currentStep === 2 && <Screen2Visibility form={form} />}
-            {currentStep === 3 && <Screen3Modules form={form} />}
-            {currentStep === 4 && <Screen4Features form={form} />}
-            {currentStep === 5 && <Screen5Pricing form={form} />}
-            {currentStep === 6 && <Screen6Versioning form={form} />}
-          </form>
-        </Form>
-
-        {/* Navigation Buttons */}
-        <div className="flex justify-between items-center pt-4 border-t">
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handlePrevious}
-              disabled={currentStep === 1}
-              data-testid="wizard-button-previous"
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
-            </Button>
-          </div>
-
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handleSaveDraft}
-              disabled={saveMutation.isPending}
-              data-testid="wizard-button-save-draft"
-            >
-              <Save className="h-4 w-4 mr-1" />
-              Save Draft
-            </Button>
-
-            <Button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNext();
-              }}
-              disabled={saveMutation.isPending}
-              data-testid="wizard-button-next"
-            >
-              {currentStep === 6 ? (
-                <>
-                  <Check className="h-4 w-4 mr-1" />
-                  {mode === "create" ? "Create App" : "Update App"}
-                </>
-              ) : (
-                <>
-                  Next
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
           </>
         )}
       </DialogContent>
@@ -520,25 +441,6 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
   );
 }
 
-// Helper function to get fields to validate for each step
-function getStepFields(step: number): (keyof WizardFormData)[] {
-  switch (step) {
-    case 1:
-      return ["name", "slug"];
-    case 2:
-      return ["visibilityMode"];
-    case 3:
-      return [];
-    case 4:
-      return [];
-    case 5:
-      return ["pricingModel"];
-    case 6:
-      return ["version"];
-    default:
-      return [];
-  }
-}
 
 // Lucide Icon Picker Component
 const ICON_OPTIONS = [
