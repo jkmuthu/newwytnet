@@ -156,9 +156,9 @@ const wizardSchema = z.object({
     billingInterval: z.string().optional(),
     usageLimit: z.number().optional(),
     usageUnit: z.string().optional(),
-    features: z.array(z.string()).optional(),
+    features: z.any().optional(),
     isDefault: z.boolean().default(false),
-  })).default([]),
+  })).optional().default([]),
   pricingDetails: z.object({
     amount: z.number().optional(),
     currency: z.string().default("INR"),
