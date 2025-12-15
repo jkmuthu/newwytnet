@@ -310,22 +310,6 @@ const qrTypeOptions = [
   { value: 'location', label: 'Location', icon: MapPin, placeholder: 'Latitude, Longitude' },
 ];
 
-interface UsageHistoryItem {
-  id: string;
-  action: string;
-  pointsDeducted: number;
-  status: string;
-  metadata: Record<string, any> | null;
-  createdAt: string;
-}
-
-interface AccessStatus {
-  allowed: boolean;
-  reason: string;
-  balance: number;
-  cost: number;
-  subscriptionType: string | null;
-}
 
 function WytQRCDashboard() {
   const [savedCodes, setSavedCodes] = useState<QRCodeData[]>([]);
@@ -442,57 +426,6 @@ function WytQRCDashboard() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Generation History</CardTitle>
-          <CardDescription>Your recent QR code generation activity</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoadingHistory ? (
-            <div className="text-center py-8 text-gray-500">Loading history...</div>
-          ) : usageHistory.length === 0 ? (
-            <div className="text-center py-8">
-              <QrCode className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-              <p className="text-gray-500 dark:text-gray-400">No generation history yet</p>
-              <p className="text-sm text-gray-400 dark:text-gray-500">Generate your first QR code to see activity here</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {usageHistory.slice(0, 10).map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                  <div className="flex items-center gap-3">
-                    {item.status === 'success' ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                    ) : (
-                      <AlertCircle className="h-5 w-5 text-red-500" />
-                    )}
-                    <div>
-                      <p className="font-medium">{item.action}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {new Date(item.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    {item.pointsDeducted > 0 && (
-                      <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
-                        -₹{item.pointsDeducted}
-                      </span>
-                    )}
-                    <span className={`ml-2 text-xs px-2 py-1 rounded-full ${
-                      item.status === 'success' 
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                        : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                    }`}>
-                      {item.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {savedCodes.length > 0 && (
         <Card>
@@ -516,15 +449,6 @@ function WytQRCDashboard() {
   );
 }
 
-interface RechargePackage {
-  id: string;
-  name: string;
-  amount: number;
-  points: number;
-  bonus: number;
-  popular: boolean;
-}
-
 function WytQRCGenerate() {
   const { toast } = useToast();
   const [qrType, setQrType] = useState('url');
@@ -534,29 +458,7 @@ function WytQRCGenerate() {
   const [wifiEncryption, setWifiEncryption] = useState('WPA');
   const [generatedQR, setGeneratedQR] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [accessStatus, setAccessStatus] = useState<AccessStatus | null>(null);
-  const [isCheckingAccess, setIsCheckingAccess] = useState(true);
-  const [showRechargeModal, setShowRechargeModal] = useState(false);
-  const [rechargePackages, setRechargePackages] = useState<RechargePackage[]>([]);
-  const [selectedPackage, setSelectedPackage] = useState<RechargePackage | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-
-  useEffect(() => {
-    checkAccess();
-    fetchRechargePackages();
-  }, []);
-
-  const fetchRechargePackages = async () => {
-    try {
-      const response = await fetch('/api/wallet/recharge/packages', { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        setRechargePackages(data.packages || []);
-      }
-    } catch (error) {
-      console.error('Error fetching packages:', error);
-    }
-  };
 
   const loadRazorpayScript = (): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -570,105 +472,6 @@ function WytQRCGenerate() {
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
     });
-  };
-
-  const handleRecharge = async (pkg: RechargePackage) => {
-    setSelectedPackage(pkg);
-    setIsProcessingPayment(true);
-    
-    try {
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        throw new Error('Failed to load payment gateway');
-      }
-
-      const orderResponse = await apiRequest('/api/wallet/recharge/create-order', 'POST', {
-        amount: pkg.amount,
-        pointsAmount: pkg.points + pkg.bonus,
-      });
-
-      if (!orderResponse.ok) {
-        const errorData = await orderResponse.json();
-        throw new Error(errorData.error || 'Failed to create order');
-      }
-
-      const orderData = await orderResponse.json();
-
-      const options = {
-        key: orderData.key,
-        amount: pkg.amount * 100,
-        currency: 'INR',
-        name: 'WytNet',
-        description: `${pkg.name} - ${pkg.points + pkg.bonus} WytPoints`,
-        order_id: orderData.razorpayOrderId,
-        handler: async (response: any) => {
-          try {
-            const verifyResponse = await apiRequest('/api/wallet/recharge/verify', 'POST', {
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature,
-            });
-
-            const verifyData = await verifyResponse.json();
-
-            if (verifyData.success) {
-              toast({
-                title: 'Recharge Successful!',
-                description: `₹${pkg.points + pkg.bonus} WytPoints added to your wallet.`,
-              });
-              setShowRechargeModal(false);
-              checkAccess();
-            } else {
-              throw new Error(verifyData.error || 'Verification failed');
-            }
-          } catch (error) {
-            toast({
-              title: 'Verification Failed',
-              description: error instanceof Error ? error.message : 'Please contact support',
-              variant: 'destructive',
-            });
-          } finally {
-            setIsProcessingPayment(false);
-          }
-        },
-        modal: {
-          ondismiss: () => {
-            setIsProcessingPayment(false);
-            toast({
-              title: 'Payment Cancelled',
-              description: 'You cancelled the payment',
-              variant: 'destructive',
-            });
-          },
-        },
-        theme: { color: '#0d9488' },
-      };
-
-      const razorpay = new (window as any).Razorpay(options);
-      razorpay.open();
-    } catch (error) {
-      toast({
-        title: 'Payment Error',
-        description: error instanceof Error ? error.message : 'Failed to initiate payment',
-        variant: 'destructive',
-      });
-      setIsProcessingPayment(false);
-    }
-  };
-
-  const checkAccess = async () => {
-    setIsCheckingAccess(true);
-    try {
-      const response = await fetch('/api/qrcode/check-access', { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        setAccessStatus(data);
-      }
-    } catch (error) {
-      console.error('Error checking access:', error);
-    } finally {
-      setIsCheckingAccess(false);
-    }
   };
 
   const generateQRCode = async () => {
@@ -703,24 +506,10 @@ function WytQRCGenerate() {
 
       const data = await response.json();
 
-      if (response.status === 402) {
-        toast({ 
-          title: "Insufficient Balance", 
-          description: `You need ₹10 WytPoints. Current balance: ₹${data.currentBalance || 0}`, 
-          variant: "destructive" 
-        });
-        return;
-      }
-
       if (!response.ok) throw new Error(data.error || 'Failed to generate QR code');
       
       setGeneratedQR(data.dataUrl);
-      if (data.pointsDeducted > 0) {
-        toast({ title: "Success", description: `QR code generated! ₹${data.pointsDeducted} deducted. Balance: ₹${data.newBalance}` });
-      } else {
-        toast({ title: "Success", description: "QR code generated successfully!" });
-      }
-      checkAccess();
+      toast({ title: "Success", description: "QR code generated! Pay ₹10 to download." });
     } catch (error: any) {
       console.error('Error generating QR:', error);
       toast({ title: "Error", description: error.message || "Failed to generate QR code. Please try again.", variant: "destructive" });
@@ -750,13 +539,98 @@ function WytQRCGenerate() {
     toast({ title: "Saved", description: "QR code saved to your collection!" });
   };
 
-  const downloadQRCode = () => {
+  const downloadQRCode = async () => {
     if (!generatedQR) return;
     
-    const link = document.createElement('a');
-    link.download = `${name || 'qrcode'}.png`;
-    link.href = generatedQR;
-    link.click();
+    setIsProcessingPayment(true);
+    
+    try {
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error('Failed to load payment gateway');
+      }
+
+      const orderResponse = await fetch('/api/qrcode/download-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+
+      if (!orderResponse.ok) {
+        const errorData = await orderResponse.json();
+        throw new Error(errorData.error || 'Failed to create payment order');
+      }
+
+      const orderData = await orderResponse.json();
+
+      const options = {
+        key: orderData.key,
+        amount: orderData.amount * 100,
+        currency: 'INR',
+        name: 'WytNet',
+        description: 'QR Code Download - ₹10',
+        order_id: orderData.razorpayOrderId,
+        handler: async (response: any) => {
+          try {
+            const verifyResponse = await fetch('/api/qrcode/download-verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            const verifyData = await verifyResponse.json();
+
+            if (verifyData.success) {
+              const link = document.createElement('a');
+              link.download = `${name || 'qrcode'}.png`;
+              link.href = generatedQR;
+              link.click();
+              
+              toast({
+                title: 'Download Complete!',
+                description: 'Your QR code has been downloaded successfully.',
+              });
+            } else {
+              throw new Error(verifyData.error || 'Payment verification failed');
+            }
+          } catch (error) {
+            toast({
+              title: 'Download Failed',
+              description: error instanceof Error ? error.message : 'Please try again',
+              variant: 'destructive',
+            });
+          } finally {
+            setIsProcessingPayment(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setIsProcessingPayment(false);
+            toast({
+              title: 'Payment Cancelled',
+              description: 'Download cancelled - no payment was made',
+              variant: 'destructive',
+            });
+          },
+        },
+        theme: { color: '#0d9488' },
+      };
+
+      const razorpay = new (window as any).Razorpay(options);
+      razorpay.open();
+    } catch (error) {
+      toast({
+        title: 'Payment Error',
+        description: error instanceof Error ? error.message : 'Failed to initiate payment',
+        variant: 'destructive',
+      });
+      setIsProcessingPayment(false);
+    }
   };
 
   const copyToClipboard = async () => {
@@ -786,55 +660,25 @@ function WytQRCGenerate() {
         </div>
       </div>
 
-      {accessStatus && accessStatus.subscriptionType === 'pay_per_use' && (
-        <Card className="border-teal-200 bg-teal-50 dark:bg-teal-950 dark:border-teal-800">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-teal-100 dark:bg-teal-900 rounded-lg">
-                  <CreditCard className="h-5 w-5 text-teal-600 dark:text-teal-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-teal-800 dark:text-teal-200">Pay-Per-Use Plan</p>
-                  <p className="text-xs text-teal-600 dark:text-teal-400">Each QR code costs ₹{accessStatus.cost}</p>
-                </div>
+      <Card className="border-teal-200 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950 dark:border-teal-800">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-teal-100 dark:bg-teal-900 rounded-lg">
+                <CreditCard className="h-5 w-5 text-teal-600 dark:text-teal-400" />
               </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <p className="text-sm text-teal-600 dark:text-teal-400">Your Balance</p>
-                  <p className="text-xl font-bold text-teal-800 dark:text-teal-200">₹{accessStatus.balance}</p>
-                </div>
-                <Button 
-                  onClick={() => setShowRechargeModal(true)} 
-                  size="sm"
-                  className="bg-teal-600 hover:bg-teal-700"
-                  data-testid="btn-add-points"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Points
-                </Button>
+              <div>
+                <p className="text-sm font-medium text-teal-800 dark:text-teal-200">Pay-Per-Download</p>
+                <p className="text-xs text-teal-600 dark:text-teal-400">Create QR codes for free, pay only when downloading</p>
               </div>
             </div>
-            {!accessStatus.allowed && (
-              <div className="mt-3 p-3 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-between">
-                <p className="text-sm text-red-700 dark:text-red-300">
-                  <AlertCircle className="h-4 w-4 inline mr-1" />
-                  {accessStatus.reason}
-                </p>
-                <Button 
-                  onClick={() => setShowRechargeModal(true)} 
-                  size="sm" 
-                  variant="destructive"
-                  data-testid="btn-recharge-now"
-                >
-                  <Wallet className="h-4 w-4 mr-1" />
-                  Recharge Now
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+            <div className="text-right">
+              <p className="text-2xl font-bold text-teal-700 dark:text-teal-300">₹10</p>
+              <p className="text-xs text-teal-600 dark:text-teal-400">per download</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
@@ -964,9 +808,24 @@ function WytQRCGenerate() {
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Save
                   </Button>
-                  <Button onClick={downloadQRCode} variant="outline" className="flex-1" data-testid="btn-download-qr">
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
+                  <Button 
+                    onClick={downloadQRCode} 
+                    variant="outline" 
+                    className="flex-1" 
+                    disabled={isProcessingPayment}
+                    data-testid="btn-download-qr"
+                  >
+                    {isProcessingPayment ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-2" />
+                        Download (₹10)
+                      </>
+                    )}
                   </Button>
                   <Button onClick={copyToClipboard} variant="outline" className="flex-1" data-testid="btn-copy-qr">
                     <Copy className="h-4 w-4 mr-2" />
@@ -986,69 +845,6 @@ function WytQRCGenerate() {
         </Card>
       </div>
 
-      <Dialog open={showRechargeModal} onOpenChange={setShowRechargeModal}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5 text-teal-600" />
-              Recharge WytPoints
-            </DialogTitle>
-            <DialogDescription>
-              Choose a recharge package to add points to your wallet
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-3 py-4">
-            {rechargePackages.map((pkg) => (
-              <div 
-                key={pkg.id}
-                className={`relative p-4 border-2 rounded-xl cursor-pointer transition-all hover:border-teal-500 hover:shadow-md ${
-                  pkg.popular ? 'border-teal-500 bg-teal-50 dark:bg-teal-950' : 'border-gray-200 dark:border-gray-700'
-                }`}
-                onClick={() => handleRecharge(pkg)}
-              >
-                {pkg.popular && (
-                  <div className="absolute -top-2 right-4 px-2 py-0.5 bg-teal-600 text-white text-xs font-medium rounded-full flex items-center gap-1">
-                    <Sparkles className="h-3 w-3" />
-                    Popular
-                  </div>
-                )}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${pkg.popular ? 'bg-teal-100 dark:bg-teal-900' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                      <CreditCard className={`h-5 w-5 ${pkg.popular ? 'text-teal-600' : 'text-gray-600 dark:text-gray-400'}`} />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-gray-100">{pkg.name}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {pkg.points} points
-                        {pkg.bonus > 0 && (
-                          <span className="ml-2 text-green-600 dark:text-green-400 font-medium">
-                            <Gift className="h-3 w-3 inline mr-0.5" />
-                            +{pkg.bonus} bonus
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">₹{pkg.amount}</p>
-                    {isProcessingPayment && selectedPackage?.id === pkg.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin ml-auto" />
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            <p className="text-xs text-gray-500 dark:text-gray-400 text-center sm:text-left">
-              Payments secured by Razorpay. All major cards, UPI & Net Banking accepted.
-            </p>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

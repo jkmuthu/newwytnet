@@ -13969,33 +13969,13 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // Generate QR code - FREE (no payment required for generation)
   app.post('/api/qrcode/generate', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
       const { content, type } = req.body;
       
       if (!content) {
         return res.status(400).json({ error: 'Content is required' });
-      }
-
-      const { appUsageService } = await import('./services/appUsageService');
-      
-      // Record usage and deduct points if pay-per-use
-      const usageResult = await appUsageService.recordUsage(
-        userId, 
-        'wytqrc', 
-        'qr_generate',
-        { qrType: type || 'text', content: content.substring(0, 100) }
-      );
-
-      if (!usageResult.success) {
-        return res.status(402).json({ 
-          error: 'Payment required',
-          message: usageResult.error,
-          requiresPayment: true,
-          pointsNeeded: 10,
-          currentBalance: usageResult.newBalance
-        });
       }
       
       const dataUrl = await QRCode.toDataURL(content, {
@@ -14012,10 +13992,7 @@ When suggesting improvements, format your response with suggestions in a structu
         success: true, 
         dataUrl,
         type: type || 'text',
-        content,
-        pointsDeducted: usageResult.pointsDeducted,
-        newBalance: usageResult.newBalance,
-        logId: usageResult.logId
+        content
       });
     } catch (error: any) {
       console.error('QR code generation error:', error);
@@ -14023,6 +14000,73 @@ When suggesting improvements, format your response with suggestions in a structu
         error: 'Failed to generate QR code', 
         message: error.message 
       });
+    }
+  });
+
+  // Create Razorpay order for QR code download (₹10 per download)
+  app.post('/api/qrcode/download-order', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = req.user;
+      
+      // Create Razorpay order for ₹10
+      const order = await razorpayService.createOrder({
+        amount: 10, // ₹10
+        currency: 'INR',
+        receipt: `qrc_${userId}_${Date.now()}`,
+        notes: {
+          userId: userId.toString(),
+          purpose: 'qrcode_download',
+          userEmail: user.email || ''
+        }
+      });
+
+      res.json({
+        success: true,
+        orderId: order.id,
+        razorpayOrderId: order.id,
+        amount: 10,
+        currency: 'INR',
+        key: process.env.RAZORPAY_KEY_ID
+      });
+    } catch (error: any) {
+      console.error('Error creating download order:', error);
+      res.status(500).json({ error: 'Failed to create payment order', message: error.message });
+    }
+  });
+
+  // Verify QR code download payment
+  app.post('/api/qrcode/download-verify', isAuthenticated, async (req: any, res) => {
+    try {
+      const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
+      
+      const isValid = razorpayService.verifyPaymentSignature({
+        razorpay_payment_id,
+        razorpay_order_id,
+        razorpay_signature
+      });
+
+      if (!isValid) {
+        return res.status(400).json({ success: false, error: 'Invalid payment signature' });
+      }
+
+      // Payment verified - record the transaction
+      const userId = req.user.id;
+      await db.insert(paymentTransactions).values({
+        userId,
+        orderId: razorpay_order_id,
+        paymentId: razorpay_payment_id,
+        amount: '10',
+        currency: 'INR',
+        status: 'success',
+        purpose: 'qrcode_download',
+        metadata: { razorpay_signature }
+      });
+
+      res.json({ success: true, message: 'Payment verified successfully' });
+    } catch (error: any) {
+      console.error('Error verifying download payment:', error);
+      res.status(500).json({ success: false, error: 'Payment verification failed', message: error.message });
     }
   });
 
