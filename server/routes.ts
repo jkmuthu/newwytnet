@@ -13931,12 +13931,71 @@ When suggesting improvements, format your response with suggestions in a structu
   });
 
   // ==================== WytQRC - QR Code Generation API ====================
-  app.post('/api/qrcode/generate', async (req, res) => {
+  
+  // Check user's WytQRC subscription and balance
+  app.get('/api/qrcode/check-access', isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.id;
+      const { appUsageService } = await import('./services/appUsageService');
+      
+      const check = await appUsageService.checkUsagePermission(userId, 'wytqrc');
+      const status = await appUsageService.getSubscriptionStatus(userId, 'wytqrc');
+      
+      res.json({
+        allowed: check.allowed,
+        reason: check.reason,
+        balance: check.balance,
+        cost: check.cost,
+        subscriptionType: check.subscriptionType,
+        plan: status?.plan || null
+      });
+    } catch (error: any) {
+      console.error('Error checking QR access:', error);
+      res.status(500).json({ error: 'Failed to check access', message: error.message });
+    }
+  });
+
+  // Get WytQRC usage history
+  app.get('/api/qrcode/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { appUsageService } = await import('./services/appUsageService');
+      
+      const history = await appUsageService.getUsageHistory(userId, 'wytqrc', 50);
+      res.json({ history });
+    } catch (error: any) {
+      console.error('Error fetching QR history:', error);
+      res.status(500).json({ error: 'Failed to fetch history', message: error.message });
+    }
+  });
+
+  app.post('/api/qrcode/generate', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
       const { content, type } = req.body;
       
       if (!content) {
         return res.status(400).json({ error: 'Content is required' });
+      }
+
+      const { appUsageService } = await import('./services/appUsageService');
+      
+      // Record usage and deduct points if pay-per-use
+      const usageResult = await appUsageService.recordUsage(
+        userId, 
+        'wytqrc', 
+        'qr_generate',
+        { qrType: type || 'text', content: content.substring(0, 100) }
+      );
+
+      if (!usageResult.success) {
+        return res.status(402).json({ 
+          error: 'Payment required',
+          message: usageResult.error,
+          requiresPayment: true,
+          pointsNeeded: 10,
+          currentBalance: usageResult.newBalance
+        });
       }
       
       const dataUrl = await QRCode.toDataURL(content, {
@@ -13954,6 +14013,9 @@ When suggesting improvements, format your response with suggestions in a structu
         dataUrl,
         type: type || 'text',
         content,
+        pointsDeducted: usageResult.pointsDeducted,
+        newBalance: usageResult.newBalance,
+        logId: usageResult.logId
       });
     } catch (error: any) {
       console.error('QR code generation error:', error);
