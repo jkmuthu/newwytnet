@@ -329,48 +329,13 @@ interface AccessStatus {
 
 function WytQRCDashboard() {
   const [savedCodes, setSavedCodes] = useState<QRCodeData[]>([]);
-  const [usageHistory, setUsageHistory] = useState<UsageHistoryItem[]>([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
-  const [accessStatus, setAccessStatus] = useState<AccessStatus | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('wytqrc_codes');
     if (stored) {
       setSavedCodes(JSON.parse(stored));
     }
-    fetchUsageHistory();
-    fetchAccessStatus();
   }, []);
-
-  const fetchUsageHistory = async () => {
-    setIsLoadingHistory(true);
-    try {
-      const response = await fetch('/api/qrcode/history', { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        setUsageHistory(data.history || []);
-      }
-    } catch (error) {
-      console.error('Error fetching usage history:', error);
-    } finally {
-      setIsLoadingHistory(false);
-    }
-  };
-
-  const fetchAccessStatus = async () => {
-    try {
-      const response = await fetch('/api/qrcode/check-access', { credentials: 'include' });
-      if (response.ok) {
-        const data = await response.json();
-        setAccessStatus(data);
-      }
-    } catch (error) {
-      console.error('Error fetching access status:', error);
-    }
-  };
-
-  const successfulGenerations = usageHistory.filter(h => h.status === 'success').length;
-  const totalPointsSpent = usageHistory.reduce((sum, h) => sum + (h.pointsDeducted || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -387,17 +352,31 @@ function WytQRCDashboard() {
                 <p className="text-white/90 text-sm">Create and manage your QR codes</p>
               </div>
             </div>
-            {accessStatus && accessStatus.subscriptionType === 'pay_per_use' && (
-              <div className="text-right bg-white/20 backdrop-blur-xl rounded-xl p-3">
-                <p className="text-xs text-white/70">Your Balance</p>
-                <p className="text-xl font-bold text-white">₹{accessStatus.balance}</p>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <Card className="border-teal-200 bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-950 dark:to-cyan-950 dark:border-teal-800">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-teal-100 dark:bg-teal-900 rounded-xl">
+                <CreditCard className="h-8 w-8 text-teal-600 dark:text-teal-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-teal-800 dark:text-teal-200">Your Plan: Pay-Per-Download</h3>
+                <p className="text-sm text-teal-600 dark:text-teal-400">Create QR codes for free, pay only when you download</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-3xl font-bold text-teal-700 dark:text-teal-300">₹10</p>
+              <p className="text-sm text-teal-600 dark:text-teal-400">per download</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
@@ -405,8 +384,8 @@ function WytQRCDashboard() {
                 <QrCode className="h-6 w-6 text-teal-600 dark:text-teal-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Generated</p>
-                <p className="text-2xl font-bold">{successfulGenerations}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Created</p>
+                <p className="text-2xl font-bold">{savedCodes.length}</p>
               </div>
             </div>
           </CardContent>
@@ -416,11 +395,11 @@ function WytQRCDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-cyan-100 dark:bg-cyan-900 rounded-lg">
-                <CreditCard className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
+                <LinkIcon className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Points Spent</p>
-                <p className="text-2xl font-bold">₹{totalPointsSpent}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">URL Codes</p>
+                <p className="text-2xl font-bold">{savedCodes.filter(c => c.type === 'url').length}</p>
               </div>
             </div>
           </CardContent>
@@ -433,22 +412,8 @@ function WytQRCDashboard() {
                 <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Saved Locally</p>
-                <p className="text-2xl font-bold">{savedCodes.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                <LinkIcon className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">URL Codes</p>
-                <p className="text-2xl font-bold">{savedCodes.filter(c => c.type === 'url').length}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Free to Create</p>
+                <p className="text-2xl font-bold text-green-600">✓</p>
               </div>
             </div>
           </CardContent>
