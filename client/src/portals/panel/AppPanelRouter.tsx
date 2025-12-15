@@ -267,9 +267,24 @@ function WytDutySettings() {
   );
 }
 
+// App name mappings for display
+const appNameMap: Record<string, string> = {
+  'wytduty': 'WytDuty',
+  'wytqrc': 'WytQRC',
+  'wytpass': 'WytPass',
+  'wytwall': 'WytWall',
+  'wytassessor': 'WytAssessor',
+  'wytbuilder': 'WytBuilder',
+  'wytlife': 'WytLife',
+};
+
 function GenericAppDashboard({ appName }: { appName: string }) {
   // Convert slug to display name (e.g., 'expense-calculator' -> 'Expense Calculator')
   const slugToDisplayName = (slug: string): string => {
+    // Check if we have a mapped name first
+    if (appNameMap[slug.toLowerCase()]) {
+      return appNameMap[slug.toLowerCase()];
+    }
     return slug
       .split('-')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -311,6 +326,10 @@ function GenericAppDashboard({ appName }: { appName: string }) {
 function GenericAppSettings({ appName }: { appName: string }) {
   // Convert slug to display name
   const slugToDisplayName = (slug: string): string => {
+    // Check if we have a mapped name first
+    if (appNameMap[slug.toLowerCase()]) {
+      return appNameMap[slug.toLowerCase()];
+    }
     return slug
       .split('-')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))

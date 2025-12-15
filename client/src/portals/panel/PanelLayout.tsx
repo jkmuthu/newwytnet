@@ -50,11 +50,13 @@ export default function PanelLayout({ children }: PanelLayoutProps) {
   const appNameMap: Record<string, string> = {
     'wytduty': 'WytDuty',
     'wytqrc': 'WytQRC',
+    'wytpass': 'WytPass',
+    'wytwall': 'WytWall',
+    'wytassessor': 'WytAssessor',
     'wytassesser': 'WytAssesser',
     'wytbuilder': 'WytBuilder',
     'wytlife': 'WytLife',
     'assessment': 'Assessment',
-    'wytwall': 'WytWall',
     'qr-generator': 'QR Generator',
     'ai-directory': 'AI Directory',
   };
