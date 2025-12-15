@@ -14043,14 +14043,15 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
       
-      // Use the service's verifyPayment which handles everything
-      const result = await razorpayService.verifyPayment({
+      // Use handlePaymentSuccess which verifies and updates database records
+      const result = await razorpayService.handlePaymentSuccess({
         razorpay_payment_id,
         razorpay_order_id,
         razorpay_signature
       });
 
       if (!result.success) {
+        console.error('Payment verification failed:', result.error);
         return res.status(400).json({ success: false, error: result.error || 'Payment verification failed' });
       }
 
