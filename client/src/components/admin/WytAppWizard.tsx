@@ -557,7 +557,23 @@ export function WytAppEditor({ appId, mode = "create", onClose, onSave }: WytApp
   });
 
   const handleSave = () => {
-    form.handleSubmit((data) => saveMutation.mutate(data))();
+    form.handleSubmit(
+      (data) => {
+        console.log("Form valid, saving data:", data);
+        saveMutation.mutate(data);
+      },
+      (errors) => {
+        console.error("Form validation errors:", errors);
+        const errorMessages = Object.entries(errors)
+          .map(([field, error]) => `${field}: ${(error as any)?.message}`)
+          .join(", ");
+        toast({
+          title: "Validation Error",
+          description: errorMessages || "Please check form fields",
+          variant: "destructive",
+        });
+      }
+    )();
   };
 
   const currentAppName = form.watch("name") || existingApp?.name || "WytApp";
