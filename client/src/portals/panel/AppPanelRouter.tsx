@@ -304,34 +304,94 @@ const qrTypeOptions = [
   { value: 'location', label: 'Location', icon: MapPin, placeholder: 'Latitude, Longitude' },
 ];
 
+interface UsageHistoryItem {
+  id: string;
+  action: string;
+  pointsDeducted: number;
+  status: string;
+  metadata: Record<string, any> | null;
+  createdAt: string;
+}
+
+interface AccessStatus {
+  allowed: boolean;
+  reason: string;
+  balance: number;
+  cost: number;
+  subscriptionType: string | null;
+}
+
 function WytQRCDashboard() {
   const [savedCodes, setSavedCodes] = useState<QRCodeData[]>([]);
+  const [usageHistory, setUsageHistory] = useState<UsageHistoryItem[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [accessStatus, setAccessStatus] = useState<AccessStatus | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('wytqrc_codes');
     if (stored) {
       setSavedCodes(JSON.parse(stored));
     }
+    fetchUsageHistory();
+    fetchAccessStatus();
   }, []);
+
+  const fetchUsageHistory = async () => {
+    setIsLoadingHistory(true);
+    try {
+      const response = await fetch('/api/qrcode/history', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        setUsageHistory(data.history || []);
+      }
+    } catch (error) {
+      console.error('Error fetching usage history:', error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const fetchAccessStatus = async () => {
+    try {
+      const response = await fetch('/api/qrcode/check-access', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        setAccessStatus(data);
+      }
+    } catch (error) {
+      console.error('Error fetching access status:', error);
+    }
+  };
+
+  const successfulGenerations = usageHistory.filter(h => h.status === 'success').length;
+  const totalPointsSpent = usageHistory.reduce((sum, h) => sum + (h.pointsDeducted || 0), 0);
 
   return (
     <div className="space-y-6">
       <Card className="relative overflow-hidden border-0 shadow-2xl rounded-2xl">
         <div className="absolute inset-0 bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600"></div>
         <CardContent className="relative p-6">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center">
-              <QrCode className="h-6 w-6 text-white" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center">
+                <QrCode className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">WytQRC Dashboard</h1>
+                <p className="text-white/90 text-sm">Create and manage your QR codes</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">WytQRC Dashboard</h1>
-              <p className="text-white/90 text-sm">Create and manage your QR codes</p>
-            </div>
+            {accessStatus && accessStatus.subscriptionType === 'pay_per_use' && (
+              <div className="text-right bg-white/20 backdrop-blur-xl rounded-xl p-3">
+                <p className="text-xs text-white/70">Your Balance</p>
+                <p className="text-xl font-bold text-white">₹{accessStatus.balance}</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
@@ -339,8 +399,8 @@ function WytQRCDashboard() {
                 <QrCode className="h-6 w-6 text-teal-600 dark:text-teal-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total QR Codes</p>
-                <p className="text-2xl font-bold">{savedCodes.length}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Generated</p>
+                <p className="text-2xl font-bold">{successfulGenerations}</p>
               </div>
             </div>
           </CardContent>
@@ -350,11 +410,11 @@ function WytQRCDashboard() {
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-cyan-100 dark:bg-cyan-900 rounded-lg">
-                <LinkIcon className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
+                <CreditCard className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">URL Codes</p>
-                <p className="text-2xl font-bold">{savedCodes.filter(c => c.type === 'url').length}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Points Spent</p>
+                <p className="text-2xl font-bold">₹{totalPointsSpent}</p>
               </div>
             </div>
           </CardContent>
@@ -363,12 +423,26 @@ function WytQRCDashboard() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                <Type className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
+                <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Text Codes</p>
-                <p className="text-2xl font-bold">{savedCodes.filter(c => c.type === 'text').length}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Saved Locally</p>
+                <p className="text-2xl font-bold">{savedCodes.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                <LinkIcon className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">URL Codes</p>
+                <p className="text-2xl font-bold">{savedCodes.filter(c => c.type === 'url').length}</p>
               </div>
             </div>
           </CardContent>
@@ -397,10 +471,62 @@ function WytQRCDashboard() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Generation History</CardTitle>
+          <CardDescription>Your recent QR code generation activity</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingHistory ? (
+            <div className="text-center py-8 text-gray-500">Loading history...</div>
+          ) : usageHistory.length === 0 ? (
+            <div className="text-center py-8">
+              <QrCode className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+              <p className="text-gray-500 dark:text-gray-400">No generation history yet</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">Generate your first QR code to see activity here</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {usageHistory.slice(0, 10).map((item) => (
+                <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <div className="flex items-center gap-3">
+                    {item.status === 'success' ? (
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5 text-red-500" />
+                    )}
+                    <div>
+                      <p className="font-medium">{item.action}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {new Date(item.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    {item.pointsDeducted > 0 && (
+                      <span className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                        -₹{item.pointsDeducted}
+                      </span>
+                    )}
+                    <span className={`ml-2 text-xs px-2 py-1 rounded-full ${
+                      item.status === 'success' 
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                        : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                    }`}>
+                      {item.status}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {savedCodes.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Recent QR Codes</CardTitle>
+            <CardTitle>Recent Saved Codes</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -417,14 +543,6 @@ function WytQRCDashboard() {
       )}
     </div>
   );
-}
-
-interface AccessStatus {
-  allowed: boolean;
-  reason: string;
-  balance: number;
-  cost: number;
-  subscriptionType: string | null;
 }
 
 function WytQRCGenerate() {
