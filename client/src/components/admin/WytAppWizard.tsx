@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/collapsible";
 import {
   ChevronDown,
+  Check,
   Sparkles,
   Package,
   Eye,
@@ -441,6 +442,222 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
   );
 }
 
+// Inline Editor Component (for full-page editing without popup)
+interface WytAppEditorProps {
+  appId?: string;
+  mode?: "create" | "update";
+  onClose: () => void;
+  onSave?: () => void;
+}
+
+export function WytAppEditor({ appId, mode = "create", onClose, onSave }: WytAppEditorProps) {
+  const { toast } = useToast();
+
+  const form = useForm<WizardFormData>({
+    resolver: zodResolver(wizardSchema),
+    defaultValues: {
+      name: "",
+      slug: "",
+      description: "",
+      icon: "",
+      image: "",
+      banner: "",
+      category: "",
+      visibilityMode: "engine_only",
+      selectedHubs: [],
+      accessPanels: [],
+      moduleIds: [],
+      features: [],
+      pricingModel: "free",
+      appType: "premium",
+      isCoreApp: false,
+      isAutoAssigned: false,
+      pricingPlans: [],
+      version: "1.0.0",
+      changelog: "",
+    },
+  });
+
+  const { data: existingApp, isLoading: isLoadingApp } = useQuery<ExistingAppData>({
+    queryKey: ["/api/admin/apps", appId],
+    enabled: !!appId && mode === "update",
+  });
+
+  useEffect(() => {
+    if (existingApp && mode === "update") {
+      console.log("Loading existing app data:", existingApp);
+      form.reset({
+        name: existingApp.name || "",
+        slug: existingApp.slug || "",
+        description: existingApp.description || "",
+        icon: existingApp.icon || "",
+        image: (existingApp as any).image || "",
+        banner: (existingApp as any).banner || "",
+        category: existingApp.category || "",
+        visibilityMode: (existingApp.visibilityMode as any) || "engine_only",
+        selectedHubs: existingApp.selectedHubs || [],
+        accessPanels: existingApp.accessPanels || [],
+        moduleIds: existingApp.moduleIds || [],
+        features: existingApp.features || [],
+        pricingModel: (existingApp.pricingModel as any) || "free",
+        appType: (existingApp as any).appType || "premium",
+        isCoreApp: (existingApp as any).isCoreApp || false,
+        isAutoAssigned: (existingApp as any).isAutoAssigned || false,
+        pricingPlans: (existingApp as any).pricingPlans || [],
+        pricingDetails: existingApp.pricingDetails,
+        version: existingApp.version || "1.0.0",
+        changelog: (existingApp as any).changelog || "",
+      });
+    }
+  }, [existingApp, mode, appId]);
+
+  const handleNameChange = (name: string) => {
+    const slug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    form.setValue("slug", slug);
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: async (data: WizardFormData) => {
+      const endpoint = mode === "create" 
+        ? "/api/admin/apps"
+        : `/api/admin/apps/${appId}`;
+      
+      const method = mode === "create" ? "POST" : "PUT";
+      
+      const payload = {
+        ...data,
+        wizardCompleted: true,
+      };
+      
+      console.log(`Saving app (${method} ${endpoint}):`, payload);
+      
+      return await apiRequest(endpoint, method, payload);
+    },
+    onSuccess: (response) => {
+      console.log("Save successful:", response);
+      toast({
+        title: mode === "create" ? "App Created" : "App Updated",
+        description: `WytApp ${mode === "create" ? "created" : "updated"} successfully!`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/apps"] });
+      onSave?.();
+      onClose();
+    },
+    onError: (error: any) => {
+      console.error("Save error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save app",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSave = () => {
+    form.handleSubmit((data) => saveMutation.mutate(data))();
+  };
+
+  const currentAppName = form.watch("name") || existingApp?.name || "WytApp";
+
+  if (mode === "update" && isLoadingApp) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <span className="ml-2 text-muted-foreground">Loading app data...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header with back button */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={onClose} data-testid="button-back">
+            <X className="h-4 w-4 mr-1" />
+            Close
+          </Button>
+          <Separator orientation="vertical" className="h-6" />
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-purple-500" />
+            <h2 className="text-xl font-semibold">
+              {mode === "create" ? "Create New WytApp" : `Edit: ${currentAppName}`}
+            </h2>
+          </div>
+        </div>
+        <Button
+          type="button"
+          onClick={handleSave}
+          disabled={saveMutation.isPending}
+          data-testid="button-save-app"
+        >
+          <Save className="h-4 w-4 mr-1" />
+          {saveMutation.isPending ? "Saving..." : (mode === "create" ? "Create App" : "Save Changes")}
+        </Button>
+      </div>
+
+      <Separator />
+
+      {/* Tab-based Editor */}
+      <Form {...form}>
+        <form className="space-y-6">
+          <Tabs defaultValue="basic-info" className="w-full">
+            <TabsList className="grid w-full grid-cols-6">
+              <TabsTrigger value="basic-info" className="flex items-center gap-1" data-testid="tab-basic-info">
+                <Package className="h-4 w-4" />
+                <span className="hidden md:inline">Basic</span>
+              </TabsTrigger>
+              <TabsTrigger value="visibility" className="flex items-center gap-1" data-testid="tab-visibility">
+                <Eye className="h-4 w-4" />
+                <span className="hidden md:inline">Visibility</span>
+              </TabsTrigger>
+              <TabsTrigger value="modules" className="flex items-center gap-1" data-testid="tab-modules">
+                <Layers className="h-4 w-4" />
+                <span className="hidden md:inline">Modules</span>
+              </TabsTrigger>
+              <TabsTrigger value="features" className="flex items-center gap-1" data-testid="tab-features">
+                <Zap className="h-4 w-4" />
+                <span className="hidden md:inline">Features</span>
+              </TabsTrigger>
+              <TabsTrigger value="pricing" className="flex items-center gap-1" data-testid="tab-pricing">
+                <DollarSign className="h-4 w-4" />
+                <span className="hidden md:inline">Pricing</span>
+              </TabsTrigger>
+              <TabsTrigger value="version" className="flex items-center gap-1" data-testid="tab-version">
+                <GitBranch className="h-4 w-4" />
+                <span className="hidden md:inline">Version</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <div className="mt-6">
+              <TabsContent value="basic-info">
+                <Screen1BasicInfo form={form} onNameChange={handleNameChange} />
+              </TabsContent>
+              <TabsContent value="visibility">
+                <Screen2Visibility form={form} />
+              </TabsContent>
+              <TabsContent value="modules">
+                <Screen3Modules form={form} />
+              </TabsContent>
+              <TabsContent value="features">
+                <Screen4Features form={form} />
+              </TabsContent>
+              <TabsContent value="pricing">
+                <Screen5Pricing form={form} />
+              </TabsContent>
+              <TabsContent value="version">
+                <Screen6Versioning form={form} />
+              </TabsContent>
+            </div>
+          </Tabs>
+        </form>
+      </Form>
+    </div>
+  );
+}
 
 // Lucide Icon Picker Component
 const ICON_OPTIONS = [

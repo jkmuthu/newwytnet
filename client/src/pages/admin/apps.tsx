@@ -28,7 +28,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TrashView } from "@/components/shared/TrashView";
-import { WytAppWizard } from "@/components/admin/WytAppWizard";
+import { WytAppWizard, WytAppEditor } from "@/components/admin/WytAppWizard";
 
 // Pricing Plan interface
 interface PricingPlan {
@@ -401,6 +401,19 @@ export default function AdminApps() {
       restrictions,
     });
   };
+
+  // Show inline editor when wizardOpen is true
+  if (wizardOpen) {
+    return (
+      <div className="space-y-6">
+        <WytAppEditor
+          appId={wizardAppId}
+          mode={wizardMode}
+          onClose={() => setWizardOpen(false)}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -1479,13 +1492,6 @@ export default function AdminApps() {
         </DialogContent>
       </Dialog>
 
-      {/* WytApp Wizard */}
-      <WytAppWizard
-        open={wizardOpen}
-        onClose={() => setWizardOpen(false)}
-        appId={wizardAppId}
-        mode={wizardMode}
-      />
     </div>
   );
 }
