@@ -1347,89 +1347,208 @@ function Screen2Visibility({ form }: { form: any }) {
   );
 }
 
-// Screen 3: AI Module Selection (stub for now)
+// Screen 3: Module Selection
 function Screen3Modules({ form }: { form: any }) {
-  const { data: modules } = useQuery({
+  const { data: modulesResponse, isLoading } = useQuery({
     queryKey: ["/api/admin/platform-modules"],
   });
+  
+  const modules = (modulesResponse as any)?.modules || [];
+  const selectedModules = form.watch("moduleIds") || [];
 
   return (
     <div className="space-y-6" data-testid="wizard-screen-3">
       <div>
         <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-          <Brain className="h-5 w-5 text-purple-500" />
-          AI Module Selection
+          <Layers className="h-5 w-5 text-blue-500" />
+          Module Selection
         </h3>
         <p className="text-sm text-muted-foreground">
-          Select modules for your app. AI will suggest relevant modules based on your app's purpose.
+          Select platform modules to include in your app. Each module adds specific functionality.
         </p>
       </div>
 
-      <Card className="bg-purple-50 dark:bg-purple-950/20 border-purple-200">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <Sparkles className="h-5 w-5 text-purple-500 mt-0.5" />
-            <div>
-              <p className="font-semibold text-sm">AI Suggestions Coming Soon</p>
-              <p className="text-sm text-muted-foreground">
-                Based on your app description, AI will recommend the best modules to include
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+        <span className="text-sm font-medium">Selected Modules</span>
+        <Badge variant="secondary">{selectedModules.length} selected</Badge>
+      </div>
 
-      <FormField
-        control={form.control}
-        name="moduleIds"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Select Modules</FormLabel>
-            <div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
-              {Array.isArray(modules) && modules.map((module: any) => (
-                <div key={module.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    checked={field.value?.includes(module.id)}
-                    onCheckedChange={(checked) => {
-                      const newValue = checked
-                        ? [...(field.value || []), module.id]
-                        : (field.value || []).filter((id: string) => id !== module.id);
-                      field.onChange(newValue);
-                    }}
-                    data-testid={`checkbox-module-${module.id}`}
-                  />
-                  <Label className="text-sm">{module.name}</Label>
-                </div>
-              ))}
-            </div>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+          <span className="ml-2 text-sm text-muted-foreground">Loading modules...</span>
+        </div>
+      ) : modules.length === 0 ? (
+        <Card>
+          <CardContent className="p-6 text-center text-muted-foreground">
+            <Layers className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p>No platform modules available</p>
+            <p className="text-sm mt-1">Create modules in the Modules section first</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <FormField
+          control={form.control}
+          name="moduleIds"
+          render={({ field }) => (
+            <FormItem>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-2">
+                {modules.map((module: any) => {
+                  const isSelected = field.value?.includes(module.id);
+                  return (
+                    <Card 
+                      key={module.id} 
+                      className={`cursor-pointer transition-all hover:shadow-md ${
+                        isSelected ? "border-primary bg-primary/5" : "hover:border-primary/50"
+                      }`}
+                      onClick={() => {
+                        const newValue = isSelected
+                          ? (field.value || []).filter((id: string) => id !== module.id)
+                          : [...(field.value || []), module.id];
+                        field.onChange(newValue);
+                      }}
+                      data-testid={`card-module-${module.id}`}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                            isSelected ? "bg-primary text-primary-foreground" : "bg-muted"
+                          }`}>
+                            {isSelected ? (
+                              <Check className="h-4 w-4" />
+                            ) : (
+                              <span className="text-lg">{module.icon || "📦"}</span>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-sm truncate">{module.name}</p>
+                              {module.category && (
+                                <Badge variant="outline" className="text-xs shrink-0">
+                                  {module.category}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                              {module.description || "No description available"}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
     </div>
   );
 }
 
-// Screen 4: Features (stub)
+// Screen 4: Features
 function Screen4Features({ form }: { form: any }) {
+  const defaultFeatures = [
+    { id: "offline", name: "Offline Support", description: "Allow app to work without internet connection", icon: Wifi },
+    { id: "notifications", name: "Push Notifications", description: "Send notifications to users", icon: Bell },
+    { id: "analytics", name: "Analytics", description: "Track user behavior and app usage", icon: BarChart3 },
+    { id: "export", name: "Data Export", description: "Allow users to export their data", icon: FileText },
+    { id: "api", name: "API Access", description: "Provide API endpoints for external integrations", icon: Code },
+    { id: "realtime", name: "Real-time Updates", description: "Live data synchronization across devices", icon: Activity },
+    { id: "sharing", name: "Sharing", description: "Allow users to share content", icon: Share2 },
+    { id: "search", name: "Search", description: "Full-text search functionality", icon: Search },
+    { id: "multiuser", name: "Multi-user", description: "Support for team collaboration", icon: Users },
+    { id: "customization", name: "Customization", description: "Allow users to customize their experience", icon: Palette },
+  ];
+
+  const features = form.watch("features") || [];
+
+  const toggleFeature = (featureId: string, featureName: string, featureDescription: string) => {
+    const existingIndex = features.findIndex((f: any) => f.name === featureName);
+    if (existingIndex >= 0) {
+      const newFeatures = features.filter((_: any, i: number) => i !== existingIndex);
+      form.setValue("features", newFeatures);
+    } else {
+      form.setValue("features", [...features, { name: featureName, description: featureDescription, enabled: true }]);
+    }
+  };
+
+  const isFeatureEnabled = (featureName: string) => {
+    return features.some((f: any) => f.name === featureName && f.enabled);
+  };
+
   return (
     <div className="space-y-6" data-testid="wizard-screen-4">
       <div>
         <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-          <Zap className="h-5 w-5" />
-          Features
+          <Zap className="h-5 w-5 text-yellow-500" />
+          App Features
         </h3>
         <p className="text-sm text-muted-foreground">
-          Define the key features of your application
+          Enable the capabilities your app will support
         </p>
       </div>
 
-      <Card>
-        <CardContent className="p-6 text-center text-muted-foreground">
-          <p>Feature management coming in next iteration</p>
-          <p className="text-sm mt-2">For now, you can add features manually in the manifest</p>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+        <span className="text-sm font-medium">Enabled Features</span>
+        <Badge variant="secondary">{features.filter((f: any) => f.enabled).length} enabled</Badge>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {defaultFeatures.map((feature) => {
+          const isEnabled = isFeatureEnabled(feature.name);
+          const IconComponent = feature.icon;
+          return (
+            <Card 
+              key={feature.id}
+              className={`cursor-pointer transition-all hover:shadow-md ${
+                isEnabled ? "border-green-500 bg-green-50 dark:bg-green-950/20" : "hover:border-primary/50"
+              }`}
+              onClick={() => toggleFeature(feature.id, feature.name, feature.description)}
+              data-testid={`card-feature-${feature.id}`}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                    isEnabled ? "bg-green-500 text-white" : "bg-muted"
+                  }`}>
+                    <IconComponent className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-sm">{feature.name}</p>
+                      {isEnabled && <Check className="h-4 w-4 text-green-600" />}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {feature.description}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {features.length > 0 && (
+        <Card className="bg-muted/30">
+          <CardHeader className="py-3">
+            <CardTitle className="text-sm font-medium">Custom Features</CardTitle>
+          </CardHeader>
+          <CardContent className="py-2">
+            <div className="flex flex-wrap gap-2">
+              {features.filter((f: any) => f.enabled).map((feature: any, idx: number) => (
+                <Badge key={idx} variant="secondary" className="gap-1">
+                  <Check className="h-3 w-3" />
+                  {feature.name}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

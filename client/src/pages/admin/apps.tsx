@@ -20,10 +20,10 @@ import { z } from "zod";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
   Search, Plus, Layers, Package, Building2, 
-  Info, FileText, Route as RouteIcon, Settings, 
+  FileText, Route as RouteIcon, Settings, 
   Shield, Globe, History, CheckCircle2, Grid, List,
   Brain, Calculator, FileSignature, QrCode, Users, Grid3x3, Bot,
-  Edit2, Save, X, DollarSign, Lock, Zap, CreditCard, Star
+  Save, X, DollarSign, Lock, Zap, CreditCard, Star, Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -838,19 +838,10 @@ export default function AdminApps() {
                               setWizardAppId(app.id);
                               setWizardOpen(true);
                             }}
-                            data-testid={`button-update-${app.id}`}
+                            data-testid={`button-view-${app.id}`}
                           >
-                            <Edit2 className="h-3 w-3 mr-1" />
-                            Update
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/engine/apps/${app.slug || app.id}`)}
-                            data-testid={`button-view-details-${app.id}`}
-                          >
-                            <Info className="h-3 w-3 mr-1" />
-                            Details
+                            <Eye className="h-3 w-3 mr-1" />
+                            View
                           </Button>
                         </div>
                       </div>
@@ -961,19 +952,10 @@ export default function AdminApps() {
                               setWizardAppId(app.id);
                               setWizardOpen(true);
                             }}
-                            data-testid={`list-button-update-${app.id}`}
+                            data-testid={`list-button-view-${app.id}`}
                           >
-                            <Edit2 className="h-3 w-3 mr-1" />
-                            Update
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/engine/apps/${app.slug || app.id}`)}
-                            data-testid={`list-button-view-details-${app.id}`}
-                          >
-                            <Info className="h-3 w-3 mr-1" />
-                            Details
+                            <Eye className="h-3 w-3 mr-1" />
+                            View
                           </Button>
                         </div>
                       </TableCell>
