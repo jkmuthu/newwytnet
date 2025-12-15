@@ -191,7 +191,7 @@ export default function MyWytApps() {
         </div>
 {isInstalled ? (
           <div className="space-y-2">
-            <Link href={`/apppanel/${app.slug}`} className="block">
+            <Link href={`/a/${app.slug}`} className="block">
               <Button className="w-full" variant="default" data-testid={`button-switch-${app.slug}`}>
                 <Package className="h-4 w-4 mr-2" />
                 Switch to App

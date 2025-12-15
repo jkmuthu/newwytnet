@@ -378,10 +378,17 @@ export default function AppPanelRouter() {
       {/* App Panel Home - Shows all added apps */}
       <Route path="/apppanel" component={AppPanelHome} />
 
-      {/* WytApi App Routes */}
+      {/* WytApi App Routes - Both /a/ and /apppanel/ patterns */}
+      <Route path="/a/wytapi" component={WytApiPage} />
       <Route path="/apppanel/wytapi" component={WytApiPage} />
 
-      {/* WytDuty App Routes - Use full paths */}
+      {/* WytDuty App Routes - Both /a/ and /apppanel/ patterns */}
+      <Route path="/a/wytduty/settings" component={WytDutySettings} />
+      <Route path="/a/wytduty/calendar" component={WytDutyCalendar} />
+      <Route path="/a/wytduty/assigned" component={WytDutyAssigned} />
+      <Route path="/a/wytduty/my-duties" component={WytDutyMyDuties} />
+      <Route path="/a/wytduty/dashboard" component={WytDutyDashboard} />
+      <Route path="/a/wytduty" component={WytDutyDashboard} />
       <Route path="/apppanel/wytduty/settings" component={WytDutySettings} />
       <Route path="/apppanel/wytduty/calendar" component={WytDutyCalendar} />
       <Route path="/apppanel/wytduty/assigned" component={WytDutyAssigned} />
@@ -389,17 +396,24 @@ export default function AppPanelRouter() {
       <Route path="/apppanel/wytduty/dashboard" component={WytDutyDashboard} />
       <Route path="/apppanel/wytduty" component={WytDutyDashboard} />
 
-      {/* Generic app routes - Must come after specific app routes */}
-      {/* Settings route for all apps - Most specific first */}
+      {/* Generic app routes for /a/:appSlug pattern (new URL structure) */}
+      <Route path="/a/:appSlug/settings">
+        {(params) => <GenericAppSettings appName={params.appSlug || 'App'} />}
+      </Route>
+      <Route path="/a/:appSlug/dashboard">
+        {(params) => <GenericAppDashboard appName={params.appSlug || 'App'} />}
+      </Route>
+      <Route path="/a/:appSlug">
+        {(params) => <GenericAppDashboard appName={params.appSlug || 'App'} />}
+      </Route>
+
+      {/* Generic app routes for /apppanel/:appSlug pattern (legacy) */}
       <Route path="/apppanel/:appSlug/settings">
         {(params) => <GenericAppSettings appName={params.appSlug || 'App'} />}
       </Route>
-      
-      {/* Dashboard/default route for all apps */}
       <Route path="/apppanel/:appSlug/dashboard">
         {(params) => <GenericAppDashboard appName={params.appSlug || 'App'} />}
       </Route>
-      
       <Route path="/apppanel/:appSlug">
         {(params) => <GenericAppDashboard appName={params.appSlug || 'App'} />}
       </Route>
