@@ -491,7 +491,11 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
             </Button>
 
             <Button
-              onClick={handleNext}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                handleNext();
+              }}
               disabled={saveMutation.isPending}
               data-testid="wizard-button-next"
             >

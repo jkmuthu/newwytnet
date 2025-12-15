@@ -219,12 +219,16 @@ export default function MyWytApps() {
       </CardHeader>
       <CardContent>
         <div className="space-y-2 mb-4">
-          {app.features?.slice(0, 3).map((feature, idx) => (
-            <div key={idx} className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-              <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
-              <span>{feature}</span>
-            </div>
-          ))}
+          {app.features?.slice(0, 3).map((feature, idx) => {
+            const featureName = typeof feature === 'string' ? feature : (feature as any)?.name || '';
+            if (!featureName) return null;
+            return (
+              <div key={idx} className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                <span>{featureName}</span>
+              </div>
+            );
+          })}
         </div>
 {isInstalled ? (
           <div className="space-y-2">
