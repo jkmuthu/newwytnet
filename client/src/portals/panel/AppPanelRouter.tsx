@@ -457,7 +457,6 @@ function WytQRCGenerate() {
   const [wifiPassword, setWifiPassword] = useState('');
   const [wifiEncryption, setWifiEncryption] = useState('WPA');
   const [generatedQR, setGeneratedQR] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const loadRazorpayScript = (): Promise<boolean> => {
@@ -480,41 +479,116 @@ function WytQRCGenerate() {
       return;
     }
 
-    setIsGenerating(true);
+    setIsProcessingPayment(true);
+    
     try {
-      let qrContent = content;
-      
-      if (qrType === 'email') {
-        qrContent = `mailto:${content}`;
-      } else if (qrType === 'phone') {
-        qrContent = `tel:${content}`;
-      } else if (qrType === 'wifi') {
-        qrContent = `WIFI:T:${wifiEncryption};S:${content};P:${wifiPassword};;`;
-      } else if (qrType === 'location') {
-        const coords = content.split(',').map(s => s.trim());
-        if (coords.length === 2) {
-          qrContent = `geo:${coords[0]},${coords[1]}`;
-        }
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error('Failed to load payment gateway');
       }
 
-      const response = await fetch(`/api/qrcode/generate`, {
+      // Create payment order first
+      const orderResponse = await fetch('/api/qrcode/download-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ content: qrContent, type: qrType }),
       });
 
-      const data = await response.json();
+      if (!orderResponse.ok) {
+        const errorData = await orderResponse.json();
+        throw new Error(errorData.error || 'Failed to create payment order');
+      }
 
-      if (!response.ok) throw new Error(data.error || 'Failed to generate QR code');
-      
-      setGeneratedQR(data.dataUrl);
-      toast({ title: "Success", description: "QR code generated! Pay ₹10 to download." });
+      const orderData = await orderResponse.json();
+
+      const options = {
+        key: orderData.key,
+        amount: orderData.amount * 100,
+        currency: 'INR',
+        name: 'WytNet',
+        description: 'QR Code Generation - ₹10',
+        order_id: orderData.razorpayOrderId,
+        handler: async (response: any) => {
+          try {
+            // Verify payment
+            const verifyResponse = await fetch('/api/qrcode/download-verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            const verifyData = await verifyResponse.json();
+
+            if (verifyData.success) {
+              // Payment successful - now generate QR code
+              let qrContent = content;
+              
+              if (qrType === 'email') {
+                qrContent = `mailto:${content}`;
+              } else if (qrType === 'phone') {
+                qrContent = `tel:${content}`;
+              } else if (qrType === 'wifi') {
+                qrContent = `WIFI:T:${wifiEncryption};S:${content};P:${wifiPassword};;`;
+              } else if (qrType === 'location') {
+                const coords = content.split(',').map(s => s.trim());
+                if (coords.length === 2) {
+                  qrContent = `geo:${coords[0]},${coords[1]}`;
+                }
+              }
+
+              const generateResponse = await fetch(`/api/qrcode/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ content: qrContent, type: qrType }),
+              });
+
+              const data = await generateResponse.json();
+
+              if (!generateResponse.ok) throw new Error(data.error || 'Failed to generate QR code');
+              
+              setGeneratedQR(data.dataUrl);
+              toast({ 
+                title: "Payment Successful!", 
+                description: "Your QR code has been generated. You can now download it." 
+              });
+            } else {
+              throw new Error(verifyData.error || 'Payment verification failed');
+            }
+          } catch (error) {
+            toast({
+              title: 'Error',
+              description: error instanceof Error ? error.message : 'Please try again',
+              variant: 'destructive',
+            });
+          } finally {
+            setIsProcessingPayment(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setIsProcessingPayment(false);
+            toast({
+              title: 'Payment Cancelled',
+              description: 'QR code was not generated',
+              variant: 'destructive',
+            });
+          },
+        },
+        theme: { color: '#0d9488' },
+      };
+
+      const razorpay = new (window as any).Razorpay(options);
+      razorpay.open();
     } catch (error: any) {
-      console.error('Error generating QR:', error);
-      toast({ title: "Error", description: error.message || "Failed to generate QR code. Please try again.", variant: "destructive" });
-    } finally {
-      setIsGenerating(false);
+      console.error('Error:', error);
+      toast({ title: "Error", description: error.message || "Failed to process. Please try again.", variant: "destructive" });
+      setIsProcessingPayment(false);
     }
   };
 
@@ -537,100 +611,6 @@ function WytQRCGenerate() {
     localStorage.setItem('wytqrc_codes', JSON.stringify(codes));
     
     toast({ title: "Saved", description: "QR code saved to your collection!" });
-  };
-
-  const downloadQRCode = async () => {
-    if (!generatedQR) return;
-    
-    setIsProcessingPayment(true);
-    
-    try {
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        throw new Error('Failed to load payment gateway');
-      }
-
-      const orderResponse = await fetch('/api/qrcode/download-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
-
-      if (!orderResponse.ok) {
-        const errorData = await orderResponse.json();
-        throw new Error(errorData.error || 'Failed to create payment order');
-      }
-
-      const orderData = await orderResponse.json();
-
-      const options = {
-        key: orderData.key,
-        amount: orderData.amount * 100,
-        currency: 'INR',
-        name: 'WytNet',
-        description: 'QR Code Download - ₹10',
-        order_id: orderData.razorpayOrderId,
-        handler: async (response: any) => {
-          try {
-            const verifyResponse = await fetch('/api/qrcode/download-verify', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              credentials: 'include',
-              body: JSON.stringify({
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
-            });
-
-            const verifyData = await verifyResponse.json();
-
-            if (verifyData.success) {
-              const link = document.createElement('a');
-              link.download = `${name || 'qrcode'}.png`;
-              link.href = generatedQR;
-              link.click();
-              
-              toast({
-                title: 'Download Complete!',
-                description: 'Your QR code has been downloaded successfully.',
-              });
-            } else {
-              throw new Error(verifyData.error || 'Payment verification failed');
-            }
-          } catch (error) {
-            toast({
-              title: 'Download Failed',
-              description: error instanceof Error ? error.message : 'Please try again',
-              variant: 'destructive',
-            });
-          } finally {
-            setIsProcessingPayment(false);
-          }
-        },
-        modal: {
-          ondismiss: () => {
-            setIsProcessingPayment(false);
-            toast({
-              title: 'Payment Cancelled',
-              description: 'Download cancelled - no payment was made',
-              variant: 'destructive',
-            });
-          },
-        },
-        theme: { color: '#0d9488' },
-      };
-
-      const razorpay = new (window as any).Razorpay(options);
-      razorpay.open();
-    } catch (error) {
-      toast({
-        title: 'Payment Error',
-        description: error instanceof Error ? error.message : 'Failed to initiate payment',
-        variant: 'destructive',
-      });
-      setIsProcessingPayment(false);
-    }
   };
 
   const copyToClipboard = async () => {
@@ -668,13 +648,13 @@ function WytQRCGenerate() {
                 <CreditCard className="h-5 w-5 text-teal-600 dark:text-teal-400" />
               </div>
               <div>
-                <p className="text-sm font-medium text-teal-800 dark:text-teal-200">Pay-Per-Download</p>
-                <p className="text-xs text-teal-600 dark:text-teal-400">Create QR codes for free, pay only when downloading</p>
+                <p className="text-sm font-medium text-teal-800 dark:text-teal-200">Pay-Per-Use</p>
+                <p className="text-xs text-teal-600 dark:text-teal-400">Pay ₹10 to generate a QR code, then download freely</p>
               </div>
             </div>
             <div className="text-right">
               <p className="text-2xl font-bold text-teal-700 dark:text-teal-300">₹10</p>
-              <p className="text-xs text-teal-600 dark:text-teal-400">per download</p>
+              <p className="text-xs text-teal-600 dark:text-teal-400">per QR code</p>
             </div>
           </div>
         </CardContent>
@@ -774,18 +754,18 @@ function WytQRCGenerate() {
             <Button 
               onClick={generateQRCode} 
               className="w-full" 
-              disabled={isGenerating}
+              disabled={isProcessingPayment}
               data-testid="btn-generate"
             >
-              {isGenerating ? (
+              {isProcessingPayment ? (
                 <>
-                  <Clock className="h-4 w-4 mr-2 animate-spin" />
-                  Generating...
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processing Payment...
                 </>
               ) : (
                 <>
                   <QrCode className="h-4 w-4 mr-2" />
-                  Generate QR Code
+                  Generate QR Code (₹10)
                 </>
               )}
             </Button>
@@ -809,23 +789,19 @@ function WytQRCGenerate() {
                     Save
                   </Button>
                   <Button 
-                    onClick={downloadQRCode} 
+                    onClick={() => {
+                      if (!generatedQR) return;
+                      const link = document.createElement('a');
+                      link.download = `${name || 'qrcode'}.png`;
+                      link.href = generatedQR;
+                      link.click();
+                    }} 
                     variant="outline" 
                     className="flex-1" 
-                    disabled={isProcessingPayment}
                     data-testid="btn-download-qr"
                   >
-                    {isProcessingPayment ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="h-4 w-4 mr-2" />
-                        Download (₹10)
-                      </>
-                    )}
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
                   </Button>
                   <Button onClick={copyToClipboard} variant="outline" className="flex-1" data-testid="btn-copy-qr">
                     <Copy className="h-4 w-4 mr-2" />
