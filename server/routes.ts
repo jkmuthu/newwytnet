@@ -14003,31 +14003,34 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Create Razorpay order for QR code download (₹10 per download)
+  // Create Razorpay order for QR code generation (₹10)
   app.post('/api/qrcode/download-order', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = req.user;
       
-      // Create Razorpay order for ₹10
-      const order = await razorpayService.createOrder({
+      // Create Razorpay order for ₹10 using the service
+      const result = await razorpayService.createOrder(userId, {
         amount: 10, // ₹10
         currency: 'INR',
         receipt: `qrc_${userId}_${Date.now()}`,
         notes: {
-          userId: userId.toString(),
-          purpose: 'qrcode_download',
+          purpose: 'qrcode_generation',
           userEmail: user.email || ''
         }
       });
 
+      if (!result.success || !result.data) {
+        return res.status(500).json({ error: result.error || 'Failed to create order' });
+      }
+
       res.json({
         success: true,
-        orderId: order.id,
-        razorpayOrderId: order.id,
-        amount: 10,
-        currency: 'INR',
-        key: process.env.RAZORPAY_KEY_ID
+        orderId: result.data.orderId,
+        razorpayOrderId: result.data.razorpayOrderId,
+        amount: result.data.amount,
+        currency: result.data.currency,
+        key: result.data.key
       });
     } catch (error: any) {
       console.error('Error creating download order:', error);
@@ -14035,37 +14038,25 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Verify QR code download payment
+  // Verify QR code payment
   app.post('/api/qrcode/download-verify', isAuthenticated, async (req: any, res) => {
     try {
       const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
       
-      const isValid = razorpayService.verifyPaymentSignature({
+      // Use the service's verifyPayment which handles everything
+      const result = await razorpayService.verifyPayment({
         razorpay_payment_id,
         razorpay_order_id,
         razorpay_signature
       });
 
-      if (!isValid) {
-        return res.status(400).json({ success: false, error: 'Invalid payment signature' });
+      if (!result.success) {
+        return res.status(400).json({ success: false, error: result.error || 'Payment verification failed' });
       }
-
-      // Payment verified - record the transaction
-      const userId = req.user.id;
-      await db.insert(paymentTransactions).values({
-        userId,
-        orderId: razorpay_order_id,
-        paymentId: razorpay_payment_id,
-        amount: '10',
-        currency: 'INR',
-        status: 'success',
-        purpose: 'qrcode_download',
-        metadata: { razorpay_signature }
-      });
 
       res.json({ success: true, message: 'Payment verified successfully' });
     } catch (error: any) {
-      console.error('Error verifying download payment:', error);
+      console.error('Error verifying payment:', error);
       res.status(500).json({ success: false, error: 'Payment verification failed', message: error.message });
     }
   });
