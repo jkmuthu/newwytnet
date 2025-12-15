@@ -419,6 +419,14 @@ function WytQRCDashboard() {
   );
 }
 
+interface AccessStatus {
+  allowed: boolean;
+  reason: string;
+  balance: number;
+  cost: number;
+  subscriptionType: string | null;
+}
+
 function WytQRCGenerate() {
   const { toast } = useToast();
   const [qrType, setQrType] = useState('url');
@@ -428,6 +436,27 @@ function WytQRCGenerate() {
   const [wifiEncryption, setWifiEncryption] = useState('WPA');
   const [generatedQR, setGeneratedQR] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [accessStatus, setAccessStatus] = useState<AccessStatus | null>(null);
+  const [isCheckingAccess, setIsCheckingAccess] = useState(true);
+
+  useEffect(() => {
+    checkAccess();
+  }, []);
+
+  const checkAccess = async () => {
+    setIsCheckingAccess(true);
+    try {
+      const response = await fetch('/api/qrcode/check-access', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        setAccessStatus(data);
+      }
+    } catch (error) {
+      console.error('Error checking access:', error);
+    } finally {
+      setIsCheckingAccess(false);
+    }
+  };
 
   const generateQRCode = async () => {
     if (!content.trim()) {
@@ -455,17 +484,33 @@ function WytQRCGenerate() {
       const response = await fetch(`/api/qrcode/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ content: qrContent, type: qrType }),
       });
 
-      if (!response.ok) throw new Error('Failed to generate QR code');
-      
       const data = await response.json();
+
+      if (response.status === 402) {
+        toast({ 
+          title: "Insufficient Balance", 
+          description: `You need ₹10 WytPoints. Current balance: ₹${data.currentBalance || 0}`, 
+          variant: "destructive" 
+        });
+        return;
+      }
+
+      if (!response.ok) throw new Error(data.error || 'Failed to generate QR code');
+      
       setGeneratedQR(data.dataUrl);
-      toast({ title: "Success", description: "QR code generated successfully!" });
-    } catch (error) {
+      if (data.pointsDeducted > 0) {
+        toast({ title: "Success", description: `QR code generated! ₹${data.pointsDeducted} deducted. Balance: ₹${data.newBalance}` });
+      } else {
+        toast({ title: "Success", description: "QR code generated successfully!" });
+      }
+      checkAccess();
+    } catch (error: any) {
       console.error('Error generating QR:', error);
-      toast({ title: "Error", description: "Failed to generate QR code. Please try again.", variant: "destructive" });
+      toast({ title: "Error", description: error.message || "Failed to generate QR code. Please try again.", variant: "destructive" });
     } finally {
       setIsGenerating(false);
     }
@@ -527,6 +572,36 @@ function WytQRCGenerate() {
           <p className="text-gray-600 dark:text-gray-400">Create custom QR codes for any purpose</p>
         </div>
       </div>
+
+      {accessStatus && accessStatus.subscriptionType === 'pay_per_use' && (
+        <Card className="border-teal-200 bg-teal-50 dark:bg-teal-950 dark:border-teal-800">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-teal-100 dark:bg-teal-900 rounded-lg">
+                  <CreditCard className="h-5 w-5 text-teal-600 dark:text-teal-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-teal-800 dark:text-teal-200">Pay-Per-Use Plan</p>
+                  <p className="text-xs text-teal-600 dark:text-teal-400">Each QR code costs ₹{accessStatus.cost}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-teal-600 dark:text-teal-400">Your Balance</p>
+                <p className="text-xl font-bold text-teal-800 dark:text-teal-200">₹{accessStatus.balance}</p>
+              </div>
+            </div>
+            {!accessStatus.allowed && (
+              <div className="mt-3 p-3 bg-red-100 dark:bg-red-900 rounded-lg">
+                <p className="text-sm text-red-700 dark:text-red-300">
+                  <AlertCircle className="h-4 w-4 inline mr-1" />
+                  {accessStatus.reason}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
