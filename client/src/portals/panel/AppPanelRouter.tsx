@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { 
   Home, 
   FileText, 
@@ -26,10 +27,15 @@ import {
   Wifi,
   CreditCard,
   MapPin,
-  Type
+  Type,
+  Loader2,
+  Wallet,
+  Gift,
+  Sparkles
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import WytApiPage from "./pages/wytapi";
 import AppPanelHome from "./pages/app-panel-home";
 
@@ -545,6 +551,15 @@ function WytQRCDashboard() {
   );
 }
 
+interface RechargePackage {
+  id: string;
+  name: string;
+  amount: number;
+  points: number;
+  bonus: number;
+  popular: boolean;
+}
+
 function WytQRCGenerate() {
   const { toast } = useToast();
   const [qrType, setQrType] = useState('url');
@@ -556,10 +571,125 @@ function WytQRCGenerate() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [accessStatus, setAccessStatus] = useState<AccessStatus | null>(null);
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
+  const [showRechargeModal, setShowRechargeModal] = useState(false);
+  const [rechargePackages, setRechargePackages] = useState<RechargePackage[]>([]);
+  const [selectedPackage, setSelectedPackage] = useState<RechargePackage | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   useEffect(() => {
     checkAccess();
+    fetchRechargePackages();
   }, []);
+
+  const fetchRechargePackages = async () => {
+    try {
+      const response = await fetch('/api/wallet/recharge/packages', { credentials: 'include' });
+      if (response.ok) {
+        const data = await response.json();
+        setRechargePackages(data.packages || []);
+      }
+    } catch (error) {
+      console.error('Error fetching packages:', error);
+    }
+  };
+
+  const loadRazorpayScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if ((window as any).Razorpay) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleRecharge = async (pkg: RechargePackage) => {
+    setSelectedPackage(pkg);
+    setIsProcessingPayment(true);
+    
+    try {
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error('Failed to load payment gateway');
+      }
+
+      const orderResponse = await apiRequest('/api/wallet/recharge/create-order', 'POST', {
+        amount: pkg.amount,
+        pointsAmount: pkg.points + pkg.bonus,
+      });
+
+      if (!orderResponse.ok) {
+        const errorData = await orderResponse.json();
+        throw new Error(errorData.error || 'Failed to create order');
+      }
+
+      const orderData = await orderResponse.json();
+
+      const options = {
+        key: orderData.key,
+        amount: pkg.amount * 100,
+        currency: 'INR',
+        name: 'WytNet',
+        description: `${pkg.name} - ${pkg.points + pkg.bonus} WytPoints`,
+        order_id: orderData.razorpayOrderId,
+        handler: async (response: any) => {
+          try {
+            const verifyResponse = await apiRequest('/api/wallet/recharge/verify', 'POST', {
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            const verifyData = await verifyResponse.json();
+
+            if (verifyData.success) {
+              toast({
+                title: 'Recharge Successful!',
+                description: `₹${pkg.points + pkg.bonus} WytPoints added to your wallet.`,
+              });
+              setShowRechargeModal(false);
+              checkAccess();
+            } else {
+              throw new Error(verifyData.error || 'Verification failed');
+            }
+          } catch (error) {
+            toast({
+              title: 'Verification Failed',
+              description: error instanceof Error ? error.message : 'Please contact support',
+              variant: 'destructive',
+            });
+          } finally {
+            setIsProcessingPayment(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setIsProcessingPayment(false);
+            toast({
+              title: 'Payment Cancelled',
+              description: 'You cancelled the payment',
+              variant: 'destructive',
+            });
+          },
+        },
+        theme: { color: '#0d9488' },
+      };
+
+      const razorpay = new (window as any).Razorpay(options);
+      razorpay.open();
+    } catch (error) {
+      toast({
+        title: 'Payment Error',
+        description: error instanceof Error ? error.message : 'Failed to initiate payment',
+        variant: 'destructive',
+      });
+      setIsProcessingPayment(false);
+    }
+  };
 
   const checkAccess = async () => {
     setIsCheckingAccess(true);
@@ -704,17 +834,37 @@ function WytQRCGenerate() {
                   <p className="text-xs text-teal-600 dark:text-teal-400">Each QR code costs ₹{accessStatus.cost}</p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-teal-600 dark:text-teal-400">Your Balance</p>
-                <p className="text-xl font-bold text-teal-800 dark:text-teal-200">₹{accessStatus.balance}</p>
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <p className="text-sm text-teal-600 dark:text-teal-400">Your Balance</p>
+                  <p className="text-xl font-bold text-teal-800 dark:text-teal-200">₹{accessStatus.balance}</p>
+                </div>
+                <Button 
+                  onClick={() => setShowRechargeModal(true)} 
+                  size="sm"
+                  className="bg-teal-600 hover:bg-teal-700"
+                  data-testid="btn-add-points"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Points
+                </Button>
               </div>
             </div>
             {!accessStatus.allowed && (
-              <div className="mt-3 p-3 bg-red-100 dark:bg-red-900 rounded-lg">
+              <div className="mt-3 p-3 bg-red-100 dark:bg-red-900 rounded-lg flex items-center justify-between">
                 <p className="text-sm text-red-700 dark:text-red-300">
                   <AlertCircle className="h-4 w-4 inline mr-1" />
                   {accessStatus.reason}
                 </p>
+                <Button 
+                  onClick={() => setShowRechargeModal(true)} 
+                  size="sm" 
+                  variant="destructive"
+                  data-testid="btn-recharge-now"
+                >
+                  <Wallet className="h-4 w-4 mr-1" />
+                  Recharge Now
+                </Button>
               </div>
             )}
           </CardContent>
@@ -870,6 +1020,70 @@ function WytQRCGenerate() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={showRechargeModal} onOpenChange={setShowRechargeModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5 text-teal-600" />
+              Recharge WytPoints
+            </DialogTitle>
+            <DialogDescription>
+              Choose a recharge package to add points to your wallet
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-3 py-4">
+            {rechargePackages.map((pkg) => (
+              <div 
+                key={pkg.id}
+                className={`relative p-4 border-2 rounded-xl cursor-pointer transition-all hover:border-teal-500 hover:shadow-md ${
+                  pkg.popular ? 'border-teal-500 bg-teal-50 dark:bg-teal-950' : 'border-gray-200 dark:border-gray-700'
+                }`}
+                onClick={() => handleRecharge(pkg)}
+              >
+                {pkg.popular && (
+                  <div className="absolute -top-2 right-4 px-2 py-0.5 bg-teal-600 text-white text-xs font-medium rounded-full flex items-center gap-1">
+                    <Sparkles className="h-3 w-3" />
+                    Popular
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${pkg.popular ? 'bg-teal-100 dark:bg-teal-900' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                      <CreditCard className={`h-5 w-5 ${pkg.popular ? 'text-teal-600' : 'text-gray-600 dark:text-gray-400'}`} />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 dark:text-gray-100">{pkg.name}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {pkg.points} points
+                        {pkg.bonus > 0 && (
+                          <span className="ml-2 text-green-600 dark:text-green-400 font-medium">
+                            <Gift className="h-3 w-3 inline mr-0.5" />
+                            +{pkg.bonus} bonus
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-gray-900 dark:text-gray-100">₹{pkg.amount}</p>
+                    {isProcessingPayment && selectedPackage?.id === pkg.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin ml-auto" />
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-center sm:text-left">
+              Payments secured by Razorpay. All major cards, UPI & Net Banking accepted.
+            </p>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
