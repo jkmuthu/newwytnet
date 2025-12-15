@@ -23,7 +23,7 @@ import {
   FileText, Route as RouteIcon, Settings, 
   Shield, Globe, History, CheckCircle2, Grid, List,
   Brain, Calculator, FileSignature, QrCode, Users, Grid3x3, Bot,
-  Save, X, DollarSign, Lock, Zap, CreditCard, Star, Eye
+  Save, X, DollarSign, Lock, Zap, CreditCard, Star, Eye, Edit2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
