@@ -13929,6 +13929,42 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // ==================== WytQRC - QR Code Generation API ====================
+  app.post('/api/qrcode/generate', async (req, res) => {
+    try {
+      const { content, type } = req.body;
+      
+      if (!content) {
+        return res.status(400).json({ error: 'Content is required' });
+      }
+
+      const QRCode = require('qrcode');
+      
+      const dataUrl = await QRCode.toDataURL(content, {
+        width: 512,
+        margin: 2,
+        errorCorrectionLevel: 'M',
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF',
+        },
+      });
+
+      res.json({ 
+        success: true, 
+        dataUrl,
+        type: type || 'text',
+        content,
+      });
+    } catch (error: any) {
+      console.error('QR code generation error:', error);
+      res.status(500).json({ 
+        error: 'Failed to generate QR code', 
+        message: error.message 
+      });
+    }
+  });
+
   // Serve presentations for download
   app.get('/docs/presentations/:filename', async (req, res) => {
     try {

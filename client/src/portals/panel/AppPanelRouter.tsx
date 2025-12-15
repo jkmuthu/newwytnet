@@ -1,7 +1,11 @@
 import { Switch, Route } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Home, 
   FileText, 
@@ -11,9 +15,21 @@ import {
   Plus,
   CheckCircle,
   Clock,
-  AlertCircle
+  AlertCircle,
+  QrCode,
+  Download,
+  Copy,
+  Trash2,
+  Link as LinkIcon,
+  Mail,
+  Phone,
+  Wifi,
+  CreditCard,
+  MapPin,
+  Type
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 import WytApiPage from "./pages/wytapi";
 import AppPanelHome from "./pages/app-panel-home";
 
@@ -267,6 +283,582 @@ function WytDutySettings() {
   );
 }
 
+// ==================== WytQRC App Components ====================
+
+interface QRCodeData {
+  id: string;
+  type: string;
+  content: string;
+  name: string;
+  createdAt: Date;
+  dataUrl: string;
+}
+
+const qrTypeOptions = [
+  { value: 'url', label: 'URL / Link', icon: LinkIcon, placeholder: 'https://example.com' },
+  { value: 'text', label: 'Plain Text', icon: Type, placeholder: 'Enter your text here...' },
+  { value: 'email', label: 'Email', icon: Mail, placeholder: 'email@example.com' },
+  { value: 'phone', label: 'Phone Number', icon: Phone, placeholder: '+1234567890' },
+  { value: 'wifi', label: 'WiFi', icon: Wifi, placeholder: 'Network name' },
+  { value: 'vcard', label: 'Contact Card', icon: CreditCard, placeholder: 'Contact details' },
+  { value: 'location', label: 'Location', icon: MapPin, placeholder: 'Latitude, Longitude' },
+];
+
+function WytQRCDashboard() {
+  const [savedCodes, setSavedCodes] = useState<QRCodeData[]>([]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('wytqrc_codes');
+    if (stored) {
+      setSavedCodes(JSON.parse(stored));
+    }
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      <Card className="relative overflow-hidden border-0 shadow-2xl rounded-2xl">
+        <div className="absolute inset-0 bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600"></div>
+        <CardContent className="relative p-6">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 bg-white/20 backdrop-blur-xl rounded-xl flex items-center justify-center">
+              <QrCode className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">WytQRC Dashboard</h1>
+              <p className="text-white/90 text-sm">Create and manage your QR codes</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-teal-100 dark:bg-teal-900 rounded-lg">
+                <QrCode className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total QR Codes</p>
+                <p className="text-2xl font-bold">{savedCodes.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-cyan-100 dark:bg-cyan-900 rounded-lg">
+                <LinkIcon className="h-6 w-6 text-cyan-600 dark:text-cyan-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">URL Codes</p>
+                <p className="text-2xl font-bold">{savedCodes.filter(c => c.type === 'url').length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                <Type className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Text Codes</p>
+                <p className="text-2xl font-bold">{savedCodes.filter(c => c.type === 'text').length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <a href="/a/wytqrc/generate">
+              <Button className="w-full h-20 text-lg" data-testid="btn-generate-qr">
+                <Plus className="h-6 w-6 mr-2" />
+                Generate New QR Code
+              </Button>
+            </a>
+            <a href="/a/wytqrc/my-codes">
+              <Button variant="outline" className="w-full h-20 text-lg" data-testid="btn-view-codes">
+                <QrCode className="h-6 w-6 mr-2" />
+                View My QR Codes
+              </Button>
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+
+      {savedCodes.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent QR Codes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {savedCodes.slice(0, 4).map((code) => (
+                <div key={code.id} className="p-4 border rounded-lg text-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <img src={code.dataUrl} alt={code.name} className="w-24 h-24 mx-auto mb-2" />
+                  <p className="text-sm font-medium truncate">{code.name}</p>
+                  <p className="text-xs text-gray-500">{code.type}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function WytQRCGenerate() {
+  const { toast } = useToast();
+  const [qrType, setQrType] = useState('url');
+  const [content, setContent] = useState('');
+  const [name, setName] = useState('');
+  const [wifiPassword, setWifiPassword] = useState('');
+  const [wifiEncryption, setWifiEncryption] = useState('WPA');
+  const [generatedQR, setGeneratedQR] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const generateQRCode = async () => {
+    if (!content.trim()) {
+      toast({ title: "Error", description: "Please enter content for your QR code", variant: "destructive" });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      let qrContent = content;
+      
+      if (qrType === 'email') {
+        qrContent = `mailto:${content}`;
+      } else if (qrType === 'phone') {
+        qrContent = `tel:${content}`;
+      } else if (qrType === 'wifi') {
+        qrContent = `WIFI:T:${wifiEncryption};S:${content};P:${wifiPassword};;`;
+      } else if (qrType === 'location') {
+        const coords = content.split(',').map(s => s.trim());
+        if (coords.length === 2) {
+          qrContent = `geo:${coords[0]},${coords[1]}`;
+        }
+      }
+
+      const response = await fetch(`/api/qrcode/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: qrContent, type: qrType }),
+      });
+
+      if (!response.ok) throw new Error('Failed to generate QR code');
+      
+      const data = await response.json();
+      setGeneratedQR(data.dataUrl);
+      toast({ title: "Success", description: "QR code generated successfully!" });
+    } catch (error) {
+      console.error('Error generating QR:', error);
+      toast({ title: "Error", description: "Failed to generate QR code. Please try again.", variant: "destructive" });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const saveQRCode = () => {
+    if (!generatedQR) return;
+    
+    const qrName = name.trim() || `QR Code ${new Date().toLocaleString()}`;
+    const newCode: QRCodeData = {
+      id: Date.now().toString(),
+      type: qrType,
+      content,
+      name: qrName,
+      createdAt: new Date(),
+      dataUrl: generatedQR,
+    };
+
+    const stored = localStorage.getItem('wytqrc_codes');
+    const codes = stored ? JSON.parse(stored) : [];
+    codes.unshift(newCode);
+    localStorage.setItem('wytqrc_codes', JSON.stringify(codes));
+    
+    toast({ title: "Saved", description: "QR code saved to your collection!" });
+  };
+
+  const downloadQRCode = () => {
+    if (!generatedQR) return;
+    
+    const link = document.createElement('a');
+    link.download = `${name || 'qrcode'}.png`;
+    link.href = generatedQR;
+    link.click();
+  };
+
+  const copyToClipboard = async () => {
+    if (!generatedQR) return;
+    
+    try {
+      const response = await fetch(generatedQR);
+      const blob = await response.blob();
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob })
+      ]);
+      toast({ title: "Copied", description: "QR code copied to clipboard!" });
+    } catch {
+      toast({ title: "Error", description: "Failed to copy. Try downloading instead.", variant: "destructive" });
+    }
+  };
+
+  const selectedType = qrTypeOptions.find(t => t.value === qrType);
+  const TypeIcon = selectedType?.icon || LinkIcon;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Generate QR Code</h1>
+          <p className="text-gray-600 dark:text-gray-400">Create custom QR codes for any purpose</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>QR Code Settings</CardTitle>
+            <CardDescription>Configure your QR code content and type</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="qr-name">QR Code Name (optional)</Label>
+              <Input
+                id="qr-name"
+                placeholder="My QR Code"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                data-testid="input-qr-name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="qr-type">QR Code Type</Label>
+              <Select value={qrType} onValueChange={setQrType}>
+                <SelectTrigger id="qr-type" data-testid="select-qr-type">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {qrTypeOptions.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      <div className="flex items-center gap-2">
+                        <type.icon className="h-4 w-4" />
+                        {type.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="qr-content" className="flex items-center gap-2">
+                <TypeIcon className="h-4 w-4" />
+                {selectedType?.label || 'Content'}
+              </Label>
+              {qrType === 'text' ? (
+                <Textarea
+                  id="qr-content"
+                  placeholder={selectedType?.placeholder}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  rows={4}
+                  data-testid="input-qr-content"
+                />
+              ) : (
+                <Input
+                  id="qr-content"
+                  placeholder={selectedType?.placeholder}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  data-testid="input-qr-content"
+                />
+              )}
+            </div>
+
+            {qrType === 'wifi' && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="wifi-password">WiFi Password</Label>
+                  <Input
+                    id="wifi-password"
+                    type="password"
+                    placeholder="Enter WiFi password"
+                    value={wifiPassword}
+                    onChange={(e) => setWifiPassword(e.target.value)}
+                    data-testid="input-wifi-password"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="wifi-encryption">Encryption Type</Label>
+                  <Select value={wifiEncryption} onValueChange={setWifiEncryption}>
+                    <SelectTrigger id="wifi-encryption" data-testid="select-wifi-encryption">
+                      <SelectValue placeholder="Select encryption" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="WPA">WPA/WPA2</SelectItem>
+                      <SelectItem value="WEP">WEP</SelectItem>
+                      <SelectItem value="nopass">No Password</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+
+            <Button 
+              onClick={generateQRCode} 
+              className="w-full" 
+              disabled={isGenerating}
+              data-testid="btn-generate"
+            >
+              {isGenerating ? (
+                <>
+                  <Clock className="h-4 w-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <QrCode className="h-4 w-4 mr-2" />
+                  Generate QR Code
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Preview</CardTitle>
+            <CardDescription>Your generated QR code will appear here</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {generatedQR ? (
+              <div className="space-y-4">
+                <div className="flex justify-center p-6 bg-white rounded-lg border">
+                  <img src={generatedQR} alt="Generated QR Code" className="w-64 h-64" data-testid="img-qr-preview" />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={saveQRCode} variant="default" className="flex-1" data-testid="btn-save-qr">
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Save
+                  </Button>
+                  <Button onClick={downloadQRCode} variant="outline" className="flex-1" data-testid="btn-download-qr">
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                  <Button onClick={copyToClipboard} variant="outline" className="flex-1" data-testid="btn-copy-qr">
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <QrCode className="h-24 w-24 text-gray-300 dark:text-gray-600 mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">
+                  Enter content and click Generate to create your QR code
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function WytQRCMyCodes() {
+  const { toast } = useToast();
+  const [savedCodes, setSavedCodes] = useState<QRCodeData[]>([]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('wytqrc_codes');
+    if (stored) {
+      setSavedCodes(JSON.parse(stored));
+    }
+  }, []);
+
+  const deleteCode = (id: string) => {
+    const updated = savedCodes.filter(c => c.id !== id);
+    setSavedCodes(updated);
+    localStorage.setItem('wytqrc_codes', JSON.stringify(updated));
+    toast({ title: "Deleted", description: "QR code removed from your collection." });
+  };
+
+  const downloadCode = (code: QRCodeData) => {
+    const link = document.createElement('a');
+    link.download = `${code.name}.png`;
+    link.href = code.dataUrl;
+    link.click();
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">My QR Codes</h1>
+          <p className="text-gray-600 dark:text-gray-400">View and manage your saved QR codes</p>
+        </div>
+        <a href="/a/wytqrc/generate">
+          <Button data-testid="btn-new-qr">
+            <Plus className="h-4 w-4 mr-2" />
+            New QR Code
+          </Button>
+        </a>
+      </div>
+
+      {savedCodes.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <QrCode className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">No QR codes yet</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">Create your first QR code to get started</p>
+            <a href="/a/wytqrc/generate">
+              <Button data-testid="btn-create-first-qr">
+                <Plus className="h-4 w-4 mr-2" />
+                Create QR Code
+              </Button>
+            </a>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {savedCodes.map((code) => (
+            <Card key={code.id} className="overflow-hidden">
+              <CardContent className="p-4">
+                <div className="flex justify-center p-4 bg-white rounded-lg mb-4">
+                  <img src={code.dataUrl} alt={code.name} className="w-40 h-40" data-testid={`img-qr-${code.id}`} />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-medium truncate">{code.name}</h3>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-xs capitalize">{code.type}</span>
+                    <span>{new Date(code.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 truncate">{code.content}</p>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => downloadCode(code)}
+                    data-testid={`btn-download-${code.id}`}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => deleteCode(code.id)}
+                    data-testid={`btn-delete-${code.id}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WytQRCSettings() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">WytQRC Settings</h1>
+        <p className="text-gray-600 dark:text-gray-400">Configure your QR code preferences</p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Default Settings</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Default QR Size</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Set default size for generated QR codes</p>
+              </div>
+              <Select defaultValue="256">
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="128">128px</SelectItem>
+                  <SelectItem value="256">256px</SelectItem>
+                  <SelectItem value="512">512px</SelectItem>
+                  <SelectItem value="1024">1024px</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Error Correction Level</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Higher levels allow more damage recovery</p>
+              </div>
+              <Select defaultValue="M">
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="L">Low (7%)</SelectItem>
+                  <SelectItem value="M">Medium (15%)</SelectItem>
+                  <SelectItem value="Q">Quartile (25%)</SelectItem>
+                  <SelectItem value="H">High (30%)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Data Management</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Export All QR Codes</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Download all your saved QR codes</p>
+              </div>
+              <Button variant="outline" size="sm">Export</Button>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Clear All Data</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Remove all saved QR codes</p>
+              </div>
+              <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">Clear</Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // App name mappings for display
 const appNameMap: Record<string, string> = {
   'wytduty': 'WytDuty',
@@ -395,6 +987,18 @@ export default function AppPanelRouter() {
       <Route path="/apppanel/wytduty/my-duties" component={WytDutyMyDuties} />
       <Route path="/apppanel/wytduty/dashboard" component={WytDutyDashboard} />
       <Route path="/apppanel/wytduty" component={WytDutyDashboard} />
+
+      {/* WytQRC App Routes - Both /a/ and /apppanel/ patterns */}
+      <Route path="/a/wytqrc/settings" component={WytQRCSettings} />
+      <Route path="/a/wytqrc/my-codes" component={WytQRCMyCodes} />
+      <Route path="/a/wytqrc/generate" component={WytQRCGenerate} />
+      <Route path="/a/wytqrc/dashboard" component={WytQRCDashboard} />
+      <Route path="/a/wytqrc" component={WytQRCDashboard} />
+      <Route path="/apppanel/wytqrc/settings" component={WytQRCSettings} />
+      <Route path="/apppanel/wytqrc/my-codes" component={WytQRCMyCodes} />
+      <Route path="/apppanel/wytqrc/generate" component={WytQRCGenerate} />
+      <Route path="/apppanel/wytqrc/dashboard" component={WytQRCDashboard} />
+      <Route path="/apppanel/wytqrc" component={WytQRCDashboard} />
 
       {/* Generic app routes for /a/:appSlug pattern (new URL structure) */}
       <Route path="/a/:appSlug/settings">
