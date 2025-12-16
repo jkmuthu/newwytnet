@@ -340,6 +340,11 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
   });
 
   const handleSave = () => {
+    // Ensure pricingPlans is always an array before validation
+    const currentPricingPlans = form.getValues("pricingPlans");
+    if (!currentPricingPlans || !Array.isArray(currentPricingPlans)) {
+      form.setValue("pricingPlans", []);
+    }
     form.handleSubmit((data) => saveMutation.mutate(data))();
   };
 
@@ -559,6 +564,12 @@ export function WytAppEditor({ appId, mode = "create", onClose, onSave }: WytApp
   });
 
   const handleSave = () => {
+    // Ensure pricingPlans is always an array before validation
+    const currentPricingPlans = form.getValues("pricingPlans");
+    if (!currentPricingPlans || !Array.isArray(currentPricingPlans)) {
+      form.setValue("pricingPlans", []);
+    }
+    
     form.handleSubmit(
       (data) => {
         console.log("Form valid, saving data:", data);
