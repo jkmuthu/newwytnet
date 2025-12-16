@@ -14250,4 +14250,346 @@ When suggesting improvements, format your response with suggestions in a structu
       res.status(500).json({ error: error.message || 'Failed to serve presentation' });
     }
   });
+
+  // ========================================
+  // NOTIFICATIONS API ROUTES
+  // ========================================
+
+  // Get notifications for current user
+  app.get('/api/notifications', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'User not authenticated' });
+      }
+
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const type = req.query.type as string;
+
+      let query = db
+        .select()
+        .from(notifications)
+        .where(eq(notifications.userId, userId))
+        .orderBy(desc(notifications.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      const userNotifications = await query;
+
+      // Get total count for pagination
+      const countResult = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(notifications)
+        .where(eq(notifications.userId, userId));
+
+      const total = countResult[0]?.count || 0;
+
+      res.json({
+        success: true,
+        notifications: userNotifications,
+        pagination: {
+          total,
+          limit,
+          offset,
+          hasMore: offset + userNotifications.length < total
+        }
+      });
+    } catch (error: any) {
+      console.error('Error fetching notifications:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // Get unread count for current user
+  app.get('/api/notifications/unread-count', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ success: false, unreadCount: 0 });
+      }
+
+      const result = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(notifications)
+        .where(and(
+          eq(notifications.userId, userId),
+          eq(notifications.isRead, false)
+        ));
+
+      res.json({
+        success: true,
+        unreadCount: result[0]?.count || 0
+      });
+    } catch (error: any) {
+      console.error('Error fetching unread count:', error);
+      res.status(500).json({ success: false, unreadCount: 0 });
+    }
+  });
+
+  // Mark notification as read
+  app.post('/api/notifications/:id/mark-read', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      const notificationId = req.params.id;
+
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'User not authenticated' });
+      }
+
+      await db
+        .update(notifications)
+        .set({ isRead: true })
+        .where(and(
+          eq(notifications.id, notificationId),
+          eq(notifications.userId, userId)
+        ));
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error marking notification as read:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // Mark all notifications as read
+  app.post('/api/notifications/mark-all-read', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'User not authenticated' });
+      }
+
+      await db
+        .update(notifications)
+        .set({ isRead: true })
+        .where(eq(notifications.userId, userId));
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error marking all notifications as read:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // Delete notification
+  app.delete('/api/notifications/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.id;
+      const notificationId = req.params.id;
+
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'User not authenticated' });
+      }
+
+      await db
+        .delete(notifications)
+        .where(and(
+          eq(notifications.id, notificationId),
+          eq(notifications.userId, userId)
+        ));
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting notification:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // ========================================
+  // ADMIN NOTIFICATIONS API ROUTES
+  // ========================================
+
+  // Get all notifications (admin view with filters)
+  app.get('/api/admin/notifications', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const type = req.query.type as string;
+      const isRead = req.query.isRead as string;
+
+      const conditions = [];
+      if (type && type !== 'all') {
+        conditions.push(eq(notifications.type, type));
+      }
+      if (isRead === 'true') {
+        conditions.push(eq(notifications.isRead, true));
+      } else if (isRead === 'false') {
+        conditions.push(eq(notifications.isRead, false));
+      }
+
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+      const allNotifications = await db
+        .select({
+          id: notifications.id,
+          userId: notifications.userId,
+          type: notifications.type,
+          title: notifications.title,
+          message: notifications.message,
+          link: notifications.link,
+          isRead: notifications.isRead,
+          metadata: notifications.metadata,
+          createdAt: notifications.createdAt,
+        })
+        .from(notifications)
+        .where(whereClause)
+        .orderBy(desc(notifications.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      // Get total count
+      const countResult = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(notifications)
+        .where(whereClause);
+
+      const total = countResult[0]?.count || 0;
+
+      // Get unread count
+      const unreadResult = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(notifications)
+        .where(eq(notifications.isRead, false));
+
+      res.json({
+        success: true,
+        notifications: allNotifications,
+        pagination: {
+          total,
+          limit,
+          offset,
+          hasMore: offset + allNotifications.length < total
+        },
+        unreadCount: unreadResult[0]?.count || 0
+      });
+    } catch (error: any) {
+      console.error('Error fetching admin notifications:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // Create notification (admin - send to specific user or broadcast)
+  app.post('/api/admin/notifications', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { userId, userIds, type, title, message, link, metadata, broadcast } = req.body;
+
+      if (!type || !title || !message) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Type, title, and message are required' 
+        });
+      }
+
+      const notificationsToCreate: any[] = [];
+
+      if (broadcast) {
+        // Broadcast to all users
+        const allUsers = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.isActive, true));
+
+        for (const user of allUsers) {
+          notificationsToCreate.push({
+            userId: user.id,
+            type,
+            title,
+            message,
+            link: link || null,
+            metadata: metadata || {},
+            isRead: false,
+          });
+        }
+      } else if (userIds && Array.isArray(userIds) && userIds.length > 0) {
+        // Send to multiple specific users
+        for (const uid of userIds) {
+          notificationsToCreate.push({
+            userId: uid,
+            type,
+            title,
+            message,
+            link: link || null,
+            metadata: metadata || {},
+            isRead: false,
+          });
+        }
+      } else if (userId) {
+        // Send to single user
+        notificationsToCreate.push({
+          userId,
+          type,
+          title,
+          message,
+          link: link || null,
+          metadata: metadata || {},
+          isRead: false,
+        });
+      } else {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Either userId, userIds, or broadcast must be specified' 
+        });
+      }
+
+      if (notificationsToCreate.length > 0) {
+        await db.insert(notifications).values(notificationsToCreate);
+      }
+
+      res.json({ 
+        success: true, 
+        message: `Notification sent to ${notificationsToCreate.length} user(s)`,
+        count: notificationsToCreate.length
+      });
+    } catch (error: any) {
+      console.error('Error creating notification:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // Delete notification (admin)
+  app.delete('/api/admin/notifications/:id', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const notificationId = req.params.id;
+
+      await db
+        .delete(notifications)
+        .where(eq(notifications.id, notificationId));
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting notification:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // Bulk delete notifications (admin)
+  app.post('/api/admin/notifications/bulk-delete', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { ids, deleteAll, deleteRead } = req.body;
+
+      if (deleteAll) {
+        await db.delete(notifications);
+        return res.json({ success: true, message: 'All notifications deleted' });
+      }
+
+      if (deleteRead) {
+        await db.delete(notifications).where(eq(notifications.isRead, true));
+        return res.json({ success: true, message: 'All read notifications deleted' });
+      }
+
+      if (ids && Array.isArray(ids) && ids.length > 0) {
+        for (const id of ids) {
+          await db.delete(notifications).where(eq(notifications.id, id));
+        }
+        return res.json({ success: true, message: `${ids.length} notification(s) deleted` });
+      }
+
+      res.status(400).json({ success: false, message: 'No delete criteria specified' });
+    } catch (error: any) {
+      console.error('Error bulk deleting notifications:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
 }
