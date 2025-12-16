@@ -312,6 +312,7 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
       
       const payload = {
         ...data,
+        pricingPlans: data.pricingPlans || [],
         wizardCompleted: true,
       };
       
@@ -529,6 +530,7 @@ export function WytAppEditor({ appId, mode = "create", onClose, onSave }: WytApp
       
       const payload = {
         ...data,
+        pricingPlans: data.pricingPlans || [],
         wizardCompleted: true,
       };
       

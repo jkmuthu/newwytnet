@@ -14158,15 +14158,40 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
-  // Create Razorpay order for QR code generation (₹10)
+  // Create Razorpay order for QR code generation (dynamic pricing from database)
   app.post('/api/qrcode/download-order', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const user = req.user;
       
-      // Create Razorpay order for ₹10 using the service
+      // Fetch WytQRC pricing from database
+      const wytqrcApp = await db
+        .select()
+        .from(apps)
+        .where(eq(apps.slug, 'wytqrc'))
+        .limit(1);
+      
+      let qrcPrice = 10; // Default fallback
+      
+      if (wytqrcApp.length > 0) {
+        const pricingPlansData = await db
+          .select()
+          .from(appPricingPlans)
+          .where(and(
+            eq(appPricingPlans.appId, wytqrcApp[0].id),
+            eq(appPricingPlans.isActive, true),
+            eq(appPricingPlans.planType, 'pay_per_use')
+          ))
+          .limit(1);
+        
+        if (pricingPlansData.length > 0) {
+          qrcPrice = parseFloat(pricingPlansData[0].price) || 10;
+        }
+      }
+      
+      // Create Razorpay order with dynamic price
       const result = await razorpayService.createOrder(userId, {
-        amount: 10, // ₹10
+        amount: qrcPrice,
         currency: 'INR',
         receipt: `qrc_${userId}_${Date.now()}`,
         notes: {

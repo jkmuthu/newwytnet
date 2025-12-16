@@ -534,6 +534,19 @@ function WytQRCGenerate() {
   const [generatedQR, setGeneratedQR] = useState<string | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
+  // Fetch dynamic pricing from database
+  const { data: pricingData } = useQuery<{ 
+    success: boolean; 
+    defaultPlan: { price: string; planType: string } | null;
+    plans: Array<{ planType: string; price: string; planName: string }>;
+  }>({
+    queryKey: ['/api/apps/wytqrc/pricing'],
+  });
+
+  // Get pay-per-use price from pricing data
+  const payPerUsePlan = pricingData?.plans?.find(p => p.planType === 'pay_per_use') || pricingData?.defaultPlan;
+  const qrcPrice = payPerUsePlan ? parseFloat(payPerUsePlan.price) : 10;
+
   const loadRazorpayScript = (): Promise<boolean> => {
     return new Promise((resolve) => {
       if ((window as any).Razorpay) {
@@ -581,7 +594,7 @@ function WytQRCGenerate() {
         amount: orderData.amount * 100,
         currency: 'INR',
         name: 'WytNet',
-        description: 'QR Code Generation - ₹10',
+        description: `QR Code Generation - ₹${qrcPrice}`,
         order_id: orderData.razorpayOrderId,
         handler: async (response: any) => {
           try {
@@ -724,11 +737,11 @@ function WytQRCGenerate() {
               </div>
               <div>
                 <p className="text-sm font-medium text-teal-800 dark:text-teal-200">Pay-Per-Use</p>
-                <p className="text-xs text-teal-600 dark:text-teal-400">Pay ₹10 to generate a QR code, then download freely</p>
+                <p className="text-xs text-teal-600 dark:text-teal-400">Pay ₹{qrcPrice} to generate a QR code, then download freely</p>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-teal-700 dark:text-teal-300">₹10</p>
+              <p className="text-2xl font-bold text-teal-700 dark:text-teal-300">₹{qrcPrice}</p>
               <p className="text-xs text-teal-600 dark:text-teal-400">per QR code</p>
             </div>
           </div>
@@ -840,7 +853,7 @@ function WytQRCGenerate() {
               ) : (
                 <>
                   <QrCode className="h-4 w-4 mr-2" />
-                  Generate QR Code (₹10)
+                  Generate QR Code (₹{qrcPrice})
                 </>
               )}
             </Button>
