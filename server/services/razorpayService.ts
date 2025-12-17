@@ -28,24 +28,37 @@ interface PaymentVerificationData {
 }
 
 export class RazorpayService {
-  private razorpay: Razorpay;
+  private razorpay: Razorpay | null = null;
   private keyId: string;
   private keySecret: string;
+  private isConfigured: boolean = false;
 
   constructor() {
     this.keyId = process.env.RAZORPAY_KEY_ID || "";
     this.keySecret = process.env.RAZORPAY_KEY_SECRET || "";
     
     if (!this.keyId || !this.keySecret) {
-      throw new Error("Razorpay credentials not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.");
+      console.warn("⚠️ Razorpay credentials not configured. Payment features will be disabled.");
+      this.isConfigured = false;
+    } else {
+      try {
+        this.razorpay = new Razorpay({
+          key_id: this.keyId,
+          key_secret: this.keySecret,
+        });
+        this.isConfigured = true;
+        console.log("🔧 Razorpay service initialized successfully");
+      } catch (error) {
+        console.error("❌ Razorpay initialization failed:", error);
+        this.isConfigured = false;
+      }
     }
-
-    this.razorpay = new Razorpay({
-      key_id: this.keyId,
-      key_secret: this.keySecret,
-    });
-
-    console.log("🔧 Razorpay service initialized successfully");
+  }
+  
+  private ensureConfigured(): void {
+    if (!this.isConfigured || !this.razorpay) {
+      throw new Error("Payment service not configured. Please contact support.");
+    }
   }
 
   /**
@@ -63,6 +76,9 @@ export class RazorpayService {
     error?: string;
   }> {
     try {
+      // Check if service is configured
+      this.ensureConfigured();
+      
       // Get user details
       const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
       if (!user[0]) {
@@ -97,7 +113,7 @@ export class RazorpayService {
       const dbOrderId = dbOrderResult[0].id;
 
       // Create order in Razorpay
-      const razorpayOrder = await this.razorpay.orders.create({
+      const razorpayOrder = await this.razorpay!.orders.create({
         amount: Math.round(total * 100), // Convert to paisa
         currency: orderData.currency || 'INR',
         receipt: orderData.receipt || orderNumber,
@@ -180,7 +196,7 @@ export class RazorpayService {
       }
 
       // Get payment details from Razorpay
-      const razorpayPayment = await this.razorpay.payments.fetch(data.razorpay_payment_id);
+      const razorpayPayment = await this.razorpay!.payments.fetch(data.razorpay_payment_id);
       
       // Find our payment record
       const paymentRecord = await db.select()
@@ -334,7 +350,7 @@ export class RazorpayService {
 
       // Create refund in Razorpay
       const refundAmount = amount ? Math.round(amount * 100) : undefined;
-      const refund = await this.razorpay.payments.refund(paymentRecord[0].providerPaymentId, {
+      const refund = await this.razorpay!.payments.refund(paymentRecord[0].providerPaymentId, {
         amount: refundAmount,
         notes: { reason: reason || "Customer requested refund" },
       });
@@ -401,7 +417,7 @@ export class RazorpayService {
     error?: string;
   }> {
     try {
-      const paymentLink = await this.razorpay.paymentLink.create({
+      const paymentLink = await this.razorpay!.paymentLink.create({
         amount: Math.round(data.amount * 100), // Convert to paisa
         currency: data.currency || 'INR',
         description: data.description || 'Payment',
@@ -442,7 +458,7 @@ export class RazorpayService {
     error?: string;
   }> {
     try {
-      const paymentLink = await this.razorpay.paymentLink.fetch(paymentLinkId);
+      const paymentLink = await this.razorpay!.paymentLink.fetch(paymentLinkId);
       return { success: true, data: paymentLink };
     } catch (error) {
       console.error("❌ Razorpay: Failed to get payment link:", error);
@@ -515,7 +531,7 @@ export class RazorpayService {
       const dbOrderId = dbOrderResult[0].id;
 
       // Create order in Razorpay
-      const razorpayOrder = await this.razorpay.orders.create({
+      const razorpayOrder = await this.razorpay!.orders.create({
         amount: Math.round(data.amount * 100), // Convert to paisa
         currency,
         receipt: orderNumber,
@@ -590,7 +606,7 @@ export class RazorpayService {
       }
 
       // Get payment details from Razorpay
-      const razorpayPayment = await this.razorpay.payments.fetch(data.razorpay_payment_id);
+      const razorpayPayment = await this.razorpay!.payments.fetch(data.razorpay_payment_id);
       
       // Find our payment record
       const paymentRecord = await db.select()
