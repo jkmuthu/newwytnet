@@ -14164,6 +14164,8 @@ When suggesting improvements, format your response with suggestions in a structu
       const userId = req.user.id;
       const user = req.user;
       
+      console.log(`📱 QRC Order: Creating order for user ${userId}`);
+      
       // Fetch WytQRC pricing from database
       const wytqrcApp = await db
         .select()
@@ -14174,6 +14176,7 @@ When suggesting improvements, format your response with suggestions in a structu
       let qrcPrice = 10; // Default fallback
       
       if (wytqrcApp.length > 0) {
+        console.log(`📱 QRC Order: Found WytQRC app with ID ${wytqrcApp[0].id}`);
         const pricingPlansData = await db
           .select()
           .from(appPricingPlans)
@@ -14186,10 +14189,16 @@ When suggesting improvements, format your response with suggestions in a structu
         
         if (pricingPlansData.length > 0) {
           qrcPrice = parseFloat(pricingPlansData[0].price) || 10;
+          console.log(`📱 QRC Order: Found pricing plan, price = ₹${qrcPrice}`);
+        } else {
+          console.log(`📱 QRC Order: No pricing plan found, using default ₹${qrcPrice}`);
         }
+      } else {
+        console.log(`📱 QRC Order: WytQRC app not found, using default price ₹${qrcPrice}`);
       }
       
       // Create Razorpay order with dynamic price
+      console.log(`📱 QRC Order: Creating Razorpay order for ₹${qrcPrice}`);
       const result = await razorpayService.createOrder(userId, {
         amount: qrcPrice,
         currency: 'INR',
@@ -14201,9 +14210,11 @@ When suggesting improvements, format your response with suggestions in a structu
       });
 
       if (!result.success || !result.data) {
+        console.error(`❌ QRC Order: Razorpay order creation failed:`, result.error);
         return res.status(500).json({ error: result.error || 'Failed to create order' });
       }
 
+      console.log(`✅ QRC Order: Order created successfully - ${result.data.razorpayOrderId}`);
       res.json({
         success: true,
         orderId: result.data.orderId,
@@ -14213,8 +14224,9 @@ When suggesting improvements, format your response with suggestions in a structu
         key: result.data.key
       });
     } catch (error: any) {
-      console.error('Error creating download order:', error);
-      res.status(500).json({ error: 'Failed to create payment order', message: error.message });
+      console.error('❌ QRC Order: Error creating download order:', error);
+      console.error('❌ QRC Order: Stack trace:', error.stack);
+      res.status(500).json({ error: 'Failed to create order', message: error.message });
     }
   });
 
