@@ -585,7 +585,9 @@ function WytQRCGenerate() {
 
       if (!orderResponse.ok) {
         const errorData = await orderResponse.json();
-        throw new Error(errorData.error || 'Failed to create payment order');
+        const errorMsg = errorData.message || errorData.error || 'Failed to create payment order';
+        console.error('Order creation failed:', errorData);
+        throw new Error(errorMsg);
       }
 
       const orderData = await orderResponse.json();
