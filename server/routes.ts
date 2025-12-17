@@ -14226,7 +14226,12 @@ When suggesting improvements, format your response with suggestions in a structu
     } catch (error: any) {
       console.error('❌ QRC Order: Error creating download order:', error);
       console.error('❌ QRC Order: Stack trace:', error.stack);
-      res.status(500).json({ error: 'Failed to create order', message: error.message });
+      const errorMessage = error.message || 'Unknown error occurred';
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to create order', 
+        message: `Order creation failed: ${errorMessage}`
+      });
     }
   });
 

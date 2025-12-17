@@ -577,15 +577,26 @@ function WytQRCGenerate() {
       }
 
       // Create payment order first
-      const orderResponse = await fetch('/api/qrcode/download-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
+      let orderResponse;
+      try {
+        orderResponse = await fetch('/api/qrcode/download-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+      } catch (networkError: any) {
+        console.error('Network error creating order:', networkError);
+        throw new Error('Network error - please check your connection and try again');
+      }
 
       if (!orderResponse.ok) {
-        const errorData = await orderResponse.json();
-        const errorMsg = errorData.message || errorData.error || 'Failed to create payment order';
+        let errorData;
+        try {
+          errorData = await orderResponse.json();
+        } catch {
+          throw new Error(`Server error (${orderResponse.status})`);
+        }
+        const errorMsg = errorData.message || errorData.error || `Failed to create order (${orderResponse.status})`;
         console.error('Order creation failed:', errorData);
         throw new Error(errorMsg);
       }
