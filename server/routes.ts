@@ -14158,6 +14158,20 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // Health check for payment service configuration
+  app.get('/api/payment/health', (req, res) => {
+    const hasRazorpayKey = !!process.env.RAZORPAY_KEY_ID;
+    const hasRazorpaySecret = !!process.env.RAZORPAY_KEY_SECRET;
+    res.json({
+      paymentService: {
+        configured: hasRazorpayKey && hasRazorpaySecret,
+        keyPresent: hasRazorpayKey,
+        secretPresent: hasRazorpaySecret,
+        environment: process.env.NODE_ENV || 'unknown'
+      }
+    });
+  });
+
   // Create Razorpay order for QR code generation (dynamic pricing from database)
   app.post('/api/qrcode/download-order', isAuthenticated, async (req: any, res) => {
     try {
