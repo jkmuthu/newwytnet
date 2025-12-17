@@ -381,22 +381,25 @@ export default function PanelMobileLayout({
         {children}
       </main>
 
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation - Touch-friendly 44px+ targets */}
       <nav className="flex-shrink-0 fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 z-50 safe-area-inset-bottom">
-        <div className="flex items-center justify-around py-1.5 sm:py-2">
+        <div className="flex items-center justify-around py-1 px-1">
           {bottomNavItems.map((item) => (
             <Link key={item.href} href={item.href}>
               <div 
                 className={cn(
-                  "flex flex-col items-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-colors min-w-[60px]",
+                  "flex flex-col items-center justify-center min-h-[52px] min-w-[64px] px-3 py-2 rounded-xl transition-all active:scale-95",
                   item.active 
-                    ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30" 
-                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 shadow-sm" 
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50"
                 )}
                 data-testid={`bottom-nav-${item.label.toLowerCase().replace(' ', '-')}`}
               >
-                <item.icon className="h-5 w-5 sm:h-5 sm:w-5" />
-                <span className="text-[10px] sm:text-xs mt-0.5 sm:mt-1 font-medium truncate max-w-[60px]">{item.label}</span>
+                <item.icon className={cn("h-5 w-5 mb-0.5", item.active && "h-[22px] w-[22px]")} />
+                <span className={cn(
+                  "text-[11px] font-medium truncate max-w-[60px]",
+                  item.active && "font-semibold"
+                )}>{item.label}</span>
               </div>
             </Link>
           ))}
