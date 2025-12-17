@@ -73,31 +73,31 @@ export default function PublicMobileLayout({ children, showFooter = true }: Publ
     logoutMutation.mutate();
   };
 
-  // Bottom navigation items for mobile
+  // Bottom navigation items for mobile - Unified across public pages
   const bottomNavItems = [
     {
       href: "/",
       icon: Home,
       label: "WytWall",
-      active: location === "/"
+      active: location === "/" || location.startsWith("/wytwall")
     },
     {
       href: "/wytapps",
       icon: Grid3x3,
       label: "WytApps",
-      active: location === "/wytapps"
+      active: location === "/wytapps" || location.startsWith("/app/")
+    },
+    {
+      href: "/wythubs",
+      icon: Building,
+      label: "WytHubs",
+      active: location === "/wythubs" || location.startsWith("/hub/")
     },
     {
       href: "/wytlife",
       icon: Activity,
       label: "WytLife",
-      active: location === "/wytlife"
-    },
-    {
-      href: "/qr-generator", 
-      icon: QrCode,
-      label: "Tools",
-      active: location === "/qr-generator" || location === "/assessment" || location === "/wytai-trademark"
+      active: location === "/wytlife" || location.startsWith("/wytlife")
     }
   ];
 

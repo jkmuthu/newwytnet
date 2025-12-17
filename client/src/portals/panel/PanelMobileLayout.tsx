@@ -19,7 +19,9 @@ import {
   Search,
   Bell,
   Sun,
-  Moon
+  Moon,
+  Grid3x3,
+  Activity
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -104,20 +106,50 @@ export default function PanelMobileLayout({
     return String(user.name)[0]?.toUpperCase() || 'U';
   };
 
-  // Bottom navigation items based on workspace
+  // Bottom navigation items - Unified across public and panel (same as public pages)
   const getBottomNavItems = () => {
+    return [
+      {
+        href: "/",
+        icon: Home,
+        label: "WytWall",
+        active: location === "/" || location.startsWith("/wytwall")
+      },
+      {
+        href: "/wytapps",
+        icon: Grid3x3,
+        label: "WytApps",
+        active: location === "/wytapps" || location.startsWith("/app/")
+      },
+      {
+        href: "/wythubs",
+        icon: Building,
+        label: "WytHubs",
+        active: location === "/wythubs" || location.startsWith("/hub/")
+      },
+      {
+        href: "/wytlife",
+        icon: Activity,
+        label: "WytLife",
+        active: location === "/wytlife" || location.startsWith("/wytlife")
+      }
+    ];
+  };
+
+  // Sidebar navigation items based on workspace context
+  const getSidebarNavItems = () => {
     if (currentWorkspace.type === 'personal') {
       return [
         {
           href: "/u/me",
           icon: Home,
-          label: "Home",
+          label: "Dashboard",
           active: location === "/u/me" || location === "/u/me/dashboard" || location === "/panel/me"
         },
         {
           href: "/u/me/wytapps",
           icon: FolderOpen,
-          label: "Projects",
+          label: "My Apps",
           active: location === "/u/me/wytapps" || location.startsWith("/u/me/wytapps/")
         },
         {
@@ -218,52 +250,70 @@ export default function PanelMobileLayout({
                       />
                     </SheetTitle>
                   </SheetHeader>
-                  <nav className="flex-1 p-3 space-y-1">
+                  <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+                    {/* Explore Section */}
                     <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      Quick Links
+                      Explore
                     </div>
                     <Link href="/" onClick={() => setSidebarOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                        <Home className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                      <div className={cn(
+                        "flex items-center gap-3 px-3 py-3 rounded-lg transition-colors",
+                        location === "/" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                      )}>
+                        <Home className="h-5 w-5" />
                         <span className="font-medium">WytWall</span>
                       </div>
                     </Link>
                     <Link href="/wytapps" onClick={() => setSidebarOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                        <FolderOpen className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                      <div className={cn(
+                        "flex items-center gap-3 px-3 py-3 rounded-lg transition-colors",
+                        location === "/wytapps" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                      )}>
+                        <Grid3x3 className="h-5 w-5" />
                         <span className="font-medium">WytApps</span>
                       </div>
                     </Link>
                     <Link href="/wythubs" onClick={() => setSidebarOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                        <Building className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                      <div className={cn(
+                        "flex items-center gap-3 px-3 py-3 rounded-lg transition-colors",
+                        location === "/wythubs" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                      )}>
+                        <Building className="h-5 w-5" />
                         <span className="font-medium">WytHubs</span>
                       </div>
                     </Link>
+                    <Link href="/wytlife" onClick={() => setSidebarOpen(false)}>
+                      <div className={cn(
+                        "flex items-center gap-3 px-3 py-3 rounded-lg transition-colors",
+                        location === "/wytlife" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                      )}>
+                        <Activity className="h-5 w-5" />
+                        <span className="font-medium">WytLife</span>
+                      </div>
+                    </Link>
                     
+                    {/* My Workspace Section - Context-aware */}
                     <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-4">
-                      My Workspace
+                      {currentWorkspace.type === 'personal' ? 'My WytPanel' : currentWorkspace.name}
                     </div>
-                    <Link href="/u/me" onClick={() => setSidebarOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                        <User className="h-5 w-5 text-blue-600" />
-                        <span className="font-medium">My Dashboard</span>
-                      </div>
-                    </Link>
-                    <Link href="/u/me/wytapps" onClick={() => setSidebarOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                        <FolderOpen className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                        <span className="font-medium">My Apps</span>
-                      </div>
-                    </Link>
-                    <Link href="/u/me/orgs" onClick={() => setSidebarOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                        <Building className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-                        <span className="font-medium">My Organizations</span>
-                      </div>
-                    </Link>
+                    {getSidebarNavItems().map((item) => (
+                      <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)}>
+                        <div className={cn(
+                          "flex items-center gap-3 px-3 py-3 rounded-lg transition-colors",
+                          item.active ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                        )}>
+                          <item.icon className={cn("h-5 w-5", item.active ? "text-blue-600 dark:text-blue-400" : "text-gray-600 dark:text-gray-400")} />
+                          <span className="font-medium">{item.label}</span>
+                        </div>
+                      </Link>
+                    ))}
+                    
+                    {/* Settings always available */}
                     <Link href="/u/me/account" onClick={() => setSidebarOpen(false)}>
-                      <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                      <div className={cn(
+                        "flex items-center gap-3 px-3 py-3 rounded-lg transition-colors",
+                        location === "/u/me/account" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                      )}>
                         <Settings className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                         <span className="font-medium">Settings</span>
                       </div>
