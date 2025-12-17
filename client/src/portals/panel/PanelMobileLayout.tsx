@@ -190,56 +190,120 @@ export default function PanelMobileLayout({
 
   return (
     <div className="min-h-screen h-screen flex flex-col overflow-hidden bg-gray-50 dark:bg-gray-900">
-      {/* Mobile Header */}
+      {/* Mobile Header - Unified with WytNet Logo */}
       <header className="flex-shrink-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
         <div className="px-3 sm:px-4">
           <div className="flex justify-between items-center h-14">
-            {/* Left - Workspace Display/Switcher */}
-            {workspaceOptions.length === 1 ? (
-              <Link href="/u/me">
-                <div className="flex items-center space-x-2 px-3 py-2 text-sm font-medium">
-                  {currentWorkspace.type === 'personal' ? (
-                    <User className="h-4 w-4 text-blue-600" />
-                  ) : (
-                    <Building className="h-4 w-4 text-green-600" />
-                  )}
-                  <span>{currentWorkspace.name}</span>
-                </div>
-              </Link>
-            ) : (
-              <Select value={currentWorkspace.id} onValueChange={handleWorkspaceChange}>
-                <SelectTrigger className="w-40 border-0 shadow-none">
-                  <div className="flex items-center space-x-2">
-                    {currentWorkspace.type === 'personal' ? (
-                      <User className="h-4 w-4 text-blue-600" />
-                    ) : (
-                      <Building className="h-4 w-4 text-green-600" />
-                    )}
-                    <SelectValue />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  {workspaceOptions.map((workspace) => (
-                    <SelectItem key={workspace.id} value={workspace.id}>
-                      <div className="flex items-center space-x-2">
-                        <workspace.icon className={`h-4 w-4 ${
-                          workspace.type === 'personal' ? 'text-blue-600' : 'text-green-600'
-                        }`} />
-                        <span>{workspace.name}</span>
+            {/* Left - Hamburger Menu + Logo */}
+            <div className="flex items-center gap-2">
+              {/* Hamburger Menu */}
+              <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+                <SheetTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-10 w-10 p-0"
+                    data-testid="button-hamburger-menu"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[280px] p-0">
+                  <SheetHeader className="p-4 border-b bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+                    <SheetTitle className="flex items-center gap-2 text-white">
+                      <img 
+                        src="/wytnet-logo.png?v=2" 
+                        alt="WytNet" 
+                        className="h-6 w-auto brightness-0 invert"
+                      />
+                    </SheetTitle>
+                  </SheetHeader>
+                  <nav className="flex-1 p-3 space-y-1">
+                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Quick Links
+                    </div>
+                    <Link href="/" onClick={() => setSidebarOpen(false)}>
+                      <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                        <Home className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                        <span className="font-medium">WytWall</span>
                       </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+                    </Link>
+                    <Link href="/wytapps" onClick={() => setSidebarOpen(false)}>
+                      <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                        <FolderOpen className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                        <span className="font-medium">WytApps</span>
+                      </div>
+                    </Link>
+                    <Link href="/wythubs" onClick={() => setSidebarOpen(false)}>
+                      <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                        <Building className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                        <span className="font-medium">WytHubs</span>
+                      </div>
+                    </Link>
+                    
+                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider mt-4">
+                      My Workspace
+                    </div>
+                    <Link href="/u/me" onClick={() => setSidebarOpen(false)}>
+                      <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                        <User className="h-5 w-5 text-blue-600" />
+                        <span className="font-medium">My Dashboard</span>
+                      </div>
+                    </Link>
+                    <Link href="/u/me/wytapps" onClick={() => setSidebarOpen(false)}>
+                      <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                        <FolderOpen className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                        <span className="font-medium">My Apps</span>
+                      </div>
+                    </Link>
+                    <Link href="/u/me/orgs" onClick={() => setSidebarOpen(false)}>
+                      <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                        <Building className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                        <span className="font-medium">My Organizations</span>
+                      </div>
+                    </Link>
+                    <Link href="/u/me/account" onClick={() => setSidebarOpen(false)}>
+                      <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                        <Settings className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                        <span className="font-medium">Settings</span>
+                      </div>
+                    </Link>
+                  </nav>
+                  <div className="p-3 border-t">
+                    <Button
+                      onClick={() => {
+                        setSidebarOpen(false);
+                        handleLogout();
+                      }}
+                      variant="outline"
+                      className="w-full justify-start gap-3 text-red-600 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-950/30"
+                      disabled={logoutMutation.isPending}
+                    >
+                      <LogOut className="h-5 w-5" />
+                      <span>{logoutMutation.isPending ? "Signing out..." : "Sign out"}</span>
+                    </Button>
+                  </div>
+                </SheetContent>
+              </Sheet>
+              
+              {/* WytNet Logo */}
+              <Link href="/">
+                <img 
+                  src="/wytnet-logo.png?v=2" 
+                  alt="WytNet" 
+                  className="h-7 w-auto"
+                  data-testid="img-logo"
+                />
+              </Link>
+            </div>
 
-            {/* Right - Actions + Menu */}
-            <div className="flex items-center space-x-1">
+            {/* Right - Actions + User Avatar */}
+            <div className="flex items-center gap-1">
               <Button 
                 variant="ghost" 
                 size="sm"
                 onClick={toggleTheme}
-                className="h-9 w-9 p-0"
+                className="h-10 w-10 p-0"
                 aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
               >
                 {isDark ? (
@@ -248,61 +312,61 @@ export default function PanelMobileLayout({
                   <Moon className="h-5 w-5 text-slate-600" />
                 )}
               </Button>
-              <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+              <Button variant="ghost" size="sm" className="h-10 w-10 p-0">
                 <Search className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="sm" className="h-9 w-9 p-0">
+              <Button variant="ghost" size="sm" className="h-10 w-10 p-0 relative">
                 <Bell className="h-5 w-5" />
+                <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
               </Button>
               
-              {/* User Menu */}
+              {/* User Avatar */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <Avatar className="h-8 w-8">
+                  <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
+                    <Avatar className="h-9 w-9">
                       {(user as any)?.profileImageUrl && (
                         <AvatarImage src={(user as any).profileImageUrl} alt={(user as any).name || "User"} />
                       )}
-                      <AvatarFallback className="bg-blue-600 text-white text-xs">
+                      <AvatarFallback className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-semibold">
                         {getUserInitials(user)}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end">
-                  <div className="flex items-center gap-2 p-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-blue-600 text-white text-xs">
+                  <div className="flex items-center gap-3 p-3 border-b">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-semibold">
                         {getUserInitials(user)}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <p className="text-sm font-medium">{(user as any)?.name || "User"}</p>
-                      <p className="text-xs text-muted-foreground">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{(user as any)?.name || "User"}</p>
+                      <p className="text-xs text-muted-foreground truncate">
                         {(user as any)?.email || (user as any)?.mobileNumber || ""}
                       </p>
                     </div>
                   </div>
-                  <DropdownMenuSeparator />
                   <Link href="/u/me/profile">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
+                    <DropdownMenuItem className="cursor-pointer py-2.5">
+                      <User className="mr-3 h-4 w-4" />
                       Profile
                     </DropdownMenuItem>
                   </Link>
-                  <Link href="/u/me/settings">
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Settings className="mr-2 h-4 w-4" />
-                      Settings
+                  <Link href="/u/me/account">
+                    <DropdownMenuItem className="cursor-pointer py-2.5">
+                      <Settings className="mr-3 h-4 w-4" />
+                      Account Settings
                     </DropdownMenuItem>
                   </Link>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    className="cursor-pointer text-red-600 dark:text-red-400"
+                    className="cursor-pointer text-red-600 dark:text-red-400 py-2.5"
                     onClick={handleLogout}
                     disabled={logoutMutation.isPending}
                   >
-                    <LogOut className="mr-2 h-4 w-4" />
+                    <LogOut className="mr-3 h-4 w-4" />
                     {logoutMutation.isPending ? "Signing out..." : "Sign out"}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
