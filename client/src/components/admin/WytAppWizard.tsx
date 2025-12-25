@@ -1590,13 +1590,28 @@ function Screen5Pricing({ form }: { form: any }) {
   const [activeTier, setActiveTier] = useState<string>('free');
   const [activeBillingCycle, setActiveBillingCycle] = useState<string>('monthly');
 
+  // Helper to infer tier from plan data
+  const inferTier = (plan: any): string => {
+    // If planTier is explicitly set and valid, use it
+    if (plan.planTier && PLAN_TIERS.some(t => t.key === plan.planTier)) {
+      return plan.planTier;
+    }
+    // Infer from planType
+    const planType = plan.planType || 'free';
+    if (planType === 'free') return 'free';
+    if (planType === 'pay_per_use') return 'per_use';
+    if (planType === 'monthly' || planType === 'yearly') return 'basic';
+    if (planType === 'one_time') return 'standard';
+    return 'free';
+  };
+
   // Get enabled tiers from current plans
-  const enabledTiers = new Set(pricingPlans.map((p: any) => p.planTier || p.planType));
+  const enabledTiers = new Set(pricingPlans.map((p: any) => inferTier(p)));
 
   // Get plan for specific tier and billing cycle
   const getPlan = (tierKey: string, billingCycle?: string) => {
     return pricingPlans.find((p: any) => {
-      const planTier = p.planTier || p.planType;
+      const planTier = inferTier(p);
       if (planTier !== tierKey) return false;
       if (billingCycle) {
         return p.billingCycle === billingCycle || p.planType === billingCycle;
@@ -1653,7 +1668,7 @@ function Screen5Pricing({ form }: { form: any }) {
       form.setValue("pricingPlans", newPlans);
     } else {
       // Remove all plans for this tier
-      const filtered = pricingPlans.filter((p: any) => (p.planTier || p.planType) !== tierKey);
+      const filtered = pricingPlans.filter((p: any) => inferTier(p) !== tierKey);
       form.setValue("pricingPlans", filtered);
     }
     setActiveTier(tierKey);
@@ -1662,7 +1677,7 @@ function Screen5Pricing({ form }: { form: any }) {
   // Update plan price
   const updatePlanPrice = (tierKey: string, billingCycle: string | undefined, price: string) => {
     const updated = pricingPlans.map((p: any) => {
-      const planTier = p.planTier || p.planType;
+      const planTier = inferTier(p);
       if (planTier === tierKey) {
         if (!billingCycle || p.billingCycle === billingCycle || p.planType === billingCycle) {
           return { ...p, price };
