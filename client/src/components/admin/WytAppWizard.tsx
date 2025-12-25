@@ -127,7 +127,7 @@ const wizardSchema = z.object({
   category: z.string().optional(),
 
   // Screen 2: Visibility & Access Control
-  visibilityMode: z.enum(["engine_only", "wytnet_hub", "all_hubs", "selected_hubs", "public"]).default("engine_only"),
+  visibilityMode: z.enum(["engine_only", "wytnet_hub", "all_hubs", "selected_hubs"]).default("engine_only"),
   selectedHubs: z.array(z.string()).default([]),
   accessPanels: z.array(z.string()).default([]), // ['user_panel', 'org_panel']
 
@@ -1077,32 +1077,35 @@ function Screen1BasicInfo({ form, onNameChange }: { form: any; onNameChange: (na
   );
 }
 
-// Category Selector with instant creation
+// Category Selector with dynamic data from API
 function CategorySelector({ value, onChange }: { value?: string; onChange: (value: string) => void }) {
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
 
-  const categories = [
-    "productivity",
-    "finance",
-    "communication",
-    "utilities",
-    "developer",
-    "ai-tools",
-    "core-platform",
-    "social",
-    "business",
-    "education",
-    "storage",
-    "web-development"
-  ];
+  // Fetch categories dynamically from the API
+  const { data: categoriesResponse, isLoading } = useQuery({
+    queryKey: ["/api/admin/apps/categories"],
+  });
 
-  const handleAddCategory = () => {
+  const categories = (categoriesResponse as any)?.categories || [];
+
+  const handleAddCategory = async () => {
     if (newCategoryName.trim()) {
       const slug = newCategoryName.toLowerCase().replace(/\s+/g, '-');
-      onChange(slug);
-      setNewCategoryName("");
-      setShowNewCategory(false);
+      try {
+        await apiRequest("POST", "/api/admin/apps/categories", {
+          name: newCategoryName.trim(),
+          slug,
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/apps/categories"] });
+        onChange(slug);
+        setNewCategoryName("");
+        setShowNewCategory(false);
+      } catch (error) {
+        onChange(slug);
+        setNewCategoryName("");
+        setShowNewCategory(false);
+      }
     }
   };
 
@@ -1110,14 +1113,20 @@ function CategorySelector({ value, onChange }: { value?: string; onChange: (valu
     <div className="space-y-2">
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger data-testid="select-app-category">
-          <SelectValue placeholder="Select category" />
+          <SelectValue placeholder={isLoading ? "Loading..." : "Select category"} />
         </SelectTrigger>
         <SelectContent>
-          {categories.map((cat) => (
-            <SelectItem key={cat} value={cat}>
-              {cat.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-            </SelectItem>
-          ))}
+          {categories.map((cat: any) => {
+            const catSlug = typeof cat === 'string' ? cat : (cat.slug || cat.name);
+            const catName = typeof cat === 'string' 
+              ? cat.split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+              : (cat.name || cat.slug);
+            return (
+              <SelectItem key={catSlug} value={catSlug}>
+                {catName}
+              </SelectItem>
+            );
+          })}
           <Separator className="my-2" />
           <div 
             className="px-2 py-1.5 text-sm hover:bg-accent cursor-pointer rounded-sm flex items-center gap-2"
@@ -1161,6 +1170,12 @@ function CategorySelector({ value, onChange }: { value?: string; onChange: (valu
 function Screen2Visibility({ form }: { form: any }) {
   const visibilityMode = form.watch("visibilityMode");
 
+  // Fetch hubs dynamically from API
+  const { data: hubsResponse } = useQuery({
+    queryKey: ["/api/admin/hubs"],
+  });
+  const hubs = (hubsResponse as any)?.hubs || [];
+
   return (
     <div className="space-y-6" data-testid="wizard-screen-2">
       <div>
@@ -1172,6 +1187,87 @@ function Screen2Visibility({ form }: { form: any }) {
           Control where your app appears and who can access it
         </p>
       </div>
+
+      {/* Panel Access - Moved to top with larger checkboxes */}
+      <FormField
+        control={form.control}
+        name="accessPanels"
+        render={({ field }) => (
+          <FormItem>
+            <Card className="border-2 border-primary/20 bg-primary/5">
+              <CardContent className="p-5">
+                <div className="flex items-center gap-2 mb-4">
+                  <Shield className="h-5 w-5 text-primary" />
+                  <FormLabel className="text-base font-semibold m-0">Access Available</FormLabel>
+                </div>
+                <div className="flex items-center gap-8">
+                  <div 
+                    className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                      field.value?.includes("user_panel") 
+                        ? "border-primary bg-primary/10" 
+                        : "border-muted hover:border-primary/50"
+                    }`}
+                    onClick={() => {
+                      const newValue = field.value?.includes("user_panel")
+                        ? (field.value || []).filter((p: string) => p !== "user_panel")
+                        : [...(field.value || []), "user_panel"];
+                      field.onChange(newValue);
+                    }}
+                  >
+                    <Checkbox
+                      checked={field.value?.includes("user_panel")}
+                      onCheckedChange={(checked) => {
+                        const newValue = checked
+                          ? [...(field.value || []), "user_panel"]
+                          : (field.value || []).filter((p: string) => p !== "user_panel");
+                        field.onChange(newValue);
+                      }}
+                      className="h-5 w-5"
+                      data-testid="checkbox-panel-user"
+                    />
+                    <div className="flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      <span className="font-medium">User</span>
+                    </div>
+                  </div>
+                  <div 
+                    className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                      field.value?.includes("org_panel") 
+                        ? "border-primary bg-primary/10" 
+                        : "border-muted hover:border-primary/50"
+                    }`}
+                    onClick={() => {
+                      const newValue = field.value?.includes("org_panel")
+                        ? (field.value || []).filter((p: string) => p !== "org_panel")
+                        : [...(field.value || []), "org_panel"];
+                      field.onChange(newValue);
+                    }}
+                  >
+                    <Checkbox
+                      checked={field.value?.includes("org_panel")}
+                      onCheckedChange={(checked) => {
+                        const newValue = checked
+                          ? [...(field.value || []), "org_panel"]
+                          : (field.value || []).filter((p: string) => p !== "org_panel");
+                        field.onChange(newValue);
+                      }}
+                      className="h-5 w-5"
+                      data-testid="checkbox-panel-org"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5" />
+                      <span className="font-medium">Org</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <Separator />
 
       <FormField
         control={form.control}
@@ -1253,23 +1349,6 @@ function Screen2Visibility({ form }: { form: any }) {
                     </div>
                   </CardContent>
                 </Card>
-
-                <Card className={`cursor-pointer ${field.value === "public" ? "border-primary" : ""}`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <RadioGroupItem value="public" id="public" />
-                      <div className="flex-1">
-                        <Label htmlFor="public" className="flex items-center gap-2 cursor-pointer">
-                          <Users className="h-4 w-4" />
-                          <span className="font-semibold">Public</span>
-                        </Label>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Publicly accessible to all users (no login required)
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
               </RadioGroup>
             </FormControl>
             <FormMessage />
@@ -1285,77 +1364,44 @@ function Screen2Visibility({ form }: { form: any }) {
             <FormItem>
               <FormLabel>Select Hubs</FormLabel>
               <div className="space-y-2">
-                {["wytnet", "ownernet", "devhub", "marketplace"].map((hub) => (
-                  <div key={hub} className="flex items-center space-x-2">
+                {hubs.length > 0 ? hubs.map((hub: any) => (
+                  <div key={hub.id || hub.slug} className="flex items-center space-x-2">
                     <Checkbox
-                      checked={field.value?.includes(hub)}
+                      checked={field.value?.includes(hub.slug || hub.id)}
                       onCheckedChange={(checked) => {
+                        const hubId = hub.slug || hub.id;
                         const newValue = checked
-                          ? [...(field.value || []), hub]
-                          : (field.value || []).filter((h: string) => h !== hub);
+                          ? [...(field.value || []), hubId]
+                          : (field.value || []).filter((h: string) => h !== hubId);
                         field.onChange(newValue);
                       }}
-                      data-testid={`checkbox-hub-${hub}`}
+                      data-testid={`checkbox-hub-${hub.slug || hub.id}`}
                     />
-                    <Label className="capitalize">{hub}</Label>
+                    <Label>{hub.name || hub.slug}</Label>
                   </div>
-                ))}
+                )) : (
+                  ["wytnet", "ownernet", "devhub", "marketplace"].map((hub) => (
+                    <div key={hub} className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={field.value?.includes(hub)}
+                        onCheckedChange={(checked) => {
+                          const newValue = checked
+                            ? [...(field.value || []), hub]
+                            : (field.value || []).filter((h: string) => h !== hub);
+                          field.onChange(newValue);
+                        }}
+                        data-testid={`checkbox-hub-${hub}`}
+                      />
+                      <Label className="capitalize">{hub}</Label>
+                    </div>
+                  ))
+                )}
               </div>
               <FormMessage />
             </FormItem>
           )}
         />
       )}
-
-      <Separator />
-
-      <FormField
-        control={form.control}
-        name="accessPanels"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Panel Access</FormLabel>
-            <FormDescription>
-              Allow users to access this app from their personal or organization panels
-            </FormDescription>
-            <div className="space-y-2 mt-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  checked={field.value?.includes("user_panel")}
-                  onCheckedChange={(checked) => {
-                    const newValue = checked
-                      ? [...(field.value || []), "user_panel"]
-                      : (field.value || []).filter((p: string) => p !== "user_panel");
-                    field.onChange(newValue);
-                  }}
-                  data-testid="checkbox-panel-user"
-                />
-                <Label>
-                  <User className="h-4 w-4 inline mr-1" />
-                  User Panel (My WytApps)
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  checked={field.value?.includes("org_panel")}
-                  onCheckedChange={(checked) => {
-                    const newValue = checked
-                      ? [...(field.value || []), "org_panel"]
-                      : (field.value || []).filter((p: string) => p !== "org_panel");
-                    field.onChange(newValue);
-                  }}
-                  data-testid="checkbox-panel-org"
-                />
-                <Label>
-                  <Building2 className="h-4 w-4 inline mr-1" />
-                  Organization Panel (Team Collaboration)
-                </Label>
-              </div>
-            </div>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
     </div>
   );
 }
