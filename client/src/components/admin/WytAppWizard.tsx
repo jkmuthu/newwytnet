@@ -1174,9 +1174,40 @@ function CategorySelector({ value, onChange }: { value?: string; onChange: (valu
   );
 }
 
+// Icon component mapper for dynamic visibility modes
+const VisibilityModeIcon = ({ iconName, className }: { iconName: string; className?: string }) => {
+  const icons: Record<string, any> = {
+    Lock: Lock,
+    Building2: Building2,
+    Globe: Globe,
+    Layers: Layers,
+    Eye: Eye,
+    Shield: Shield,
+  };
+  const IconComponent = icons[iconName] || Lock;
+  return <IconComponent className={className} />;
+};
+
 // Screen 2: Visibility & Access Control
 function Screen2Visibility({ form }: { form: any }) {
   const visibilityMode = form.watch("visibilityMode");
+
+  // Default visibility modes as fallback
+  const defaultVisibilityModes = [
+    { id: 'engine_only', name: 'Engine Only', description: 'Available only in Engine Admin panel (Super Admin)', icon: 'Lock' },
+    { id: 'wytnet_hub', name: 'WytNet Only', description: 'Available in WytNet.com hub only', icon: 'Building2' },
+    { id: 'all_hubs', name: 'All Hubs', description: 'Available across all platform hubs', icon: 'Globe' },
+    { id: 'selected_hubs', name: 'Selected Hubs', description: 'Choose specific hubs where app is available', icon: 'Layers' }
+  ];
+
+  // Fetch visibility modes dynamically from API
+  const { data: visibilityModesResponse } = useQuery({
+    queryKey: ["/api/admin/apps/visibility-modes"],
+  });
+  
+  // Use API visibility modes if available, otherwise use defaults
+  const apiVisibilityModes = (visibilityModesResponse as any)?.visibilityModes || [];
+  const visibilityModes = apiVisibilityModes.length > 0 ? apiVisibilityModes : defaultVisibilityModes;
 
   // Fetch hubs dynamically from API
   const { data: hubsResponse } = useQuery({
@@ -1282,73 +1313,27 @@ function Screen2Visibility({ form }: { form: any }) {
                 className="space-y-3"
                 data-testid="radio-group-visibility-mode"
               >
-                <Card className={`cursor-pointer ${field.value === "engine_only" ? "border-primary" : ""}`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <RadioGroupItem value="engine_only" id="engine_only" />
-                      <div className="flex-1">
-                        <Label htmlFor="engine_only" className="flex items-center gap-2 cursor-pointer">
-                          <Lock className="h-4 w-4" />
-                          <span className="font-semibold">Engine Only</span>
-                        </Label>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Available only in Engine Admin panel (Super Admin)
-                        </p>
+                {visibilityModes.map((mode: any) => (
+                  <Card 
+                    key={mode.id} 
+                    className={`cursor-pointer ${field.value === mode.id ? "border-primary" : ""}`}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <RadioGroupItem value={mode.id} id={mode.id} />
+                        <div className="flex-1">
+                          <Label htmlFor={mode.id} className="flex items-center gap-2 cursor-pointer">
+                            <VisibilityModeIcon iconName={mode.icon} className="h-4 w-4" />
+                            <span className="font-semibold">{mode.name}</span>
+                          </Label>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {mode.description}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className={`cursor-pointer ${field.value === "wytnet_hub" ? "border-primary" : ""}`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <RadioGroupItem value="wytnet_hub" id="wytnet_hub" />
-                      <div className="flex-1">
-                        <Label htmlFor="wytnet_hub" className="flex items-center gap-2 cursor-pointer">
-                          <Building2 className="h-4 w-4" />
-                          <span className="font-semibold">WytNet Hub</span>
-                        </Label>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Available in WytNet.com hub only
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className={`cursor-pointer ${field.value === "all_hubs" ? "border-primary" : ""}`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <RadioGroupItem value="all_hubs" id="all_hubs" />
-                      <div className="flex-1">
-                        <Label htmlFor="all_hubs" className="flex items-center gap-2 cursor-pointer">
-                          <Globe className="h-4 w-4" />
-                          <span className="font-semibold">All Hubs</span>
-                        </Label>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Available across all platform hubs
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className={`cursor-pointer ${field.value === "selected_hubs" ? "border-primary" : ""}`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <RadioGroupItem value="selected_hubs" id="selected_hubs" />
-                      <div className="flex-1">
-                        <Label htmlFor="selected_hubs" className="flex items-center gap-2 cursor-pointer">
-                          <Layers className="h-4 w-4" />
-                          <span className="font-semibold">Selected Hubs</span>
-                        </Label>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Choose specific hubs where app is available
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                ))}
               </RadioGroup>
             </FormControl>
             <FormMessage />

@@ -9233,6 +9233,78 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // App Visibility Modes - Dynamic dataset for configuring where apps can appear
+  app.get('/api/admin/apps/visibility-modes', adminAuthMiddleware, async (req, res) => {
+    try {
+      // Visibility modes define where an app can be accessed from
+      const visibilityModes = [
+        {
+          id: 'engine_only',
+          name: 'Engine Only',
+          description: 'Available only in Engine Admin panel (Super Admin)',
+          icon: 'Lock',
+          sortOrder: 1,
+          isActive: true
+        },
+        {
+          id: 'wytnet_hub',
+          name: 'WytNet Only',
+          description: 'Available in WytNet.com hub only',
+          icon: 'Building2',
+          sortOrder: 2,
+          isActive: true
+        },
+        {
+          id: 'all_hubs',
+          name: 'All Hubs',
+          description: 'Available across all platform hubs',
+          icon: 'Globe',
+          sortOrder: 3,
+          isActive: true
+        },
+        {
+          id: 'selected_hubs',
+          name: 'Selected Hubs',
+          description: 'Choose specific hubs where app is available',
+          icon: 'Layers',
+          sortOrder: 4,
+          isActive: true
+        }
+      ];
+
+      res.json({ 
+        success: true, 
+        visibilityModes,
+        count: visibilityModes.length
+      });
+    } catch (error: any) {
+      console.error('Error fetching visibility modes:', error);
+      res.status(500).json({ message: 'Failed to fetch visibility modes', error: error.message });
+    }
+  });
+
+  // Hubs list for app visibility configuration
+  app.get('/api/admin/hubs', adminAuthMiddleware, async (req, res) => {
+    try {
+      const hubs = await db.select({
+        id: platformHubs.id,
+        name: platformHubs.name,
+        slug: platformHubs.slug,
+        status: platformHubs.status,
+        domain: platformHubs.domain,
+        subdomain: platformHubs.subdomain
+      })
+      .from(platformHubs)
+      .where(eq(platformHubs.status, 'active'))
+      .orderBy(platformHubs.name);
+
+      res.json({ success: true, hubs });
+    } catch (error: any) {
+      console.error('Error fetching hubs:', error);
+      res.status(500).json({ message: 'Failed to fetch hubs', error: error.message });
+    }
+  });
+
   // Seed apps registry with sample WytApps
   app.post('/api/admin/pricing/apps/seed', adminAuthMiddleware, async (req: any, res) => {
     try {
