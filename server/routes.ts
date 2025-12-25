@@ -2429,6 +2429,7 @@ export async function registerRoutes(app: Express): Promise<void> {
     try {
       const appId = req.params.id;
 
+
       // Fetch from the new apps table (with pricing support)
       const appData = await db
         .select()

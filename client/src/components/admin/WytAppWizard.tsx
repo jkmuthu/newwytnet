@@ -1077,17 +1077,25 @@ function Screen1BasicInfo({ form, onNameChange }: { form: any; onNameChange: (na
   );
 }
 
-// Category Selector with dynamic data from API
+// Category Selector with dynamic data from API with fallback
 function CategorySelector({ value, onChange }: { value?: string; onChange: (value: string) => void }) {
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
+
+  // Default categories as fallback
+  const defaultCategories = [
+    "productivity", "finance", "communication", "utilities", "developer",
+    "ai-tools", "core-platform", "social", "business", "education", "storage", "web-development"
+  ];
 
   // Fetch categories dynamically from the API
   const { data: categoriesResponse, isLoading } = useQuery({
     queryKey: ["/api/admin/apps/categories"],
   });
 
-  const categories = (categoriesResponse as any)?.categories || [];
+  // Use API categories if available, otherwise use defaults
+  const apiCategories = (categoriesResponse as any)?.categories || [];
+  const categories = apiCategories.length > 0 ? apiCategories : defaultCategories;
 
   const handleAddCategory = async () => {
     if (newCategoryName.trim()) {
@@ -1201,20 +1209,16 @@ function Screen2Visibility({ form }: { form: any }) {
                   <FormLabel className="text-base font-semibold m-0">Access Available</FormLabel>
                 </div>
                 <div className="flex items-center gap-8">
-                  <div 
+                  <label 
+                    htmlFor="panel-user-checkbox"
                     className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
                       field.value?.includes("user_panel") 
                         ? "border-primary bg-primary/10" 
                         : "border-muted hover:border-primary/50"
                     }`}
-                    onClick={() => {
-                      const newValue = field.value?.includes("user_panel")
-                        ? (field.value || []).filter((p: string) => p !== "user_panel")
-                        : [...(field.value || []), "user_panel"];
-                      field.onChange(newValue);
-                    }}
                   >
                     <Checkbox
+                      id="panel-user-checkbox"
                       checked={field.value?.includes("user_panel")}
                       onCheckedChange={(checked) => {
                         const newValue = checked
@@ -1229,21 +1233,17 @@ function Screen2Visibility({ form }: { form: any }) {
                       <User className="h-5 w-5" />
                       <span className="font-medium">User</span>
                     </div>
-                  </div>
-                  <div 
+                  </label>
+                  <label 
+                    htmlFor="panel-org-checkbox"
                     className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
                       field.value?.includes("org_panel") 
                         ? "border-primary bg-primary/10" 
                         : "border-muted hover:border-primary/50"
                     }`}
-                    onClick={() => {
-                      const newValue = field.value?.includes("org_panel")
-                        ? (field.value || []).filter((p: string) => p !== "org_panel")
-                        : [...(field.value || []), "org_panel"];
-                      field.onChange(newValue);
-                    }}
                   >
                     <Checkbox
+                      id="panel-org-checkbox"
                       checked={field.value?.includes("org_panel")}
                       onCheckedChange={(checked) => {
                         const newValue = checked
@@ -1258,7 +1258,7 @@ function Screen2Visibility({ form }: { form: any }) {
                       <Building2 className="h-5 w-5" />
                       <span className="font-medium">Org</span>
                     </div>
-                  </div>
+                  </label>
                 </div>
               </CardContent>
             </Card>
