@@ -1694,82 +1694,57 @@ function Screen5Pricing({ form }: { form: any }) {
     ? getPlan(activeTier, activeBillingCycle)
     : getPlan(activeTier);
 
+  // Handle core app checkbox change
+  const handleCoreAppChange = (checked: boolean) => {
+    form.setValue("isCoreApp", checked);
+    form.setValue("isAutoAssigned", checked);
+    form.setValue("appType", checked ? "core" : "premium");
+    
+    if (checked) {
+      // Ensure Free tier is enabled when Core App is checked
+      if (!enabledTiers.has('free')) {
+        toggleTier('free', true);
+      }
+    }
+  };
+
   return (
     <div className="space-y-6" data-testid="wizard-screen-5">
       <div>
         <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
           <DollarSign className="h-5 w-5" />
-          Tier-Based Pricing
+          Pricing Configuration
         </h3>
         <p className="text-sm text-muted-foreground">
-          Configure pricing tiers for your app. Enable tiers and set prices per billing cycle.
+          Configure pricing tiers for your app. Enable the tiers you want and set prices per billing cycle.
         </p>
       </div>
 
-      {/* App Type Selection */}
-      <div className="grid grid-cols-2 gap-4">
-        <Card 
-          className={`cursor-pointer transition-all ${isCoreApp ? "border-green-500 bg-green-50 dark:bg-green-950/20" : "hover:border-primary/50"}`}
-          onClick={() => {
-            form.setValue("isCoreApp", true);
-            form.setValue("isAutoAssigned", true);
-            form.setValue("appType", "core");
-            form.setValue("pricingModel", "free");
-            form.setValue("pricingPlans", [{ 
-              planName: "Free", 
-              planSlug: "free", 
-              planTier: "free",
-              planType: "free", 
-              billingCycle: "none",
-              tierOrder: 1,
-              price: "0", 
-              currency: "INR", 
-              isDefault: true 
-            }]);
-          }}
-          data-testid="card-core-app"
-        >
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-green-600" />
-              </div>
+      {/* Core App Checkbox */}
+      <Card className={`${isCoreApp ? "border-green-500 bg-green-50 dark:bg-green-950/20" : ""}`}>
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <Checkbox
+              id="core-app-checkbox"
+              checked={isCoreApp}
+              onCheckedChange={handleCoreAppChange}
+              data-testid="checkbox-core-app"
+            />
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-green-600" />
               <div>
-                <p className="font-semibold">Core App</p>
-                <p className="text-xs text-muted-foreground">Free & auto-assigned to all users</p>
+                <Label htmlFor="core-app-checkbox" className="font-semibold cursor-pointer">Core App</Label>
+                <p className="text-xs text-muted-foreground">Free tier enabled & auto-assigned to all users on registration</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </CardContent>
+      </Card>
 
-        <Card 
-          className={`cursor-pointer transition-all ${!isCoreApp ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" : "hover:border-primary/50"}`}
-          onClick={() => {
-            form.setValue("isCoreApp", false);
-            form.setValue("isAutoAssigned", false);
-            form.setValue("appType", "premium");
-          }}
-          data-testid="card-premium-app"
-        >
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                <Star className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="font-semibold">Premium App</p>
-                <p className="text-xs text-muted-foreground">Multiple pricing tiers</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tier-Based Pricing Editor */}
-      {!isCoreApp && (
-        <div className="space-y-4">
-          {/* Tier Tabs */}
-          <div className="flex flex-wrap gap-2 border-b pb-3">
+      {/* Tier-Based Pricing Editor - Always visible */}
+      <div className="space-y-4">
+        {/* Tier Tabs */}
+        <div className="flex flex-wrap gap-2 border-b pb-3">
             {PLAN_TIERS.map((tier) => {
               const isEnabled = enabledTiers.has(tier.key);
               const isActive = activeTier === tier.key;
@@ -1932,7 +1907,6 @@ function Screen5Pricing({ form }: { form: any }) {
             </CardContent>
           </Card>
         </div>
-      )}
 
       {/* Pricing Audit Trail Info */}
       <Card className="bg-muted/30">
