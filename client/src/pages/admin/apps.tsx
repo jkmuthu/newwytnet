@@ -36,6 +36,9 @@ interface PricingPlan {
   planName: string;
   planSlug: string;
   planType: 'free' | 'monthly' | 'yearly' | 'one_time' | 'pay_per_use';
+  planTier?: string;
+  billingCycle?: string;
+  tierOrder?: number;
   price: string;
   currency: string;
   usageLimit?: number;
@@ -134,34 +137,58 @@ const getAppIcon = (iconName?: string) => {
   return <span className="text-xl" role="img" aria-label="app icon">{iconName}</span>;
 };
 
-// Helper to format pricing display
+// Helper to infer tier from plan data
+const inferTierFromPlan = (plan: PricingPlan) => {
+  if (plan.planTier && ['free', 'per_use', 'basic', 'standard', 'pro', 'plus', 'ultimate'].includes(plan.planTier)) {
+    return plan.planTier;
+  }
+  const planType = plan.planType || 'free';
+  if (planType === 'free') return 'free';
+  if (planType === 'pay_per_use') return 'per_use';
+  if (planType === 'monthly' || planType === 'yearly') return 'basic';
+  return 'free';
+};
+
+// Helper to format pricing display based on enabled tiers
 const formatPricing = (app: AppDefinition) => {
-  if (app.appType === 'mandatory' || app.pricingModel === 'free') {
+  const plans = app.pricingPlans || [];
+  
+  // Get unique tiers from plans
+  const enabledTiers = new Set(plans.map(p => inferTierFromPlan(p)));
+  
+  // If no plans or only free tier with price 0
+  if (plans.length === 0) {
     return { label: 'Free', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' };
   }
   
-  const defaultPlan = app.pricingPlans?.find(p => p.isDefault) || app.pricingPlans?.[0];
-  if (!defaultPlan) {
+  // Check for per-use plans first (common case)
+  const perUsePlan = plans.find(p => inferTierFromPlan(p) === 'per_use');
+  if (perUsePlan) {
+    const price = parseFloat(perUsePlan.price || '0');
+    return { label: `₹${price}/use`, color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100' };
+  }
+  
+  // Check for subscription plans (monthly/yearly)
+  const monthlyPlan = plans.find(p => p.billingCycle === 'monthly' || p.planType === 'monthly');
+  if (monthlyPlan) {
+    const price = parseFloat(monthlyPlan.price || '0');
+    return { label: `₹${price}/mo`, color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100' };
+  }
+  
+  // Default to free if only free tier
+  if (enabledTiers.has('free') && enabledTiers.size === 1) {
     return { label: 'Free', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' };
   }
   
-  const price = parseFloat(defaultPlan.price || '0');
+  // Get default plan or first plan
+  const defaultPlan = plans.find(p => p.isDefault) || plans[0];
+  const price = parseFloat(defaultPlan?.price || '0');
+  
   if (price === 0) {
     return { label: 'Free', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' };
   }
   
-  switch (defaultPlan.planType) {
-    case 'monthly':
-      return { label: `₹${price}/mo`, color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100' };
-    case 'yearly':
-      return { label: `₹${price}/yr`, color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100' };
-    case 'pay_per_use':
-      return { label: `₹${price}/use`, color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100' };
-    case 'one_time':
-      return { label: `₹${price}`, color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-100' };
-    default:
-      return { label: `₹${price}`, color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100' };
-  }
+  return { label: `₹${price}`, color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100' };
 };
 
 // Helper to get app type badge
