@@ -2635,47 +2635,100 @@ export async function registerRoutes(app: Express): Promise<void> {
                 .where(eq(appPricingPlans.id, plan.id));
             }
           } else {
-            // Create new plan
+            // Check if plan with same slug already exists for this app
             const planSlug = plan.planSlug || plan.planName?.toLowerCase().replace(/\s+/g, '-') || 'default';
             
-            await db.insert(appPricingPlans).values({
-              appId: appId,
-              planName: plan.planName || 'Default Plan',
-              planSlug: planSlug,
-              planType: plan.planType || 'free',
-              price: plan.price || '0',
-              currency: plan.currency || 'INR',
-              billingInterval: plan.billingInterval,
-              usageLimit: plan.usageLimit,
-              usageUnit: plan.usageUnit,
-              features: plan.features || [],
-              isDefault: plan.isDefault ?? true,
-              isActive: true,
-              sortOrder: plan.sortOrder || 0,
-              createdBy: adminId,
-            });
+            const existingPlanBySlug = existingPlans.find(p => p.planSlug === planSlug);
+            
+            if (existingPlanBySlug) {
+              // Update existing plan by slug (plan was re-added or came from new UI without id)
+              if (existingPlanBySlug.price !== plan.price) {
+                await db.insert(appPricingHistory).values({
+                  appId: appId,
+                  planId: existingPlanBySlug.id,
+                  changeType: 'price_updated',
+                  previousPrice: existingPlanBySlug.price,
+                  newPrice: plan.price || '0',
+                  previousData: { planType: existingPlanBySlug.planType, price: existingPlanBySlug.price },
+                  newData: { planType: plan.planType || existingPlanBySlug.planType, price: plan.price || '0' },
+                  changedBy: adminId,
+                  changeReason: plan.changeReason || 'Price updated via wizard',
+                });
+              }
 
-            // Create history entry for new plan
-            await db.insert(appPricingHistory).values({
-              appId: appId,
-              changeType: 'created',
-              previousPrice: '0',
-              newPrice: plan.price || '0',
-              previousData: {},
-              newData: { planType: plan.planType || 'free', price: plan.price || '0' },
-              changedBy: adminId,
-              changeReason: 'New pricing plan created via wizard',
-            });
+              await db
+                .update(appPricingPlans)
+                .set({
+                  planName: plan.planName || existingPlanBySlug.planName,
+                  planType: plan.planType || existingPlanBySlug.planType,
+                  price: plan.price || existingPlanBySlug.price,
+                  currency: plan.currency || 'INR',
+                  billingInterval: plan.billingInterval,
+                  usageLimit: plan.usageLimit,
+                  usageUnit: plan.usageUnit,
+                  features: plan.features || [],
+                  isDefault: plan.isDefault ?? false,
+                  isActive: true,
+                  sortOrder: plan.sortOrder || 0,
+                  updatedAt: new Date(),
+                })
+                .where(eq(appPricingPlans.id, existingPlanBySlug.id));
+              
+              // Mark this plan's id as processed so it won't be deactivated
+              if (!plan.id) {
+                plan.id = existingPlanBySlug.id;
+              }
+            } else {
+              // Create truly new plan
+              await db.insert(appPricingPlans).values({
+                appId: appId,
+                planName: plan.planName || 'Default Plan',
+                planSlug: planSlug,
+                planType: plan.planType || 'free',
+                price: plan.price || '0',
+                currency: plan.currency || 'INR',
+                billingInterval: plan.billingInterval,
+                usageLimit: plan.usageLimit,
+                usageUnit: plan.usageUnit,
+                features: plan.features || [],
+                isDefault: plan.isDefault ?? true,
+                isActive: true,
+                sortOrder: plan.sortOrder || 0,
+                createdBy: adminId,
+              });
+
+              // Create history entry for new plan
+              await db.insert(appPricingHistory).values({
+                appId: appId,
+                changeType: 'created',
+                previousPrice: '0',
+                newPrice: plan.price || '0',
+                previousData: {},
+                newData: { planType: plan.planType || 'free', price: plan.price || '0' },
+                changedBy: adminId,
+                changeReason: 'New pricing plan created via wizard',
+              });
+            }
           }
         }
 
         // Handle plan deletions - deactivate plans not in the update list
-        const updatedPlanIds = updateData.pricingPlans
-          .filter((p: any) => p.id)
-          .map((p: any) => p.id);
+        // Build list of processed plan IDs (including those matched by slug during this run)
+        const processedPlanIds = new Set<string>();
+        for (const plan of updateData.pricingPlans) {
+          if (plan.id) {
+            processedPlanIds.add(plan.id);
+          }
+          // Also check by planSlug in case it was matched
+          const planSlug = plan.planSlug || plan.planName?.toLowerCase().replace(/\s+/g, '-') || 'default';
+          const matchedBySlug = existingPlans.find(p => p.planSlug === planSlug);
+          if (matchedBySlug) {
+            processedPlanIds.add(matchedBySlug.id);
+          }
+        }
         
         for (const existingPlan of existingPlans) {
-          if (!updatedPlanIds.includes(existingPlan.id)) {
+          if (!processedPlanIds.has(existingPlan.id)) {
             // Deactivate the plan instead of deleting
             await db
               .update(appPricingPlans)
