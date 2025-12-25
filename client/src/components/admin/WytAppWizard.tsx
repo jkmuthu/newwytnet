@@ -143,7 +143,7 @@ const wizardSchema = z.object({
 
   // Screen 5: Dynamic Pricing
   pricingModel: z.enum(["free", "one_time", "subscription", "pay_per_use", "custom"]).default("free"),
-  appType: z.enum(["core", "premium"]).default("premium"),
+  appType: z.enum(["core", "premium", "mandatory", "standard"]).default("premium"),
   isCoreApp: z.boolean().default(false),
   isAutoAssigned: z.boolean().default(false),
   pricingPlans: z.array(z.object({
