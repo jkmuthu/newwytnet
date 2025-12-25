@@ -437,27 +437,54 @@ export const appInstalls = pgTable("app_installs", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Plan Tier Types - Standard tiers available for all apps
+export const planTierEnum = pgEnum("plan_tier", [
+  "free",        // Always free, no billing
+  "per_use",     // Pay per use, no subscription
+  "basic",       // Entry-level subscription
+  "standard",    // Standard tier
+  "pro",         // Professional tier  
+  "plus",        // Enhanced tier
+  "ultimate"     // Top tier
+]);
+
+// Billing Cycle Types
+export const billingCycleEnum = pgEnum("billing_cycle", [
+  "none",        // For Free tier
+  "per_use",     // Pay per use
+  "monthly",     // Monthly subscription
+  "yearly",      // Annual subscription
+  "custom"       // Custom billing period
+]);
+
 // App Pricing Plans - Dynamic pricing per app (fully configurable, no hardcoding)
 export const appPricingPlans = pgTable("app_pricing_plans", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   displayId: varchar("display_id", { length: 20 }).unique(), // PP00001
   appId: uuid("app_id").notNull().references(() => apps.id, { onDelete: 'cascade' }),
   
-  // Plan Identification
+  // Plan Tier & Billing Cycle (NEW: structured tier system)
+  planTier: varchar("plan_tier", { length: 30 }).notNull().default('free'), // 'free', 'per_use', 'basic', 'standard', 'pro', 'plus', 'ultimate'
+  billingCycle: varchar("billing_cycle", { length: 30 }).default('none'), // 'none', 'per_use', 'monthly', 'yearly', 'custom'
+  
+  // Plan Identification (display name, can be customized)
   planName: varchar("plan_name", { length: 100 }).notNull(), // 'Free', 'Starter', 'Pro', 'Enterprise', custom names
-  planSlug: varchar("plan_slug", { length: 100 }).notNull(), // 'free', 'starter', 'pro', 'enterprise'
+  planSlug: varchar("plan_slug", { length: 100 }).notNull(), // 'free', 'basic-monthly', 'pro-yearly'
   description: text("description"),
   
-  // Pricing Type & Amount
+  // Pricing Type & Amount (legacy - keep for compatibility)
   planType: varchar("plan_type", { length: 30 }).notNull().default('free'), // 'free', 'monthly', 'yearly', 'one_time', 'pay_per_use'
   price: decimal("price", { precision: 10, scale: 2 }).default('0'), // e.g., 10.00, 100.00
   currency: varchar("currency", { length: 3 }).default('INR'),
+  
+  // Custom billing period (for custom billing cycle)
+  customBillingDays: integer("custom_billing_days"), // e.g., 90 for quarterly
   
   // Usage Limits (for pay-per-use or tiered limits)
   usageLimit: integer("usage_limit"), // null = unlimited, e.g., 10 for "10 QR codes"
   usageUnit: varchar("usage_unit", { length: 50 }), // 'qr_codes', 'assessments', 'api_calls', etc.
   
-  // Features included in this plan
+  // Features included in this plan (legacy JSONB, kept for compatibility)
   features: jsonb("features").default([]), // [{ name: 'Branding', included: true }, { name: 'Analytics', included: false }]
   limits: jsonb("limits").default({}), // { maxUsers: 5, maxStorage: '1GB', etc. }
   
@@ -465,6 +492,9 @@ export const appPricingPlans = pgTable("app_pricing_plans", {
   isActive: boolean("is_active").default(true),
   isDefault: boolean("is_default").default(false), // Default plan for new users
   sortOrder: integer("sort_order").default(0),
+  
+  // Tier order for display (1=lowest, 7=highest)
+  tierOrder: integer("tier_order").default(0),
   
   // Effective Dates (for time-limited pricing or promotions)
   effectiveFrom: timestamp("effective_from").defaultNow(),
@@ -477,7 +507,55 @@ export const appPricingPlans = pgTable("app_pricing_plans", {
 }, (table) => ({
   appIdx: index("app_pricing_plans_app_idx").on(table.appId),
   activeIdx: index("app_pricing_plans_active_idx").on(table.isActive),
+  tierIdx: index("app_pricing_plans_tier_idx").on(table.planTier),
   uniqueAppPlan: unique("unique_app_plan_slug").on(table.appId, table.planSlug),
+  uniqueAppTierCycle: unique("unique_app_tier_cycle").on(table.appId, table.planTier, table.billingCycle),
+}));
+
+// App Plan Features - Feature definitions that can be attached to plans
+export const appPlanFeatures = pgTable("app_plan_features", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  appId: uuid("app_id").notNull().references(() => apps.id, { onDelete: 'cascade' }),
+  
+  // Feature Definition
+  featureName: varchar("feature_name", { length: 200 }).notNull(), // 'Unlimited QR Codes', 'Custom Branding'
+  featureSlug: varchar("feature_slug", { length: 100 }).notNull(), // 'unlimited_qr', 'custom_branding'
+  featureDescription: text("feature_description"),
+  featureCategory: varchar("feature_category", { length: 100 }), // 'core', 'advanced', 'enterprise'
+  
+  // Feature Type
+  featureType: varchar("feature_type", { length: 30 }).default('boolean'), // 'boolean', 'limit', 'text'
+  
+  // Sort order for display
+  sortOrder: integer("sort_order").default(0),
+  
+  // Active/Inactive
+  isActive: boolean("is_active").default(true),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  appIdx: index("app_plan_features_app_idx").on(table.appId),
+  uniqueAppFeature: unique("unique_app_feature_slug").on(table.appId, table.featureSlug),
+}));
+
+// Plan Feature Mapping - Links features to specific plans with values
+export const planFeatureMapping = pgTable("plan_feature_mapping", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  planId: uuid("plan_id").notNull().references(() => appPricingPlans.id, { onDelete: 'cascade' }),
+  featureId: uuid("feature_id").notNull().references(() => appPlanFeatures.id, { onDelete: 'cascade' }),
+  
+  // Feature value for this plan
+  isIncluded: boolean("is_included").default(false), // Is this feature included in the plan?
+  limitValue: integer("limit_value"), // For 'limit' type features (e.g., 10 QR codes)
+  textValue: varchar("text_value", { length: 255 }), // For 'text' type features (e.g., 'Basic Support')
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  planIdx: index("plan_feature_mapping_plan_idx").on(table.planId),
+  featureIdx: index("plan_feature_mapping_feature_idx").on(table.featureId),
+  uniquePlanFeature: unique("unique_plan_feature").on(table.planId, table.featureId),
 }));
 
 // App Pricing History - Audit trail for all price changes
@@ -1637,6 +1715,37 @@ export const insertAppPricingPlanSchema = createInsertSchema(appPricingPlans).om
 export const selectAppPricingPlanSchema = createSelectSchema(appPricingPlans);
 export type AppPricingPlan = typeof appPricingPlans.$inferSelect;
 export type InsertAppPricingPlan = z.infer<typeof insertAppPricingPlanSchema>;
+
+// App Plan Features schemas
+export const insertAppPlanFeatureSchema = createInsertSchema(appPlanFeatures).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectAppPlanFeatureSchema = createSelectSchema(appPlanFeatures);
+export type AppPlanFeature = typeof appPlanFeatures.$inferSelect;
+export type InsertAppPlanFeature = z.infer<typeof insertAppPlanFeatureSchema>;
+
+// Plan Feature Mapping schemas
+export const insertPlanFeatureMappingSchema = createInsertSchema(planFeatureMapping).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectPlanFeatureMappingSchema = createSelectSchema(planFeatureMapping);
+export type PlanFeatureMapping = typeof planFeatureMapping.$inferSelect;
+export type InsertPlanFeatureMapping = z.infer<typeof insertPlanFeatureMappingSchema>;
+
+// Plan Tier Constants (for UI and seeding)
+export const PLAN_TIERS = [
+  { key: 'free', name: 'Free', order: 1, hasBillingCycle: false },
+  { key: 'per_use', name: 'Per Use', order: 2, hasBillingCycle: false },
+  { key: 'basic', name: 'Basic', order: 3, hasBillingCycle: true },
+  { key: 'standard', name: 'Standard', order: 4, hasBillingCycle: true },
+  { key: 'pro', name: 'Pro', order: 5, hasBillingCycle: true },
+  { key: 'plus', name: 'Plus', order: 6, hasBillingCycle: true },
+  { key: 'ultimate', name: 'Ultimate', order: 7, hasBillingCycle: true },
+] as const;
+
+export const BILLING_CYCLES = [
+  { key: 'none', name: 'N/A', forTiers: ['free'] },
+  { key: 'per_use', name: 'Pay Per Use', forTiers: ['per_use'] },
+  { key: 'monthly', name: 'Monthly', forTiers: ['basic', 'standard', 'pro', 'plus', 'ultimate'] },
+  { key: 'yearly', name: 'Yearly', forTiers: ['basic', 'standard', 'pro', 'plus', 'ultimate'] },
+  { key: 'custom', name: 'Custom', forTiers: ['basic', 'standard', 'pro', 'plus', 'ultimate'] },
+] as const;
 
 // App Pricing History schemas
 export const insertAppPricingHistorySchema = createInsertSchema(appPricingHistory).omit({ id: true, changedAt: true });
