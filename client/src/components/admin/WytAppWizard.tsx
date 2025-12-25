@@ -1566,44 +1566,128 @@ function Screen4Features({ form }: { form: any }) {
   );
 }
 
-// Screen 5: Dynamic Pricing with Plans
+// Plan tier constants for the UI
+const PLAN_TIERS = [
+  { key: 'free', name: 'Free', order: 1, hasBillingCycle: false, defaultPrice: '0' },
+  { key: 'per_use', name: 'Per Use', order: 2, hasBillingCycle: false, defaultPrice: '10' },
+  { key: 'basic', name: 'Basic', order: 3, hasBillingCycle: true, defaultPrice: '99' },
+  { key: 'standard', name: 'Standard', order: 4, hasBillingCycle: true, defaultPrice: '199' },
+  { key: 'pro', name: 'Pro', order: 5, hasBillingCycle: true, defaultPrice: '499' },
+  { key: 'plus', name: 'Plus', order: 6, hasBillingCycle: true, defaultPrice: '999' },
+  { key: 'ultimate', name: 'Ultimate', order: 7, hasBillingCycle: true, defaultPrice: '1999' },
+] as const;
+
+const BILLING_CYCLES = [
+  { key: 'monthly', name: 'Monthly', forTiers: ['basic', 'standard', 'pro', 'plus', 'ultimate'] },
+  { key: 'yearly', name: 'Yearly', forTiers: ['basic', 'standard', 'pro', 'plus', 'ultimate'] },
+  { key: 'custom', name: 'Custom', forTiers: ['basic', 'standard', 'pro', 'plus', 'ultimate'] },
+] as const;
+
+// Screen 5: Dynamic Pricing with Tier-Based Plans
 function Screen5Pricing({ form }: { form: any }) {
   const pricingPlans = form.watch("pricingPlans") || [];
-  const pricingModel = form.watch("pricingModel");
   const isCoreApp = form.watch("isCoreApp");
+  const [activeTier, setActiveTier] = useState<string>('free');
+  const [activeBillingCycle, setActiveBillingCycle] = useState<string>('monthly');
 
-  const addPlan = (planType: string) => {
-    const newPlan = {
-      planName: planType === "free" ? "Free" : planType === "monthly" ? "Monthly" : planType === "yearly" ? "Yearly" : "Pay Per Use",
-      planSlug: planType,
-      planType: planType,
-      price: planType === "free" ? "0" : "10",
-      currency: "INR",
-      isDefault: pricingPlans.length === 0,
-    };
-    form.setValue("pricingPlans", [...pricingPlans, newPlan]);
+  // Get enabled tiers from current plans
+  const enabledTiers = new Set(pricingPlans.map((p: any) => p.planTier || p.planType));
+
+  // Get plan for specific tier and billing cycle
+  const getPlan = (tierKey: string, billingCycle?: string) => {
+    return pricingPlans.find((p: any) => {
+      const planTier = p.planTier || p.planType;
+      if (planTier !== tierKey) return false;
+      if (billingCycle) {
+        return p.billingCycle === billingCycle || p.planType === billingCycle;
+      }
+      return true;
+    });
   };
 
-  const updatePlan = (index: number, field: string, value: any) => {
-    const updated = [...pricingPlans];
-    updated[index] = { ...updated[index], [field]: value };
+  // Toggle tier enabled/disabled
+  const toggleTier = (tierKey: string, enabled: boolean) => {
+    const tier = PLAN_TIERS.find(t => t.key === tierKey);
+    if (!tier) return;
+
+    if (enabled) {
+      // Add default plan for this tier
+      const newPlans = [...pricingPlans];
+      if (tier.hasBillingCycle) {
+        // Add monthly and yearly plans for subscription tiers
+        newPlans.push({
+          planName: `${tier.name} Monthly`,
+          planSlug: `${tierKey}-monthly`,
+          planTier: tierKey,
+          planType: 'monthly',
+          billingCycle: 'monthly',
+          tierOrder: tier.order,
+          price: tier.defaultPrice,
+          currency: 'INR',
+          isDefault: newPlans.length === 0,
+        });
+        newPlans.push({
+          planName: `${tier.name} Yearly`,
+          planSlug: `${tierKey}-yearly`,
+          planTier: tierKey,
+          planType: 'yearly',
+          billingCycle: 'yearly',
+          price: String(Math.round(parseInt(tier.defaultPrice) * 10)), // 10 months for yearly
+          currency: 'INR',
+          isDefault: false,
+        });
+      } else {
+        // Add single plan for free/per-use tiers
+        newPlans.push({
+          planName: tier.name,
+          planSlug: tierKey,
+          planTier: tierKey,
+          planType: tierKey === 'free' ? 'free' : 'pay_per_use',
+          billingCycle: tierKey === 'free' ? 'none' : 'per_use',
+          tierOrder: tier.order,
+          price: tier.defaultPrice,
+          currency: 'INR',
+          isDefault: tierKey === 'free' && newPlans.length === 0,
+        });
+      }
+      form.setValue("pricingPlans", newPlans);
+    } else {
+      // Remove all plans for this tier
+      const filtered = pricingPlans.filter((p: any) => (p.planTier || p.planType) !== tierKey);
+      form.setValue("pricingPlans", filtered);
+    }
+    setActiveTier(tierKey);
+  };
+
+  // Update plan price
+  const updatePlanPrice = (tierKey: string, billingCycle: string | undefined, price: string) => {
+    const updated = pricingPlans.map((p: any) => {
+      const planTier = p.planTier || p.planType;
+      if (planTier === tierKey) {
+        if (!billingCycle || p.billingCycle === billingCycle || p.planType === billingCycle) {
+          return { ...p, price };
+        }
+      }
+      return p;
+    });
     form.setValue("pricingPlans", updated);
   };
 
-  const removePlan = (index: number) => {
-    const updated = pricingPlans.filter((_: any, i: number) => i !== index);
-    form.setValue("pricingPlans", updated);
-  };
+  // Get current tier info
+  const currentTier = PLAN_TIERS.find(t => t.key === activeTier);
+  const currentPlan = currentTier?.hasBillingCycle 
+    ? getPlan(activeTier, activeBillingCycle)
+    : getPlan(activeTier);
 
   return (
     <div className="space-y-6" data-testid="wizard-screen-5">
       <div>
         <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
           <DollarSign className="h-5 w-5" />
-          Dynamic Pricing
+          Tier-Based Pricing
         </h3>
         <p className="text-sm text-muted-foreground">
-          Configure pricing plans for your app. Changes are tracked with full audit trail.
+          Configure pricing tiers for your app. Enable tiers and set prices per billing cycle.
         </p>
       </div>
 
@@ -1616,7 +1700,17 @@ function Screen5Pricing({ form }: { form: any }) {
             form.setValue("isAutoAssigned", true);
             form.setValue("appType", "core");
             form.setValue("pricingModel", "free");
-            form.setValue("pricingPlans", [{ planName: "Free", planSlug: "free", planType: "free", price: "0", currency: "INR", isDefault: true }]);
+            form.setValue("pricingPlans", [{ 
+              planName: "Free", 
+              planSlug: "free", 
+              planTier: "free",
+              planType: "free", 
+              billingCycle: "none",
+              tierOrder: 1,
+              price: "0", 
+              currency: "INR", 
+              isDefault: true 
+            }]);
           }}
           data-testid="card-core-app"
         >
@@ -1649,105 +1743,183 @@ function Screen5Pricing({ form }: { form: any }) {
               </div>
               <div>
                 <p className="font-semibold">Premium App</p>
-                <p className="text-xs text-muted-foreground">Configurable pricing plans</p>
+                <p className="text-xs text-muted-foreground">Multiple pricing tiers</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Pricing Plans */}
+      {/* Tier-Based Pricing Editor */}
       {!isCoreApp && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label className="text-base font-semibold">Pricing Plans</Label>
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => addPlan("free")} data-testid="button-add-free-plan">
-                + Free
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => addPlan("monthly")} data-testid="button-add-monthly-plan">
-                + Monthly
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => addPlan("yearly")} data-testid="button-add-yearly-plan">
-                + Yearly
-              </Button>
-              <Button type="button" variant="outline" size="sm" onClick={() => addPlan("pay_per_use")} data-testid="button-add-payperuse-plan">
-                + Pay Per Use
-              </Button>
-            </div>
+          {/* Tier Tabs */}
+          <div className="flex flex-wrap gap-2 border-b pb-3">
+            {PLAN_TIERS.map((tier) => {
+              const isEnabled = enabledTiers.has(tier.key);
+              const isActive = activeTier === tier.key;
+              return (
+                <div key={tier.key} className="flex items-center gap-1">
+                  <Checkbox
+                    id={`tier-${tier.key}`}
+                    checked={isEnabled}
+                    onCheckedChange={(checked) => toggleTier(tier.key, checked as boolean)}
+                    data-testid={`checkbox-tier-${tier.key}`}
+                  />
+                  <Button
+                    type="button"
+                    variant={isActive ? "secondary" : "ghost"}
+                    size="sm"
+                    onClick={() => setActiveTier(tier.key)}
+                    className={`${!isEnabled ? 'opacity-50' : ''}`}
+                    disabled={!isEnabled}
+                    data-testid={`button-tier-${tier.key}`}
+                  >
+                    {tier.name}
+                    {tier.key === 'free' && <Badge variant="outline" className="ml-1 text-[10px] px-1">Core</Badge>}
+                    {tier.key === 'per_use' && <Badge variant="outline" className="ml-1 text-[10px] px-1">Usage</Badge>}
+                  </Button>
+                </div>
+              );
+            })}
           </div>
 
-          {pricingPlans.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="p-6 text-center text-muted-foreground">
-                <DollarSign className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>No pricing plans configured</p>
-                <p className="text-sm">Add plans using the buttons above</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {pricingPlans.map((plan: any, index: number) => (
-                <Card key={index} className="relative">
-                  <CardContent className="p-4">
-                    <div className="grid grid-cols-4 gap-4 items-end">
-                      <div>
-                        <Label className="text-xs">Plan Name</Label>
-                        <Input
-                          value={plan.planName}
-                          onChange={(e) => updatePlan(index, "planName", e.target.value)}
-                          placeholder="Plan name"
-                          data-testid={`input-plan-name-${index}`}
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs">Type</Label>
-                        <Select value={plan.planType} onValueChange={(v) => updatePlan(index, "planType", v)}>
-                          <SelectTrigger data-testid={`select-plan-type-${index}`}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="free">Free</SelectItem>
-                            <SelectItem value="monthly">Monthly</SelectItem>
-                            <SelectItem value="yearly">Yearly</SelectItem>
-                            <SelectItem value="one_time">One-Time</SelectItem>
-                            <SelectItem value="pay_per_use">Pay Per Use</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-xs">Price (₹)</Label>
-                        <Input
-                          type="number"
-                          value={plan.price}
-                          onChange={(e) => updatePlan(index, "price", e.target.value)}
-                          placeholder="0"
-                          disabled={plan.planType === "free"}
-                          data-testid={`input-plan-price-${index}`}
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removePlan(index)}
-                          className="text-red-500 hover:text-red-700"
-                          data-testid={`button-remove-plan-${index}`}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+          {/* Billing Cycle Tabs (for subscription tiers) */}
+          {currentTier?.hasBillingCycle && enabledTiers.has(activeTier) && (
+            <div className="flex gap-2 mb-4">
+              {BILLING_CYCLES.filter(bc => bc.forTiers.includes(activeTier as any)).map((cycle) => (
+                <Button
+                  key={cycle.key}
+                  type="button"
+                  variant={activeBillingCycle === cycle.key ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveBillingCycle(cycle.key)}
+                  data-testid={`button-cycle-${cycle.key}`}
+                >
+                  {cycle.name}
+                </Button>
               ))}
             </div>
           )}
+
+          {/* Plan Editor for Active Tier */}
+          {enabledTiers.has(activeTier) && currentTier && (
+            <Card>
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    {currentTier.name} {currentTier.hasBillingCycle ? `(${activeBillingCycle})` : ''} Plan
+                  </span>
+                  {currentPlan && (
+                    <Badge variant="secondary" className="text-xs">
+                      ₹{currentPlan.price || '0'}{currentTier.hasBillingCycle ? `/${activeBillingCycle === 'monthly' ? 'mo' : 'yr'}` : currentTier.key === 'per_use' ? '/use' : ''}
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="py-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs mb-1 block">Price (₹)</Label>
+                    <Input
+                      type="number"
+                      value={currentPlan?.price || '0'}
+                      onChange={(e) => updatePlanPrice(
+                        activeTier, 
+                        currentTier.hasBillingCycle ? activeBillingCycle : undefined, 
+                        e.target.value
+                      )}
+                      placeholder="0"
+                      disabled={activeTier === 'free'}
+                      data-testid="input-tier-price"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs mb-1 block">Currency</Label>
+                    <Select value="INR" disabled>
+                      <SelectTrigger data-testid="select-currency">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="INR">INR (₹)</SelectItem>
+                        <SelectItem value="USD">USD ($)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Usage limit for pay-per-use */}
+                {activeTier === 'per_use' && (
+                  <div className="mt-4">
+                    <Label className="text-xs mb-1 block">Price Per</Label>
+                    <div className="flex gap-2">
+                      <Input placeholder="e.g., QR code, assessment" className="flex-1" data-testid="input-usage-unit" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Custom billing days for custom cycle */}
+                {activeBillingCycle === 'custom' && currentTier.hasBillingCycle && (
+                  <div className="mt-4">
+                    <Label className="text-xs mb-1 block">Custom Billing Period (days)</Label>
+                    <Input type="number" placeholder="30" data-testid="input-custom-days" />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Pricing Summary Table */}
+          <Card className="bg-muted/30">
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm">Pricing Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="py-2">
+              <div className="grid grid-cols-4 gap-2 text-xs font-medium text-muted-foreground mb-2">
+                <div>Tier</div>
+                <div>Monthly</div>
+                <div>Yearly</div>
+                <div>Type</div>
+              </div>
+              {PLAN_TIERS.map((tier) => {
+                if (!enabledTiers.has(tier.key)) return null;
+                const monthlyPlan = getPlan(tier.key, 'monthly');
+                const yearlyPlan = getPlan(tier.key, 'yearly');
+                const singlePlan = getPlan(tier.key);
+                
+                return (
+                  <div key={tier.key} className="grid grid-cols-4 gap-2 text-sm py-1 border-b last:border-0">
+                    <div className="font-medium">{tier.name}</div>
+                    <div>
+                      {tier.hasBillingCycle 
+                        ? `₹${monthlyPlan?.price || '0'}/mo`
+                        : tier.key === 'free' ? 'Free' : `₹${singlePlan?.price || '0'}/use`
+                      }
+                    </div>
+                    <div>
+                      {tier.hasBillingCycle 
+                        ? `₹${yearlyPlan?.price || '0'}/yr`
+                        : '-'
+                      }
+                    </div>
+                    <div>
+                      <Badge variant="outline" className="text-[10px]">
+                        {tier.key === 'free' ? 'Free' : tier.key === 'per_use' ? 'Pay Per Use' : 'Subscription'}
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              })}
+              {pricingPlans.length === 0 && (
+                <p className="text-sm text-muted-foreground py-2">No pricing tiers enabled</p>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
 
-      {/* Pricing Summary */}
+      {/* Pricing Audit Trail Info */}
       <Card className="bg-muted/30">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
