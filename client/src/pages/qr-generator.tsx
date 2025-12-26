@@ -1,16 +1,22 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import QRCode from "qrcode";
-import { Download, Share2, Copy, Smartphone, Globe, Mail, Wifi, QrCode, History, Zap, Palette, Settings, Eye, CheckCircle, Star } from "lucide-react";
+import { 
+  Download, Share2, Copy, Smartphone, Globe, Mail, Wifi, QrCode, History, 
+  Zap, Eye, CheckCircle, Star, Crown, Lock, Upload, Palette, Image as ImageIcon,
+  CreditCard
+} from "lucide-react";
+import wytLogoPath from "@assets/Logo_003_1766709774257.jpg";
 
 interface QRHistory {
   id: string;
@@ -20,20 +26,35 @@ interface QRHistory {
   dataUrl: string;
 }
 
+interface AccessCheck {
+  allowed: boolean;
+  reason: string;
+  balance?: number;
+  cost?: number;
+  subscriptionType?: string;
+  plan?: any;
+}
+
 export default function QRGenerator() {
   const { toast } = useToast();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [history, setHistory] = useState<QRHistory[]>([]);
 
   // QR Code Options
   const [qrType, setQrType] = useState('url');
-  const [errorLevel, setErrorLevel] = useState('M');
+  const [errorLevel, setErrorLevel] = useState('H');
   const [size, setSize] = useState(256);
   const [margin, setMargin] = useState(4);
   const [darkColor, setDarkColor] = useState('#000000');
   const [lightColor, setLightColor] = useState('#ffffff');
+  
+  // Premium features
+  const [customLogo, setCustomLogo] = useState<string | null>(null);
+  const [useLogo, setUseLogo] = useState(true);
+  const [exportSize, setExportSize] = useState(512);
 
   // Content inputs
   const [textContent, setTextContent] = useState('');
@@ -49,6 +70,72 @@ export default function QRGenerator() {
   const [wifiSSID, setWifiSSID] = useState('');
   const [wifiPassword, setWifiPassword] = useState('');
   const [wifiSecurity, setWifiSecurity] = useState('WPA');
+
+  // Check user's access level
+  const { data: accessData, isLoading: accessLoading } = useQuery<AccessCheck>({
+    queryKey: ['/api/qrcode/check-access'],
+  });
+
+  const isPremium = accessData?.subscriptionType === 'pay_per_use' || 
+                    accessData?.subscriptionType === 'monthly' || 
+                    accessData?.subscriptionType === 'yearly';
+  
+  // Free types: URL, Text only
+  // Premium types: WhatsApp, WiFi, Email, SMS, Phone
+  const freeTypes = ['url', 'text'];
+  const premiumTypes = ['whatsapp', 'wifi', 'email', 'sms', 'phone'];
+  
+  const isTypeAvailable = (type: string) => {
+    if (freeTypes.includes(type)) return true;
+    if (premiumTypes.includes(type) && isPremium) return true;
+    return false;
+  };
+
+  // Add logo to QR code
+  const addLogoToQR = (qrDataUrl: string, logoSrc: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Could not get canvas context'));
+        return;
+      }
+
+      const qrImage = new Image();
+      qrImage.onload = () => {
+        canvas.width = qrImage.width;
+        canvas.height = qrImage.height;
+        
+        // Draw QR code
+        ctx.drawImage(qrImage, 0, 0);
+        
+        // Load and draw logo
+        const logo = new Image();
+        logo.crossOrigin = 'anonymous';
+        logo.onload = () => {
+          const logoSize = qrImage.width * 0.22;
+          const logoX = (qrImage.width - logoSize) / 2;
+          const logoY = (qrImage.height - logoSize) / 2;
+          
+          // White background for logo
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(logoX - 4, logoY - 4, logoSize + 8, logoSize + 8);
+          
+          // Draw logo
+          ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+          
+          resolve(canvas.toDataURL('image/png'));
+        };
+        logo.onerror = () => {
+          // If logo fails to load, just return original QR
+          resolve(qrDataUrl);
+        };
+        logo.src = logoSrc;
+      };
+      qrImage.onerror = reject;
+      qrImage.src = qrDataUrl;
+    });
+  };
 
   const generateQRCode = async () => {
     setIsGenerating(true);
@@ -92,19 +179,40 @@ export default function QRGenerator() {
         return;
       }
 
+      // Check if premium type without subscription
+      if (premiumTypes.includes(qrType) && !isPremium) {
+        toast({
+          title: "Premium Feature",
+          description: "Please upgrade to Per-Use plan to use this QR type.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const options = {
         errorCorrectionLevel: errorLevel as 'L' | 'M' | 'Q' | 'H',
         type: 'image/png' as const,
         quality: 0.92,
         margin: margin,
         color: {
-          dark: darkColor,
-          light: lightColor,
+          dark: isPremium ? darkColor : '#000000',
+          light: isPremium ? lightColor : '#ffffff',
         },
-        width: size,
+        width: isPremium ? exportSize : 512,
       };
 
-      const dataUrl = await QRCode.toDataURL(content, options);
+      let dataUrl = await QRCode.toDataURL(content, options);
+      
+      // Add logo if enabled
+      if (useLogo) {
+        const logoToUse = isPremium && customLogo ? customLogo : wytLogoPath;
+        try {
+          dataUrl = await addLogoToQR(dataUrl, logoToUse);
+        } catch (logoError) {
+          console.error('Logo overlay failed:', logoError);
+        }
+      }
+      
       setQrDataUrl(dataUrl);
 
       // Add to history
@@ -116,11 +224,11 @@ export default function QRGenerator() {
         dataUrl
       };
 
-      setHistory(prev => [newHistoryItem, ...prev.slice(0, 9)]); // Keep last 10
+      setHistory(prev => [newHistoryItem, ...prev.slice(0, 9)]);
 
       toast({
         title: "QR Code Generated!",
-        description: "Your QR code is ready to download or share.",
+        description: isPremium ? "Premium QR code ready with your custom options." : "QR code ready with Wyt branding.",
       });
 
     } catch (error) {
@@ -139,7 +247,7 @@ export default function QRGenerator() {
     if (!qrDataUrl) return;
 
     const link = document.createElement('a');
-    link.download = `qrcode-${qrType}-${Date.now()}.png`;
+    link.download = `wytqrc-${qrType}-${Date.now()}.png`;
     link.href = qrDataUrl;
     link.click();
 
@@ -185,15 +293,30 @@ export default function QRGenerator() {
     try {
       const response = await fetch(qrDataUrl);
       const blob = await response.blob();
-      const file = new File([blob], `qrcode-${qrType}.png`, { type: 'image/png' });
+      const file = new File([blob], `wytqrc-${qrType}.png`, { type: 'image/png' });
 
       await navigator.share({
-        title: 'QR Code',
+        title: 'WytQRC',
         text: `Generated QR code for ${qrType}`,
         files: [file],
       });
     } catch (error) {
       console.error('Error sharing:', error);
+    }
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setCustomLogo(reader.result as string);
+        toast({
+          title: "Logo Uploaded",
+          description: "Your custom logo will be used in the QR code.",
+        });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -219,6 +342,17 @@ export default function QRGenerator() {
     return <Icon className="h-4 w-4" />;
   };
 
+  // QR Type definitions
+  const qrTypes = [
+    { value: 'url', icon: '🌐', label: 'Website', desc: 'Open links', premium: false },
+    { value: 'text', icon: '📝', label: 'Text', desc: 'Plain text', premium: false },
+    { value: 'whatsapp', icon: '💬', label: 'WhatsApp', desc: 'Send messages', premium: true },
+    { value: 'phone', icon: '📞', label: 'Phone', desc: 'Call number', premium: true },
+    { value: 'email', icon: '📧', label: 'Email', desc: 'Compose email', premium: true },
+    { value: 'sms', icon: '💬', label: 'SMS', desc: 'Text message', premium: true },
+    { value: 'wifi', icon: '📶', label: 'WiFi', desc: 'Connect network', premium: true },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
       <main className="container mx-auto px-4 py-8">
@@ -228,12 +362,48 @@ export default function QRGenerator() {
               <QrCode className="h-6 w-6 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              QR Code Generator
+              WytQRC - QR Code Generator
             </h1>
             <p className="text-sm text-muted-foreground">
-              Create QR codes instantly
+              {isPremium ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Crown className="h-4 w-4 text-yellow-500" />
+                  Premium Access - All features unlocked
+                </span>
+              ) : (
+                "Create QR codes with Wyt branding"
+              )}
             </p>
           </div>
+
+          {/* Plan Status Banner */}
+          {!isPremium && (
+            <Card className="mb-6 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-100 dark:bg-amber-800/50 rounded-lg">
+                      <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-amber-800 dark:text-amber-200">Free Plan</p>
+                      <p className="text-sm text-amber-600 dark:text-amber-300">
+                        URL & Text QR types with Wyt logo • Upgrade for more features
+                      </p>
+                    </div>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                    onClick={() => window.location.href = '/app/wytqrc'}
+                  >
+                    <Crown className="h-4 w-4 mr-2" />
+                    Upgrade to Per-Use
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Content Input */}
@@ -243,35 +413,57 @@ export default function QRGenerator() {
                   <CardTitle className="text-lg">Create QR Code</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6 p-6">
+                  {/* QR Type Selector */}
                   <div>
                     <Label htmlFor="qr-type" className="text-sm font-medium mb-3 block">Type</Label>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {[
-                        { value: 'url', icon: '🌐', label: 'Website', desc: 'Open links' },
-                        { value: 'whatsapp', icon: '💬', label: 'WhatsApp', desc: 'Send messages' },
-                        { value: 'phone', icon: '📞', label: 'Phone', desc: 'Call number' },
-                        { value: 'text', icon: '📝', label: 'Text', desc: 'Plain text' },
-                      ].map((type) => (
-                        <div
-                          key={type.value}
-                          onClick={() => setQrType(type.value)}
-                          className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:scale-105 ${
-                            qrType === type.value
-                              ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-lg'
-                              : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
-                          }`}
-                        >
-                          <div className="text-center">
-                            <div className="text-2xl mb-2">{type.icon}</div>
-                            <div className="font-medium text-sm">{type.label}</div>
-                            <div className="text-xs text-muted-foreground mt-1">{type.desc}</div>
+                      {qrTypes.map((type) => {
+                        const isLocked = type.premium && !isPremium;
+                        return (
+                          <div
+                            key={type.value}
+                            onClick={() => {
+                              if (isLocked) {
+                                toast({
+                                  title: "Premium Feature",
+                                  description: "Upgrade to Per-Use plan to unlock this QR type.",
+                                  variant: "destructive",
+                                });
+                              } else {
+                                setQrType(type.value);
+                              }
+                            }}
+                            className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:scale-105 ${
+                              qrType === type.value && !isLocked
+                                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-lg'
+                                : isLocked
+                                  ? 'border-gray-200 dark:border-gray-700 bg-gray-100/50 dark:bg-gray-800/50 opacity-60'
+                                  : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
+                            }`}
+                          >
+                            {isLocked && (
+                              <div className="absolute top-2 right-2">
+                                <Lock className="h-4 w-4 text-gray-400" />
+                              </div>
+                            )}
+                            {type.premium && !isLocked && (
+                              <div className="absolute top-2 right-2">
+                                <Crown className="h-3 w-3 text-yellow-500" />
+                              </div>
+                            )}
+                            <div className="text-center">
+                              <div className="text-2xl mb-2">{type.icon}</div>
+                              <div className="font-medium text-sm">{type.label}</div>
+                              <div className="text-xs text-muted-foreground mt-1">{type.desc}</div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
-                  <Tabs value={qrType} onValueChange={setQrType}>
+                  {/* Content Input Based on Type */}
+                  <Tabs value={qrType}>
                     <TabsContent value="text" className="space-y-4">
                       <div>
                         <Label htmlFor="text-content">Text Content</Label>
@@ -349,17 +541,15 @@ export default function QRGenerator() {
                     </TabsContent>
 
                     <TabsContent value="sms" className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="sms-number">Phone Number</Label>
-                          <Input
-                            id="sms-number"
-                            data-testid="input-sms-number"
-                            placeholder="+1234567890"
-                            value={smsNumber}
-                            onChange={(e) => setSmsNumber(e.target.value)}
-                          />
-                        </div>
+                      <div>
+                        <Label htmlFor="sms-number">Phone Number</Label>
+                        <Input
+                          id="sms-number"
+                          data-testid="input-sms-number"
+                          placeholder="+1234567890"
+                          value={smsNumber}
+                          onChange={(e) => setSmsNumber(e.target.value)}
+                        />
                       </div>
                       <div>
                         <Label htmlFor="sms-message">SMS Message</Label>
@@ -397,8 +587,176 @@ export default function QRGenerator() {
                         />
                       </div>
                     </TabsContent>
+
+                    <TabsContent value="wifi" className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="wifi-ssid">Network Name (SSID)</Label>
+                          <Input
+                            id="wifi-ssid"
+                            data-testid="input-wifi-ssid"
+                            placeholder="MyWiFiNetwork"
+                            value={wifiSSID}
+                            onChange={(e) => setWifiSSID(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="wifi-password">Password</Label>
+                          <Input
+                            id="wifi-password"
+                            data-testid="input-wifi-password"
+                            type="password"
+                            placeholder="WiFi password"
+                            value={wifiPassword}
+                            onChange={(e) => setWifiPassword(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Security Type</Label>
+                        <div className="flex gap-4 mt-2">
+                          {['WPA', 'WEP', 'nopass'].map((sec) => (
+                            <label key={sec} className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="wifi-security"
+                                value={sec}
+                                checked={wifiSecurity === sec}
+                                onChange={(e) => setWifiSecurity(e.target.value)}
+                                className="text-purple-500"
+                              />
+                              <span className="text-sm">{sec === 'nopass' ? 'None' : sec}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </TabsContent>
                   </Tabs>
 
+                  <Separator />
+
+                  {/* Premium Customization Options */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-medium flex items-center gap-2">
+                        <Palette className="h-4 w-4" />
+                        Customization
+                      </h4>
+                      {!isPremium && (
+                        <Badge variant="outline" className="text-amber-600 border-amber-300">
+                          <Lock className="h-3 w-3 mr-1" />
+                          Premium Only
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Logo Options */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="flex items-center gap-2 mb-2">
+                          <ImageIcon className="h-4 w-4" />
+                          Logo
+                        </Label>
+                        <div className="flex items-center gap-3">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={useLogo}
+                              onChange={(e) => setUseLogo(e.target.checked)}
+                              className="rounded"
+                            />
+                            <span className="text-sm">Include logo</span>
+                          </label>
+                        </div>
+                        {isPremium && useLogo && (
+                          <div className="mt-3">
+                            <input
+                              ref={logoInputRef}
+                              type="file"
+                              accept="image/*"
+                              onChange={handleLogoUpload}
+                              className="hidden"
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => logoInputRef.current?.click()}
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              {customLogo ? 'Change Logo' : 'Upload Custom Logo'}
+                            </Button>
+                            {customLogo && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="ml-2"
+                                onClick={() => setCustomLogo(null)}
+                              >
+                                Use Wyt Logo
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                        {!isPremium && useLogo && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Free plan uses Wyt logo. Upgrade to use your own logo.
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Color Options - Premium */}
+                      <div className={!isPremium ? 'opacity-50 pointer-events-none' : ''}>
+                        <Label className="flex items-center gap-2 mb-2">
+                          <Palette className="h-4 w-4" />
+                          Colors
+                          {!isPremium && <Lock className="h-3 w-3 text-gray-400" />}
+                        </Label>
+                        <div className="flex gap-4">
+                          <div>
+                            <span className="text-xs text-muted-foreground">Foreground</span>
+                            <input
+                              type="color"
+                              value={darkColor}
+                              onChange={(e) => setDarkColor(e.target.value)}
+                              className="w-12 h-8 rounded cursor-pointer block mt-1"
+                              disabled={!isPremium}
+                            />
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground">Background</span>
+                            <input
+                              type="color"
+                              value={lightColor}
+                              onChange={(e) => setLightColor(e.target.value)}
+                              className="w-12 h-8 rounded cursor-pointer block mt-1"
+                              disabled={!isPremium}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Export Size - Premium */}
+                    <div className={!isPremium ? 'opacity-50 pointer-events-none' : ''}>
+                      <Label className="flex items-center gap-2 mb-2">
+                        Export Size
+                        {!isPremium && <Lock className="h-3 w-3 text-gray-400" />}
+                      </Label>
+                      <div className="flex gap-2">
+                        {[256, 512, 768, 1024].map((s) => (
+                          <Button
+                            key={s}
+                            variant={exportSize === s ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setExportSize(s)}
+                            disabled={!isPremium && s > 512}
+                          >
+                            {s}px
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
 
                   <Button 
                     onClick={generateQRCode} 
@@ -412,7 +770,10 @@ export default function QRGenerator() {
                         Generating...
                       </div>
                     ) : (
-                      "Generate QR Code"
+                      <>
+                        <Zap className="h-4 w-4 mr-2" />
+                        Generate QR Code
+                      </>
                     )}
                   </Button>
                 </CardContent>
@@ -427,7 +788,7 @@ export default function QRGenerator() {
                     <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
                       <Eye className="h-5 w-5 text-white" />
                     </div>
-                    Live Preview
+                    Preview
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-center space-y-6 p-6">
@@ -454,7 +815,7 @@ export default function QRGenerator() {
                           data-testid="button-download-qr"
                         >
                           <Download className="h-4 w-4 mr-2" />
-                          Download High Quality
+                          Save
                         </Button>
                         
                         <div className="grid grid-cols-2 gap-3">
@@ -537,17 +898,9 @@ export default function QRGenerator() {
                               {item.type.toUpperCase()}
                             </Badge>
                           </div>
-                          <p className="text-sm font-medium truncate group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                          <p className="text-xs text-muted-foreground truncate">
                             {item.content}
                           </p>
-                          <p className="text-xs text-muted-foreground">
-                            {item.timestamp.toLocaleDateString()} • {item.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </p>
-                        </div>
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <Eye className="h-4 w-4" />
-                          </Button>
                         </div>
                       </div>
                     ))}
