@@ -8655,6 +8655,79 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // Get public app info by slug - Returns app details for public page at /a/:slug
+  // If app is free + isPublic = true, allow full functionality without login
+  // If app is not free OR isPublic = false, return marketing info with CTA to login/buy
+  app.get('/api/public/apps/:slug', async (req, res) => {
+    try {
+      const { slug } = req.params;
+      
+      // Find the app by slug
+      const appData = await db
+        .select()
+        .from(apps)
+        .where(eq(apps.slug, slug))
+        .limit(1);
+
+      if (appData.length === 0) {
+        return res.status(404).json({ success: false, error: 'App not found' });
+      }
+
+      const appRecord = appData[0];
+
+      // Fetch pricing plans for this app
+      const pricingPlansData = await db
+        .select()
+        .from(appPricingPlans)
+        .where(and(
+          eq(appPricingPlans.appId, appRecord.id),
+          eq(appPricingPlans.isActive, true)
+        ))
+        .orderBy(appPricingPlans.sortOrder);
+
+      // Check if app has a free plan
+      const hasFreePlan = pricingPlansData.some(p => p.planType === 'free');
+      const isPublic = appRecord.isPublic === true;
+      
+      // Determine access level
+      // functional: full app functionality available without login
+      // marketing: show features, pricing and guide to login
+      const accessLevel = (hasFreePlan && isPublic) ? 'functional' : 'marketing';
+      
+      res.json({
+        success: true,
+        app: {
+          id: appRecord.id,
+          name: appRecord.name,
+          slug: appRecord.slug,
+          description: appRecord.description,
+          icon: appRecord.icon,
+          category: (appRecord.categories as string[])?.[0] || 'Other',
+          features: appRecord.features || [],
+          isCoreApp: appRecord.isCoreApp,
+          isPublic: appRecord.isPublic,
+        },
+        accessLevel,
+        hasFreePlan,
+        pricingPlans: pricingPlansData.map(plan => ({
+          id: plan.id,
+          planName: plan.planName,
+          planType: plan.planType,
+          planTier: plan.planTier,
+          price: plan.price,
+          currency: plan.currency,
+          features: plan.features,
+        })),
+      });
+    } catch (error) {
+      console.error('Error fetching public app:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch app'
+      });
+    }
+  });
+
   // Get user's installed apps - Now joining with real 'apps' table with pricing plans
   app.get('/api/apps/my-apps', async (req: any, res) => {
     try {

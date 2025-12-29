@@ -1,10 +1,12 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useRoute, Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { 
@@ -31,7 +33,15 @@ import {
   Loader2,
   Wallet,
   Gift,
-  Sparkles
+  Sparkles,
+  LogIn,
+  ArrowRight,
+  Star,
+  Shield,
+  Crown,
+  Globe,
+  Zap,
+  Lock
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +49,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import WytApiPage from "./pages/wytapi";
 import AppPanelHome from "./pages/app-panel-home";
+import QRGenerator from "@/pages/qr-generator";
 
 function WytDutyDashboard() {
   return (
@@ -1210,6 +1221,133 @@ function GenericAppSettings({ appName }: { appName: string }) {
   );
 }
 
+// Public App Wrapper - Renders public page for unauthenticated users if app is free + public
+function PublicAppWrapper({ slug, children }: { slug: string; children: React.ReactNode }) {
+  // Check if user is authenticated
+  const { data: user, isLoading: userLoading } = useQuery<any>({
+    queryKey: ["/api/auth/user"],
+  });
+
+  // Check if app is public
+  const { data: appInfo, isLoading: appLoading } = useQuery<any>({
+    queryKey: ['/api/public/apps', slug],
+    enabled: !user && !userLoading, // Only check if user is not authenticated
+  });
+
+  // If loading, show spinner
+  if (userLoading || appLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // If user is authenticated, show the normal app
+  if (user) {
+    return <>{children}</>;
+  }
+
+  // If app is public and free, show the public QR generator (for wytqrc)
+  if (appInfo?.accessLevel === 'functional' && slug === 'wytqrc') {
+    return <QRGenerator />;
+  }
+
+  // Show marketing page for non-public apps
+  const app = appInfo?.app;
+  const pricingPlans = appInfo?.pricingPlans || [];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto">
+          {/* Hero Section */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary to-purple-600 rounded-2xl mb-6 shadow-xl">
+              {slug === 'wytqrc' ? (
+                <QrCode className="h-10 w-10 text-white" />
+              ) : (
+                <Zap className="h-10 w-10 text-white" />
+              )}
+            </div>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              {app?.name || 'WytApp'}
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              {app?.description || 'Powerful tool on the WytNet platform'}
+            </p>
+            <div className="flex items-center justify-center gap-3 mt-6">
+              <Badge variant="outline" className="text-sm">
+                {app?.category || 'Utility'}
+              </Badge>
+              {app?.isCoreApp && (
+                <Badge className="bg-green-500">Core App</Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Pricing */}
+          {pricingPlans.length > 0 && (
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Crown className="h-5 w-5 text-yellow-500" />
+                  Pricing Plans
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {pricingPlans.map((plan: any) => (
+                    <Card key={plan.id} className={`${plan.planType === 'free' ? 'border-green-500' : ''}`}>
+                      <CardContent className="p-6 text-center">
+                        <h3 className="font-bold text-lg mb-2">{plan.planName}</h3>
+                        <div className="text-3xl font-bold mb-2">
+                          {plan.planType === 'free' ? 'Free' : `₹${plan.price}`}
+                          {plan.planType === 'pay_per_use' && <span className="text-sm font-normal">/use</span>}
+                          {plan.planType === 'monthly' && <span className="text-sm font-normal">/mo</span>}
+                          {plan.planType === 'yearly' && <span className="text-sm font-normal">/yr</span>}
+                        </div>
+                        <Badge variant="outline">{plan.planTier}</Badge>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Separator className="my-8" />
+
+          {/* Call to Action */}
+          <Card className="bg-gradient-to-r from-primary/10 to-purple-500/10 border-primary/20">
+            <CardContent className="p-8 text-center">
+              <Shield className="h-12 w-12 text-primary mx-auto mb-4" />
+              <h2 className="text-2xl font-bold mb-3">Get Started with {app?.name || 'This App'}</h2>
+              <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
+                Sign in to access this app with your WytNet account. Free users get basic features, upgrade anytime for premium capabilities.
+              </p>
+              <div className="flex items-center justify-center gap-4">
+                <Button asChild size="lg" className="bg-gradient-to-r from-primary to-purple-600">
+                  <Link href="/auth">
+                    <LogIn className="h-5 w-5 mr-2" />
+                    Sign In
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" size="lg">
+                  <Link href="/wytapps">
+                    <ArrowRight className="h-5 w-5 mr-2" />
+                    Browse More Apps
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AppPanelRouter() {
   return (
     <Switch>
@@ -1234,12 +1372,14 @@ export default function AppPanelRouter() {
       <Route path="/apppanel/wytduty/dashboard" component={WytDutyDashboard} />
       <Route path="/apppanel/wytduty" component={WytDutyDashboard} />
 
-      {/* WytQRC App Routes - Both /a/ and /apppanel/ patterns */}
+      {/* WytQRC App Routes with Public Access Wrapper */}
       <Route path="/a/wytqrc/settings" component={WytQRCSettings} />
       <Route path="/a/wytqrc/my-codes" component={WytQRCMyCodes} />
       <Route path="/a/wytqrc/generate" component={WytQRCGenerate} />
       <Route path="/a/wytqrc/dashboard" component={WytQRCDashboard} />
-      <Route path="/a/wytqrc" component={WytQRCDashboard} />
+      <Route path="/a/wytqrc">
+        {() => <PublicAppWrapper slug="wytqrc"><WytQRCDashboard /></PublicAppWrapper>}
+      </Route>
       <Route path="/apppanel/wytqrc/settings" component={WytQRCSettings} />
       <Route path="/apppanel/wytqrc/my-codes" component={WytQRCMyCodes} />
       <Route path="/apppanel/wytqrc/generate" component={WytQRCGenerate} />
