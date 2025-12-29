@@ -25,32 +25,59 @@ Focus: Fully white-label multi-tenant SaaS platform with identity validation.
 ## Frontend Architecture
 The frontend uses React 18, TypeScript, Vite, Tailwind CSS, and shadcn/ui. Wouter handles routing, and TanStack Query manages server state. It supports component-based builders for modules, CMS, applications, and hubs, with a mobile-first responsive design, animated gradients, and glassmorphism elements.
 
-## Routing Architecture
-The application uses a clear separation between public marketing pages and authenticated functional pages:
+## Routing Architecture (Updated Dec 29, 2025)
+The application uses a 3-tier URL architecture separating public, panel, and admin routes:
 
-### Public Routes (Marketing & Information)
+### PUBLIC ROUTES (No auth required)
 - `/` - WytNet Hub homepage
 - `/wytapps` - WytApps marketplace listing
-- `/app/:id` - Individual app marketing pages with features, pricing, and "Add to Panel" button
+- `/wythubs` - WytHubs marketplace
 - `/features`, `/pricing`, `/about` - Platform information pages
+- `/login`, `/signup` - Authentication pages
+- `/a/:slug` - **Public App Access** - Free + public apps render full functionality without login
+  - Example: `/a/wytqrc` - WytQRC QR generator (free tier)
+  - If app is not free or not public, shows marketing page with login/signup CTA
+- `/h/:slug` - Public hub pages
 
-### Authenticated Panel Routes (Functional Workspaces)
-- `/mypanel/*` - Personal workspace (My Panel) with user-specific features
-- `/orgpanel/*` - Organization workspace (Org Panel) with team collaboration features
-- `/apppanel/:appSlug/*` - **App Panel** - Immersive app-specific workspaces with dedicated navigation
-  - Example: `/apppanel/wytduty` - WytDuty app with dashboard, tasks, calendar, settings
-  - Each app has its own navigation menu and features when "switched to"
-  - Maintains unified header while providing app-focused sidebar navigation
+### PANEL ROUTES (`/p/*` - User auth required)
+- `/p/` - User dashboard
+- `/p/my/*` - Personal workspace (My Panel)
+  - `/p/my/dashboard` - Dashboard
+  - `/p/my/wytapps` - My installed apps
+  - `/p/my/wytapps/:slug` - App workspace
+  - `/p/my/wallet`, `/p/my/points` - Payments & rewards
+  - `/p/my/profile`, `/p/my/settings` - Account settings
+- `/p/org/:id/*` - Organization workspace
+  - `/p/org/:id/dashboard`, `/p/org/:id/team`, `/p/org/:id/settings`
+- `/p/app/:slug/*` - App workspace (authenticated app access)
+  - Full app functionality with data persistence
 
-### Admin Routes (Platform Management)
-- `/engine/*` - Engine Admin (Super Admin Panel for platform infrastructure)
-- `/admin/*` - Hub Admin (WytNet.com hub content management)
+### ENGINE ADMIN ROUTES (`/e/*` or `/engine/*` - Super Admin only)
+- `/e/` or `/engine/` - Engine Admin dashboard
+- `/e/apps` - Manage WytApps
+- `/e/modules` - Manage WytModules
+- `/e/hubs` - Manage WytHubs
+- `/e/users` - User management
+- `/e/datasets` - WytData management
+
+### HUB ADMIN ROUTES (`/admin/*` - Hub Admin only)
+- `/admin/` - Hub Admin dashboard
+- `/admin/content` - Content management
+- `/admin/users` - Hub user management
+
+### LEGACY ROUTES (Backward compatibility - redirect to new structure)
+- `/mypanel/*` → `/p/my/*`
+- `/orgpanel/*` → `/p/org/*`
+- `/apppanel/*` → `/p/app/*`
+- `/panel/*` → `/p/*`
+- `/u/:username/*` → Panel routes (still supported)
+- `/o/:orgname/*` → Org panel routes (still supported)
 
 ### Key Routing Principles
-1. **Public routes** show marketing information and allow users to discover and add apps to their panels
-2. **Panel routes** require authentication and provide functional app workspaces
-3. **App Panel** provides immersive, app-specific experiences while maintaining platform consistency
-4. Users "switch to app" from My WytApps to enter dedicated app workspaces at `/apppanel/:appSlug`
+1. **Single-letter prefixes** - `/a/` (apps), `/p/` (panel), `/e/` (engine), `/h/` (hubs), `/o/` (orgs), `/u/` (users)
+2. **Clear auth boundaries** - Each prefix maps to one auth middleware
+3. **Public apps** - If app has `isPublic=true` + free plan, full functionality at `/a/:slug`
+4. **SEO-friendly** - Marketing pages at root level for better indexing
 
 ## Backend Architecture
 The backend is an Express.js application with TypeScript, providing RESTful APIs. WytPass OAuth (Google, Email OTP, Email/Password) provides session-based authentication, with RBAC and tenant isolation enforced at the database level.
