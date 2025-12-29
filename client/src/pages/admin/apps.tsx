@@ -860,6 +860,16 @@ export default function AdminApps() {
                           <Button
                             variant="ghost"
                             size="sm"
+                            onClick={() => window.open(`/a/${app.slug}`, '_blank')}
+                            data-testid={`button-public-${app.id}`}
+                            title="View public page"
+                          >
+                            <Globe className="h-3 w-3 mr-1" />
+                            Public
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => {
                               setWizardMode('update');
                               setWizardAppId(app.id);
@@ -971,6 +981,16 @@ export default function AdminApps() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex gap-1 justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(`/a/${app.slug}`, '_blank')}
+                            data-testid={`list-button-public-${app.id}`}
+                            title="View public page"
+                          >
+                            <Globe className="h-3 w-3 mr-1" />
+                            Public
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
