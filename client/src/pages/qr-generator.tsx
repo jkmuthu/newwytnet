@@ -16,7 +16,7 @@ import {
   Zap, Eye, CheckCircle, Star, Crown, Lock, Upload, Palette, Image as ImageIcon,
   CreditCard
 } from "lucide-react";
-import wytLogoPath from "@assets/Logo_003_1766709774257.jpg";
+import wytLogoSquarePath from "@assets/Logo_003_1766709774257.jpg";
 
 interface QRHistory {
   id: string;
@@ -91,8 +91,8 @@ export default function QRGenerator() {
     return false;
   };
 
-  // Add logo to QR code
-  const addLogoToQR = (qrDataUrl: string, logoSrc: string): Promise<string> => {
+  // Add logo to QR code with rounded circular design for free plan
+  const addLogoToQR = (qrDataUrl: string, logoSrc: string, isFreePlan: boolean = true): Promise<string> => {
     return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -113,16 +113,45 @@ export default function QRGenerator() {
         const logo = new Image();
         logo.crossOrigin = 'anonymous';
         logo.onload = () => {
-          const logoSize = qrImage.width * 0.22;
+          const logoSize = qrImage.width * 0.24;
           const logoX = (qrImage.width - logoSize) / 2;
           const logoY = (qrImage.height - logoSize) / 2;
+          const radius = logoSize / 2;
+          const centerX = logoX + radius;
+          const centerY = logoY + radius;
           
-          // White background for logo
+          // Save context for clipping
+          ctx.save();
+          
+          // Create circular clip path for rounded logo
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, radius + 4, 0, Math.PI * 2);
+          ctx.closePath();
+          
+          // White circular background
           ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(logoX - 4, logoY - 4, logoSize + 8, logoSize + 8);
+          ctx.fill();
           
-          // Draw logo
+          // Draw subtle border ring for free plan branding
+          if (isFreePlan) {
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius + 3, 0, Math.PI * 2);
+            ctx.strokeStyle = '#0ea5e9'; // WytNet blue
+            ctx.lineWidth = 2;
+            ctx.stroke();
+          }
+          
+          // Create circular clip for logo
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+          
+          // Draw logo inside circular clip
           ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+          
+          // Restore context
+          ctx.restore();
           
           resolve(canvas.toDataURL('image/png'));
         };
@@ -203,11 +232,13 @@ export default function QRGenerator() {
 
       let dataUrl = await QRCode.toDataURL(content, options);
       
-      // Add logo if enabled
-      if (useLogo) {
-        const logoToUse = isPremium && customLogo ? customLogo : wytLogoPath;
+      // Add Wyt logo watermark - MANDATORY for free plan, optional toggle for premium
+      const shouldAddLogo = !isPremium || useLogo; // Free users always get logo, premium can toggle
+      if (shouldAddLogo) {
+        const logoToUse = isPremium && customLogo ? customLogo : wytLogoSquarePath;
+        const isFreePlan = !isPremium;
         try {
-          dataUrl = await addLogoToQR(dataUrl, logoToUse);
+          dataUrl = await addLogoToQR(dataUrl, logoToUse, isFreePlan);
         } catch (logoError) {
           console.error('Logo overlay failed:', logoError);
         }

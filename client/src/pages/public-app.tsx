@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import QRGenerator from "./qr-generator";
+import PublicLayout from "@/portals/public/PublicLayout";
 
 interface PublicAppData {
   success: boolean;
@@ -78,16 +79,20 @@ export default function PublicAppPage() {
 
   const { app, accessLevel, hasFreePlan, pricingPlans } = data;
 
-  // If accessLevel is 'functional', render the actual app component
+  // If accessLevel is 'functional', render the actual app component with PublicLayout
   if (accessLevel === 'functional') {
     // Route to the specific app component based on slug
     if (slug === 'wytqrc') {
-      return <QRGenerator />;
+      return (
+        <PublicLayout>
+          <QRGenerator />
+        </PublicLayout>
+      );
     }
     // Add more apps here as needed
     // Default fallback for functional apps without specific component
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 dark:from-gray-900 dark:to-blue-900">
+      <PublicLayout>
         <div className="container mx-auto px-4 py-12">
           <Card className="max-w-2xl mx-auto">
             <CardHeader className="text-center">
@@ -105,13 +110,13 @@ export default function PublicAppPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </PublicLayout>
     );
   }
 
   // Marketing page for non-free or non-public apps
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
+    <PublicLayout>
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto">
           {/* Hero Section */}
@@ -225,6 +230,6 @@ export default function PublicAppPage() {
           </Card>
         </div>
       </div>
-    </div>
+    </PublicLayout>
   );
 }
