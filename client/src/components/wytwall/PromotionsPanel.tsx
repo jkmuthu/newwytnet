@@ -64,7 +64,7 @@ export default function PromotionsPanel({ isAuthenticated }: PromotionsPanelProp
         )}
 
         {/* Create QR Codes Using WytQRC App */}
-        <Card className="bg-gradient-to-br from-emerald-500 to-teal-600 border-0 shadow-lg hover:scale-105 transition-all rounded-xl overflow-hidden cursor-pointer" onClick={() => navigate('/qr-generator')}>
+        <Card className="bg-gradient-to-br from-emerald-500 to-teal-600 border-0 shadow-lg hover:scale-105 transition-all rounded-xl overflow-hidden cursor-pointer" onClick={() => navigate('/a/wytqrc')}>
           <CardContent className="p-4">
             <div className="flex items-start gap-2 mb-3">
               <div className="h-9 w-9 bg-white/20 backdrop-blur-xl rounded-lg flex items-center justify-center flex-shrink-0">
@@ -76,7 +76,7 @@ export default function PromotionsPanel({ isAuthenticated }: PromotionsPanelProp
               </div>
             </div>
             <Button
-              onClick={(e) => { e.stopPropagation(); navigate('/qr-generator'); }}
+              onClick={(e) => { e.stopPropagation(); navigate('/a/wytqrc'); }}
               className="w-full bg-white/90 hover:bg-white text-emerald-600 font-semibold shadow-lg rounded-lg h-8 text-xs"
               data-testid="button-qr-generator"
             >
@@ -87,7 +87,7 @@ export default function PromotionsPanel({ isAuthenticated }: PromotionsPanelProp
         </Card>
 
         {/* Assess your DISC Using WytApp's "Assess DISC" */}
-        <Card className="bg-gradient-to-br from-purple-500 to-pink-600 border-0 shadow-lg hover:scale-105 transition-all rounded-xl overflow-hidden cursor-pointer" onClick={() => navigate('/assessment')}>
+        <Card className="bg-gradient-to-br from-purple-500 to-pink-600 border-0 shadow-lg hover:scale-105 transition-all rounded-xl overflow-hidden cursor-pointer" onClick={() => navigate('/a/wytassessor')}>
           <CardContent className="p-4">
             <div className="flex items-start gap-2 mb-3">
               <div className="h-9 w-9 bg-white/20 backdrop-blur-xl rounded-lg flex items-center justify-center flex-shrink-0">
@@ -99,7 +99,7 @@ export default function PromotionsPanel({ isAuthenticated }: PromotionsPanelProp
               </div>
             </div>
             <Button
-              onClick={(e) => { e.stopPropagation(); navigate('/assessment'); }}
+              onClick={(e) => { e.stopPropagation(); navigate('/a/wytassessor'); }}
               className="w-full bg-white/90 hover:bg-white text-purple-600 font-semibold shadow-lg rounded-lg h-8 text-xs"
               data-testid="button-disc-assessment"
             >

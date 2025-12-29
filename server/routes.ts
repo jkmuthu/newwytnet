@@ -14491,6 +14491,99 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // Create payment order for QR code premium features (authenticated users only)
+  app.post('/api/qrcode/create-payment', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = req.user;
+      const { amount, qrType, description } = req.body;
+      
+      console.log(`📱 QRC Payment: Creating payment for user ${userId}, type: ${qrType}`);
+      
+      // Fetch WytQRC pricing from database
+      const wytqrcApp = await db
+        .select()
+        .from(apps)
+        .where(eq(apps.slug, 'wytqrc'))
+        .limit(1);
+      
+      let qrcPrice = 10; // Default fallback in rupees
+      
+      if (wytqrcApp.length > 0) {
+        const pricingPlansData = await db
+          .select()
+          .from(appPricingPlans)
+          .where(and(
+            eq(appPricingPlans.appId, wytqrcApp[0].id),
+            eq(appPricingPlans.isActive, true),
+            eq(appPricingPlans.planType, 'pay_per_use')
+          ))
+          .limit(1);
+        
+        if (pricingPlansData.length > 0) {
+          qrcPrice = parseFloat(pricingPlansData[0].price) || 10;
+        }
+      }
+      
+      // Create Razorpay order
+      const result = await razorpayService.createOrder(userId, {
+        amount: qrcPrice,
+        currency: 'INR',
+        receipt: `qrc_premium_${userId}_${Date.now()}`,
+        notes: {
+          purpose: 'qrcode_premium_generation',
+          qrType: qrType || 'custom',
+          userEmail: user.email || ''
+        }
+      });
+
+      if (!result.success || !result.data) {
+        console.error(`❌ QRC Payment: Razorpay order creation failed:`, result.error);
+        return res.status(500).json({ error: result.error || 'Failed to create payment order' });
+      }
+
+      console.log(`✅ QRC Payment: Order created - ${result.data.razorpayOrderId}`);
+      res.json({
+        success: true,
+        orderId: result.data.razorpayOrderId,
+        amount: result.data.amount,
+        currency: result.data.currency,
+        key: result.data.key
+      });
+    } catch (error: any) {
+      console.error('❌ QRC Payment: Error creating payment:', error);
+      res.status(500).json({ 
+        success: false,
+        error: 'Failed to create payment order', 
+        message: error.message
+      });
+    }
+  });
+
+  // Verify QR code premium payment
+  app.post('/api/qrcode/verify-payment', isAuthenticated, async (req: any, res) => {
+    try {
+      const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
+      
+      const result = await razorpayService.handlePaymentSuccess({
+        razorpay_payment_id,
+        razorpay_order_id,
+        razorpay_signature
+      });
+
+      if (!result.success) {
+        console.error('QRC Payment verification failed:', result.error);
+        return res.status(400).json({ success: false, error: result.error || 'Payment verification failed' });
+      }
+
+      console.log(`✅ QRC Payment verified: ${razorpay_payment_id}`);
+      res.json({ success: true, message: 'Payment verified successfully' });
+    } catch (error: any) {
+      console.error('Error verifying QRC payment:', error);
+      res.status(500).json({ success: false, error: 'Payment verification failed', message: error.message });
+    }
+  });
+
   // Serve presentations for download
   app.get('/docs/presentations/:filename', async (req, res) => {
     try {

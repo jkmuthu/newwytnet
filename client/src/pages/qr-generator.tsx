@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,12 +9,14 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { useLocation } from "wouter";
 import QRCode from "qrcode";
 import { 
   Download, Share2, Copy, Smartphone, Globe, Mail, Wifi, QrCode, History, 
   Zap, Eye, CheckCircle, Star, Crown, Lock, Upload, Palette, Image as ImageIcon,
-  CreditCard
+  CreditCard, Shield, Award, Brain, ArrowRight, IndianRupee
 } from "lucide-react";
 import wytLogoSquarePath from "@assets/Logo_003_1766709774257.jpg";
 
@@ -35,15 +37,18 @@ interface AccessCheck {
   plan?: any;
 }
 
+const PER_USE_COST = 10;
+
 export default function QRGenerator() {
   const { toast } = useToast();
+  const { user, isAuthenticated } = useAuthContext();
+  const [, navigate] = useLocation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [history, setHistory] = useState<QRHistory[]>([]);
 
-  // QR Code Options
   const [qrType, setQrType] = useState('url');
   const [errorLevel, setErrorLevel] = useState('H');
   const [size, setSize] = useState(256);
@@ -51,12 +56,9 @@ export default function QRGenerator() {
   const [darkColor, setDarkColor] = useState('#000000');
   const [lightColor, setLightColor] = useState('#ffffff');
   
-  // Premium features
   const [customLogo, setCustomLogo] = useState<string | null>(null);
-  const [useLogo, setUseLogo] = useState(true);
   const [exportSize, setExportSize] = useState(512);
 
-  // Content inputs
   const [textContent, setTextContent] = useState('');
   const [urlContent, setUrlContent] = useState('');
   const [emailTo, setEmailTo] = useState('');
@@ -71,7 +73,6 @@ export default function QRGenerator() {
   const [wifiPassword, setWifiPassword] = useState('');
   const [wifiSecurity, setWifiSecurity] = useState('WPA');
 
-  // Check user's access level
   const { data: accessData, isLoading: accessLoading } = useQuery<AccessCheck>({
     queryKey: ['/api/qrcode/check-access'],
   });
@@ -80,18 +81,17 @@ export default function QRGenerator() {
                     accessData?.subscriptionType === 'monthly' || 
                     accessData?.subscriptionType === 'yearly';
   
-  // Free types: URL, Text only
-  // Premium types: WhatsApp, WiFi, Email, SMS, Phone
   const freeTypes = ['url', 'text'];
   const premiumTypes = ['whatsapp', 'wifi', 'email', 'sms', 'phone'];
   
-  const isTypeAvailable = (type: string) => {
-    if (freeTypes.includes(type)) return true;
-    if (premiumTypes.includes(type) && isPremium) return true;
+  const requiresPremium = () => {
+    if (premiumTypes.includes(qrType)) return true;
+    if (customLogo) return true;
+    if (darkColor !== '#000000' || lightColor !== '#ffffff') return true;
+    if (exportSize > 512) return true;
     return false;
   };
 
-  // Add logo to QR code with rounded circular design for free plan
   const addLogoToQR = (qrDataUrl: string, logoSrc: string, isFreePlan: boolean = true): Promise<string> => {
     return new Promise((resolve, reject) => {
       const canvas = document.createElement('canvas');
@@ -106,10 +106,8 @@ export default function QRGenerator() {
         canvas.width = qrImage.width;
         canvas.height = qrImage.height;
         
-        // Draw QR code
         ctx.drawImage(qrImage, 0, 0);
         
-        // Load and draw logo
         const logo = new Image();
         logo.crossOrigin = 'anonymous';
         logo.onload = () => {
@@ -120,43 +118,35 @@ export default function QRGenerator() {
           const centerX = logoX + radius;
           const centerY = logoY + radius;
           
-          // Save context for clipping
           ctx.save();
           
-          // Create circular clip path for rounded logo
           ctx.beginPath();
           ctx.arc(centerX, centerY, radius + 4, 0, Math.PI * 2);
           ctx.closePath();
           
-          // White circular background
           ctx.fillStyle = '#FFFFFF';
           ctx.fill();
           
-          // Draw subtle border ring for free plan branding
           if (isFreePlan) {
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius + 3, 0, Math.PI * 2);
-            ctx.strokeStyle = '#0ea5e9'; // WytNet blue
+            ctx.strokeStyle = '#0ea5e9';
             ctx.lineWidth = 2;
             ctx.stroke();
           }
           
-          // Create circular clip for logo
           ctx.beginPath();
           ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
           ctx.closePath();
           ctx.clip();
           
-          // Draw logo inside circular clip
           ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
           
-          // Restore context
           ctx.restore();
           
           resolve(canvas.toDataURL('image/png'));
         };
         logo.onerror = () => {
-          // If logo fails to load, just return original QR
           resolve(qrDataUrl);
         };
         logo.src = logoSrc;
@@ -166,38 +156,87 @@ export default function QRGenerator() {
     });
   };
 
-  const generateQRCode = async () => {
+  const saveQRConfigToSession = () => {
+    const config = {
+      qrType, textContent, urlContent, emailTo, emailSubject, emailBody,
+      phoneNumber, smsNumber, smsMessage, whatsappNumber, whatsappMessage,
+      wifiSSID, wifiPassword, wifiSecurity, customLogo, darkColor, lightColor, exportSize
+    };
+    sessionStorage.setItem('pendingQRConfig', JSON.stringify(config));
+  };
+
+  const loadQRConfigFromSession = () => {
+    const saved = sessionStorage.getItem('pendingQRConfig');
+    if (saved) {
+      try {
+        const config = JSON.parse(saved);
+        setQrType(config.qrType || 'url');
+        setTextContent(config.textContent || '');
+        setUrlContent(config.urlContent || '');
+        setEmailTo(config.emailTo || '');
+        setEmailSubject(config.emailSubject || '');
+        setEmailBody(config.emailBody || '');
+        setPhoneNumber(config.phoneNumber || '');
+        setSmsNumber(config.smsNumber || '');
+        setSmsMessage(config.smsMessage || '');
+        setWhatsappNumber(config.whatsappNumber || '');
+        setWhatsappMessage(config.whatsappMessage || '');
+        setWifiSSID(config.wifiSSID || '');
+        setWifiPassword(config.wifiPassword || '');
+        setWifiSecurity(config.wifiSecurity || 'WPA');
+        setCustomLogo(config.customLogo || null);
+        setDarkColor(config.darkColor || '#000000');
+        setLightColor(config.lightColor || '#ffffff');
+        setExportSize(config.exportSize || 512);
+        sessionStorage.removeItem('pendingQRConfig');
+        return true;
+      } catch (e) {
+        console.error('Failed to load QR config from session:', e);
+      }
+    }
+    return false;
+  };
+
+  useEffect(() => {
+    loadQRConfigFromSession();
+  }, []);
+
+  const getQRContent = () => {
+    let content = '';
+    switch (qrType) {
+      case 'text':
+        content = textContent;
+        break;
+      case 'url':
+        content = urlContent.startsWith('http') ? urlContent : `https://${urlContent}`;
+        break;
+      case 'email':
+        content = `mailto:${emailTo}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+        break;
+      case 'phone':
+        content = `tel:${phoneNumber}`;
+        break;
+      case 'sms':
+        content = `sms:${smsNumber}?body=${encodeURIComponent(smsMessage)}`;
+        break;
+      case 'wifi':
+        content = `WIFI:T:${wifiSecurity};S:${wifiSSID};P:${wifiPassword};;`;
+        break;
+      case 'whatsapp':
+        const waNumber = whatsappNumber.replace(/[^0-9]/g, '');
+        content = `https://wa.me/${waNumber}${whatsappMessage ? `?text=${encodeURIComponent(whatsappMessage)}` : ''}`;
+        break;
+      default:
+        content = textContent;
+    }
+    return content;
+  };
+
+  const generateQRCode = async (isPaid: boolean = false) => {
     setIsGenerating(true);
     
     try {
-      let content = '';
-      
-      switch (qrType) {
-        case 'text':
-          content = textContent;
-          break;
-        case 'url':
-          content = urlContent.startsWith('http') ? urlContent : `https://${urlContent}`;
-          break;
-        case 'email':
-          content = `mailto:${emailTo}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-          break;
-        case 'phone':
-          content = `tel:${phoneNumber}`;
-          break;
-        case 'sms':
-          content = `sms:${smsNumber}?body=${encodeURIComponent(smsMessage)}`;
-          break;
-        case 'wifi':
-          content = `WIFI:T:${wifiSecurity};S:${wifiSSID};P:${wifiPassword};;`;
-          break;
-        case 'whatsapp':
-          const waNumber = whatsappNumber.replace(/[^0-9]/g, '');
-          content = `https://wa.me/${waNumber}${whatsappMessage ? `?text=${encodeURIComponent(whatsappMessage)}` : ''}`;
-          break;
-        default:
-          content = textContent;
-      }
+      const content = getQRContent();
 
       if (!content.trim()) {
         toast({
@@ -208,11 +247,13 @@ export default function QRGenerator() {
         return;
       }
 
-      // Check if premium type without subscription
-      if (premiumTypes.includes(qrType) && !isPremium) {
+      const needsPremium = requiresPremium();
+      const isFreePlan = !isPremium;
+
+      if (needsPremium && !isPremium && !isPaid) {
         toast({
           title: "Premium Feature",
-          description: "Please upgrade to Per-Use plan to use this QR type.",
+          description: "This configuration requires payment. Click 'Pay & Generate' to proceed.",
           variant: "destructive",
         });
         return;
@@ -224,29 +265,24 @@ export default function QRGenerator() {
         quality: 0.92,
         margin: margin,
         color: {
-          dark: isPremium ? darkColor : '#000000',
-          light: isPremium ? lightColor : '#ffffff',
+          dark: isPremium || isPaid ? darkColor : '#000000',
+          light: isPremium || isPaid ? lightColor : '#ffffff',
         },
-        width: isPremium ? exportSize : 512,
+        width: isPremium || isPaid ? exportSize : 512,
       };
 
       let dataUrl = await QRCode.toDataURL(content, options);
       
-      // Add Wyt logo watermark - MANDATORY for free plan, optional toggle for premium
-      const shouldAddLogo = !isPremium || useLogo; // Free users always get logo, premium can toggle
-      if (shouldAddLogo) {
-        const logoToUse = isPremium && customLogo ? customLogo : wytLogoSquarePath;
-        const isFreePlan = !isPremium;
-        try {
-          dataUrl = await addLogoToQR(dataUrl, logoToUse, isFreePlan);
-        } catch (logoError) {
-          console.error('Logo overlay failed:', logoError);
-        }
+      const logoToUse = (isPremium || isPaid) && customLogo ? customLogo : wytLogoSquarePath;
+      const showFreeBranding = !isPremium && !isPaid;
+      try {
+        dataUrl = await addLogoToQR(dataUrl, logoToUse, showFreeBranding);
+      } catch (logoError) {
+        console.error('Logo overlay failed:', logoError);
       }
       
       setQrDataUrl(dataUrl);
 
-      // Add to history
       const newHistoryItem: QRHistory = {
         id: `qr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         type: qrType,
@@ -259,7 +295,7 @@ export default function QRGenerator() {
 
       toast({
         title: "QR Code Generated!",
-        description: isPremium ? "Premium QR code ready with your custom options." : "QR code ready with Wyt branding.",
+        description: isPremium || isPaid ? "Premium QR code ready with your custom options." : "QR code ready with Wyt branding.",
       });
 
     } catch (error) {
@@ -271,6 +307,91 @@ export default function QRGenerator() {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handlePayAndGenerate = async () => {
+    const content = getQRContent();
+    if (!content.trim()) {
+      toast({
+        title: "Content Required",
+        description: "Please enter content to generate QR code.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    saveQRConfigToSession();
+
+    if (!isAuthenticated) {
+      toast({
+        title: "Login Required",
+        description: "Please login to use premium features. Your configuration will be saved.",
+      });
+      navigate('/login?redirect=/a/wytqrc&action=premium-qr');
+      return;
+    }
+
+    try {
+      const response = await apiRequest('/api/qrcode/create-payment', 'POST', {
+        amount: PER_USE_COST * 100,
+        qrType,
+        description: `Premium QR Code - ${qrType.toUpperCase()}`,
+      });
+
+      const data = await response.json();
+
+      if (data.orderId) {
+        const options = {
+          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+          amount: PER_USE_COST * 100,
+          currency: 'INR',
+          name: 'WytNet',
+          description: `Premium QR Code - ${qrType.toUpperCase()}`,
+          order_id: data.orderId,
+          handler: async function (rzpResponse: any) {
+            try {
+              const verifyRes = await apiRequest('/api/qrcode/verify-payment', 'POST', {
+                razorpay_order_id: rzpResponse.razorpay_order_id,
+                razorpay_payment_id: rzpResponse.razorpay_payment_id,
+                razorpay_signature: rzpResponse.razorpay_signature,
+              });
+
+              const verifyData = await verifyRes.json();
+
+              if (verifyData.success) {
+                toast({
+                  title: "Payment Successful!",
+                  description: "Generating your premium QR code...",
+                });
+                await generateQRCode(true);
+              }
+            } catch (error) {
+              toast({
+                title: "Verification Failed",
+                description: "Payment verification failed. Please contact support.",
+                variant: "destructive",
+              });
+            }
+          },
+          prefill: {
+            email: (user as any)?.email || '',
+            contact: (user as any)?.phone || '',
+          },
+          theme: {
+            color: '#6366f1',
+          },
+        };
+
+        const razorpay = new (window as any).Razorpay(options);
+        razorpay.open();
+      }
+    } catch (error) {
+      toast({
+        title: "Payment Error",
+        description: "Failed to initiate payment. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -344,7 +465,7 @@ export default function QRGenerator() {
         setCustomLogo(reader.result as string);
         toast({
           title: "Logo Uploaded",
-          description: "Your custom logo will be used in the QR code.",
+          description: "Your custom logo will be used in the QR code (premium feature).",
         });
       };
       reader.readAsDataURL(file);
@@ -373,7 +494,6 @@ export default function QRGenerator() {
     return <Icon className="h-4 w-4" />;
   };
 
-  // QR Type definitions
   const qrTypes = [
     { value: 'url', icon: '🌐', label: 'Website', desc: 'Open links', premium: false },
     { value: 'text', icon: '📝', label: 'Text', desc: 'Plain text', premium: false },
@@ -384,10 +504,13 @@ export default function QRGenerator() {
     { value: 'wifi', icon: '📶', label: 'WiFi', desc: 'Connect network', premium: true },
   ];
 
+  const needsPremiumFeature = requiresPremium();
+  const showPayButton = needsPremiumFeature && !isPremium;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900">
       <main className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl mb-4">
               <QrCode className="h-6 w-6 text-white" />
@@ -407,7 +530,6 @@ export default function QRGenerator() {
             </p>
           </div>
 
-          {/* Plan Status Banner */}
           {!isPremium && (
             <Card className="mb-6 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20">
               <CardContent className="p-4">
@@ -419,14 +541,14 @@ export default function QRGenerator() {
                     <div>
                       <p className="font-semibold text-amber-800 dark:text-amber-200">Free Plan</p>
                       <p className="text-sm text-amber-600 dark:text-amber-300">
-                        URL & Text QR types with Wyt logo • Upgrade for more features
+                        URL & Text QR types with Wyt logo • Pay ₹{PER_USE_COST}/use for premium features
                       </p>
                     </div>
                   </div>
                   <Button 
                     size="sm" 
                     className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-                    onClick={() => window.location.href = '/app/wytqrc'}
+                    onClick={() => navigate('/app/wytqrc')}
                   >
                     <Crown className="h-4 w-4 mr-2" />
                     Upgrade to Per-Use
@@ -436,15 +558,13 @@ export default function QRGenerator() {
             </Card>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Content Input */}
-            <div className="lg:col-span-2 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-5 space-y-6">
               <Card className="border-0 shadow-xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="text-lg">Create QR Code</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6 p-6">
-                  {/* QR Type Selector */}
                   <div>
                     <Label htmlFor="qr-type" className="text-sm font-medium mb-3 block">Type</Label>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -453,31 +573,14 @@ export default function QRGenerator() {
                         return (
                           <div
                             key={type.value}
-                            onClick={() => {
-                              if (isLocked) {
-                                toast({
-                                  title: "Premium Feature",
-                                  description: "Upgrade to Per-Use plan to unlock this QR type.",
-                                  variant: "destructive",
-                                });
-                              } else {
-                                setQrType(type.value);
-                              }
-                            }}
+                            onClick={() => setQrType(type.value)}
                             className={`relative p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 hover:scale-105 ${
-                              qrType === type.value && !isLocked
+                              qrType === type.value
                                 ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-lg'
-                                : isLocked
-                                  ? 'border-gray-200 dark:border-gray-700 bg-gray-100/50 dark:bg-gray-800/50 opacity-60'
-                                  : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
+                                : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
                             }`}
                           >
-                            {isLocked && (
-                              <div className="absolute top-2 right-2">
-                                <Lock className="h-4 w-4 text-gray-400" />
-                              </div>
-                            )}
-                            {type.premium && !isLocked && (
+                            {type.premium && (
                               <div className="absolute top-2 right-2">
                                 <Crown className="h-3 w-3 text-yellow-500" />
                               </div>
@@ -493,7 +596,6 @@ export default function QRGenerator() {
                     </div>
                   </div>
 
-                  {/* Content Input Based on Type */}
                   <Tabs value={qrType}>
                     <TabsContent value="text" className="space-y-4">
                       <div>
@@ -666,7 +768,6 @@ export default function QRGenerator() {
 
                   <Separator />
 
-                  {/* Premium Customization Options */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium flex items-center gap-2">
@@ -675,72 +776,58 @@ export default function QRGenerator() {
                       </h4>
                       {!isPremium && (
                         <Badge variant="outline" className="text-amber-600 border-amber-300">
-                          <Lock className="h-3 w-3 mr-1" />
-                          Premium Only
+                          <IndianRupee className="h-3 w-3 mr-1" />
+                          ₹{PER_USE_COST}/use
                         </Badge>
                       )}
                     </div>
 
-                    {/* Logo Options */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <Label className="flex items-center gap-2 mb-2">
                           <ImageIcon className="h-4 w-4" />
-                          Logo
+                          Custom Logo
+                          {!isPremium && <Crown className="h-3 w-3 text-yellow-500" />}
                         </Label>
-                        <div className="flex items-center gap-3">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={useLogo}
-                              onChange={(e) => setUseLogo(e.target.checked)}
-                              className="rounded"
-                            />
-                            <span className="text-sm">Include logo</span>
-                          </label>
-                        </div>
-                        {isPremium && useLogo && (
-                          <div className="mt-3">
-                            <input
-                              ref={logoInputRef}
-                              type="file"
-                              accept="image/*"
-                              onChange={handleLogoUpload}
-                              className="hidden"
-                            />
+                        <div className="mt-2">
+                          <input
+                            ref={logoInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleLogoUpload}
+                            className="hidden"
+                          />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => logoInputRef.current?.click()}
+                          >
+                            <Upload className="h-4 w-4 mr-2" />
+                            {customLogo ? 'Change Logo' : 'Upload Logo'}
+                          </Button>
+                          {customLogo && (
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
-                              onClick={() => logoInputRef.current?.click()}
+                              className="ml-2"
+                              onClick={() => setCustomLogo(null)}
                             >
-                              <Upload className="h-4 w-4 mr-2" />
-                              {customLogo ? 'Change Logo' : 'Upload Custom Logo'}
+                              Use Wyt Logo
                             </Button>
-                            {customLogo && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="ml-2"
-                                onClick={() => setCustomLogo(null)}
-                              >
-                                Use Wyt Logo
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                        {!isPremium && useLogo && (
+                          )}
+                        </div>
+                        {!isPremium && !customLogo && (
                           <p className="text-xs text-muted-foreground mt-2">
-                            Free plan uses Wyt logo. Upgrade to use your own logo.
+                            Free plan uses Wyt logo watermark
                           </p>
                         )}
                       </div>
 
-                      {/* Color Options - Premium */}
-                      <div className={!isPremium ? 'opacity-50 pointer-events-none' : ''}>
+                      <div>
                         <Label className="flex items-center gap-2 mb-2">
                           <Palette className="h-4 w-4" />
                           Colors
-                          {!isPremium && <Lock className="h-3 w-3 text-gray-400" />}
+                          {!isPremium && <Crown className="h-3 w-3 text-yellow-500" />}
                         </Label>
                         <div className="flex gap-4">
                           <div>
@@ -750,7 +837,6 @@ export default function QRGenerator() {
                               value={darkColor}
                               onChange={(e) => setDarkColor(e.target.value)}
                               className="w-12 h-8 rounded cursor-pointer block mt-1"
-                              disabled={!isPremium}
                             />
                           </div>
                           <div>
@@ -760,18 +846,16 @@ export default function QRGenerator() {
                               value={lightColor}
                               onChange={(e) => setLightColor(e.target.value)}
                               className="w-12 h-8 rounded cursor-pointer block mt-1"
-                              disabled={!isPremium}
                             />
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Export Size - Premium */}
-                    <div className={!isPremium ? 'opacity-50 pointer-events-none' : ''}>
+                    <div>
                       <Label className="flex items-center gap-2 mb-2">
                         Export Size
-                        {!isPremium && <Lock className="h-3 w-3 text-gray-400" />}
+                        {!isPremium && exportSize > 512 && <Crown className="h-3 w-3 text-yellow-500" />}
                       </Label>
                       <div className="flex gap-2">
                         {[256, 512, 768, 1024].map((s) => (
@@ -780,7 +864,6 @@ export default function QRGenerator() {
                             variant={exportSize === s ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => setExportSize(s)}
-                            disabled={!isPremium && s > 512}
                           >
                             {s}px
                           </Button>
@@ -789,30 +872,50 @@ export default function QRGenerator() {
                     </div>
                   </div>
 
-                  <Button 
-                    onClick={generateQRCode} 
-                    className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
-                    data-testid="button-generate-qr"
-                    disabled={isGenerating}
-                  >
-                    {isGenerating ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Generating...
-                      </div>
-                    ) : (
-                      <>
-                        <Zap className="h-4 w-4 mr-2" />
-                        Generate QR Code
-                      </>
-                    )}
-                  </Button>
+                  {showPayButton ? (
+                    <Button 
+                      onClick={handlePayAndGenerate}
+                      className="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
+                      data-testid="button-pay-generate-qr"
+                      disabled={isGenerating}
+                    >
+                      {isGenerating ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Processing...
+                        </div>
+                      ) : (
+                        <>
+                          <CreditCard className="h-4 w-4 mr-2" />
+                          Pay ₹{PER_USE_COST} & Generate QR Code
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button 
+                      onClick={() => generateQRCode(false)} 
+                      className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
+                      data-testid="button-generate-qr"
+                      disabled={isGenerating}
+                    >
+                      {isGenerating ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Generating...
+                        </div>
+                      ) : (
+                        <>
+                          <Zap className="h-4 w-4 mr-2" />
+                          Generate QR Code
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             </div>
 
-            {/* QR Code Preview & Actions */}
-            <div className="space-y-6">
+            <div className="lg:col-span-4 space-y-6">
               <Card className="border-0 shadow-xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm">
                 <CardHeader className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-b border-gray-200/50 dark:border-gray-700/50">
                   <CardTitle className="flex items-center gap-3">
@@ -888,7 +991,6 @@ export default function QRGenerator() {
                 </CardContent>
               </Card>
 
-              {/* History */}
               {history.length > 0 && (
                 <Card className="border-0 shadow-xl bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm">
                   <CardHeader className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-b border-gray-200/50 dark:border-gray-700/50">
@@ -938,6 +1040,98 @@ export default function QRGenerator() {
                   </CardContent>
                 </Card>
               )}
+            </div>
+
+            <div className="lg:col-span-3 space-y-4">
+              <Card className="bg-gradient-to-br from-purple-500 to-pink-600 border-0 shadow-lg hover:scale-105 transition-all rounded-xl overflow-hidden">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-2 mb-3">
+                    <div className="h-9 w-9 bg-white/20 backdrop-blur-xl rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Shield className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-bold text-white mb-0.5">Join and Get WytPass</h3>
+                      <p className="text-xs text-white/90">Sign up today and get your WytPass identity</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => navigate('/login')}
+                    className="w-full bg-white/90 hover:bg-white text-purple-600 font-semibold shadow-lg rounded-lg h-8 text-xs"
+                    data-testid="button-join-wytpass"
+                  >
+                    Sign Up Free
+                    <ArrowRight className="h-3 w-3 ml-1" />
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {isAuthenticated && (
+                <Card className="bg-gradient-to-br from-yellow-400 to-orange-500 border-0 shadow-lg hover:scale-105 transition-all rounded-xl overflow-hidden">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-2 mb-3">
+                      <div className="h-9 w-9 bg-white/20 backdrop-blur-xl rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Award className="h-4 w-4 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-sm font-bold text-white mb-0.5">Earn WytPoints to Become a WytStar</h3>
+                        <p className="text-xs text-white/90">Contribute to the marketplace and climb the leaderboard!</p>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => navigate('/wytpoints')}
+                      className="w-full bg-white/90 hover:bg-white text-orange-600 font-semibold shadow-lg rounded-lg h-8 text-xs"
+                      data-testid="button-earn-wytpoints"
+                    >
+                      View Leaderboard
+                      <Star className="h-3 w-3 ml-1 fill-current" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 border-0 shadow-lg hover:scale-105 transition-all rounded-xl overflow-hidden cursor-pointer" onClick={() => navigate('/wytwall')}>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-2 mb-3">
+                    <div className="h-9 w-9 bg-white/20 backdrop-blur-xl rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Globe className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-bold text-white mb-0.5">Explore WytWall</h3>
+                      <p className="text-xs text-white/90">Discover opportunities and connect with others</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={(e) => { e.stopPropagation(); navigate('/wytwall'); }}
+                    className="w-full bg-white/90 hover:bg-white text-blue-600 font-semibold shadow-lg rounded-lg h-8 text-xs"
+                    data-testid="button-wytwall"
+                  >
+                    Visit WytWall
+                    <ArrowRight className="h-3 w-3 ml-1" />
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-purple-500 to-pink-600 border-0 shadow-lg hover:scale-105 transition-all rounded-xl overflow-hidden cursor-pointer" onClick={() => navigate('/a/wytassessor')}>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-2 mb-3">
+                    <div className="h-9 w-9 bg-white/20 backdrop-blur-xl rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Brain className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-bold text-white mb-0.5">Assess your DISC</h3>
+                      <p className="text-xs text-white/90">Discover your personality type</p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={(e) => { e.stopPropagation(); navigate('/a/wytassessor'); }}
+                    className="w-full bg-white/90 hover:bg-white text-purple-600 font-semibold shadow-lg rounded-lg h-8 text-xs"
+                    data-testid="button-disc-assessment"
+                  >
+                    DISC Assessment
+                    <ArrowRight className="h-3 w-3 ml-1" />
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
