@@ -127,7 +127,7 @@ const wizardSchema = z.object({
   category: z.string().optional(),
 
   // Screen 2: Visibility & Access Control
-  visibilityMode: z.enum(["engine_only", "wytnet_hub", "all_hubs", "selected_hubs"]).default("engine_only"),
+  visibilityMode: z.enum(["engine_only", "wytnet_hub", "all_hubs", "selected_hubs", "public"]).default("engine_only"),
   selectedHubs: z.array(z.string()).default([]),
   accessPanels: z.array(z.string()).default([]), // ['user_panel', 'org_panel']
 
@@ -146,6 +146,7 @@ const wizardSchema = z.object({
   appType: z.enum(["core", "premium", "mandatory", "standard"]).default("premium"),
   isCoreApp: z.boolean().default(false),
   isAutoAssigned: z.boolean().default(false),
+  isPublicApp: z.boolean().default(false), // Make Public (No Registration Required) for free apps
   pricingPlans: z.array(z.object({
     id: z.string().optional(),
     planName: z.string(),
@@ -224,6 +225,7 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
       appType: "premium",
       isCoreApp: false,
       isAutoAssigned: false,
+      isPublicApp: false,
       pricingPlans: [],
       version: "1.0.0",
       changelog: "",
@@ -256,6 +258,7 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
         appType: "premium",
         isCoreApp: false,
         isAutoAssigned: false,
+        isPublicApp: false,
         pricingPlans: [],
         version: "1.0.0",
         changelog: "",
@@ -284,6 +287,7 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
         appType: (existingApp as any).appType || "premium",
         isCoreApp: (existingApp as any).isCoreApp || false,
         isAutoAssigned: (existingApp as any).isAutoAssigned || false,
+        isPublicApp: (existingApp as any).isPublic || false,
         pricingPlans: (existingApp as any).pricingPlans || [],
         pricingDetails: existingApp.pricingDetails,
         version: existingApp.version || "1.0.0",
@@ -1618,6 +1622,7 @@ const BILLING_CYCLES = [
 function Screen5Pricing({ form }: { form: any }) {
   const pricingPlans = form.watch("pricingPlans") || [];
   const isCoreApp = form.watch("isCoreApp");
+  const isPublicApp = form.watch("isPublicApp");
   const [activeTier, setActiveTier] = useState<string>('free');
   const [activeBillingCycle, setActiveBillingCycle] = useState<string>('monthly');
 
@@ -1771,6 +1776,29 @@ function Screen5Pricing({ form }: { form: any }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Make Public Checkbox - Only shown when Free tier is enabled */}
+      {enabledTiers.has('free') && (
+        <Card className={`${isPublicApp ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" : ""}`}>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="public-app-checkbox"
+                checked={isPublicApp}
+                onCheckedChange={(checked) => form.setValue("isPublicApp", checked as boolean)}
+                data-testid="checkbox-public-app"
+              />
+              <div className="flex items-center gap-2">
+                <Globe className="h-5 w-5 text-blue-600" />
+                <div>
+                  <Label htmlFor="public-app-checkbox" className="font-semibold cursor-pointer">Make Public (No Registration Required)</Label>
+                  <p className="text-xs text-muted-foreground">App accessible at /a/{form.watch("slug") || "slug"} without login for free users</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tier-Based Pricing Editor - Always visible */}
       <div className="space-y-4">

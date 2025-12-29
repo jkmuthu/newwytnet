@@ -2579,6 +2579,7 @@ export async function registerRoutes(app: Express): Promise<void> {
           appType: updateData.appType || currentApp.appType,
           isCoreApp: updateData.isCoreApp ?? currentApp.isCoreApp,
           isAutoAssigned: updateData.isAutoAssigned ?? currentApp.isAutoAssigned,
+          isPublic: updateData.isPublicApp ?? currentApp.isPublic,
           
           // Wizard State
           wizardCompleted: updateData.wizardCompleted ?? true,
