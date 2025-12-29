@@ -6,11 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { 
   QrCode, ArrowRight, CheckCircle, Lock, LogIn, Star, Zap, 
-  Shield, Crown, Globe, Download
+  Shield, Crown, Globe, Download, Brain
 } from "lucide-react";
+import { useAuthContext } from "@/contexts/AuthContext";
 
 import QRGenerator from "./qr-generator";
+import Assessment from "./assessment";
 import PublicLayout from "@/portals/public/PublicLayout";
+import PublicAppSidebar from "@/components/public/PublicAppSidebar";
 
 interface PublicAppData {
   success: boolean;
@@ -44,6 +47,7 @@ export default function PublicAppPage() {
   const pathParts = location.split('/').filter(Boolean);
   // Path: /a/wytqrc or /a/wytqrc/generate => ['a', 'wytqrc'] or ['a', 'wytqrc', 'generate']
   const slug = pathParts[1]; // Always the second part after 'a'
+  const { isAuthenticated } = useAuthContext();
 
   const { data, isLoading, error } = useQuery<PublicAppData>({
     queryKey: ['/api/public/apps', slug],
@@ -89,7 +93,41 @@ export default function PublicAppPage() {
         </PublicLayout>
       );
     }
-    // Add more apps here as needed
+    
+    // WytAssessor - DISC Assessment
+    if (slug === 'wytassessor') {
+      return (
+        <PublicLayout>
+          <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900">
+            <main className="container mx-auto px-4 py-8">
+              <div className="max-w-7xl mx-auto">
+                <div className="text-center mb-8">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl mb-4">
+                    <Brain className="h-6 w-6 text-white" />
+                  </div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    WytAssessor - DISC Assessment
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    Discover your personality type with our DISC assessment
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  <div className="lg:col-span-9">
+                    <Assessment />
+                  </div>
+                  <div className="lg:col-span-3">
+                    <PublicAppSidebar isAuthenticated={isAuthenticated} currentApp="wytassessor" />
+                  </div>
+                </div>
+              </div>
+            </main>
+          </div>
+        </PublicLayout>
+      );
+    }
+    
     // Default fallback for functional apps without specific component
     return (
       <PublicLayout>
