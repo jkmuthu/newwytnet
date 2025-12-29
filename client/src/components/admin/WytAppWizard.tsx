@@ -316,6 +316,7 @@ export function WytAppWizard({ open, onClose, appId, mode = "create" }: WytAppWi
       
       const payload = {
         ...data,
+        isPublic: data.isPublicApp, // Map form field to API field
         pricingPlans: data.pricingPlans || [],
         wizardCompleted: true,
       };
@@ -513,6 +514,7 @@ export function WytAppEditor({ appId, mode = "create", onClose, onSave }: WytApp
         appType: (existingApp as any).appType || "premium",
         isCoreApp: (existingApp as any).isCoreApp || false,
         isAutoAssigned: (existingApp as any).isAutoAssigned || false,
+        isPublicApp: (existingApp as any).isPublic || false,
         pricingPlans: (existingApp as any).pricingPlans || [],
         pricingDetails: existingApp.pricingDetails,
         version: existingApp.version || "1.0.0",
@@ -539,6 +541,7 @@ export function WytAppEditor({ appId, mode = "create", onClose, onSave }: WytApp
       
       const payload = {
         ...data,
+        isPublic: data.isPublicApp, // Map form field to API field
         pricingPlans: data.pricingPlans || [],
         wizardCompleted: true,
       };
