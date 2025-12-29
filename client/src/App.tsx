@@ -27,16 +27,37 @@ import APIReference from "@/pages/api-reference";
 import Documentation from "@/pages/documentation";
 import DevDocumentation from "@/pages/dev-documentation";
 
+// Public App Page (for /a/:slug public access)
+import PublicAppPage from "@/pages/public-app";
+
 /**
  * PortalRouter - Top-level router that determines which portal to use
- * Routes are separated into distinct portals:
- * - /engine/* = Engine Admin (Super Admin Panel for platform infrastructure)
- * - /admin/* = Hub Admin (WytNet.com hub content management)
- * - /u/:username/* = User Panel (WytPanel - Personal dashboard)
- * - /o/:orgname/* = Organization Panel (Org workspaces)
- * - /a/:appname/* = App Panel (App-specific workspaces)
- * - /h/:hubname/* = Hub Panel (Hub-specific workspaces)
- * - / = WytNet Hub (First Hub built on Engine) - Public marketing pages
+ * 
+ * URL ARCHITECTURE:
+ * ================
+ * PUBLIC ROUTES (No auth required):
+ * - /*              = Public pages (homepage, marketing, login)
+ * - /a/:slug        = Public app access (if free + public)
+ * - /h/:slug        = Public hub pages
+ * 
+ * PANEL ROUTES (/p/* - User auth required):
+ * - /p/             = User dashboard
+ * - /p/my/*         = Personal workspace (My Panel)
+ * - /p/org/:id/*    = Organization workspace
+ * - /p/app/:slug/*  = App workspace (authenticated app access)
+ * 
+ * ENGINE ROUTES (/e/* or /engine/* - Super Admin auth required):
+ * - /e/*            = Engine Admin shorthand
+ * - /engine/*       = Engine Admin full path
+ * 
+ * HUB ADMIN ROUTES (/admin/* - Hub Admin auth required):
+ * - /admin/*        = Hub Admin panel
+ * 
+ * LEGACY ROUTES (Redirects for backward compatibility):
+ * - /mypanel/*      → /p/my/*
+ * - /orgpanel/*     → /p/org/*
+ * - /apppanel/*     → /p/app/*
+ * - /u/:username/*  → Panel routes
  */
 function PortalRouter() {
   const [showWizard, setShowWizard] = useState(false);
@@ -53,19 +74,34 @@ function PortalRouter() {
   return (
     <>
       <Switch>
-        {/* Engine Portal - Routes: /engine, /engine/* (Super Admin Panel) */}
+        {/* ============================================ */}
+        {/* ENGINE ADMIN ROUTES - Super Admin Only      */}
+        {/* ============================================ */}
+        {/* Short alias: /e/* */}
+        <Route path="/e" component={EngineRouter} />
+        <Route path="/e/:rest*" component={EngineRouter} />
+        {/* Full path: /engine/* */}
         <Route path="/engine" component={EngineRouter} />
         <Route path="/engine/:rest*" component={EngineRouter} />
         
-        {/* Hub Admin Portal - Routes: /admin, /admin/* (Default Hub Admin - WytNet.com) */}
+        {/* ============================================ */}
+        {/* HUB ADMIN ROUTES - Hub Admin Only           */}
+        {/* ============================================ */}
         <Route path="/admin" component={HubAdminRouter} />
         <Route path="/admin/:rest*" component={HubAdminRouter} />
 
-        {/* NEW: User Panel - /u/:username/* */}
+        {/* ============================================ */}
+        {/* PANEL ROUTES (/p/*) - Authenticated Users   */}
+        {/* ============================================ */}
+        {/* Main panel dashboard */}
+        <Route path="/p" component={PanelRouter} />
+        <Route path="/p/:rest*" component={PanelRouter} />
+
+        {/* Legacy panel routes - still supported */}
         <Route path="/u/:username" component={PanelRouter} />
         <Route path="/u/:username/:rest*" component={PanelRouter} />
 
-        {/* NEW: Organization Panel - /o/:orgname/* (smart routing for public/private orgs) */}
+        {/* Organization Panel - /o/:orgname/* (smart routing for public/private orgs) */}
         <Route path="/o/:orgname">
           {(params: { orgname: string }) => <OrgRouteHandler orgname={params.orgname} />}
         </Route>
@@ -73,41 +109,54 @@ function PortalRouter() {
           {(params: { orgname: string; 'rest*': string }) => <OrgRouteHandler orgname={params.orgname} rest={params['rest*']} />}
         </Route>
 
-        {/* NEW: App Panel - /a/:appname/* */}
-        <Route path="/a/:appname" component={PanelRouter} />
-        <Route path="/a/:appname/:rest*" component={PanelRouter} />
+        {/* ============================================ */}
+        {/* PUBLIC APP ROUTES (/a/:slug) - No Auth      */}
+        {/* ============================================ */}
+        {/* Public app access - renders with minimal layout, no sidebar */}
+        <Route path="/a/:slug" component={PublicAppPage} />
+        <Route path="/a/:slug/:rest*" component={PublicAppPage} />
 
-        {/* NEW: Hub Panel - /h/:hubname/* */}
+        {/* Public Hub Panel - /h/:hubname/* */}
         <Route path="/h/:hubname" component={PanelRouter} />
         <Route path="/h/:hubname/:rest*" component={PanelRouter} />
 
-        {/* Legacy panel routes - redirect to new structure */}
+        {/* ============================================ */}
+        {/* LEGACY ROUTES - Backward Compatibility      */}
+        {/* ============================================ */}
+        {/* /mypanel/* → /p/my/* */}
         <Route path="/mypanel">
-          {() => <Redirect to="/u/me" />}
+          {() => <Redirect to="/p/my" />}
         </Route>
         <Route path="/mypanel/:rest*">
-          {(params: any) => <Redirect to={`/u/me/${params['rest*'] || ''}`} />}
+          {(params: any) => <Redirect to={`/p/my/${params['rest*'] || ''}`} />}
         </Route>
+        {/* /orgpanel/* → /p/org/* */}
         <Route path="/orgpanel">
-          {() => <Redirect to="/o/default" />}
+          {() => <Redirect to="/p/org" />}
         </Route>
         <Route path="/orgpanel/:rest*">
-          {(params: any) => <Redirect to={`/o/default/${params['rest*'] || ''}`} />}
+          {(params: any) => <Redirect to={`/p/org/${params['rest*'] || ''}`} />}
         </Route>
+        {/* /apppanel/* → /p/app/* */}
         <Route path="/apppanel/:rest*">
-          {(params: any) => <Redirect to={`/a/${params['rest*'] || 'dashboard'}`} />}
+          {(params: any) => <Redirect to={`/p/app/${params['rest*'] || 'dashboard'}`} />}
         </Route>
-        <Route path="/panel" component={PanelRouter} />
-        <Route path="/panel/:rest*" component={PanelRouter} />
+        {/* /panel/* → /p/* */}
+        <Route path="/panel">
+          {() => <Redirect to="/p" />}
+        </Route>
+        <Route path="/panel/:rest*">
+          {(params: any) => <Redirect to={`/p/${params['rest*'] || ''}`} />}
+        </Route>
 
-        {/* Dashboard redirect - Move legacy /dashboard to user panel */}
+        {/* Dashboard redirect - Move legacy /dashboard to panel */}
         <Route path="/dashboard">
-          {() => <Redirect to="/u/me/dashboard" />}
+          {() => <Redirect to="/p/my/dashboard" />}
         </Route>
 
         {/* Analytics redirect - Move legacy /analytics to engine */}
         <Route path="/analytics">
-          {() => <Redirect to="/engine/analytics" />}
+          {() => <Redirect to="/e/analytics" />}
         </Route>
 
         {/* API Reference */}

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useRoute, Link } from "wouter";
+import { useRoute, Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,8 +38,11 @@ interface PublicAppData {
 }
 
 export default function PublicAppPage() {
-  const [, params] = useRoute("/a/:slug");
-  const slug = params?.slug;
+  // Get slug from URL path - works for both /a/:slug and /a/:slug/subpath
+  const [location] = useLocation();
+  const pathParts = location.split('/').filter(Boolean);
+  // Path: /a/wytqrc or /a/wytqrc/generate => ['a', 'wytqrc'] or ['a', 'wytqrc', 'generate']
+  const slug = pathParts[1]; // Always the second part after 'a'
 
   const { data, isLoading, error } = useQuery<PublicAppData>({
     queryKey: ['/api/public/apps', slug],
