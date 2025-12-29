@@ -214,12 +214,12 @@ export default function Header({ onMenuClick }: HeaderProps) {
                     <span>Home</span>
                   </Link>
                   
-                  <Link href="/qr-generator" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
+                  <Link href="/a/wytqrc" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
                     <QrCode className="h-5 w-5" />
                     <span>QR Generator</span>
                   </Link>
                   
-                  <Link href="/assessment" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
+                  <Link href="/a/wytassessor" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800" onClick={() => setMobileMenuOpen(false)}>
                     <Activity className="h-5 w-5" />
                     <span>DISC Assessment</span>
                   </Link>

@@ -25,9 +25,9 @@ export const bottomNavItems = [
   { 
     icon: QrCode, 
     label: 'Tools', 
-    href: '/qr-generator', 
+    href: '/wytapps', 
     badge: null,
-    activeRoutes: ['/qr-generator', '/assessment', '/wytai-trademark']
+    activeRoutes: ['/wytapps', '/a/wytqrc', '/a/wytassessor', '/wytai-trademark']
   }
 ];
 
@@ -35,8 +35,8 @@ export const sidebarNavItems = [
   { icon: Briefcase, label: 'WytApps', href: '/wytapps' },
 ];
 
-// WytApps submenu items  
+// WytApps submenu items - using new /a/:slug public app routes
 export const wytAppsItems = [
-  { icon: QrCode, label: 'QR Generator', href: '/qr-generator' },
-  { icon: Activity, label: 'DISC Assessment', href: '/assessment' },
+  { icon: QrCode, label: 'QR Generator', href: '/a/wytqrc' },
+  { icon: Activity, label: 'DISC Assessment', href: '/a/wytassessor' },
 ];

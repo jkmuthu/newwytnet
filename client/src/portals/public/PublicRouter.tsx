@@ -148,9 +148,9 @@ export default function PublicRouter() {
         )}
       </Route>
 
-      {/* Tool routes */}
-      <Route path="/assessment" component={Assessment} />
-      <Route path="/qr-generator" component={QRGenerator} />
+      {/* Tool routes - redirect to new /a/:slug public app routes */}
+      <Route path="/assessment" component={() => { window.location.href = "/a/wytassessor"; return null; }} />
+      <Route path="/qr-generator" component={() => { window.location.href = "/a/wytqrc"; return null; }} />
       <Route path="/wytai-trademark" component={WytAiTrademark} />
       <Route path="/tm-numbering" component={TMNumbering} />
       <Route path="/realbro" component={RealBro} />

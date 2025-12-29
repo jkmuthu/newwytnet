@@ -18,8 +18,8 @@ export default function Footer() {
 
   const wytAppsLinks = [
     { label: "WytLife", href: "/wytlife" },
-    { label: "QR Generator", href: "/qr-generator" },
-    { label: "DISC Assessment", href: "/assessment" },
+    { label: "QR Generator", href: "/a/wytqrc" },
+    { label: "DISC Assessment", href: "/a/wytassessor" },
   ];
 
   const legalLinks = [

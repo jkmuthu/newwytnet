@@ -82,7 +82,7 @@ function MyPanelDashboard() {
   });
   
   const quickActions = [
-    { icon: QrCode, label: 'QR Generator', href: '/qr-generator', color: 'bg-blue-500' },
+    { icon: QrCode, label: 'QR Generator', href: '/a/wytqrc', color: 'bg-blue-500' },
     { icon: Bot, label: 'AI Directory', href: '/ai-directory', color: 'bg-green-500' },
     { icon: Briefcase, label: 'WytApps', href: '/wytapps', color: 'bg-purple-500' },
     { icon: CreditCard, label: 'Payments', href: '/payments', color: 'bg-orange-500' },
