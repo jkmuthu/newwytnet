@@ -15159,14 +15159,38 @@ When suggesting improvements, format your response with suggestions in a structu
         .orderBy(desc(productionDeployments.createdAt))
         .limit(1);
 
-      const serverConfigured = !!process.env.PRODUCTION_SERVER_IP;
+      // Get saved settings from database
+      const savedSettings = await db
+        .select()
+        .from(platformSettings)
+        .where(
+          sql`${platformSettings.key} IN ('production_server_ip', 'production_url', 'production_ssh_user', 'production_deploy_path')`
+        );
+
+      const settingsMap: Record<string, string> = {};
+      savedSettings.forEach(s => {
+        settingsMap[s.key] = s.value || '';
+      });
+
+      const serverIp = settingsMap['production_server_ip'] || process.env.PRODUCTION_SERVER_IP || '';
+      const productionUrl = settingsMap['production_url'] || process.env.PRODUCTION_URL || '';
+      const sshUser = settingsMap['production_ssh_user'] || 'root';
+      const deployPath = settingsMap['production_deploy_path'] || '/var/www/wytnet';
+
+      const serverConfigured = !!serverIp;
       
       res.json({ 
         success: true, 
         latestDeployment,
         serverConfigured,
-        serverIp: serverConfigured ? process.env.PRODUCTION_SERVER_IP : null,
-        productionUrl: process.env.PRODUCTION_URL || 'Not configured'
+        serverIp: serverConfigured ? serverIp : null,
+        productionUrl: productionUrl || 'Not configured',
+        settings: {
+          serverIp,
+          productionUrl,
+          sshUser,
+          deployPath,
+        }
       });
     } catch (error: any) {
       console.error('Error fetching deployment status:', error);
@@ -15184,11 +15208,20 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.status(401).json({ success: false, message: 'User not found' });
       }
 
+      // Get saved settings from database
+      const savedSettings = await db
+        .select()
+        .from(platformSettings)
+        .where(eq(platformSettings.key, 'production_server_ip'))
+        .limit(1);
+
+      const serverIp = savedSettings[0]?.value || process.env.PRODUCTION_SERVER_IP;
+
       // Check if server is configured
-      if (!process.env.PRODUCTION_SERVER_IP) {
+      if (!serverIp) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Production server not configured. Please set PRODUCTION_SERVER_IP in environment variables.',
+          message: 'Production server not configured. Please configure server settings first.',
           needsSetup: true
         });
       }
@@ -15220,7 +15253,7 @@ When suggesting improvements, format your response with suggestions in a structu
           description: description || `Deployment v${versionNumber}`,
           status: 'building',
           startedAt: new Date(),
-          serverIp: process.env.PRODUCTION_SERVER_IP,
+          serverIp: serverIp,
           deployedBy: userId,
         })
         .returning();
@@ -15249,6 +15282,57 @@ When suggesting improvements, format your response with suggestions in a structu
       });
     } catch (error: any) {
       console.error('Error creating deployment:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // Save production settings
+  app.post('/api/admin/deployments/settings', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { serverIp, productionUrl, sshUser, deployPath } = req.body;
+      const userId = req.session?.admin?.id || req.user?.id;
+
+      const settingsToSave = [
+        { key: 'production_server_ip', value: serverIp || '', category: 'deployment', label: 'Production Server IP' },
+        { key: 'production_url', value: productionUrl || '', category: 'deployment', label: 'Production URL' },
+        { key: 'production_ssh_user', value: sshUser || 'root', category: 'deployment', label: 'SSH Username' },
+        { key: 'production_deploy_path', value: deployPath || '/var/www/wytnet', category: 'deployment', label: 'Deployment Path' },
+      ];
+
+      for (const setting of settingsToSave) {
+        const existing = await db
+          .select()
+          .from(platformSettings)
+          .where(eq(platformSettings.key, setting.key))
+          .limit(1);
+
+        if (existing.length > 0) {
+          await db
+            .update(platformSettings)
+            .set({ 
+              value: setting.value,
+              updatedBy: userId,
+              updatedAt: new Date()
+            })
+            .where(eq(platformSettings.key, setting.key));
+        } else {
+          await db
+            .insert(platformSettings)
+            .values({
+              key: setting.key,
+              value: setting.value,
+              type: 'string',
+              category: setting.category,
+              label: setting.label,
+              isPublic: false,
+              isEditable: true,
+            });
+        }
+      }
+
+      res.json({ success: true, message: 'Production settings saved successfully' });
+    } catch (error: any) {
+      console.error('Error saving production settings:', error);
       res.status(500).json({ success: false, message: error.message });
     }
   });
