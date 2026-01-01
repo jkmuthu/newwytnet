@@ -2,6 +2,7 @@ import { Switch, Route } from "wouter";
 import HubAdminLayout from "./HubAdminLayout";
 import HubAdminGate from "./HubAdminGate";
 import MediaLibrary from "@/pages/hub-admin/MediaLibrary";
+import DomainSettings from "@/pages/hub-admin/DomainSettings";
 
 // Placeholder pages - will be created/moved later
 function HubAdminDashboard() {
@@ -96,6 +97,7 @@ export default function HubAdminRouter() {
               </div>
             )}
           </Route>
+          <Route path="/:hubSlug/admin/domains" component={DomainSettings} />
 
           {/* Default Routes: /admin/* (WytNet.com - default hub) */}
           <Route path="/admin" component={HubAdminDashboard} />
@@ -148,6 +150,7 @@ export default function HubAdminRouter() {
               </div>
             )}
           </Route>
+          <Route path="/admin/domains" component={DomainSettings} />
           
           {/* 404 */}
           <Route>

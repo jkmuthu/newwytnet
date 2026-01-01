@@ -19,7 +19,8 @@ import {
   Globe,
   Users,
   Tag,
-  Grid3x3
+  Grid3x3,
+  Link2
 } from "lucide-react";
 import { useHubAdminAuth } from "@/contexts/HubAdminAuthContext";
 
@@ -124,6 +125,12 @@ export default function HubAdminSidebar({ collapsed, onToggleCollapse }: HubAdmi
           icon: Settings, 
           href: "/admin/settings", 
           active: location === "/admin/settings"
+        },
+        { 
+          label: "Custom Domains", 
+          icon: Link2, 
+          href: "/admin/domains", 
+          active: location === "/admin/domains"
         },
         { 
           label: "SEO Settings", 
