@@ -5121,3 +5121,130 @@ export const insertApiLibrarySchema = createInsertSchema(apiLibrary).omit({
 export const selectApiLibrarySchema = createSelectSchema(apiLibrary);
 export type InsertApiLibrary = z.infer<typeof insertApiLibrarySchema>;
 export type SelectApiLibrary = typeof apiLibrary.$inferSelect;
+
+// ============================================
+// HUB DOMAIN MANAGEMENT SYSTEM
+// ============================================
+
+// Domain verification status enum
+export const domainStatusEnum = pgEnum("domain_status", ["pending", "verifying", "active", "failed", "expired"]);
+
+// Hub Domains - Multiple custom domains per hub
+export const hubDomains = pgTable("hub_domains", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  hubId: uuid("hub_id").notNull().references(() => platformHubs.id, { onDelete: 'cascade' }),
+  
+  // Domain Configuration
+  domain: varchar("domain", { length: 255 }).notNull().unique(), // e.g., 'clientbusiness.com', 'shop.example.org'
+  domainType: varchar("domain_type", { length: 20 }).notNull().default('custom'), // 'subdomain', 'custom'
+  isPrimary: boolean("is_primary").default(false), // Primary domain for this hub
+  
+  // Verification
+  status: domainStatusEnum("status").default("pending").notNull(),
+  verificationToken: varchar("verification_token", { length: 100 }), // TXT record value for DNS verification
+  verifiedAt: timestamp("verified_at"),
+  lastCheckedAt: timestamp("last_checked_at"),
+  
+  // SSL Status
+  sslStatus: varchar("ssl_status", { length: 20 }).default('pending'), // 'pending', 'active', 'failed'
+  sslExpiresAt: timestamp("ssl_expires_at"),
+  
+  // DNS Configuration Instructions
+  dnsRecords: jsonb("dns_records").default([]), // [{type: 'A', name: '@', value: 'x.x.x.x'}, {type: 'CNAME', name: 'www', value: '...'}]
+  
+  // Metadata
+  addedBy: varchar("added_by").references(() => users.id),
+  notes: text("notes"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_hub_domains_hub").on(table.hubId),
+  index("idx_hub_domains_domain").on(table.domain),
+  index("idx_hub_domains_status").on(table.status),
+]);
+
+// Hub Domains Relations
+export const hubDomainsRelations = relations(hubDomains, ({ one }) => ({
+  hub: one(platformHubs, {
+    fields: [hubDomains.hubId],
+    references: [platformHubs.id],
+  }),
+  addedByUser: one(users, {
+    fields: [hubDomains.addedBy],
+    references: [users.id],
+  }),
+}));
+
+// Zod schemas for Hub Domains
+export const insertHubDomainSchema = createInsertSchema(hubDomains).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export const selectHubDomainSchema = createSelectSchema(hubDomains);
+export type InsertHubDomain = z.infer<typeof insertHubDomainSchema>;
+export type SelectHubDomain = typeof hubDomains.$inferSelect;
+
+// ============================================
+// PRODUCTION DEPLOYMENT SYSTEM
+// ============================================
+
+// Deployment status enum
+export const deploymentStatusEnum = pgEnum("deployment_status", ["pending", "building", "deploying", "success", "failed", "rolled_back"]);
+
+// Production Deployments - Track deployments to production server
+export const productionDeployments = pgTable("production_deployments", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // DP00001
+  
+  // Deployment Info
+  version: varchar("version", { length: 50 }).notNull(), // e.g., '1.0.45'
+  commitHash: varchar("commit_hash", { length: 100 }), // Git commit if available
+  description: text("description"),
+  
+  // Status
+  status: deploymentStatusEnum("status").default("pending").notNull(),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  
+  // Logs and Output
+  buildLogs: text("build_logs"),
+  deployLogs: text("deploy_logs"),
+  errorMessage: text("error_message"),
+  
+  // Server Info
+  serverIp: varchar("server_ip", { length: 50 }),
+  serverRegion: varchar("server_region", { length: 50 }),
+  
+  // Metadata
+  deployedBy: varchar("deployed_by").notNull().references(() => users.id),
+  rollbackOf: uuid("rollback_of"), // If this is a rollback, reference the original deployment
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_deployments_display_id").on(table.displayId),
+  index("idx_deployments_status").on(table.status),
+  index("idx_deployments_deployed_by").on(table.deployedBy),
+  index("idx_deployments_created_at").on(table.createdAt),
+]);
+
+// Deployment Relations
+export const productionDeploymentsRelations = relations(productionDeployments, ({ one }) => ({
+  deployedByUser: one(users, {
+    fields: [productionDeployments.deployedBy],
+    references: [users.id],
+  }),
+}));
+
+// Zod schemas for Deployments
+export const insertDeploymentSchema = createInsertSchema(productionDeployments).omit({
+  id: true,
+  displayId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export const selectDeploymentSchema = createSelectSchema(productionDeployments);
+export type InsertDeployment = z.infer<typeof insertDeploymentSchema>;
+export type SelectDeployment = typeof productionDeployments.$inferSelect;
