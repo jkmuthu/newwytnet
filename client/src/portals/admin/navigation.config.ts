@@ -50,6 +50,7 @@ import {
   Zap,
   Bell,
   User,
+  Rocket,
   type LucideIcon
 } from "lucide-react";
 
@@ -362,6 +363,15 @@ export const navigationSections: NavigationSection[] = [
         description: "Unified logs: Audit, System, and Advanced logs",
         keywords: ["logs", "audit", "system", "advanced", "activity"],
         superAdminOnly: true
+      },
+      {
+        label: "Publish to Production",
+        icon: Rocket,
+        href: "/engine/deployment",
+        description: "Deploy platform to production server",
+        keywords: ["deploy", "publish", "production", "launch", "live"],
+        superAdminOnly: true,
+        badge: "New"
       }
     ]
   }

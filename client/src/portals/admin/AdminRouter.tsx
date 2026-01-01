@@ -56,6 +56,7 @@ import QATestingTrackerPage from "@/pages/admin/qa-testing-tracker";
 import ApiLibraryPage from "@/pages/admin/api-library";
 import AllLogsPage from '@/pages/admin/all-logs';
 import AdminPosts from "@/pages/admin/posts";
+import DeploymentPage from "@/pages/admin/deployment";
 
 /**
  * AdminRouter (now EngineRouter) - Handles all Engine admin routes
@@ -139,6 +140,9 @@ export default function AdminRouter() {
           <Route path="/engine/wytpoints" component={AdminWytPoints} />
           <Route path="/engine/system-overview" component={AdminSystemOverview} />
           <Route path="/engine/logs" component={AdminSystemLogsReal} />
+          
+          {/* Deployment Route */}
+          <Route path="/engine/deployment" component={DeploymentPage} />
 
           {/* 404 fallback for engine routes */}
           <Route>
