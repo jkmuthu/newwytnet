@@ -68,9 +68,7 @@ export default function DeploymentPage() {
         });
       }, 500);
 
-      const result = await apiRequest('/api/admin/deployments/deploy', {
-        method: 'POST',
-      });
+      const result = await apiRequest('/api/admin/deployments/deploy', 'POST');
 
       clearInterval(interval);
       setDeploymentProgress(100);
