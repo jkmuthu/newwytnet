@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { db } from "./db";
-import { platformHubs } from "@shared/schema";
+import { platformHubs, hubDomains } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 
 // Extend Express Request to include hub context
@@ -51,22 +51,46 @@ export function hubRoutingMiddleware() {
       // Example: ownernet.com, wytnet.com, www.wytnet.com
       // Note: We check for custom domains first, including the platform's primary domain
       if (host && !host.includes('localhost') && !host.includes('replit.dev')) {
-        const [foundHub] = await db
-          .select()
-          .from(platformHubs)
+        // First, check the new hubDomains table (supports multiple domains per hub)
+        const [domainEntry] = await db
+          .select({
+            domain: hubDomains,
+            hub: platformHubs
+          })
+          .from(hubDomains)
+          .innerJoin(platformHubs, eq(hubDomains.hubId, platformHubs.id))
           .where(
             and(
-              eq(platformHubs.customDomain, hostname),
-              eq(platformHubs.domainVerified, true),
+              eq(hubDomains.domain, hostname),
+              eq(hubDomains.status, 'active'),
               eq(platformHubs.status, 'active')
             )
           )
           .limit(1);
 
-        if (foundHub) {
-          hub = foundHub;
+        if (domainEntry) {
+          hub = domainEntry.hub;
           routingType = 'custom-domain';
-          console.log(`🌐 Custom domain routing: ${hostname} -> ${hub.name}`);
+          console.log(`🌐 Custom domain routing (hubDomains): ${hostname} -> ${hub.name}`);
+        } else {
+          // Fallback: Check the legacy customDomain field on platformHubs
+          const [foundHub] = await db
+            .select()
+            .from(platformHubs)
+            .where(
+              and(
+                eq(platformHubs.customDomain, hostname),
+                eq(platformHubs.domainVerified, true),
+                eq(platformHubs.status, 'active')
+              )
+            )
+            .limit(1);
+
+          if (foundHub) {
+            hub = foundHub;
+            routingType = 'custom-domain';
+            console.log(`🌐 Custom domain routing (legacy): ${hostname} -> ${hub.name}`);
+          }
         }
       }
 
