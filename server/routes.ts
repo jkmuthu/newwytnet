@@ -15286,6 +15286,68 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // Get production server health status
+  app.get('/api/admin/deployments/health', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      // Get saved production URL from settings
+      const savedSettings = await db
+        .select()
+        .from(platformSettings)
+        .where(eq(platformSettings.key, 'production_url'))
+        .limit(1);
+
+      const productionUrl = savedSettings[0]?.value || process.env.PRODUCTION_URL;
+
+      if (!productionUrl) {
+        return res.json({ 
+          success: false, 
+          message: 'Production URL not configured',
+          healthy: false,
+          services: {},
+          system: {}
+        });
+      }
+
+      // Try to fetch health from production server
+      try {
+        const healthUrl = productionUrl.replace(/\/$/, '') + '/health';
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        const response = await fetch(healthUrl, { 
+          signal: controller.signal,
+          headers: { 'Accept': 'application/json' }
+        });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const healthData = await response.json();
+          return res.json(healthData);
+        } else {
+          return res.json({ 
+            success: false, 
+            message: 'Health check endpoint returned error',
+            healthy: false,
+            services: {},
+            system: {}
+          });
+        }
+      } catch (fetchError: any) {
+        // Server is not reachable or health endpoint not set up
+        return res.json({ 
+          success: false, 
+          message: fetchError.message || 'Cannot reach production server',
+          healthy: false,
+          services: {},
+          system: {}
+        });
+      }
+    } catch (error: any) {
+      console.error('Error checking production health:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
   // Save production settings
   app.post('/api/admin/deployments/settings', adminAuthMiddleware, async (req: any, res) => {
     try {

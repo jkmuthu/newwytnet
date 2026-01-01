@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Rocket, Server, CheckCircle, Clock, AlertCircle, 
-  ExternalLink, History, Loader2, Play, Settings, Save, Copy, Globe
+  ExternalLink, History, Loader2, Play, Settings, Save, Copy, Globe,
+  Activity, HardDrive, Cpu, Database, Shield, RefreshCw, Wifi, WifiOff
 } from "lucide-react";
 import {
   Alert,
@@ -38,6 +39,34 @@ interface ProductionSettings {
   deployPath: string;
 }
 
+interface ServiceStatus {
+  name: string;
+  status: boolean;
+  version?: string;
+}
+
+interface ServerHealth {
+  success: boolean;
+  healthy: boolean;
+  timestamp: string;
+  services: {
+    nodejs: ServiceStatus;
+    nginx: ServiceStatus;
+    postgresql: ServiceStatus;
+    pm2: ServiceStatus;
+    firewall: ServiceStatus;
+  };
+  system: {
+    memory: { total: string; used: string; free: string; percent: number };
+    disk: { used: string; available: string; percent: number };
+    uptime: string;
+    loadAverage: string[];
+    cpuCount: number;
+    hostname: string;
+    nodeVersion: string;
+  };
+}
+
 export default function DeploymentPage() {
   const { toast } = useToast();
   const [deploymentProgress, setDeploymentProgress] = useState(0);
@@ -62,6 +91,12 @@ export default function DeploymentPage() {
 
   const { data: historyData, isLoading: historyLoading } = useQuery<{ success: boolean; deployments: DeploymentHistory[] }>({
     queryKey: ['/api/admin/deployments'],
+  });
+
+  const { data: healthData, isLoading: healthLoading, refetch: refetchHealth } = useQuery<ServerHealth>({
+    queryKey: ['/api/admin/deployments/health'],
+    refetchInterval: 30000,
+    enabled: !!settings.serverIp,
   });
 
   useEffect(() => {
@@ -231,14 +266,18 @@ echo "Server IP: $(curl -s ifconfig.me)"`;
       </div>
 
       <Tabs defaultValue={serverConfigured ? "deploy" : "settings"} className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-lg grid-cols-3">
           <TabsTrigger value="deploy" className="flex items-center gap-2">
             <Rocket className="h-4 w-4" />
             Deploy
           </TabsTrigger>
+          <TabsTrigger value="health" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            Server Health
+          </TabsTrigger>
           <TabsTrigger value="settings" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
-            Server Settings
+            Settings
           </TabsTrigger>
         </TabsList>
 
@@ -416,6 +455,134 @@ echo "Server IP: $(curl -s ifconfig.me)"`;
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="health" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold">Production Server Health</h2>
+              <p className="text-sm text-muted-foreground">Real-time monitoring of your production server</p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => refetchHealth()}
+              disabled={healthLoading}
+              data-testid="button-refresh-health"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${healthLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+
+          {!settings.serverIp ? (
+            <Alert className="bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertTitle className="text-amber-900 dark:text-amber-100">Server Not Configured</AlertTitle>
+              <AlertDescription className="text-amber-800 dark:text-amber-200">
+                Configure your server IP in the Settings tab to enable health monitoring.
+              </AlertDescription>
+            </Alert>
+          ) : healthLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : !healthData?.success ? (
+            <Alert className="bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800">
+              <WifiOff className="h-4 w-4 text-red-600" />
+              <AlertTitle className="text-red-900 dark:text-red-100">Server Unreachable</AlertTitle>
+              <AlertDescription className="text-red-800 dark:text-red-200">
+                Cannot connect to the production server. Make sure the health check service is running and Nginx is configured.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div className="space-y-6">
+              <Card className={healthData.healthy ? 'border-green-500/50' : 'border-red-500/50'}>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      {healthData.healthy ? (
+                        <>
+                          <Wifi className="h-5 w-5 text-green-500" />
+                          <span className="text-green-600">All Systems Operational</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="h-5 w-5 text-red-500" />
+                          <span className="text-red-600">Issues Detected</span>
+                        </>
+                      )}
+                    </CardTitle>
+                    <span className="text-xs text-muted-foreground">
+                      Last checked: {healthData.timestamp ? format(new Date(healthData.timestamp), 'PPp') : 'Unknown'}
+                    </span>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {healthData.services && Object.entries(healthData.services).map(([key, service]) => (
+                  <Card key={key} className={service.status ? 'border-green-200' : 'border-red-200'}>
+                    <CardContent className="pt-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {key === 'nodejs' && <Server className="h-5 w-5 text-green-600" />}
+                          {key === 'nginx' && <Globe className="h-5 w-5 text-blue-600" />}
+                          {key === 'postgresql' && <Database className="h-5 w-5 text-indigo-600" />}
+                          {key === 'pm2' && <Cpu className="h-5 w-5 text-purple-600" />}
+                          {key === 'firewall' && <Shield className="h-5 w-5 text-orange-600" />}
+                          <div>
+                            <p className="font-medium">{service.name}</p>
+                            {service.version && <p className="text-xs text-muted-foreground">{service.version}</p>}
+                          </div>
+                        </div>
+                        {service.status ? (
+                          <Badge className="bg-green-500">Running</Badge>
+                        ) : (
+                          <Badge variant="destructive">Stopped</Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {healthData.system && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <HardDrive className="h-5 w-5" />
+                      System Resources
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">Memory Usage</p>
+                        <Progress value={healthData.system.memory.percent} className="h-2 mb-1" />
+                        <p className="text-xs text-muted-foreground">
+                          {healthData.system.memory.used} / {healthData.system.memory.total} ({healthData.system.memory.percent}%)
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">Disk Usage</p>
+                        <Progress value={healthData.system.disk.percent} className="h-2 mb-1" />
+                        <p className="text-xs text-muted-foreground">
+                          {healthData.system.disk.used} used, {healthData.system.disk.available} available ({healthData.system.disk.percent}%)
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">Server Info</p>
+                        <p className="text-sm"><strong>Uptime:</strong> {healthData.system.uptime}</p>
+                        <p className="text-sm"><strong>CPU Cores:</strong> {healthData.system.cpuCount}</p>
+                        <p className="text-sm"><strong>Load:</strong> {healthData.system.loadAverage?.join(', ')}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">
