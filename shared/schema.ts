@@ -716,6 +716,79 @@ export const hubTemplates = pgTable("hub_templates", {
   index("idx_hub_templates_sort_order").on(table.sortOrder),
 ]);
 
+// WytSite - User Created Websites
+export const userSites = pgTable("user_sites", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  displayId: varchar("display_id", { length: 20 }).unique(), // WS00001
+  userId: varchar("user_id").notNull().references(() => users.id),
+  templateId: uuid("template_id").references(() => hubTemplates.id),
+  
+  // Site Identity
+  name: varchar("name", { length: 255 }).notNull(),
+  subdomain: varchar("subdomain", { length: 100 }).notNull().unique(), // subdomain.wytsite.com
+  customDomain: varchar("custom_domain", { length: 255 }).unique(), // user's custom domain
+  
+  // Site Settings
+  settings: jsonb("settings").default({}), // { favicon, logo, colors, fonts, analytics }
+  theme: jsonb("theme").default({}), // { primaryColor, secondaryColor, fontFamily, etc. }
+  seoSettings: jsonb("seo_settings").default({}), // { title, description, keywords, ogImage }
+  
+  // Status
+  status: varchar("status", { length: 20 }).notNull().default('draft'), // draft, published, suspended
+  publishedAt: timestamp("published_at"),
+  
+  // Analytics
+  viewCount: integer("view_count").default(0),
+  
+  // Soft delete
+  deletedAt: timestamp("deleted_at"),
+  deletedBy: varchar("deleted_by"),
+  deleteReason: text("delete_reason"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_user_sites_user_id").on(table.userId),
+  index("idx_user_sites_subdomain").on(table.subdomain),
+  index("idx_user_sites_status").on(table.status),
+  index("idx_user_sites_deleted_at").on(table.deletedAt),
+]);
+
+// WytSite Pages - Individual pages within user sites
+export const sitePages = pgTable("site_pages", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  siteId: uuid("site_id").notNull().references(() => userSites.id, { onDelete: 'cascade' }),
+  
+  // Page Identity
+  title: varchar("title", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull(), // 'about', 'contact', 'services'
+  path: varchar("path", { length: 500 }).notNull(), // '/about', '/services/web-design'
+  
+  // Page Content (JSONB for block-based editing)
+  content: jsonb("content").notNull().default([]), // Array of blocks: [{ type: 'hero', data: {...} }, ...]
+  
+  // Page Settings
+  isHomePage: boolean("is_home_page").default(false),
+  showInNav: boolean("show_in_nav").default(true),
+  navOrder: integer("nav_order").default(0),
+  
+  // SEO
+  metaTitle: varchar("meta_title", { length: 255 }),
+  metaDescription: text("meta_description"),
+  
+  // Status
+  status: varchar("status", { length: 20 }).notNull().default('draft'), // draft, published
+  publishedAt: timestamp("published_at"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_site_pages_site_id").on(table.siteId),
+  index("idx_site_pages_slug").on(table.slug),
+  index("idx_site_pages_status").on(table.status),
+  unique("unique_site_page_slug").on(table.siteId, table.slug),
+]);
+
 // Platform Modules - Context-Aware Plugins (like WordPress plugins)
 // Modules are small, focused plugins that can be activated in different contexts
 export const platformModules = pgTable("platform_modules", {
@@ -1770,6 +1843,19 @@ export const insertHubTemplateSchema = createInsertSchema(hubTemplates).omit({ i
 export const selectHubTemplateSchema = createSelectSchema(hubTemplates);
 export type HubTemplate = typeof hubTemplates.$inferSelect;
 export type InsertHubTemplate = z.infer<typeof insertHubTemplateSchema>;
+
+// WytSite - User Sites schemas
+export const insertUserSiteSchema = createInsertSchema(userSites).omit({ id: true, displayId: true, createdAt: true, updatedAt: true, viewCount: true, publishedAt: true, deletedAt: true, deletedBy: true, deleteReason: true });
+export const selectUserSiteSchema = createSelectSchema(userSites);
+export type UserSite = typeof userSites.$inferSelect;
+export type InsertUserSite = z.infer<typeof insertUserSiteSchema>;
+
+// WytSite - Site Pages schemas
+export const insertSitePageSchema = createInsertSchema(sitePages).omit({ id: true, createdAt: true, updatedAt: true, publishedAt: true });
+export const selectSitePageSchema = createSelectSchema(sitePages);
+export type SitePage = typeof sitePages.$inferSelect;
+export type InsertSitePage = z.infer<typeof insertSitePageSchema>;
+
 export const insertPlanSchema = createInsertSchema(plans);
 
 // Payment schemas
