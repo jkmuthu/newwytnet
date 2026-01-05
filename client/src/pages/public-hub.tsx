@@ -30,12 +30,17 @@ interface Template {
   features: string[];
 }
 
-function WytSiteLanding() {
+interface WytSiteLandingProps {
+  user?: any;
+}
+
+function WytSiteLanding({ user }: WytSiteLandingProps) {
   const { data: templatesData, isLoading } = useQuery({
     queryKey: ['/api/wytsite/templates'],
   });
 
   const templates: Template[] = (templatesData as any)?.templates || [];
+  const isLoggedIn = !!user;
 
   const features = [
     {
@@ -136,14 +141,29 @@ function WytSiteLanding() {
             <a href="#pricing" className="text-sm text-gray-600 dark:text-gray-300 hover:text-indigo-600">Pricing</a>
           </nav>
           <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" size="sm" data-testid="button-login">Log in</Button>
-            </Link>
-            <Link href="/signup">
-              <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" data-testid="button-signup">
-                Get Started Free
-              </Button>
-            </Link>
+            {isLoggedIn ? (
+              <>
+                <Link href="/p/my/wytapps/wytsite">
+                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" data-testid="button-my-sites">
+                    My Sites
+                  </Button>
+                </Link>
+                <Link href="/p/my/dashboard">
+                  <Button variant="ghost" size="sm" data-testid="button-dashboard">Dashboard</Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost" size="sm" data-testid="button-login">Log in</Button>
+                </Link>
+                <Link href="/signup">
+                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" data-testid="button-signup">
+                    Get Started Free
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -162,12 +182,21 @@ function WytSiteLanding() {
             No coding required. Choose from beautiful templates and customize with ease.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/signup">
-              <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700" data-testid="button-start-building">
-                Start Building Free
-                <ChevronRight className="h-4 w-4 ml-2" />
-              </Button>
-            </Link>
+            {isLoggedIn ? (
+              <Link href="/p/my/wytapps/wytsite">
+                <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700" data-testid="button-start-building">
+                  Go to My Sites
+                  <ChevronRight className="h-4 w-4 ml-2" />
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/signup">
+                <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700" data-testid="button-start-building">
+                  Start Building Free
+                  <ChevronRight className="h-4 w-4 ml-2" />
+                </Button>
+              </Link>
+            )}
             <a href="#templates">
               <Button size="lg" variant="outline" data-testid="button-view-templates">
                 View Templates
@@ -375,7 +404,13 @@ function WytSiteLanding() {
   );
 }
 
-function DefaultHubLanding({ hubSlug }: { hubSlug: string }) {
+interface DefaultHubLandingProps {
+  hubSlug: string;
+  user?: any;
+}
+
+function DefaultHubLanding({ hubSlug, user }: DefaultHubLandingProps) {
+  const isLoggedIn = !!user;
   const { data: hubData, isLoading } = useQuery({
     queryKey: ['/api/platform-hubs/public', hubSlug],
     queryFn: async () => {
@@ -406,12 +441,25 @@ function DefaultHubLanding({ hubSlug }: { hubSlug: string }) {
             <span className="text-xl font-bold text-gray-900 dark:text-white capitalize">{hub?.name || hubSlug}</span>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" size="sm">Log in</Button>
-            </Link>
-            <Link href="/signup">
-              <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700">Get Started</Button>
-            </Link>
+            {isLoggedIn ? (
+              <>
+                <Link href={`/h/${hubSlug}/dashboard`}>
+                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700">Go to Hub</Button>
+                </Link>
+                <Link href="/p/my/dashboard">
+                  <Button variant="ghost" size="sm">Dashboard</Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost" size="sm">Log in</Button>
+                </Link>
+                <Link href="/signup">
+                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700">Get Started</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -424,15 +472,26 @@ function DefaultHubLanding({ hubSlug }: { hubSlug: string }) {
           {hub?.description || 'Join our community and explore amazing features.'}
         </p>
         <div className="flex gap-4 justify-center">
-          <Link href="/signup">
-            <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700">
-              Join Now
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-          </Link>
-          <Link href="/login">
-            <Button size="lg" variant="outline">Sign In</Button>
-          </Link>
+          {isLoggedIn ? (
+            <Link href={`/h/${hubSlug}/dashboard`}>
+              <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700">
+                Enter Hub
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </Link>
+          ) : (
+            <>
+              <Link href="/signup">
+                <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700">
+                  Join Now
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </Link>
+              <Link href="/login">
+                <Button size="lg" variant="outline">Sign In</Button>
+              </Link>
+            </>
+          )}
         </div>
       </section>
 
@@ -461,13 +520,9 @@ export default function PublicHubPage() {
     );
   }
 
-  if (user) {
-    return <Redirect to={`/h/${hubSlug}/dashboard`} />;
-  }
-
   if (hubSlug === 'wytsite') {
-    return <WytSiteLanding />;
+    return <WytSiteLanding user={user} />;
   }
 
-  return <DefaultHubLanding hubSlug={hubSlug} />;
+  return <DefaultHubLanding hubSlug={hubSlug} user={user} />;
 }

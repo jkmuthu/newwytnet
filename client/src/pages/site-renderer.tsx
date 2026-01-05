@@ -10,6 +10,7 @@ interface SitePage {
   content: any[];
   showInNav: boolean;
   navOrder: number;
+  isHomePage?: boolean;
 }
 
 interface UserSite {

@@ -122,9 +122,11 @@ function PortalRouter() {
         <Route path="/a/:slug" component={PublicAppPage} />
         <Route path="/a/:slug/:rest*" component={PublicAppPage} />
 
-        {/* WytSite Public Renderer - /site/:subdomain */}
+        {/* WytSite Public Renderer - /site/:subdomain and /wytsite/:subdomain */}
         <Route path="/site/:subdomain" component={SiteRenderer} />
         <Route path="/site/:subdomain/:slug" component={SiteRenderer} />
+        <Route path="/wytsite/:subdomain" component={SiteRenderer} />
+        <Route path="/wytsite/:subdomain/:slug" component={SiteRenderer} />
 
         {/* Public Hub Landing - /h/:hubname (shows public page if not logged in) */}
         <Route path="/h/:hubname" component={PublicHubPage} />
