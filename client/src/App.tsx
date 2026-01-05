@@ -33,6 +33,9 @@ import PublicAppPage from "@/pages/public-app";
 // WytSite Renderer (for /site/:subdomain public access)
 import SiteRenderer from "@/pages/site-renderer";
 
+// Public Hub Landing (for /h/:hubname public access)
+import PublicHubPage from "@/pages/public-hub";
+
 /**
  * PortalRouter - Top-level router that determines which portal to use
  * 
@@ -123,8 +126,9 @@ function PortalRouter() {
         <Route path="/site/:subdomain" component={SiteRenderer} />
         <Route path="/site/:subdomain/:slug" component={SiteRenderer} />
 
-        {/* Public Hub Panel - /h/:hubname/* */}
-        <Route path="/h/:hubname" component={PanelRouter} />
+        {/* Public Hub Landing - /h/:hubname (shows public page if not logged in) */}
+        <Route path="/h/:hubname" component={PublicHubPage} />
+        {/* Hub Panel routes - /h/:hubname/* (for authenticated users) */}
         <Route path="/h/:hubname/:rest*" component={PanelRouter} />
 
         {/* ============================================ */}
