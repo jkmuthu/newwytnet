@@ -115,6 +115,34 @@ const DEFAULT_PLATFORM_HUBS = [
       tags: ["marketplace", "ecommerce", "buying", "selling"],
     },
   },
+  {
+    displayId: "PH0000005",
+    name: "WytSite",
+    slug: "wytsite",
+    subdomain: "wytsite",
+    description: "Build beautiful, professional websites in minutes with AI-powered design tools. No coding required - just describe your vision and watch it come to life.",
+    seoTitle: "WytSite - AI-Powered Website Builder",
+    seoDescription: "Create stunning websites effortlessly with WytSite. AI-powered design, drag-and-drop editor, custom domains, and professional templates for any business.",
+    seoKeywords: "website builder, AI website, drag drop editor, no code website, professional templates",
+    seoRobots: "index, follow",
+    status: "active" as const,
+    domainVerified: false,
+    themeSettings: {
+      primaryColor: "#6366f1",
+      secondaryColor: "#8b5cf6",
+      fontFamily: "Inter, system-ui, sans-serif",
+    },
+    settings: {
+      enablePublicDirectory: true,
+      enableSearch: true,
+      enableTemplates: true,
+      enableAIBuilder: true,
+    },
+    metadata: {
+      category: "tools",
+      tags: ["website", "builder", "AI", "design", "no-code"],
+    },
+  },
 ];
 
 // Helper function to generate Display IDs
