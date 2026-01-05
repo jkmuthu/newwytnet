@@ -30,6 +30,9 @@ import DevDocumentation from "@/pages/dev-documentation";
 // Public App Page (for /a/:slug public access)
 import PublicAppPage from "@/pages/public-app";
 
+// WytSite Renderer (for /site/:subdomain public access)
+import SiteRenderer from "@/pages/site-renderer";
+
 /**
  * PortalRouter - Top-level router that determines which portal to use
  * 
@@ -115,6 +118,10 @@ function PortalRouter() {
         {/* Public app access - renders with minimal layout, no sidebar */}
         <Route path="/a/:slug" component={PublicAppPage} />
         <Route path="/a/:slug/:rest*" component={PublicAppPage} />
+
+        {/* WytSite Public Renderer - /site/:subdomain */}
+        <Route path="/site/:subdomain" component={SiteRenderer} />
+        <Route path="/site/:subdomain/:slug" component={SiteRenderer} />
 
         {/* Public Hub Panel - /h/:hubname/* */}
         <Route path="/h/:hubname" component={PanelRouter} />

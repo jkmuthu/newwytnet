@@ -25,6 +25,7 @@ import MyWallet from "./pages/my-wallet";
 import MyPoints from "./pages/my-points";
 import MyWytAppsPage from "./pages/my-wytapps";
 import WytAppWorkspace from "./pages/wytapp-workspace";
+import WytSiteWorkspace from "./pages/wytsite-workspace";
 import MyAccount from "./pages/my-account";
 import MyProfile from "./pages/my-profile";
 import MyOrgsPage from "./pages/my-orgs";
@@ -3959,6 +3960,10 @@ export default function PanelRouter() {
       <Route path="/p/my/points" component={MyPoints} />
       <Route path="/p/my/wytapps/:slug" component={WytAppWorkspace} />
       <Route path="/p/my/wytapps" component={MyPanelWytApps} />
+      <Route path="/p/app/wytsite/:siteId/edit" component={WytSiteWorkspace} />
+      <Route path="/p/app/wytsite/:siteId/design" component={WytSiteWorkspace} />
+      <Route path="/p/app/wytsite/:siteId/settings" component={WytSiteWorkspace} />
+      <Route path="/p/app/wytsite" component={WytSiteWorkspace} />
       <Route path="/p/my/orgs" component={MyOrgsPage} />
       <Route path="/p/my/wytgames" component={MyPanelWytGames} />
       <Route path="/p/my/profile" component={MyProfile} />
