@@ -3945,12 +3945,18 @@ export default function PanelRouter() {
       <Switch>
       {/* ============================================ */}
       {/* NEW PANEL ROUTES (/p/*)                     */}
+      {/* Routes ordered from most specific to least  */}
       {/* ============================================ */}
-      {/* /p/ - Main dashboard */}
-      <Route path="/p" component={MyPanelDashboard} />
+      
+      {/* /p/hub/:hubSlug/* - Hub workspace (authenticated) - MUST come before /p */}
+      <Route path="/p/hub/:hubSlug/dashboard" component={HubPanelDashboard} />
+      <Route path="/p/hub/:hubSlug/wytwall" component={HubPanelWytWall} />
+      <Route path="/p/hub/:hubSlug/wytapps" component={HubPanelWytApps} />
+      <Route path="/p/hub/:hubSlug/team" component={HubPanelTeam} />
+      <Route path="/p/hub/:hubSlug/settings" component={HubPanelProfile} />
+      <Route path="/p/hub/:hubSlug" component={HubPanelDashboard} />
       
       {/* /p/my/* - Personal workspace */}
-      <Route path="/p/my" component={MyPanelDashboard} />
       <Route path="/p/my/dashboard" component={MyPanelDashboard} />
       <Route path="/p/my/wytwall/:postId" component={PostDetail} />
       <Route path="/p/my/wytwall" component={MyPanelWytWall} />
@@ -3974,24 +3980,20 @@ export default function PanelRouter() {
       <Route path="/p/my/account" component={MyAccount} />
 
       {/* /p/org/:id/* - Organization workspace */}
-      <Route path="/p/org" component={OrgPanelDashboard} />
-      <Route path="/p/org/:orgId" component={OrgPanelDashboard} />
       <Route path="/p/org/:orgId/dashboard" component={OrgPanelDashboard} />
       <Route path="/p/org/:orgId/wytapps" component={MyPanelWytApps} />
       <Route path="/p/org/:orgId/team" component={OrgPanelMembers} />
       <Route path="/p/org/:orgId/settings" component={OrgPanelSettings} />
-
-      {/* /p/hub/:hubSlug/* - Hub workspace (authenticated) */}
-      <Route path="/p/hub/:hubSlug/dashboard" component={HubPanelDashboard} />
-      <Route path="/p/hub/:hubSlug/wytwall" component={HubPanelWytWall} />
-      <Route path="/p/hub/:hubSlug/wytapps" component={HubPanelWytApps} />
-      <Route path="/p/hub/:hubSlug/team" component={HubPanelTeam} />
-      <Route path="/p/hub/:hubSlug/settings" component={HubPanelProfile} />
-      <Route path="/p/hub/:hubSlug" component={HubPanelDashboard} />
+      <Route path="/p/org/:orgId" component={OrgPanelDashboard} />
+      <Route path="/p/org" component={OrgPanelDashboard} />
 
       {/* /p/app/:slug/* - App workspace (authenticated) */}
       <Route path="/p/app/:appSlug/:rest*" component={AppPanelRouter} />
       <Route path="/p/app/:appSlug" component={AppPanelRouter} />
+
+      {/* Generic /p routes - MUST come after more specific routes */}
+      <Route path="/p/my" component={MyPanelDashboard} />
+      <Route path="/p" component={MyPanelDashboard} />
 
       {/* ============================================ */}
       {/* LEGACY PANEL ROUTES (backward compatibility) */}
