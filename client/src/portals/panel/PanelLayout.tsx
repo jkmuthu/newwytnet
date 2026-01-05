@@ -82,7 +82,23 @@ export default function PanelLayout({ children }: PanelLayoutProps) {
       return;
     }
     
-    // NEW: Check for /h/:hubname (Hub Panel)
+    // NEW: Check for /p/hub/:hubSlug (Hub Panel - new structure)
+    const newHubMatch = normalizedPath.match(/^\/p\/hub\/([^\/]+)/);
+    if (newHubMatch) {
+      const hubSlug = newHubMatch[1];
+      const hubDisplayName = slugToDisplayName(hubSlug);
+      
+      setCurrentWorkspace({
+        type: 'hub',
+        id: `hub-${hubSlug}`,
+        name: `${hubDisplayName} Hub`,
+        hubSlug,
+        hubName: hubDisplayName
+      });
+      return;
+    }
+    
+    // Legacy: Check for /h/:hubname (Hub Panel)
     const hubMatch = normalizedPath.match(/^\/h\/([^\/]+)/);
     if (hubMatch) {
       const hubSlug = hubMatch[1];

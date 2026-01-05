@@ -77,7 +77,8 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
   const usernameFromUrl = location.match(/^\/u\/([^\/]+)/)?.[1] || 'me';
   const orgnameFromUrl = location.match(/^\/o\/([^\/]+)/)?.[1] || 'default';
   const appnameFromUrl = location.match(/^\/a\/([^\/]+)/)?.[1] || '';
-  const hubnameFromUrl = location.match(/^\/h\/([^\/]+)/)?.[1] || '';
+  const hubSlugFromNewUrl = location.match(/^\/p\/hub\/([^\/]+)/)?.[1] || '';
+  const hubnameFromUrl = hubSlugFromNewUrl || location.match(/^\/h\/([^\/]+)/)?.[1] || '';
 
   // Get current org and user's role in it
   const currentOrg = (orgsData as any)?.organizations?.find(
@@ -121,8 +122,11 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
         }
       ];
     } else if (currentWorkspace.type === 'hub') {
-      // HubPanel Navigation - /h/:hubname/*
+      // HubPanel Navigation - /p/hub/:hubSlug/* (new) or /h/:hubname/* (legacy)
       const hubSlug = hubnameFromUrl;
+      const useNewUrls = hubSlugFromNewUrl !== '';
+      const baseUrl = useNewUrls ? `/p/hub/${hubSlug}` : `/h/${hubSlug}`;
+      
       return [
         {
           section: "Hub Panel",
@@ -130,32 +134,32 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
             { 
               label: "Hub Dashboard", 
               icon: Home, 
-              href: `/h/${hubSlug}`, 
-              active: location === `/h/${hubSlug}` || location === `/h/${hubSlug}/dashboard`
+              href: baseUrl, 
+              active: location === baseUrl || location === `${baseUrl}/dashboard`
             },
             { 
               label: "Hub WytWall", 
               icon: MessageSquare, 
-              href: `/h/${hubSlug}/wytwall`, 
-              active: location === `/h/${hubSlug}/wytwall`
+              href: `${baseUrl}/wytwall`, 
+              active: location === `${baseUrl}/wytwall`
             },
             { 
               label: "Hub Apps", 
               icon: Package, 
-              href: `/h/${hubSlug}/wytapps`, 
-              active: location === `/h/${hubSlug}/wytapps`
+              href: `${baseUrl}/wytapps`, 
+              active: location === `${baseUrl}/wytapps`
             },
             { 
               label: "Hub Team", 
               icon: Users, 
-              href: `/h/${hubSlug}/team`, 
-              active: location === `/h/${hubSlug}/team`
+              href: `${baseUrl}/team`, 
+              active: location === `${baseUrl}/team`
             },
             { 
-              label: "Hub Profile", 
-              icon: Building, 
-              href: `/h/${hubSlug}/profile`, 
-              active: location === `/h/${hubSlug}/profile`
+              label: "Hub Settings", 
+              icon: Settings, 
+              href: `${baseUrl}/settings`, 
+              active: location === `${baseUrl}/settings`
             },
           ]
         }

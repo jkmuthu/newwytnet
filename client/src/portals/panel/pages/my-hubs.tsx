@@ -8,11 +8,12 @@ import { Loader2 } from "lucide-react";
 import { 
   Globe, 
   Users, 
-  ExternalLink,
+  ArrowRightLeft,
   Crown,
   UserCheck,
-  Layout,
-  Sparkles
+  Settings,
+  Sparkles,
+  ExternalLink
 } from "lucide-react";
 
 interface Hub {
@@ -80,16 +81,16 @@ export default function MyHubs() {
         </div>
         
         <div className="flex gap-2">
-          <Link href={`/h/${hub.slug}`} className="flex-1">
-            <Button className="w-full" variant="default" data-testid={`button-open-${hub.slug}`}>
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Open Hub
+          <Link href={`/p/hub/${hub.slug}`} className="flex-1">
+            <Button className="w-full" variant="default" data-testid={`button-switch-${hub.slug}`}>
+              <ArrowRightLeft className="h-4 w-4 mr-2" />
+              Switch to Hub
             </Button>
           </Link>
           {isAdmin && (
-            <Link href={`/${hub.slug}/admin`}>
-              <Button variant="outline" data-testid={`button-admin-${hub.slug}`}>
-                <Layout className="h-4 w-4" />
+            <Link href={`/p/hub/${hub.slug}/settings`}>
+              <Button variant="outline" data-testid={`button-settings-${hub.slug}`}>
+                <Settings className="h-4 w-4" />
               </Button>
             </Link>
           )}

@@ -3981,6 +3981,14 @@ export default function PanelRouter() {
       <Route path="/p/org/:orgId/team" component={OrgPanelMembers} />
       <Route path="/p/org/:orgId/settings" component={OrgPanelSettings} />
 
+      {/* /p/hub/:hubSlug/* - Hub workspace (authenticated) */}
+      <Route path="/p/hub/:hubSlug/dashboard" component={HubPanelDashboard} />
+      <Route path="/p/hub/:hubSlug/wytwall" component={HubPanelWytWall} />
+      <Route path="/p/hub/:hubSlug/wytapps" component={HubPanelWytApps} />
+      <Route path="/p/hub/:hubSlug/team" component={HubPanelTeam} />
+      <Route path="/p/hub/:hubSlug/settings" component={HubPanelProfile} />
+      <Route path="/p/hub/:hubSlug" component={HubPanelDashboard} />
+
       {/* /p/app/:slug/* - App workspace (authenticated) */}
       <Route path="/p/app/:appSlug/:rest*" component={AppPanelRouter} />
       <Route path="/p/app/:appSlug" component={AppPanelRouter} />
