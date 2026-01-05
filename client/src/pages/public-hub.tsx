@@ -1,8 +1,10 @@
-import { useParams, Link, Redirect } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useParams, Link } from "wouter";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import AuthModal from "@/components/auth/AuthModal";
 import {
   Globe,
   Sparkles,
@@ -35,12 +37,30 @@ interface WytSiteLandingProps {
 }
 
 function WytSiteLanding({ user }: WytSiteLandingProps) {
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authTab, setAuthTab] = useState<"login" | "register">("login");
+  const queryClient = useQueryClient();
+
   const { data: templatesData, isLoading } = useQuery({
     queryKey: ['/api/wytsite/templates'],
   });
 
   const templates: Template[] = (templatesData as any)?.templates || [];
   const isLoggedIn = !!user;
+
+  const openLogin = () => {
+    setAuthTab("login");
+    setAuthModalOpen(true);
+  };
+
+  const openSignup = () => {
+    setAuthTab("register");
+    setAuthModalOpen(true);
+  };
+
+  const handleAuthSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+  };
 
   const features = [
     {
@@ -154,14 +174,10 @@ function WytSiteLanding({ user }: WytSiteLandingProps) {
               </>
             ) : (
               <>
-                <Link href="/login">
-                  <Button variant="ghost" size="sm" data-testid="button-login">Log in</Button>
-                </Link>
-                <Link href="/signup">
-                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" data-testid="button-signup">
-                    Get Started Free
-                  </Button>
-                </Link>
+                <Button variant="ghost" size="sm" onClick={openLogin} data-testid="button-login">Log in</Button>
+                <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" onClick={openSignup} data-testid="button-signup">
+                  Get Started Free
+                </Button>
               </>
             )}
           </div>
@@ -190,12 +206,10 @@ function WytSiteLanding({ user }: WytSiteLandingProps) {
                 </Button>
               </Link>
             ) : (
-              <Link href="/signup">
-                <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700" data-testid="button-start-building">
-                  Start Building Free
-                  <ChevronRight className="h-4 w-4 ml-2" />
-                </Button>
-              </Link>
+              <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700" onClick={openSignup} data-testid="button-start-building">
+                Start Building Free
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
             )}
             <a href="#templates">
               <Button size="lg" variant="outline" data-testid="button-view-templates">
@@ -327,15 +341,26 @@ function WytSiteLanding({ user }: WytSiteLandingProps) {
                       </li>
                     ))}
                   </ul>
-                  <Link href="/signup">
+                  {isLoggedIn ? (
+                    <Link href="/p/my/wytapps/wytsite">
+                      <Button 
+                        className={`w-full ${plan.popular ? 'bg-indigo-600 hover:bg-indigo-700' : ''}`}
+                        variant={plan.popular ? 'default' : 'outline'}
+                        data-testid={`button-plan-${plan.name.toLowerCase()}`}
+                      >
+                        {plan.cta}
+                      </Button>
+                    </Link>
+                  ) : (
                     <Button 
                       className={`w-full ${plan.popular ? 'bg-indigo-600 hover:bg-indigo-700' : ''}`}
                       variant={plan.popular ? 'default' : 'outline'}
+                      onClick={openSignup}
                       data-testid={`button-plan-${plan.name.toLowerCase()}`}
                     >
                       {plan.cta}
                     </Button>
-                  </Link>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -351,12 +376,19 @@ function WytSiteLanding({ user }: WytSiteLandingProps) {
           <p className="text-xl text-indigo-100 mb-8">
             Join thousands of businesses already using WytSite to create their online presence.
           </p>
-          <Link href="/signup">
-            <Button size="lg" variant="secondary" className="bg-white text-indigo-600 hover:bg-gray-100" data-testid="button-cta-signup">
+          {isLoggedIn ? (
+            <Link href="/p/my/wytapps/wytsite">
+              <Button size="lg" variant="secondary" className="bg-white text-indigo-600 hover:bg-gray-100" data-testid="button-cta-signup">
+                Go to My Sites
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </Link>
+          ) : (
+            <Button size="lg" variant="secondary" className="bg-white text-indigo-600 hover:bg-gray-100" onClick={openSignup} data-testid="button-cta-signup">
               Get Started Free
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
-          </Link>
+          )}
         </div>
       </section>
 
@@ -400,6 +432,15 @@ function WytSiteLanding({ user }: WytSiteLandingProps) {
           </div>
         </div>
       </footer>
+
+      <AuthModal 
+        open={authModalOpen} 
+        onClose={() => setAuthModalOpen(false)}
+        defaultTab={authTab}
+        onSuccess={handleAuthSuccess}
+        hubSlug="wytsite"
+        returnPath="/h/wytsite"
+      />
     </div>
   );
 }
