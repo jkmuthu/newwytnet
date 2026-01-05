@@ -538,4 +538,113 @@ router.put("/admin/platform-hubs/:id/domain", adminAuthMiddleware, requirePermis
   }
 });
 
+// ============================================
+// USER-FACING HUB APIs (No admin auth required)
+// ============================================
+
+// GET /api/platform-hubs/active - Get all active public hubs
+router.get("/platform-hubs/active", async (req, res) => {
+  try {
+    const activeHubs = await db
+      .select({
+        id: platformHubs.id,
+        displayId: platformHubs.displayId,
+        name: platformHubs.name,
+        slug: platformHubs.slug,
+        subdomain: platformHubs.subdomain,
+        description: platformHubs.description,
+        logo: platformHubs.logo,
+        favicon: platformHubs.favicon,
+        status: platformHubs.status,
+      })
+      .from(platformHubs)
+      .where(eq(platformHubs.status, 'active'))
+      .orderBy(platformHubs.name);
+
+    res.json({ success: true, hubs: activeHubs });
+  } catch (error) {
+    console.error("Error fetching active hubs:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch hubs" });
+  }
+});
+
+// GET /api/platform-hubs/public/:slug - Get public hub info by slug
+router.get("/platform-hubs/public/:slug", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    
+    const [hub] = await db
+      .select({
+        id: platformHubs.id,
+        displayId: platformHubs.displayId,
+        name: platformHubs.name,
+        slug: platformHubs.slug,
+        subdomain: platformHubs.subdomain,
+        description: platformHubs.description,
+        logo: platformHubs.logo,
+        favicon: platformHubs.favicon,
+        status: platformHubs.status,
+      })
+      .from(platformHubs)
+      .where(
+        and(
+          eq(platformHubs.slug, slug),
+          eq(platformHubs.status, 'active')
+        )
+      )
+      .limit(1);
+
+    if (!hub) {
+      return res.status(404).json({ success: false, error: "Hub not found" });
+    }
+
+    res.json({ success: true, hub });
+  } catch (error) {
+    console.error("Error fetching hub:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch hub" });
+  }
+});
+
+// GET /api/user/hubs - Get hubs the current user is a member/admin of
+router.get("/user/hubs", async (req: any, res) => {
+  try {
+    const principal = req.session.wytpassPrincipal;
+    
+    if (!principal || !principal.id) {
+      return res.status(401).json({ success: false, error: "Not authenticated" });
+    }
+
+    const userId = principal.id;
+
+    // Get hubs where user is an admin
+    const userHubs = await db
+      .select({
+        id: platformHubs.id,
+        displayId: platformHubs.displayId,
+        name: platformHubs.name,
+        slug: platformHubs.slug,
+        subdomain: platformHubs.subdomain,
+        description: platformHubs.description,
+        logo: platformHubs.logo,
+        status: platformHubs.status,
+        role: sql<string>`'admin'`.as('role'),
+      })
+      .from(platformHubs)
+      .innerJoin(platformHubAdmins, eq(platformHubAdmins.hubId, platformHubs.id))
+      .where(
+        and(
+          eq(platformHubAdmins.userId, userId),
+          eq(platformHubAdmins.isActive, true),
+          eq(platformHubs.status, 'active')
+        )
+      )
+      .orderBy(platformHubs.name);
+
+    res.json({ success: true, hubs: userHubs });
+  } catch (error) {
+    console.error("Error fetching user hubs:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch user hubs" });
+  }
+});
+
 export default router;

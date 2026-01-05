@@ -21,7 +21,8 @@ import {
   ShoppingCart,
   Package,
   Award,
-  Wallet // Import Wallet icon
+  Wallet,
+  Globe
 } from "lucide-react";
 import type { WorkspaceContext } from "./PanelLayout";
 
@@ -189,6 +190,12 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
               icon: Building, 
               href: `/u/${usernameFromUrl}/orgs`, 
               active: location === `/u/${usernameFromUrl}/orgs` || location.startsWith(`/u/${usernameFromUrl}/orgs/`)
+            },
+            { 
+              label: "My Hubs", 
+              icon: Globe, 
+              href: `/u/${usernameFromUrl}/wythubs`, 
+              active: location === `/u/${usernameFromUrl}/wythubs` || location.startsWith(`/u/${usernameFromUrl}/wythubs/`)
             },
             { 
               label: "My Profile", 

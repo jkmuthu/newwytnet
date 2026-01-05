@@ -30,6 +30,7 @@ import WytSitePageEditor from "./pages/wytsite-page-editor";
 import MyAccount from "./pages/my-account";
 import MyProfile from "./pages/my-profile";
 import MyOrgsPage from "./pages/my-orgs";
+import MyHubsPage from "./pages/my-hubs";
 import { Link } from "wouter";
 import { 
   LayoutDashboard, 
@@ -3966,6 +3967,7 @@ export default function PanelRouter() {
       <Route path="/p/app/wytsite/:siteId/settings" component={WytSitePageEditor} />
       <Route path="/p/app/wytsite" component={WytSiteWorkspace} />
       <Route path="/p/my/orgs" component={MyOrgsPage} />
+      <Route path="/p/my/wythubs" component={MyHubsPage} />
       <Route path="/p/my/wytgames" component={MyPanelWytGames} />
       <Route path="/p/my/profile" component={MyProfile} />
       <Route path="/p/my/settings" component={MyAccount} />
@@ -4000,6 +4002,7 @@ export default function PanelRouter() {
       <Route path="/u/:username/wytapps/:slug" component={WytAppWorkspace} />
       <Route path="/u/:username/wytapps" component={MyPanelWytApps} />
       <Route path="/u/:username/orgs" component={MyOrgsPage} />
+      <Route path="/u/:username/wythubs" component={MyHubsPage} />
       <Route path="/u/:username/wytgames" component={MyPanelWytGames} />
       <Route path="/u/:username/profile" component={MyProfile} />
       <Route path="/u/:username/settings" component={MyAccount} />
