@@ -8,9 +8,12 @@ import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
-}
+const replitDomains = process.env.REPLIT_DOMAINS
+  ?.split(",")
+  .map((domain) => domain.trim())
+  .filter(Boolean);
+
+const hasReplitAuthConfig = Boolean(replitDomains?.length && process.env.REPL_ID);
 
 const getOidcConfig = memoize(
   async () => {
@@ -107,6 +110,11 @@ async function upsertReplitUser(
 }
 
 export async function setupReplitAuth(app: Express) {
+  if (!hasReplitAuthConfig) {
+    console.warn("Replit Auth not configured (REPLIT_DOMAINS/REPL_ID missing). Skipping setup for local development.");
+    return;
+  }
+
   // CRITICAL FIX: Remove duplicate session middleware to prevent conflicts
   // Session middleware is now handled centrally by customAuth.ts
   // We only initialize passport here since session is already configured
@@ -125,7 +133,7 @@ export async function setupReplitAuth(app: Express) {
     verified(null, user);
   };
 
-  for (const domain of process.env.REPLIT_DOMAINS!.split(",")) {
+  for (const domain of replitDomains!) {
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
@@ -144,7 +152,7 @@ export async function setupReplitAuth(app: Express) {
   app.get("/api/login", (req, res, next) => {
     // Robust strategy matching for development/production environments
     const hostname = req.hostname;
-    const domains = process.env.REPLIT_DOMAINS!.split(",");
+    const domains = replitDomains!;
     
     // Find exact match or similar domain pattern
     let strategyName = `replitauth:${domains[0]}`; // Default fallback
@@ -169,7 +177,7 @@ export async function setupReplitAuth(app: Express) {
   app.get("/api/callback", (req, res, next) => {
     // Robust strategy matching for development/production environments
     const hostname = req.hostname;
-    const domains = process.env.REPLIT_DOMAINS!.split(",");
+    const domains = replitDomains!;
     
     // Find exact match or similar domain pattern
     let strategyName = `replitauth:${domains[0]}`; // Default fallback

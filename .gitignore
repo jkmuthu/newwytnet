@@ -8,3 +8,6 @@ vite.config.ts.*
 .backup-temp/
 .config/
 .local/
+.env
+.env.local
+!.env.example
