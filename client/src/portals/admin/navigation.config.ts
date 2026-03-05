@@ -38,7 +38,6 @@ import {
   Terminal,
   Workflow,
   Webhook,
-  Search,
   HelpCircle,
   Book,
   Lightbulb,
@@ -50,7 +49,6 @@ import {
   Zap,
   Bell,
   User,
-  Rocket,
   type LucideIcon
 } from "lucide-react";
 
@@ -109,13 +107,6 @@ export const navigationSections: NavigationSection[] = [
         description: "System notifications, alerts, announcements",
         keywords: ["notifications", "alerts", "announcements", "messages"]
       },
-      {
-        label: "Global Search",
-        icon: Search,
-        href: "/engine/search",
-        description: "Search across all platform resources",
-        keywords: ["search", "find", "query", "lookup"]
-      }
     ]
   },
 
@@ -155,13 +146,6 @@ export const navigationSections: NavigationSection[] = [
         href: "/engine/datasets",
         description: "WytData management, global datasets",
         keywords: ["datasets", "data", "wytdata"]
-      },
-      {
-        label: "Trademark - India",
-        icon: FileText,
-        href: "/engine/trademarks",
-        description: "Indian trademark database management with TM Numbers",
-        keywords: ["trademarks", "tm", "india", "brand", "intellectual property"]
       },
       {
         label: "All Modules",
@@ -364,15 +348,6 @@ export const navigationSections: NavigationSection[] = [
         keywords: ["logs", "audit", "system", "advanced", "activity"],
         superAdminOnly: true
       },
-      {
-        label: "Publish to Production",
-        icon: Rocket,
-        href: "/engine/deployment",
-        description: "Deploy platform to production server",
-        keywords: ["deploy", "publish", "production", "launch", "live"],
-        superAdminOnly: true,
-        badge: "New"
-      }
     ]
   }
 ];
