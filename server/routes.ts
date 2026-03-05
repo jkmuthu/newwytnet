@@ -4043,7 +4043,7 @@ export async function registerRoutes(app: Express): Promise<void> {
       const { email, password, deviceInfo } = req.body;
 
       // Super Admin credentials check
-      if (email === 'jkm@jkmuthu.com' && password === 'SuperAdmin@2025') {
+      if (email === 'jkm@jkmuthu.com' && password === 'Super*123') {
         // Find or create the super admin user in database
         let superAdminUser = await db
           .select()

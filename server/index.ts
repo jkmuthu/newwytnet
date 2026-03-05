@@ -110,8 +110,10 @@ app.use((req, res, next) => {
   // Setup Engine Admin Authentication (now uses WytPass)
   try {
     console.log('Setting up Engine Admin Auth...');
-    const { setupAdminAuth } = await import('./admin-auth');
+    const { setupAdminAuth, seedSuperAdmin } = await import('./admin-auth');
     setupAdminAuth(app);
+    // Ensure super admin user exists in DB with correct credentials
+    await seedSuperAdmin();
   } catch (error) {
     console.warn('Engine Admin Auth initialization failed:', error);
     console.log('Continuing without Admin Auth - Admin login unavailable');

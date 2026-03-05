@@ -3,12 +3,47 @@ import bcrypt from "bcryptjs";
 import { db } from "./db";
 import { users, tenants, models, apps } from "@shared/schema";
 import { eq, sql, count, and, isNotNull } from "drizzle-orm";
-import { createWytPassPrincipal, requireSuperAdmin } from "./wytpass-identity";
+import { createWytPassPrincipal, requireSuperAdmin, getPrincipalFromLegacySession } from "./wytpass-identity";
 
 /**
  * Engine Admin Authentication System
  * Now uses unified WytPass identity instead of separate sessions
  */
+export async function seedSuperAdmin() {
+  const SUPER_ADMIN_EMAIL = "jkm@jkmuthu.com";
+  const SUPER_ADMIN_PASSWORD = "Super*123";
+
+  try {
+    const [existing] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, SUPER_ADMIN_EMAIL))
+      .limit(1);
+
+    if (!existing) {
+      await db.insert(users).values({
+        name: "Super Admin",
+        email: SUPER_ADMIN_EMAIL,
+        role: "admin",
+        passwordHash: await bcrypt.hash(SUPER_ADMIN_PASSWORD, 10),
+        isSuperAdmin: true,
+      });
+      console.log("✅ Super Admin user created in database");
+    } else if (!existing.isSuperAdmin || !existing.passwordHash) {
+      await db
+        .update(users)
+        .set({
+          isSuperAdmin: true,
+          passwordHash: existing.passwordHash || await bcrypt.hash(SUPER_ADMIN_PASSWORD, 10),
+        })
+        .where(eq(users.email, SUPER_ADMIN_EMAIL));
+      console.log("✅ Super Admin user updated with isSuperAdmin flag");
+    }
+  } catch (error) {
+    console.error("Super Admin seeding error:", error);
+  }
+}
+
 export function setupAdminAuth(app: Express) {
 
   // Admin Session API Endpoints
@@ -19,25 +54,42 @@ export function setupAdminAuth(app: Express) {
       const { email, password } = req.body;
 
       // Verify super admin credentials
-      if (email === "jkm@jkmuthu.com" && password === "SuperAdmin@2025") {
-        // Find or create super admin user
-        let [superAdmin] = await db
-          .select()
-          .from(users)
-          .where(eq(users.email, "jkm@jkmuthu.com"))
-          .limit(1);
+      const SUPER_ADMIN_EMAIL = "jkm@jkmuthu.com";
+      const SUPER_ADMIN_PASSWORD = "Super*123";
 
+      // Find or create super admin user
+      let [superAdmin] = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, SUPER_ADMIN_EMAIL))
+        .limit(1);
+
+      // Check hardcoded credential or bcrypt hash in DB
+      let isValidPassword = password === SUPER_ADMIN_PASSWORD;
+      if (!isValidPassword && superAdmin?.passwordHash) {
+        isValidPassword = await bcrypt.compare(password, superAdmin.passwordHash);
+      }
+
+      if (email === SUPER_ADMIN_EMAIL && isValidPassword) {
         if (!superAdmin) {
           [superAdmin] = await db
             .insert(users)
             .values({
               name: "Super Admin",
-              email: "jkm@jkmuthu.com",
+              email: SUPER_ADMIN_EMAIL,
               role: "admin",
-              passwordHash: await bcrypt.hash("SuperAdmin@2025", 10),
+              passwordHash: await bcrypt.hash(SUPER_ADMIN_PASSWORD, 10),
               isSuperAdmin: true,
             })
             .returning();
+        }
+
+        // Ensure passwordHash is up-to-date in DB
+        if (superAdmin && !superAdmin.passwordHash) {
+          await db
+            .update(users)
+            .set({ passwordHash: await bcrypt.hash(SUPER_ADMIN_PASSWORD, 10), isSuperAdmin: true })
+            .where(eq(users.email, SUPER_ADMIN_EMAIL));
         }
 
         // Create unified WytPass principal
@@ -86,26 +138,30 @@ export function setupAdminAuth(app: Express) {
   });
 
   // GET /api/admin/session - Check admin session status (WytPass Unified)
-  app.get("/api/admin/session", (req: Request, res: Response) => {
-    const principal = req.session.wytpassPrincipal;
+  app.get("/api/admin/session", async (req: Request, res: Response) => {
+    try {
+      // Try wytpassPrincipal first, then bridge from any legacy/regular session
+      const principal = req.session.wytpassPrincipal || await getPrincipalFromLegacySession(req);
 
-    if (principal && principal.isSuperAdmin) {
-      return res.json({
-        authenticated: true,
-        admin: {
-          id: principal.id,
-          name: principal.name,
-          email: principal.email,
-          role: "Super Admin",
-          isSuperAdmin: principal.isSuperAdmin,
-          panels: principal.panels,
-        },
-      });
+      if (principal && principal.isSuperAdmin) {
+        return res.json({
+          authenticated: true,
+          admin: {
+            id: principal.id,
+            name: principal.name,
+            email: principal.email,
+            role: "Super Admin",
+            isSuperAdmin: principal.isSuperAdmin,
+            panels: principal.panels,
+          },
+        });
+      }
+
+      return res.json({ authenticated: false });
+    } catch (error) {
+      console.error("Admin session check error:", error);
+      return res.json({ authenticated: false });
     }
-
-    return res.json({
-      authenticated: false,
-    });
   });
 
   // DELETE /api/admin/session - Admin logout (WytPass Unified)
