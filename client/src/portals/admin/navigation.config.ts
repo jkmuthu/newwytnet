@@ -49,6 +49,7 @@ import {
   Zap,
   Bell,
   User,
+  Layers,
   type LucideIcon
 } from "lucide-react";
 
@@ -153,6 +154,13 @@ export const navigationSections: NavigationSection[] = [
         href: "/engine/modules",
         description: "WytModules catalog, activation, configuration",
         keywords: ["modules", "library", "catalog", "plugins"]
+      },
+      {
+        label: "Module Builder",
+        icon: Layers,
+        href: "/engine/module-builder",
+        description: "Dynamic CRUD module builder, form fields, data collection",
+        keywords: ["module builder", "crud", "form builder", "dynamic", "data collection"]
       },
       {
         label: "All Apps",

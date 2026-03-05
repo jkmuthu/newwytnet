@@ -53,6 +53,8 @@ import AdminIntegrations from "@/pages/admin/integrations";
 import AdminSystemLogsReal from "@/pages/admin/system-logs-real";
 import FeaturesChecklistPage from "@/pages/admin/features-checklist";
 import QATestingTrackerPage from "@/pages/admin/qa-testing-tracker";
+import ModuleManagementPage from "@/pages/admin/module-management";
+import ModuleBuilderPage from "@/pages/admin/module-builder";
 import ApiLibraryPage from "@/pages/admin/api-library";
 import AllLogsPage from '@/pages/admin/all-logs';
 import AdminPosts from "@/pages/admin/posts";
@@ -135,6 +137,8 @@ export default function AdminRouter() {
           {/* Project Management Routes */}
           <Route path="/engine/features-checklist" component={FeaturesChecklistPage} />
           <Route path="/engine/qa-testing-tracker" component={QATestingTrackerPage} />
+          <Route path="/engine/module-builder/:moduleId" component={ModuleBuilderPage} />
+          <Route path="/engine/module-builder" component={ModuleManagementPage} />
 
           {/* Legacy/Other Routes */}
           <Route path="/engine/wytpoints" component={AdminWytPoints} />

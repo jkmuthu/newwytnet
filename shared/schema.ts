@@ -308,6 +308,31 @@ export const models = pgTable("models", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Dynamic Modules — Engine-level CRUD Form Builder
+export const dynamicModules = pgTable("dynamic_modules", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 255 }).notNull().unique(),
+  description: text("description"),
+  status: varchar("status", { length: 20 }).notNull().default('draft'), // draft | active | archived
+  fields: jsonb("fields").notNull().default([]),    // FieldDefinition[]
+  settings: jsonb("settings").notNull().default({}), // ModuleSettings
+  entryCount: integer("entry_count").notNull().default(0),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Dynamic Module Entries — submitted data per module
+export const dynamicModuleEntries = pgTable("dynamic_module_entries", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  moduleId: uuid("module_id").notNull().references(() => dynamicModules.id, { onDelete: 'cascade' }),
+  data: jsonb("data").notNull().default({}), // submitted field values keyed by field name
+  status: varchar("status", { length: 20 }).notNull().default('new'), // new | read | replied
+  submitterIp: varchar("submitter_ip", { length: 45 }),
+  submittedAt: timestamp("submitted_at").defaultNow().notNull(),
+});
+
 // CMS Pages
 export const pages = pgTable("pages", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1756,6 +1781,8 @@ export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type Membership = typeof memberships.$inferSelect;
 export type Model = typeof models.$inferSelect;
+export type DynamicModule = typeof dynamicModules.$inferSelect;
+export type DynamicModuleEntry = typeof dynamicModuleEntries.$inferSelect;
 export type Page = typeof pages.$inferSelect;
 export type Block = typeof blocks.$inferSelect;
 export type App = typeof apps.$inferSelect;
@@ -1774,6 +1801,10 @@ export const insertTenantSchema = createInsertSchema(tenants);
 export const insertUserSchema = createInsertSchema(users);
 export const insertMembershipSchema = createInsertSchema(memberships);
 export const insertModelSchema = createInsertSchema(models);
+export const insertDynamicModuleSchema = createInsertSchema(dynamicModules).omit({ id: true, createdAt: true, updatedAt: true, entryCount: true });
+export const insertDynamicModuleEntrySchema = createInsertSchema(dynamicModuleEntries).omit({ id: true, submittedAt: true });
+export type InsertDynamicModule = z.infer<typeof insertDynamicModuleSchema>;
+export type InsertDynamicModuleEntry = z.infer<typeof insertDynamicModuleEntrySchema>;
 export const insertPageSchema = createInsertSchema(pages);
 export const insertBlockSchema = createInsertSchema(blocks);
 export const insertNavigationMenuSchema = createInsertSchema(navigationMenus).omit({ id: true, createdAt: true, updatedAt: true });

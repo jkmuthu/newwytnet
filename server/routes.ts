@@ -200,6 +200,7 @@ import QRCode from "qrcode";
 import devdocRouter from "./routes/devdoc";
 import { setupFeaturesChecklistRoutes } from "./routes/features-checklist";
 import { setupQATestingTrackerRoutes } from "./routes/qa-testing-tracker";
+import { setupDynamicModulesRoutes } from "./routes/dynamic-modules";
 import { rateLimiters } from "./middleware/rateLimiter";
 import { requireAuth } from "./wytpass-identity";
 import { whatsappAuthService } from "./services/whatsappAuthService";
@@ -351,6 +352,9 @@ export async function registerRoutes(app: Express): Promise<void> {
 
   // Register QA Testing Tracker Routes
   setupQATestingTrackerRoutes(app);
+
+  // Register Dynamic Modules (CRUD Builder) Routes
+  setupDynamicModulesRoutes(app);
 
   // Register Presentations Routes
   app.use('/api', presentationsRoutes);
