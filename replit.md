@@ -34,23 +34,42 @@ The application uses a 3-tier URL architecture separating public, panel, and adm
 - `/wythubs` - WytHubs marketplace
 - `/features`, `/pricing`, `/about` - Platform information pages
 - `/login`, `/signup` - Authentication pages
-- `/a/:slug` - **Public App Access** - Free + public apps render full functionality without login
+- `/a/:slug` - **Public App Access** (exact match only) - Free + public apps render full functionality without login
   - Example: `/a/wytqrc` - WytQRC QR generator (free tier)
   - If app is not free or not public, shows marketing page with login/signup CTA
-- `/h/:slug` - Public hub pages
+- `/h/:hubname` - Public hub landing page
 
-### PANEL ROUTES (`/p/*` - User auth required)
-- `/p/` - User dashboard
-- `/p/my/*` - Personal workspace (My Panel)
-  - `/p/my/dashboard` - Dashboard
-  - `/p/my/wytapps` - My installed apps
-  - `/p/my/wytapps/:slug` - App workspace
-  - `/p/my/wallet`, `/p/my/points` - Payments & rewards
-  - `/p/my/profile`, `/p/my/settings` - Account settings
-- `/p/org/:id/*` - Organization workspace
-  - `/p/org/:id/dashboard`, `/p/org/:id/team`, `/p/org/:id/settings`
-- `/p/app/:slug/*` - App workspace (authenticated app access)
-  - Full app functionality with data persistence
+### USER PANEL ROUTES (`/u/*` - User auth required)
+- `/u/dashboard` - Personal dashboard
+- `/u/wytwall` - My WytWall (social feed)
+- `/u/wytapps` - My installed apps
+- `/u/wytapps/:slug` - Specific app workspace
+- `/u/wallet` - My wallet / payments
+- `/u/points` - My WytPoints
+- `/u/orgs` - My organizations
+- `/u/hubs` - My hubs
+- `/u/profile` - My profile
+- `/u/settings` - My account settings
+
+### APP WORKSPACE ROUTES (`/a/:slug/*` - User auth required for sub-paths)
+- `/a/:slug` - Public app page (exact match → PublicAppPage)
+- `/a/:slug/*` - Authenticated app workspace sub-pages
+- `/a/wytsite` - WytSite public landing
+- `/a/wytsite/:siteId/edit` - WytSite page editor
+
+### ORG PANEL ROUTES (`/o/:orgname/*` - User auth required)
+- `/o/:orgname/dashboard` - Org dashboard
+- `/o/:orgname/team` - Org team management
+- `/o/:orgname/wytapps` - Org apps
+- `/o/:orgname/settings` - Org settings
+
+### HUB PANEL ROUTES (`/h/:hubname/*` - Smart routing)
+- `/h/:hubname` - Public hub landing
+- `/h/:hubname/dashboard` - Hub panel dashboard (auth required)
+- `/h/:hubname/wytwall` - Hub WytWall
+- `/h/:hubname/wytapps` - Hub apps
+- `/h/:hubname/team` - Hub team
+- `/h/:hubname/settings` - Hub settings
 
 ### ENGINE ADMIN ROUTES (`/e/*` or `/engine/*` - Super Admin only)
 - `/e/` or `/engine/` - Engine Admin dashboard
@@ -66,17 +85,20 @@ The application uses a 3-tier URL architecture separating public, panel, and adm
 - `/admin/users` - Hub user management
 
 ### LEGACY ROUTES (Backward compatibility - redirect to new structure)
-- `/mypanel/*` → `/p/my/*`
-- `/orgpanel/*` → `/p/org/*`
-- `/apppanel/*` → `/p/app/*`
-- `/panel/*` → `/p/*`
-- `/u/:username/*` → Panel routes (still supported)
-- `/o/:orgname/*` → Org panel routes (still supported)
+- `/p/my/*` → `/u/*` (handled inside PanelRouter)
+- `/p/app/*` → `/a/*` (handled inside PanelRouter)
+- `/p/hub/*` → `/h/*` (handled inside PanelRouter)
+- `/p/org/*` → `/o/*` (handled inside PanelRouter)
+- `/mypanel/*` → `/u/*`
+- `/orgpanel/*` → `/o/*`
+- `/apppanel/*` → `/a/*`
+- `/panel/*` → `/u/*`
+- `/dashboard` → `/u/dashboard`
 
 ### Key Routing Principles
-1. **Single-letter prefixes** - `/a/` (apps), `/p/` (panel), `/e/` (engine), `/h/` (hubs), `/o/` (orgs), `/u/` (users)
-2. **Clear auth boundaries** - Each prefix maps to one auth middleware
-3. **Public apps** - If app has `isPublic=true` + free plan, full functionality at `/a/:slug`
+1. **Single-letter prefixes** - `/u/` (user), `/o/` (org), `/a/` (apps), `/h/` (hubs), `/e/` (engine), `/g/` (games - future)
+2. **No username in URL** - User panel uses `/u/dashboard` not `/u/me/dashboard`
+3. **Smart routing** - `/a/:slug` is public (exact), `/a/:slug/*` is authenticated workspace
 4. **SEO-friendly** - Marketing pages at root level for better indexing
 
 ## Backend Architecture

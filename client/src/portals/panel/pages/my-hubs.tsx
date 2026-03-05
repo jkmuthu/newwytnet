@@ -81,14 +81,14 @@ export default function MyHubs() {
         </div>
         
         <div className="flex gap-2">
-          <Link href={`/p/hub/${hub.slug}`} className="flex-1">
+          <Link href={`/h/${hub.slug}`} className="flex-1">
             <Button className="w-full" variant="default" data-testid={`button-switch-${hub.slug}`}>
               <ArrowRightLeft className="h-4 w-4 mr-2" />
               Switch to Hub
             </Button>
           </Link>
           {isAdmin && (
-            <Link href={`/p/hub/${hub.slug}/settings`}>
+            <Link href={`/h/${hub.slug}/settings`}>
               <Button variant="outline" data-testid={`button-settings-${hub.slug}`}>
                 <Settings className="h-4 w-4" />
               </Button>

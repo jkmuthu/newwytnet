@@ -82,23 +82,7 @@ export default function PanelLayout({ children }: PanelLayoutProps) {
       return;
     }
     
-    // NEW: Check for /p/hub/:hubSlug (Hub Panel - new structure)
-    const newHubMatch = normalizedPath.match(/^\/p\/hub\/([^\/]+)/);
-    if (newHubMatch) {
-      const hubSlug = newHubMatch[1];
-      const hubDisplayName = slugToDisplayName(hubSlug);
-      
-      setCurrentWorkspace({
-        type: 'hub',
-        id: `hub-${hubSlug}`,
-        name: `${hubDisplayName} Hub`,
-        hubSlug,
-        hubName: hubDisplayName
-      });
-      return;
-    }
-    
-    // Legacy: Check for /h/:hubname (Hub Panel)
+    // Check for /h/:hubname (Hub Panel)
     const hubMatch = normalizedPath.match(/^\/h\/([^\/]+)/);
     if (hubMatch) {
       const hubSlug = hubMatch[1];
@@ -129,15 +113,12 @@ export default function PanelLayout({ children }: PanelLayoutProps) {
       return;
     }
     
-    // NEW: Check for /u/:username (User Panel)
-    const userMatch = normalizedPath.match(/^\/u\/([^\/]+)/);
-    if (userMatch) {
-      const username = userMatch[1];
-      
+    // Check for /u/* (User Panel) - clean URLs, no username in path
+    if (normalizedPath === '/u' || normalizedPath.startsWith('/u/')) {
       setCurrentWorkspace({
         type: 'personal',
-        id: username,
-        name: username === 'me' ? 'WytPanel' : `${username}'s Panel`
+        id: 'me',
+        name: 'WytPanel'
       });
       return;
     }

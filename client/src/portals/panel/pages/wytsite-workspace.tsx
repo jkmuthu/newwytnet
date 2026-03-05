@@ -168,7 +168,7 @@ export default function WytSiteWorkspace() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/p/my/wytapps">
+          <Link href="/u/wytapps">
             <Button variant="ghost" size="sm" data-testid="button-back-apps">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
@@ -312,13 +312,13 @@ export default function WytSiteWorkspace() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem asChild>
-                        <Link href={`/p/app/wytsite/${site.id}/edit`}>
+                        <Link href={`/a/wytsite/${site.id}/edit`}>
                           <Edit className="h-4 w-4 mr-2" />
                           Edit Site
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
-                        <Link href={`/p/app/wytsite/${site.id}/settings`}>
+                        <Link href={`/a/wytsite/${site.id}/settings`}>
                           <Settings className="h-4 w-4 mr-2" />
                           Settings
                         </Link>
@@ -366,7 +366,7 @@ export default function WytSiteWorkspace() {
                     className="flex-1"
                     asChild
                   >
-                    <Link href={`/p/app/wytsite/${site.id}/edit`} data-testid={`button-edit-${site.id}`}>
+                    <Link href={`/a/wytsite/${site.id}/edit`} data-testid={`button-edit-${site.id}`}>
                       <Edit className="h-3 w-3 mr-1" />
                       Edit
                     </Link>
@@ -376,7 +376,7 @@ export default function WytSiteWorkspace() {
                     size="sm"
                     asChild
                   >
-                    <Link href={`/p/app/wytsite/${site.id}/design`} data-testid={`button-design-${site.id}`}>
+                    <Link href={`/a/wytsite/${site.id}/design`} data-testid={`button-design-${site.id}`}>
                       <Palette className="h-3 w-3" />
                     </Link>
                   </Button>

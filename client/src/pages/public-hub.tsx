@@ -163,12 +163,12 @@ function WytSiteLanding({ user }: WytSiteLandingProps) {
           <div className="flex items-center gap-3">
             {isLoggedIn ? (
               <>
-                <Link href="/p/my/wytapps/wytsite">
+                <Link href="/a/wytsite">
                   <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700" data-testid="button-my-sites">
                     My Sites
                   </Button>
                 </Link>
-                <Link href="/p/my/dashboard">
+                <Link href="/u/dashboard">
                   <Button variant="ghost" size="sm" data-testid="button-dashboard">Dashboard</Button>
                 </Link>
               </>
@@ -199,7 +199,7 @@ function WytSiteLanding({ user }: WytSiteLandingProps) {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {isLoggedIn ? (
-              <Link href="/p/my/wytapps/wytsite">
+              <Link href="/a/wytsite">
                 <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700" data-testid="button-start-building">
                   Go to My Sites
                   <ChevronRight className="h-4 w-4 ml-2" />
@@ -342,7 +342,7 @@ function WytSiteLanding({ user }: WytSiteLandingProps) {
                     ))}
                   </ul>
                   {isLoggedIn ? (
-                    <Link href="/p/my/wytapps/wytsite">
+                    <Link href="/a/wytsite">
                       <Button 
                         className={`w-full ${plan.popular ? 'bg-indigo-600 hover:bg-indigo-700' : ''}`}
                         variant={plan.popular ? 'default' : 'outline'}
@@ -377,7 +377,7 @@ function WytSiteLanding({ user }: WytSiteLandingProps) {
             Join thousands of businesses already using WytSite to create their online presence.
           </p>
           {isLoggedIn ? (
-            <Link href="/p/my/wytapps/wytsite">
+            <Link href="/a/wytsite">
               <Button size="lg" variant="secondary" className="bg-white text-indigo-600 hover:bg-gray-100" data-testid="button-cta-signup">
                 Go to My Sites
                 <ArrowRight className="h-4 w-4 ml-2" />
@@ -487,7 +487,7 @@ function DefaultHubLanding({ hubSlug, user }: DefaultHubLandingProps) {
                 <Link href={`/h/${hubSlug}/dashboard`}>
                   <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700">Go to Hub</Button>
                 </Link>
-                <Link href="/p/my/dashboard">
+                <Link href="/u/dashboard">
                   <Button variant="ghost" size="sm">Dashboard</Button>
                 </Link>
               </>

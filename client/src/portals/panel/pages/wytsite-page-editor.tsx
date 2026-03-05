@@ -364,7 +364,7 @@ export default function WytSitePageEditor() {
     return (
       <div className="text-center py-16">
         <h2 className="text-xl font-semibold mb-2">Site not found</h2>
-        <Link href="/p/app/wytsite">
+        <Link href="/a/wytsite">
           <Button>Back to WytSite</Button>
         </Link>
       </div>
@@ -375,7 +375,7 @@ export default function WytSitePageEditor() {
     <div className="h-full flex flex-col">
       <div className="border-b bg-white dark:bg-gray-950 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/p/app/wytsite">
+          <Link href="/a/wytsite">
             <Button variant="ghost" size="sm" data-testid="button-back">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back

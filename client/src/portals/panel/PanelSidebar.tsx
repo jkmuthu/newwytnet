@@ -73,12 +73,10 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
   const installedAppsCount = (myAppsData as any)?.apps?.length || 0;
   const appsCountBadge = installedAppsCount > 99 ? '99+' : installedAppsCount.toString();
 
-  // Extract username from URL or use default
-  const usernameFromUrl = location.match(/^\/u\/([^\/]+)/)?.[1] || 'me';
+  // Extract context IDs from URL
   const orgnameFromUrl = location.match(/^\/o\/([^\/]+)/)?.[1] || 'default';
   const appnameFromUrl = location.match(/^\/a\/([^\/]+)/)?.[1] || '';
-  const hubSlugFromNewUrl = location.match(/^\/p\/hub\/([^\/]+)/)?.[1] || '';
-  const hubnameFromUrl = hubSlugFromNewUrl || location.match(/^\/h\/([^\/]+)/)?.[1] || '';
+  const hubnameFromUrl = location.match(/^\/h\/([^\/]+)/)?.[1] || '';
 
   // Get current org and user's role in it
   const currentOrg = (orgsData as any)?.organizations?.find(
@@ -122,10 +120,9 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
         }
       ];
     } else if (currentWorkspace.type === 'hub') {
-      // HubPanel Navigation - /p/hub/:hubSlug/* (new) or /h/:hubname/* (legacy)
+      // HubPanel Navigation - /h/:hubname/*
       const hubSlug = hubnameFromUrl;
-      const useNewUrls = hubSlugFromNewUrl !== '';
-      const baseUrl = useNewUrls ? `/p/hub/${hubSlug}` : `/h/${hubSlug}`;
+      const baseUrl = `/h/${hubSlug}`;
       
       return [
         {
@@ -165,7 +162,7 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
         }
       ];
     } else if (currentWorkspace.type === 'personal') {
-      // MyPanel Navigation - /u/:username/*
+      // MyPanel Navigation - clean /u/* URLs (no username required)
       return [
         {
           section: "WytPanel",
@@ -173,45 +170,45 @@ export default function PanelSidebar({ currentWorkspace, collapsed, onToggleColl
             { 
               label: "My Dashboard", 
               icon: Home, 
-              href: `/u/${usernameFromUrl}`, 
-              active: location === `/u/${usernameFromUrl}` || location === `/u/${usernameFromUrl}/dashboard`
+              href: `/u/dashboard`, 
+              active: location === '/u' || location === '/u/dashboard'
             },
             { 
               label: "My WytWall", 
               icon: MessageSquare, 
-              href: `/u/${usernameFromUrl}/wytwall`, 
-              active: location === `/u/${usernameFromUrl}/wytwall` || location.startsWith(`/u/${usernameFromUrl}/wytwall/`)
+              href: `/u/wytwall`, 
+              active: location === '/u/wytwall' || location.startsWith('/u/wytwall/')
             },
             { 
               label: "My WytApps", 
               icon: Package, 
-              href: `/u/${usernameFromUrl}/wytapps`, 
-              active: location === `/u/${usernameFromUrl}/wytapps` || location.startsWith(`/u/${usernameFromUrl}/wytapps/`),
+              href: `/u/wytapps`, 
+              active: location === '/u/wytapps' || location.startsWith('/u/wytapps/'),
               badge: installedAppsCount > 0 ? { content: appsCountBadge, tone: 'default' as const } : undefined
             },
             { 
               label: "My Orgs", 
               icon: Building, 
-              href: `/u/${usernameFromUrl}/orgs`, 
-              active: location === `/u/${usernameFromUrl}/orgs` || location.startsWith(`/u/${usernameFromUrl}/orgs/`)
+              href: `/u/orgs`, 
+              active: location === '/u/orgs' || location.startsWith('/u/orgs/')
             },
             { 
               label: "My Hubs", 
               icon: Globe, 
-              href: `/u/${usernameFromUrl}/wythubs`, 
-              active: location === `/u/${usernameFromUrl}/wythubs` || location.startsWith(`/u/${usernameFromUrl}/wythubs/`)
+              href: `/u/hubs`, 
+              active: location === '/u/hubs' || location.startsWith('/u/hubs/')
             },
             { 
               label: "My Profile", 
               icon: User, 
-              href: `/u/${usernameFromUrl}/profile`, 
-              active: location === `/u/${usernameFromUrl}/profile` 
+              href: `/u/profile`, 
+              active: location === '/u/profile'
             },
             { 
               label: "My Account", 
               icon: Settings, 
-              href: `/u/${usernameFromUrl}/account`, 
-              active: location === `/u/${usernameFromUrl}/account` 
+              href: `/u/settings`, 
+              active: location === '/u/settings' || location === '/u/account'
             },
           ]
         }

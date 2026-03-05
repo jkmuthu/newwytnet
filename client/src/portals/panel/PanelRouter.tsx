@@ -3927,79 +3927,83 @@ function HubPanelProfile() {
 
 /**
  * PanelRouter handles WytPanel routes for authenticated users
- * 
- * NEW URL Structure (/p/*):
- * - /p/                = Dashboard
- * - /p/my/*            = Personal workspace
- * - /p/org/:id/*       = Organization workspace
- * - /p/app/:slug/*     = App workspace (authenticated)
- * 
- * Legacy routes still supported:
- * - /u/:username/*     = User panel
- * - /o/:orgname/*      = Org panel
- * - /h/:hubname/*      = Hub panel
+ *
+ * NEW URL Structure (clean single-letter prefixes):
+ * - /u/*               = User personal workspace
+ * - /o/:orgname/*      = Organization workspace
+ * - /a/:appSlug/*      = App workspace (authenticated sub-paths)
+ * - /h/:hubname/*      = Hub workspace
+ * - /g/:gameSlug/*     = Game workspace (future)
+ *
+ * Legacy routes still supported (redirect to new):
+ * - /p/my/*            → /u/*
+ * - /p/app/*           → /a/*
+ * - /p/hub/*           → /h/*
+ * - /p/org/*           → /o/*
  */
 export default function PanelRouter() {
   return (
     <PanelLayout>
       <Switch>
       {/* ============================================ */}
-      {/* NEW PANEL ROUTES (/p/*)                     */}
-      {/* Routes ordered from most specific to least  */}
+      {/* USER PANEL ROUTES (/u/*)                    */}
+      {/* Clean URLs - no username required           */}
       {/* ============================================ */}
-      
-      {/* /p/hub/:hubSlug/* - Hub workspace (authenticated) - MUST come before /p */}
-      <Route path="/p/hub/:hubSlug/dashboard" component={HubPanelDashboard} />
-      <Route path="/p/hub/:hubSlug/wytwall" component={HubPanelWytWall} />
-      <Route path="/p/hub/:hubSlug/wytapps" component={HubPanelWytApps} />
-      <Route path="/p/hub/:hubSlug/team" component={HubPanelTeam} />
-      <Route path="/p/hub/:hubSlug/settings" component={HubPanelProfile} />
-      <Route path="/p/hub/:hubSlug" component={HubPanelDashboard} />
-      
-      {/* /p/my/* - Personal workspace */}
-      <Route path="/p/my/dashboard" component={MyPanelDashboard} />
-      <Route path="/p/my/wytwall/:postId" component={PostDetail} />
-      <Route path="/p/my/wytwall" component={MyPanelWytWall} />
-      <Route path="/p/my/posts" component={MyPosts} />
-      <Route path="/p/my/duties" component={MyPanelDuties} />
-      <Route path="/p/my/wytscore" component={MyPanelWytScore} />
-      <Route path="/p/my/circle" component={MyPanelCircle} />
-      <Route path="/p/my/wallet" component={MyWallet} />
-      <Route path="/p/my/points" component={MyPoints} />
-      <Route path="/p/my/wytapps/:slug" component={WytAppWorkspace} />
-      <Route path="/p/my/wytapps" component={MyPanelWytApps} />
-      <Route path="/p/app/wytsite/:siteId/edit" component={WytSitePageEditor} />
-      <Route path="/p/app/wytsite/:siteId/design" component={WytSitePageEditor} />
-      <Route path="/p/app/wytsite/:siteId/settings" component={WytSitePageEditor} />
-      <Route path="/p/app/wytsite" component={WytSiteWorkspace} />
-      <Route path="/p/my/orgs" component={MyOrgsPage} />
-      <Route path="/p/my/wythubs" component={MyHubsPage} />
-      <Route path="/p/my/wytgames" component={MyPanelWytGames} />
-      <Route path="/p/my/profile" component={MyProfile} />
-      <Route path="/p/my/settings" component={MyAccount} />
-      <Route path="/p/my/account" component={MyAccount} />
-
-      {/* /p/org/:id/* - Organization workspace */}
-      <Route path="/p/org/:orgId/dashboard" component={OrgPanelDashboard} />
-      <Route path="/p/org/:orgId/wytapps" component={MyPanelWytApps} />
-      <Route path="/p/org/:orgId/team" component={OrgPanelMembers} />
-      <Route path="/p/org/:orgId/settings" component={OrgPanelSettings} />
-      <Route path="/p/org/:orgId" component={OrgPanelDashboard} />
-      <Route path="/p/org" component={OrgPanelDashboard} />
-
-      {/* /p/app/:slug/* - App workspace (authenticated) */}
-      <Route path="/p/app/:appSlug/:rest*" component={AppPanelRouter} />
-      <Route path="/p/app/:appSlug" component={AppPanelRouter} />
-
-      {/* Generic /p routes - MUST come after more specific routes */}
-      <Route path="/p/my" component={MyPanelDashboard} />
-      <Route path="/p" component={MyPanelDashboard} />
+      <Route path="/u/dashboard" component={MyPanelDashboard} />
+      <Route path="/u/wytwall/:postId" component={PostDetail} />
+      <Route path="/u/wytwall" component={MyPanelWytWall} />
+      <Route path="/u/posts" component={MyPosts} />
+      <Route path="/u/duties" component={MyPanelDuties} />
+      <Route path="/u/wytscore" component={MyPanelWytScore} />
+      <Route path="/u/circle" component={MyPanelCircle} />
+      <Route path="/u/wallet" component={MyWallet} />
+      <Route path="/u/points" component={MyPoints} />
+      <Route path="/u/wytapps/:slug" component={WytAppWorkspace} />
+      <Route path="/u/wytapps" component={MyPanelWytApps} />
+      <Route path="/u/orgs" component={MyOrgsPage} />
+      <Route path="/u/hubs" component={MyHubsPage} />
+      <Route path="/u/games" component={MyPanelWytGames} />
+      <Route path="/u/profile" component={MyProfile} />
+      <Route path="/u/settings" component={MyAccount} />
+      <Route path="/u/account" component={MyAccount} />
+      <Route path="/u" component={MyPanelDashboard} />
 
       {/* ============================================ */}
-      {/* LEGACY PANEL ROUTES (backward compatibility) */}
+      {/* APP WORKSPACE ROUTES (/a/:appSlug/*)        */}
+      {/* Sub-paths = authenticated workspace         */}
       {/* ============================================ */}
-      {/* User Panel routes - /u/:username/* */}
-      <Route path="/u/:username" component={MyPanelDashboard} />
+      <Route path="/a/wytsite/:siteId/edit" component={WytSitePageEditor} />
+      <Route path="/a/wytsite/:siteId/design" component={WytSitePageEditor} />
+      <Route path="/a/wytsite/:siteId/settings" component={WytSitePageEditor} />
+      <Route path="/a/wytsite" component={WytSiteWorkspace} />
+      <Route path="/a/:appSlug/:rest*" component={AppPanelRouter} />
+      <Route path="/a/:appSlug" component={AppPanelRouter} />
+
+      {/* ============================================ */}
+      {/* ORG PANEL ROUTES (/o/:orgname/*)            */}
+      {/* ============================================ */}
+      <Route path="/o/:orgname/dashboard" component={OrgPanelDashboard} />
+      <Route path="/o/:orgname/wytapps" component={MyPanelWytApps} />
+      <Route path="/o/:orgname/team" component={OrgPanelMembers} />
+      <Route path="/o/:orgname/settings" component={OrgPanelSettings} />
+      <Route path="/o/:orgname/profile" component={OrgPanelSettings} />
+      <Route path="/o/:orgname" component={OrgPanelDashboard} />
+
+      {/* ============================================ */}
+      {/* HUB PANEL ROUTES (/h/:hubname/*)            */}
+      {/* ============================================ */}
+      <Route path="/h/:hubname/dashboard" component={HubPanelDashboard} />
+      <Route path="/h/:hubname/wytwall" component={HubPanelWytWall} />
+      <Route path="/h/:hubname/wytapps" component={HubPanelWytApps} />
+      <Route path="/h/:hubname/team" component={HubPanelTeam} />
+      <Route path="/h/:hubname/settings" component={HubPanelProfile} />
+      <Route path="/h/:hubname/profile" component={HubPanelProfile} />
+      <Route path="/h/:hubname" component={HubPanelDashboard} />
+
+      {/* ============================================ */}
+      {/* LEGACY ROUTES - backward compatibility      */}
+      {/* /u/:username/* (with username in URL)       */}
+      {/* ============================================ */}
       <Route path="/u/:username/dashboard" component={MyPanelDashboard} />
       <Route path="/u/:username/wytwall/:postId" component={PostDetail} />
       <Route path="/u/:username/wytwall" component={MyPanelWytWall} />
@@ -4013,26 +4017,34 @@ export default function PanelRouter() {
       <Route path="/u/:username/wytapps" component={MyPanelWytApps} />
       <Route path="/u/:username/orgs" component={MyOrgsPage} />
       <Route path="/u/:username/wythubs" component={MyHubsPage} />
+      <Route path="/u/:username/hubs" component={MyHubsPage} />
       <Route path="/u/:username/wytgames" component={MyPanelWytGames} />
       <Route path="/u/:username/profile" component={MyProfile} />
       <Route path="/u/:username/settings" component={MyAccount} />
       <Route path="/u/:username/account" component={MyAccount} />
+      <Route path="/u/:username" component={MyPanelDashboard} />
 
-      {/* Organization Panel routes - /o/:orgname/* */}
-      <Route path="/o/:orgname" component={OrgPanelDashboard} />
-      <Route path="/o/:orgname/dashboard" component={OrgPanelDashboard} />
-      <Route path="/o/:orgname/wytapps" component={MyPanelWytApps} />
-      <Route path="/o/:orgname/team" component={OrgPanelMembers} />
-      <Route path="/o/:orgname/settings" component={OrgPanelSettings} />
-      <Route path="/o/:orgname/profile" component={OrgPanelSettings} />
-      
-      {/* Hub Panel routes - /h/:hubname/* */}
-      <Route path="/h/:hubname" component={HubPanelDashboard} />
-      <Route path="/h/:hubname/dashboard" component={HubPanelDashboard} />
-      <Route path="/h/:hubname/wytwall" component={HubPanelWytWall} />
-      <Route path="/h/:hubname/wytapps" component={HubPanelWytApps} />
-      <Route path="/h/:hubname/team" component={HubPanelTeam} />
-      <Route path="/h/:hubname/profile" component={HubPanelProfile} />
+      {/* /p/* legacy routes → redirect to /u/* */}
+      <Route path="/p/my/dashboard">{() => <Redirect to="/u/dashboard" />}</Route>
+      <Route path="/p/my/wytwall">{() => <Redirect to="/u/wytwall" />}</Route>
+      <Route path="/p/my/posts">{() => <Redirect to="/u/posts" />}</Route>
+      <Route path="/p/my/wallet">{() => <Redirect to="/u/wallet" />}</Route>
+      <Route path="/p/my/points">{() => <Redirect to="/u/points" />}</Route>
+      <Route path="/p/my/wytapps">{() => <Redirect to="/u/wytapps" />}</Route>
+      <Route path="/p/my/orgs">{() => <Redirect to="/u/orgs" />}</Route>
+      <Route path="/p/my/wythubs">{() => <Redirect to="/u/hubs" />}</Route>
+      <Route path="/p/my/profile">{() => <Redirect to="/u/profile" />}</Route>
+      <Route path="/p/my/settings">{() => <Redirect to="/u/settings" />}</Route>
+      <Route path="/p/my">{() => <Redirect to="/u/dashboard" />}</Route>
+      <Route path="/p/app/wytsite/:siteId/edit">{(p: any) => <Redirect to={`/a/wytsite/${p.siteId}/edit`} />}</Route>
+      <Route path="/p/app/wytsite">{() => <Redirect to="/a/wytsite" />}</Route>
+      <Route path="/p/app/:appSlug/:rest*">{(p: any) => <Redirect to={`/a/${p.appSlug}/${p['rest*'] || ''}`} />}</Route>
+      <Route path="/p/app/:appSlug">{(p: any) => <Redirect to={`/a/${p.appSlug}`} />}</Route>
+      <Route path="/p/hub/:hubSlug/:rest*">{(p: any) => <Redirect to={`/h/${p.hubSlug}/${p['rest*'] || ''}`} />}</Route>
+      <Route path="/p/hub/:hubSlug">{(p: any) => <Redirect to={`/h/${p.hubSlug}`} />}</Route>
+      <Route path="/p/org/:orgId/:rest*">{(p: any) => <Redirect to={`/o/${p.orgId}/${p['rest*'] || ''}`} />}</Route>
+      <Route path="/p/org/:orgId">{(p: any) => <Redirect to={`/o/${p.orgId}`} />}</Route>
+      <Route path="/p">{() => <Redirect to="/u/dashboard" />}</Route>
 
       {/* Legacy App Panel route */}
       <Route path="/apppanel/:rest*" component={AppPanelRouter} />
