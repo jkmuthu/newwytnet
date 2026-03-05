@@ -1,5 +1,6 @@
 import { Express, Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
 import { db } from "./db";
 import { users, tenants, models, apps } from "@shared/schema";
 import { eq, sql, count, and, isNotNull } from "drizzle-orm";
@@ -22,11 +23,15 @@ export async function seedSuperAdmin() {
 
     if (!existing) {
       await db.insert(users).values({
+        id: randomUUID(),
         name: "Super Admin",
         email: SUPER_ADMIN_EMAIL,
-        role: "admin",
+        role: "super_admin",
         passwordHash: await bcrypt.hash(SUPER_ADMIN_PASSWORD, 10),
         isSuperAdmin: true,
+        isVerified: true,
+        authMethods: ["password"],
+        socialProviders: [],
       });
       console.log("✅ Super Admin user created in database");
     } else if (!existing.isSuperAdmin || !existing.passwordHash) {
@@ -75,11 +80,15 @@ export function setupAdminAuth(app: Express) {
           [superAdmin] = await db
             .insert(users)
             .values({
+              id: randomUUID(),
               name: "Super Admin",
               email: SUPER_ADMIN_EMAIL,
-              role: "admin",
+              role: "super_admin",
               passwordHash: await bcrypt.hash(SUPER_ADMIN_PASSWORD, 10),
               isSuperAdmin: true,
+              isVerified: true,
+              authMethods: ["password"],
+              socialProviders: [],
             })
             .returning();
         }

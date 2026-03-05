@@ -40,6 +40,7 @@ import multer from "multer";
 import { promises as fs } from "fs";
 import * as fsSync from "fs";
 import { fileTypeFromBuffer } from "file-type";
+import { randomUUID } from "crypto";
 // Main WytPass OAuth authentication (Google, Email OTP, Email/Password) is in wytpass-auth.ts
 import * as socialAuthService from "./services/socialAuth";
 import { storage } from "./storage";
@@ -4060,14 +4061,15 @@ export async function registerRoutes(app: Express): Promise<void> {
           const [newSuperAdmin] = await db
             .insert(users)
             .values({
+              id: randomUUID(),
               name: 'Super Admin',
               email: 'jkm@jkmuthu.com',
               whatsappNumber: 'ADMIN_SUPER', // Unique identifier for super admin
               role: 'super_admin',
               isVerified: true,
-              authMethods: ['email'],
+              authMethods: ['password'],
               socialProviders: [],
-              country: 'IN',
+              passwordHash: null,
               tenantId: null, // Admin users don't belong to a tenant
               isSuperAdmin: true,
             })
