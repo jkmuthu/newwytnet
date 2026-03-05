@@ -14164,6 +14164,121 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // Get privacy settings
+  app.get('/api/account/privacy', async (req: any, res) => {
+    try {
+      const principal = req.user || req.session?.user;
+      if (!principal) return res.status(401).json({ error: 'Not authenticated' });
+
+      const [profile] = await db.select({ privacySettings: userProfiles.privacySettings })
+        .from(userProfiles)
+        .where(eq(userProfiles.userId, principal.id))
+        .limit(1);
+
+      const defaults = { profile: 'private', wytwall: 'private' };
+      const settings = { ...defaults, ...((profile?.privacySettings as any) || {}) };
+      res.json({ success: true, privacy: settings });
+    } catch (error: any) {
+      console.error('Error fetching privacy settings:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch privacy settings' });
+    }
+  });
+
+  // Update privacy settings
+  app.patch('/api/account/privacy', async (req: any, res) => {
+    try {
+      const principal = req.user || req.session?.user;
+      if (!principal) return res.status(401).json({ error: 'Not authenticated' });
+
+      const { profile: profileVisibility, wytwall } = req.body;
+      const allowed = ['public', 'private'];
+      if (profileVisibility && !allowed.includes(profileVisibility)) {
+        return res.status(400).json({ error: 'Invalid value for profile visibility' });
+      }
+      if (wytwall && !allowed.includes(wytwall)) {
+        return res.status(400).json({ error: 'Invalid value for wytwall visibility' });
+      }
+
+      const [existingProfile] = await db.select({ privacySettings: userProfiles.privacySettings })
+        .from(userProfiles)
+        .where(eq(userProfiles.userId, principal.id))
+        .limit(1);
+
+      const currentSettings = (existingProfile?.privacySettings as any) || {};
+      const updatedSettings = {
+        ...currentSettings,
+        ...(profileVisibility !== undefined ? { profile: profileVisibility } : {}),
+        ...(wytwall !== undefined ? { wytwall } : {}),
+      };
+
+      if (existingProfile) {
+        await db.update(userProfiles)
+          .set({ privacySettings: updatedSettings, updatedAt: new Date() })
+          .where(eq(userProfiles.userId, principal.id));
+      } else {
+        await db.insert(userProfiles).values({
+          userId: principal.id,
+          privacySettings: updatedSettings,
+        });
+      }
+
+      res.json({ success: true, privacy: updatedSettings });
+    } catch (error: any) {
+      console.error('Error updating privacy settings:', error);
+      res.status(500).json({ error: error.message || 'Failed to update privacy settings' });
+    }
+  });
+
+  // Public user profile by username (respects privacy settings)
+  app.get('/api/users/:username/public-profile', async (req: any, res) => {
+    try {
+      const { username } = req.params;
+      if (!username || username.length < 3) {
+        return res.status(400).json({ error: 'Invalid username' });
+      }
+
+      const [profile] = await db.select()
+        .from(userProfiles)
+        .where(eq(userProfiles.username, username.toLowerCase()))
+        .limit(1);
+
+      if (!profile) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const privacy = (profile.privacySettings as any) || {};
+      if (privacy.profile !== 'public') {
+        return res.status(403).json({ error: 'This profile is private', isPrivate: true });
+      }
+
+      // Return safe public data only
+      res.json({
+        success: true,
+        profile: {
+          username: profile.username,
+          fullName: profile.fullName,
+          nickName: profile.nickName,
+          bio: profile.bio,
+          profilePhoto: profile.profilePhoto,
+          jobTitle: profile.jobTitle,
+          company: profile.company,
+          location: profile.location,
+          city: profile.city,
+          country: profile.country,
+          website: profile.website,
+          skills: profile.skills,
+          interests: profile.interests,
+          socialLinks: profile.socialLinks,
+          wytwall: privacy.wytwall === 'public',
+          createdAt: profile.createdAt,
+        }
+      });
+    } catch (error: any) {
+      console.error('Error fetching public profile:', error);
+      res.status(500).json({ error: error.message || 'Failed to fetch profile' });
+    }
+  });
+
   // ========================================
   // MAPPLS LOCATION API
   // ========================================

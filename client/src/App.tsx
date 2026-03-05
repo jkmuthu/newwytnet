@@ -36,6 +36,9 @@ import SiteRenderer from "@/pages/site-renderer";
 // Public Hub Landing (for /h/:hubname public access)
 import PublicHubPage from "@/pages/public-hub";
 
+// Public User Profile (for /u/:username public access)
+import PublicUserProfile from "@/pages/public-user-profile";
+
 /**
  * PortalRouter - Top-level router that determines which portal to use
  * 
@@ -113,6 +116,24 @@ function PortalRouter() {
         {/* USER PANEL ROUTES (/u/*) - Authenticated   */}
         {/* ============================================ */}
         <Route path="/u" component={PanelRouter} />
+
+        {/* Smart /u/:username handler:
+            - Known panel paths (dashboard, wytapps, etc.) → PanelRouter
+            - Everything else (actual usernames) → Public profile page */}
+        <Route path="/u/:username">
+          {(params: { username: string }) => {
+            const panelPaths = [
+              'dashboard', 'wytwall', 'wytapps', 'orgs', 'hubs', 'wallet',
+              'points', 'profile', 'settings', 'account', 'posts', 'duties',
+              'wytscore', 'circle', 'games', 'me',
+            ];
+            if (panelPaths.includes(params.username)) {
+              return <PanelRouter />;
+            }
+            return <PublicUserProfile username={params.username} />;
+          }}
+        </Route>
+
         <Route path="/u/:rest*" component={PanelRouter} />
 
         {/* Organization Panel - /o/:orgname/* */}
