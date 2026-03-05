@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import WytPassLoginForm from "@/components/auth/WytPassLoginForm";
 import { Loader2 } from "lucide-react";
+import { saveReturnUrl } from "@/lib/authUtils";
 
 /**
  * AdminGate - Guards admin routes and shows unified WytPass login when not authenticated
@@ -8,6 +10,13 @@ import { Loader2 } from "lucide-react";
  */
 export default function AdminGate({ children }: { children: React.ReactNode }) {
   const { isAdminAuthenticated, isLoading } = useAdminAuth();
+
+  // Save the current URL so after login we redirect back to the Engine Admin
+  useEffect(() => {
+    if (!isLoading && !isAdminAuthenticated) {
+      saveReturnUrl();
+    }
+  }, [isLoading, isAdminAuthenticated]);
 
   // Show loading state while checking authentication
   if (isLoading) {

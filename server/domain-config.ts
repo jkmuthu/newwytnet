@@ -6,7 +6,7 @@ export const DOMAIN_CONFIG = {
       'https://wytnet.com',
       'https://www.wytnet.com'
     ],
-    cookieDomain: '.wytnet.com',
+    cookieDomain: undefined,
     secure: true
   },
   development: {
