@@ -76,6 +76,7 @@ const DocSection: React.FC<{ title: string; id: string; children: React.ReactNod
 export default function DevDocumentation() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [adminBypass, setAdminBypass] = useState(false);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
