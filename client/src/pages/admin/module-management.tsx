@@ -69,7 +69,7 @@ export default function ModuleManagementPage() {
       setNewName("");
       setNewDesc("");
       toast({ title: "Module created", description: `"${data.module.name}" is ready to build.` });
-      setLocation(`/engine/module-builder/${data.module.id}`);
+      setLocation(`/engine/module-builder/${encodeURIComponent(data.module.id)}`);
     },
     onError: () => toast({ title: "Failed to create module", variant: "destructive" }),
   });

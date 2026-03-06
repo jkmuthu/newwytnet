@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
@@ -575,8 +575,28 @@ export default function ModuleBuilderPage() {
   const [isDirty, setIsDirty] = useState(false);
   const [moduleStatus, setModuleStatus] = useState("draft");
 
-  const { data: modData, isLoading } = useQuery<{ module: DynamicModule }>({
-    queryKey: [`/api/dynamic-modules/${moduleId}`],
+  const { data: modData, isLoading, error: moduleError } = useQuery<{ module: DynamicModule }>({
+    queryKey: ["dynamic-module", moduleId],
+    queryFn: async () => {
+      const res = await fetch(`/api/dynamic-modules/${moduleId}`, {
+        credentials: "include",
+      });
+
+      if (res.status === 404) {
+        throw new Error("Module not found");
+      }
+
+      if (res.status === 403) {
+        throw new Error("Access denied. Super Admin permission required.");
+      }
+
+      if (!res.ok) {
+        const text = (await res.text()) || res.statusText;
+        throw new Error(`Failed to load module: ${text}`);
+      }
+
+      return res.json();
+    },
     enabled: !!moduleId,
   });
 
@@ -591,7 +611,20 @@ export default function ModuleBuilderPage() {
   }, [mod]);
 
   const { data: entriesData, refetch: refetchEntries } = useQuery<{ entries: Entry[]; total: number }>({
-    queryKey: [`/api/dynamic-modules/${moduleId}/entries`, entryPage],
+    queryKey: ["dynamic-module-entries", moduleId, entryPage],
+    queryFn: async () => {
+      const params = new URLSearchParams({ page: String(entryPage), limit: "20" });
+      const res = await fetch(`/api/dynamic-modules/${moduleId}/entries?${params.toString()}`, {
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const text = (await res.text()) || res.statusText;
+        throw new Error(`Failed to load entries: ${text}`);
+      }
+
+      return res.json();
+    },
     enabled: !!moduleId && activeTab === "entries",
   });
 
@@ -703,7 +736,13 @@ export default function ModuleBuilderPage() {
   }
 
   if (!mod) {
-    return <div className="p-6 text-center text-gray-400">Module not found. <Button variant="link" onClick={() => setLocation("/engine/module-builder")}>Back to Modules</Button></div>;
+    const errorText = moduleError instanceof Error ? moduleError.message : "Module not found";
+    return (
+      <div className="p-6 text-center text-gray-500">
+        <p className="mb-2">{errorText}</p>
+        <Button variant="link" onClick={() => setLocation("/engine/module-builder")}>Back to Modules</Button>
+      </div>
+    );
   }
 
   const entries = entriesData?.entries || [];

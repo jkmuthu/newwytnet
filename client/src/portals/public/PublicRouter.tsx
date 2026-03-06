@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, Redirect, useLocation } from "wouter";
 import { useEffect } from "react";
 import PublicLayout from "./PublicLayout";
 import { useAuth } from "@/hooks/useAuth";
@@ -149,6 +149,12 @@ export default function PublicRouter() {
       </Route>
 
       {/* Tool routes - redirect to new /a/:slug public app routes */}
+      <Route path="/engine">
+        {() => <Redirect to="/e" />}
+      </Route>
+      <Route path="/engine/:rest*">
+        {(params: any) => <Redirect to={`/e/${params['rest*'] || ''}`} />}
+      </Route>
       <Route path="/assessment" component={() => { window.location.href = "/a/wytassessor"; return null; }} />
       <Route path="/qr-generator" component={() => { window.location.href = "/a/wytqrc"; return null; }} />
       <Route path="/wytai-trademark" component={WytAiTrademark} />
