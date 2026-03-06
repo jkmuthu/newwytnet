@@ -1,0 +1,27 @@
+name: Repo Size Guard
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run repository size audit guard
+        env:
+          MAX_FILE_MB: "20"
+          MAX_ATTACHED_ASSETS_MB: "300"
+        run: npm run repo:audit:ci
