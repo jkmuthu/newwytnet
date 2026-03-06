@@ -7330,6 +7330,90 @@ When suggesting improvements, format your response with suggestions in a structu
     createEntityTagSchema
   } = await import("@shared/schema");
 
+  // Entity quality and graph helpers
+  const normalizeEntityText = (value: string) => value.trim().replace(/\s+/g, " ");
+
+  const normalizeSlug = (value: string) =>
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 255);
+
+  const isMeaningfulTitle = (value: string) => {
+    const v = normalizeEntityText(value);
+    if (v.length < 3) return false;
+    if (!/[a-zA-Z]/.test(v)) return false;
+
+    const lowered = v.toLowerCase();
+    const blocked = new Set(["test", "temp", "asdf", "qwerty", "abc", "xxx", "null", "undefined"]);
+    if (blocked.has(lowered)) return false;
+
+    const uniqueChars = new Set(lowered.replace(/\s/g, "")).size;
+    if (uniqueChars < 2) return false;
+
+    return true;
+  };
+
+  const normalizeAliases = (aliases: unknown, title: string, maxAliases: number) => {
+    const source = Array.isArray(aliases) ? aliases : [];
+    const titleLower = title.toLowerCase();
+    const seen = new Set<string>();
+    const output: string[] = [];
+
+    for (const raw of source) {
+      if (typeof raw !== "string") continue;
+      const cleaned = normalizeEntityText(raw);
+      if (!cleaned) continue;
+      const lowered = cleaned.toLowerCase();
+      if (lowered === titleLower || seen.has(lowered)) continue;
+      seen.add(lowered);
+      output.push(cleaned);
+      if (output.length >= maxAliases) break;
+    }
+
+    return output;
+  };
+
+  const hasParentCycle = async (childId: string, candidateParentId: string) => {
+    const visited = new Set<string>();
+    let frontier = [candidateParentId];
+
+    while (frontier.length > 0) {
+      if (frontier.includes(childId)) return true;
+      const next = frontier.filter((id) => !visited.has(id));
+      if (next.length === 0) return false;
+      next.forEach((id) => visited.add(id));
+
+      const edges = await db
+        .select({ targetEntityId: entityRelationships.targetEntityId })
+        .from(entityRelationships)
+        .where(
+          and(
+            inArray(entityRelationships.sourceEntityId, next),
+            eq(entityRelationships.relationshipType, "parent"),
+            eq(entityRelationships.isActive, true),
+          ),
+        );
+
+      frontier = edges.map((e) => e.targetEntityId);
+    }
+
+    return false;
+  };
+
+  const getActorId = (req: any): string | null => {
+    return (
+      req?.admin?.id ||
+      req?.session?.wytpassPrincipal?.id ||
+      req?.user?.id ||
+      null
+    );
+  };
+
   // Entity Types - CRUD APIs
 
   // GET all entity types
@@ -7448,7 +7532,7 @@ When suggesting improvements, format your response with suggestions in a structu
       const conditions: any[] = [];
 
       if (typeId) conditions.push(eq(entities.entityTypeId, typeId));
-      if (search) conditions.push(like(entities.title, `%${search}%`));
+      if (search) conditions.push(ilike(entities.title, `%${search}%`));
       if (isPublic !== undefined) conditions.push(eq(entities.isPublic, isPublic === 'true'));
       if (isVerified !== undefined) conditions.push(eq(entities.isVerified, isVerified === 'true'));
       if (tenantId) conditions.push(eq(entities.tenantId, tenantId));
@@ -7532,14 +7616,70 @@ When suggesting improvements, format your response with suggestions in a structu
   // POST create entity
   app.post('/api/entities', adminAuthMiddleware, async (req: any, res) => {
     try {
-      const admin = req.admin;
+      const actorId = getActorId(req);
+      if (!actorId) {
+        return res.status(401).json({ success: false, error: 'Admin authentication required' });
+      }
       const validatedData = createEntitySchema.parse(req.body);
+
+      const [entityType] = await db
+        .select()
+        .from(entityTypes)
+        .where(and(eq(entityTypes.id, validatedData.entityTypeId), eq(entityTypes.isActive, true)))
+        .limit(1);
+
+      if (!entityType) {
+        return res.status(400).json({ success: false, error: 'Invalid entity type' });
+      }
+
+      const title = normalizeEntityText(validatedData.title);
+      if (!isMeaningfulTitle(title)) {
+        return res.status(400).json({ success: false, error: 'Title is not meaningful enough for a canonical object' });
+      }
+
+      const aliases = normalizeAliases(validatedData.aliases, title, entityType.maxAliases || 10);
+
+      const [duplicateTitle] = await db
+        .select({ id: entities.id })
+        .from(entities)
+        .where(
+          and(
+            eq(entities.entityTypeId, validatedData.entityTypeId),
+            sql`lower(${entities.title}) = lower(${title})`,
+          ),
+        )
+        .limit(1);
+
+      if (duplicateTitle) {
+        return res.status(409).json({ success: false, error: 'A canonical object with this title already exists' });
+      }
+
+      const baseSlug = normalizeSlug(validatedData.slug || title);
+      if (!baseSlug) {
+        return res.status(400).json({ success: false, error: 'Unable to generate valid slug from title' });
+      }
+
+      let slug = baseSlug;
+      let suffix = 1;
+      while (true) {
+        const [existingSlug] = await db
+          .select({ id: entities.id })
+          .from(entities)
+          .where(and(eq(entities.entityTypeId, validatedData.entityTypeId), eq(entities.slug, slug)))
+          .limit(1);
+        if (!existingSlug) break;
+        suffix += 1;
+        slug = `${baseSlug}-${suffix}`;
+      }
 
       const [newEntity] = await db.insert(entities)
         .values({
           ...validatedData,
-          createdBy: admin.id,
-          updatedBy: admin.id
+          title,
+          aliases,
+          slug,
+          createdBy: actorId,
+          updatedBy: actorId
         })
         .returning();
 
@@ -7557,13 +7697,94 @@ When suggesting improvements, format your response with suggestions in a structu
   app.patch('/api/entities/:entityId', adminAuthMiddleware, async (req: any, res) => {
     try {
       const { entityId } = req.params;
-      const admin = req.admin;
+      const actorId = getActorId(req);
+      if (!actorId) {
+        return res.status(401).json({ success: false, error: 'Admin authentication required' });
+      }
       const validatedData = updateEntitySchema.parse(req.body);
+
+      const [currentEntity] = await db.select().from(entities).where(eq(entities.id, entityId)).limit(1);
+      if (!currentEntity) {
+        return res.status(404).json({ success: false, error: 'Entity not found' });
+      }
+
+      const targetTypeId = validatedData.entityTypeId || currentEntity.entityTypeId;
+      const [entityType] = await db
+        .select()
+        .from(entityTypes)
+        .where(and(eq(entityTypes.id, targetTypeId), eq(entityTypes.isActive, true)))
+        .limit(1);
+
+      if (!entityType) {
+        return res.status(400).json({ success: false, error: 'Invalid entity type' });
+      }
+
+      const patchData: Record<string, any> = { ...validatedData };
+
+      if (validatedData.title !== undefined) {
+        const normalizedTitle = normalizeEntityText(validatedData.title);
+        if (!isMeaningfulTitle(normalizedTitle)) {
+          return res.status(400).json({ success: false, error: 'Title is not meaningful enough for a canonical object' });
+        }
+
+        const [duplicateTitle] = await db
+          .select({ id: entities.id })
+          .from(entities)
+          .where(
+            and(
+              eq(entities.entityTypeId, targetTypeId),
+              sql`lower(${entities.title}) = lower(${normalizedTitle})`,
+              not(eq(entities.id, entityId)),
+            ),
+          )
+          .limit(1);
+
+        if (duplicateTitle) {
+          return res.status(409).json({ success: false, error: 'A canonical object with this title already exists' });
+        }
+
+        patchData.title = normalizedTitle;
+
+        if (!validatedData.slug) {
+          patchData.slug = normalizeSlug(normalizedTitle);
+        }
+      }
+
+      if (validatedData.slug !== undefined) {
+        const normalizedSlug = normalizeSlug(validatedData.slug);
+        if (!normalizedSlug) {
+          return res.status(400).json({ success: false, error: 'Invalid slug' });
+        }
+        patchData.slug = normalizedSlug;
+      }
+
+      if (patchData.slug) {
+        const [duplicateSlug] = await db
+          .select({ id: entities.id })
+          .from(entities)
+          .where(
+            and(
+              eq(entities.entityTypeId, targetTypeId),
+              eq(entities.slug, patchData.slug),
+              not(eq(entities.id, entityId)),
+            ),
+          )
+          .limit(1);
+
+        if (duplicateSlug) {
+          return res.status(409).json({ success: false, error: 'Slug already exists for this object type' });
+        }
+      }
+
+      if (validatedData.aliases !== undefined) {
+        const forTitle = patchData.title || currentEntity.title;
+        patchData.aliases = normalizeAliases(validatedData.aliases, forTitle, entityType.maxAliases || 10);
+      }
 
       const [updatedEntity] = await db.update(entities)
         .set({
-          ...validatedData,
-          updatedBy: admin.id,
+          ...patchData,
+          updatedBy: actorId,
           updatedAt: new Date()
         })
         .where(eq(entities.id, entityId))
@@ -7604,15 +7825,63 @@ When suggesting improvements, format your response with suggestions in a structu
       const { entityId } = req.params;
       const { type } = req.query; // parent, child, friend
 
-      let query = db.select().from(entityRelationships)
-        .where(eq(entityRelationships.sourceEntityId, entityId)).$dynamic();
+      const base = await db
+        .select()
+        .from(entityRelationships)
+        .where(
+          and(
+            or(
+              eq(entityRelationships.sourceEntityId, entityId),
+              eq(entityRelationships.targetEntityId, entityId),
+            ),
+            eq(entityRelationships.isActive, true),
+          ),
+        );
 
-      if (type) {
-        query = query.where(eq(entityRelationships.relationshipType, type));
+      const normalized = base
+        .map((rel) => {
+          if (rel.relationshipType === 'parent') {
+            if (rel.sourceEntityId === entityId) {
+              return { ...rel, relationshipType: 'parent', targetEntityId: rel.targetEntityId };
+            }
+            return { ...rel, relationshipType: 'child', targetEntityId: rel.sourceEntityId };
+          }
+
+          if (rel.relationshipType === 'friend') {
+            const otherId = rel.sourceEntityId === entityId ? rel.targetEntityId : rel.sourceEntityId;
+            return { ...rel, relationshipType: 'friend', targetEntityId: otherId };
+          }
+
+          if (rel.sourceEntityId === entityId) {
+            return { ...rel, relationshipType: rel.relationshipType, targetEntityId: rel.targetEntityId };
+          }
+
+          return null;
+        })
+        .filter((rel): rel is NonNullable<typeof rel> => !!rel)
+        .filter((rel) => !type || rel.relationshipType === type);
+
+      const uniq = new Map<string, any>();
+      for (const rel of normalized) {
+        const key = `${rel.relationshipType}:${rel.targetEntityId}`;
+        if (!uniq.has(key)) uniq.set(key, rel);
       }
 
-      const relationships = await query;
-      res.json({ success: true, relationships });
+      const relationships = Array.from(uniq.values());
+      const targetIds = Array.from(new Set(relationships.map((r) => r.targetEntityId)));
+      const targetRows = targetIds.length
+        ? await db.select({ id: entities.id, title: entities.title }).from(entities).where(inArray(entities.id, targetIds))
+        : [];
+      const targetMap = new Map(targetRows.map((r) => [r.id, r.title]));
+
+      res.json({
+        success: true,
+        relationships: relationships.map((rel) => ({
+          ...rel,
+          type: rel.relationshipType,
+          targetEntityTitle: targetMap.get(rel.targetEntityId) || null,
+        })),
+      });
     } catch (error) {
       console.error('Error fetching relationships:', error);
       res.status(500).json({ success: false, error: 'Failed to fetch relationships' });
@@ -7622,20 +7891,110 @@ When suggesting improvements, format your response with suggestions in a structu
   // POST create relationship
   app.post('/api/entities/relationships', adminAuthMiddleware, async (req: any, res) => {
     try {
-      const admin = req.admin;
+      const actorId = getActorId(req);
+      if (!actorId) {
+        return res.status(401).json({ success: false, error: 'Admin authentication required' });
+      }
       const validatedData = createEntityRelationshipSchema.parse(req.body);
 
-      // Check for circular references
-      if (validatedData.sourceEntityId === validatedData.targetEntityId) {
+      let sourceEntityId = validatedData.sourceEntityId;
+      let targetEntityId = validatedData.targetEntityId;
+      let relationshipType = validatedData.relationshipType;
+
+      // Normalize child => parent to keep one canonical hierarchy edge type.
+      if (relationshipType === 'child') {
+        relationshipType = 'parent';
+        sourceEntityId = validatedData.targetEntityId;
+        targetEntityId = validatedData.sourceEntityId;
+      }
+
+      if (sourceEntityId === targetEntityId) {
         return res.status(400).json({ success: false, error: 'Cannot create self-referential relationship' });
+      }
+
+      const [sourceEntity] = await db.select({ id: entities.id }).from(entities).where(eq(entities.id, sourceEntityId)).limit(1);
+      const [targetEntity] = await db.select({ id: entities.id }).from(entities).where(eq(entities.id, targetEntityId)).limit(1);
+      if (!sourceEntity || !targetEntity) {
+        return res.status(400).json({ success: false, error: 'Source or target entity does not exist' });
+      }
+
+      if (relationshipType === 'parent') {
+        const [existingParent] = await db
+          .select({ id: entityRelationships.id })
+          .from(entityRelationships)
+          .where(
+            and(
+              eq(entityRelationships.sourceEntityId, sourceEntityId),
+              eq(entityRelationships.relationshipType, 'parent'),
+              eq(entityRelationships.isActive, true),
+            ),
+          )
+          .limit(1);
+
+        if (existingParent) {
+          return res.status(409).json({ success: false, error: 'Entity already has a parent. Remove existing parent first.' });
+        }
+
+        const cycle = await hasParentCycle(sourceEntityId, targetEntityId);
+        if (cycle) {
+          return res.status(400).json({ success: false, error: 'Relationship creates a parent-child cycle' });
+        }
+      }
+
+      const [existing] = await db
+        .select({ id: entityRelationships.id })
+        .from(entityRelationships)
+        .where(
+          and(
+            eq(entityRelationships.sourceEntityId, sourceEntityId),
+            eq(entityRelationships.targetEntityId, targetEntityId),
+            eq(entityRelationships.relationshipType, relationshipType),
+          ),
+        )
+        .limit(1);
+
+      if (existing) {
+        return res.status(409).json({ success: false, error: 'Relationship already exists' });
       }
 
       const [newRelationship] = await db.insert(entityRelationships)
         .values({
           ...validatedData,
-          createdBy: admin.id
+          sourceEntityId,
+          targetEntityId,
+          relationshipType,
+          isBidirectional: relationshipType === 'friend' ? true : validatedData.isBidirectional,
+          createdBy: actorId
         })
         .returning();
+
+      if (relationshipType === 'friend') {
+        const [reverse] = await db
+          .select({ id: entityRelationships.id })
+          .from(entityRelationships)
+          .where(
+            and(
+              eq(entityRelationships.sourceEntityId, targetEntityId),
+              eq(entityRelationships.targetEntityId, sourceEntityId),
+              eq(entityRelationships.relationshipType, 'friend'),
+            ),
+          )
+          .limit(1);
+
+        if (!reverse) {
+          await db.insert(entityRelationships).values({
+            sourceEntityId: targetEntityId,
+            targetEntityId: sourceEntityId,
+            relationshipType: 'friend',
+            isBidirectional: true,
+            context: validatedData.context,
+            metadata: validatedData.metadata,
+            strength: validatedData.strength,
+            isActive: validatedData.isActive,
+            createdBy: actorId,
+          });
+        }
+      }
 
       res.status(201).json({ success: true, relationship: newRelationship });
     } catch (error: any) {
@@ -7651,7 +8010,30 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const { relationshipId } = req.params;
 
+      const [existing] = await db
+        .select()
+        .from(entityRelationships)
+        .where(eq(entityRelationships.id, relationshipId))
+        .limit(1);
+
+      if (!existing) {
+        return res.status(404).json({ success: false, error: 'Relationship not found' });
+      }
+
       await db.delete(entityRelationships).where(eq(entityRelationships.id, relationshipId));
+
+      if (existing.relationshipType === 'friend') {
+        await db
+          .delete(entityRelationships)
+          .where(
+            and(
+              eq(entityRelationships.sourceEntityId, existing.targetEntityId),
+              eq(entityRelationships.targetEntityId, existing.sourceEntityId),
+              eq(entityRelationships.relationshipType, 'friend'),
+            ),
+          );
+      }
+
       res.json({ success: true, message: 'Relationship deleted' });
     } catch (error) {
       console.error('Error deleting relationship:', error);

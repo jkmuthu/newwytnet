@@ -2835,6 +2835,7 @@ export const createEntitySchema = z.object({
   seoDescription: z.string().optional(),
   tenantId: z.string().uuid().optional(),
   hubId: z.string().uuid().optional(),
+  isVerified: z.boolean().default(false),
   isPublic: z.boolean().default(true),
   isActive: z.boolean().default(true),
 });
