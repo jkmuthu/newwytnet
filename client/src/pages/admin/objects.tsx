@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { GripVertical, Network, Plus, Search, Tag, CheckCircle, Circle, Trash2, Edit, BarChart3, Settings as SettingsIcon, Database, Eye } from "lucide-react";
+import { GripVertical, Network, Plus, Search, Tag, CheckCircle, Circle, Trash2, Edit, BarChart3, Settings as SettingsIcon, Database, Eye, Upload } from "lucide-react";
 
 interface ObjectType {
   id: string;
@@ -691,6 +691,8 @@ function ObjectForm({
   const [categoryInput, setCategoryInput] = useState("");
   const [imageInput, setImageInput] = useState("");
   const [objectImages, setObjectImages] = useState<string[]>(initialImages);
+  const [isImageUploading, setIsImageUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [categories, setCategories] = useState<string[]>(Array.isArray(metadata.categories) ? metadata.categories : []);
   const [dynamicFields, setDynamicFields] = useState<DynamicField[]>(
     initialCustomFields.length > 0 ? initialCustomFields : [{ id: `field-${Date.now()}`, key: "", value: "" }],
@@ -794,6 +796,75 @@ function ObjectForm({
       return merged;
     });
     setImageInput("");
+  };
+
+  const uploadFiles = async (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    if (fileArray.length === 0) return;
+
+    if (objectImages.length >= 6) {
+      toast({ title: "Only 6 object images are allowed", variant: "destructive" });
+      return;
+    }
+
+    setIsImageUploading(true);
+    try {
+      const remainingSlots = Math.max(0, 6 - objectImages.length);
+      const selected = fileArray.slice(0, remainingSlots);
+
+      const uploadedUrls: string[] = [];
+      for (const file of selected) {
+        if (!file.type.startsWith("image/")) {
+          toast({ title: `${file.name} is not an image`, variant: "destructive" });
+          continue;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+          toast({ title: `${file.name} exceeds 5MB`, variant: "destructive" });
+          continue;
+        }
+
+        const form = new FormData();
+        form.append("file", file);
+        form.append("directory", "objects");
+
+        const res = await fetch("/api/admin/upload", {
+          method: "POST",
+          body: form,
+          credentials: "include",
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || `Upload failed for ${file.name}`);
+        }
+
+        const data = await res.json();
+        if (typeof data.url === "string" && data.url.trim()) {
+          uploadedUrls.push(data.url.trim());
+        }
+      }
+
+      if (uploadedUrls.length > 0) {
+        setObjectImages((current) => uniqueList([...current, ...uploadedUrls]).slice(0, 6));
+        toast({ title: `${uploadedUrls.length} image(s) uploaded` });
+      }
+
+      if (fileArray.length > remainingSlots) {
+        toast({ title: "Only first 6 images are kept", variant: "destructive" });
+      }
+    } catch (error: any) {
+      toast({
+        title: "Image upload failed",
+        description: error?.message || "Could not upload image",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImageUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
   };
 
   const removeImage = (image: string) => {
@@ -924,6 +995,36 @@ function ObjectForm({
 
       <div>
         <label className="text-sm font-medium">Object Images (up to 6)</label>
+        <div
+          className="mt-2 rounded-lg border border-dashed p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            if (e.dataTransfer.files?.length) {
+              void uploadFiles(e.dataTransfer.files);
+            }
+          }}
+          data-testid="dropzone-object-images"
+        >
+          <Upload className="h-5 w-5 mx-auto mb-2 text-gray-500" />
+          <p className="text-sm font-medium">Drag and drop image files here</p>
+          <p className="text-xs text-muted-foreground mt-1">or click to browse (max 5MB each, up to 6 images)</p>
+          {isImageUploading && <p className="text-xs mt-2">Uploading...</p>}
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files?.length) {
+              void uploadFiles(e.target.files);
+            }
+          }}
+          data-testid="input-upload-object-images"
+        />
         <div className="mt-2 flex gap-2">
           <Input
             value={imageInput}
