@@ -516,14 +516,10 @@ export default function AdminObjects() {
               <ObjectForm
                 object={editingObject}
                 objectTypes={objectTypes}
+                allObjects={objects}
+                onBack={closeObjectForm}
                 onSuccess={handleFormSuccess}
               />
-
-              <div className="pt-3">
-                <Button variant="outline" type="button" onClick={closeObjectForm} data-testid="button-close-object-form">
-                  Back To Objects List
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -954,10 +950,14 @@ function ObjectRelationshipsEditor({ entity }: { entity: ObjectItem }) {
 function ObjectForm({ 
   object, 
   objectTypes, 
+  allObjects,
+  onBack,
   onSuccess 
 }: { 
   object?: ObjectItem;
   objectTypes: ObjectType[]; 
+  allObjects: ObjectItem[];
+  onBack: () => void;
   onSuccess: () => void;
 }) {
   const { toast } = useToast();
@@ -1012,6 +1012,20 @@ function ObjectForm({
     () => uniqueList([...manualAliases, ...(autoPluralAlias ? [autoPluralAlias] : [])]),
     [manualAliases, autoPluralAlias],
   );
+  const categorySuggestions = useMemo(() => {
+    const query = categoryInput.trim().toLowerCase();
+    if (query.length < 1) return [];
+
+    const matches = uniqueList(
+      allObjects
+        .map((obj) => obj.title)
+        .filter((title) => !!title && title.toLowerCase().includes(query)),
+    );
+
+    return matches
+      .filter((title) => !categories.some((c) => c.toLowerCase() === title.toLowerCase()))
+      .slice(0, 8);
+  }, [allObjects, categories, categoryInput]);
 
   const saveMutation = useMutation({
     mutationFn: (data: any) => {
@@ -1093,6 +1107,13 @@ function ObjectForm({
 
   const addCategory = () => {
     const next = categoryInput.trim();
+    if (!next) return;
+    setCategories((current) => uniqueList([...current, next]));
+    setCategoryInput("");
+  };
+
+  const addCategoryFromSuggestion = (value: string) => {
+    const next = value.trim();
     if (!next) return;
     setCategories((current) => uniqueList([...current, next]));
     setCategoryInput("");
@@ -1590,6 +1611,12 @@ function ObjectForm({
         </div>
 
         <div className="lg:col-span-4 space-y-4">
+          <div className="flex justify-end">
+            <Button variant="outline" type="button" onClick={onBack} data-testid="button-close-object-form-top">
+              Back To Objects List
+            </Button>
+          </div>
+
           <div className="border rounded p-3 space-y-3">
             <h4 className="font-medium">Configuration</h4>
             <div className="flex items-center gap-4">
@@ -1642,11 +1669,26 @@ function ObjectForm({
               <Input
                 value={categoryInput}
                 onChange={(e) => setCategoryInput(e.target.value)}
-                placeholder="Add category"
+                placeholder="Type to find existing objects/tags"
                 data-testid="input-object-category"
               />
               <Button type="button" variant="secondary" onClick={addCategory} data-testid="button-add-object-category">Add</Button>
             </div>
+            {categorySuggestions.length > 0 && (
+              <div className="border rounded max-h-40 overflow-y-auto" data-testid="list-category-suggestions">
+                {categorySuggestions.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
+                    onClick={() => addCategoryFromSuggestion(suggestion)}
+                    data-testid={`item-category-suggestion-${toKebabSlug(suggestion)}`}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="flex flex-wrap gap-2">
               {categories.length === 0 ? (
                 <span className="text-xs text-gray-500">No categories</span>
