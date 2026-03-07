@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { GripVertical, Network, Plus, Search, Tag, Trash2, Edit, BarChart3, Settings as SettingsIcon, Database, Eye, Upload } from "lucide-react";
+import { GripVertical, Network, Plus, Search, Tag, Trash2, Edit, BarChart3, Settings as SettingsIcon, Database, Eye, Upload, Users } from "lucide-react";
 
 interface ObjectType {
   id: string;
@@ -45,6 +45,16 @@ interface ObjectItem {
     [key: string]: any;
   };
   entityType?: ObjectType;
+}
+
+interface ObjectGroupItem {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  isActive: boolean;
+  objectCount: number;
+  objects: Array<{ id: string; title: string }>;
 }
 
 type CustomFieldType = "text" | "textarea" | "number" | "date" | "boolean" | "email" | "url" | "select";
@@ -147,6 +157,10 @@ export default function AdminObjects() {
   );
   const [bulkGraphTypeId, setBulkGraphTypeId] = useState<string>("");
   const [bulkGraphReport, setBulkGraphReport] = useState<BulkGraphReport | null>(null);
+  const [groupName, setGroupName] = useState("");
+  const [groupDescription, setGroupDescription] = useState("");
+  const [groupObjectSearch, setGroupObjectSearch] = useState("");
+  const [groupEntityIds, setGroupEntityIds] = useState<string[]>([]);
 
   // Fetch object types
   const { data: objectTypesData } = useQuery<{ types: ObjectType[] }>({
@@ -171,6 +185,29 @@ export default function AdminObjects() {
   const objectTypes = objectTypesData?.types || [];
   const objects = objectsData?.entities || [];
   const selectedObjects = objects.filter((obj) => selectedObjectIds.includes(obj.id));
+
+  const { data: groupsData, isLoading: isGroupsLoading } = useQuery<{ groups: ObjectGroupItem[] }>({
+    queryKey: ["/api/entities/groups"],
+  });
+
+  const { data: allObjectsData } = useQuery<{ entities: ObjectItem[] }>({
+    queryKey: ["/api/entities", "groups-picker"],
+    queryFn: async () => {
+      const response = await fetch("/api/entities?limit=500", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch objects for groups");
+      return response.json();
+    },
+  });
+
+  const objectGroups = groupsData?.groups || [];
+  const allObjectsForGroups = allObjectsData?.entities || [];
+  const selectedGroupObjects = allObjectsForGroups.filter((obj) => groupEntityIds.includes(obj.id));
+  const groupObjectSuggestions = groupObjectSearch.trim()
+    ? allObjectsForGroups
+        .filter((obj) => !groupEntityIds.includes(obj.id))
+        .filter((obj) => obj.title.toLowerCase().includes(groupObjectSearch.trim().toLowerCase()))
+        .slice(0, 8)
+    : [];
 
   useEffect(() => {
     if (!bulkGraphTypeId && objectTypes.length > 0) {
@@ -448,6 +485,54 @@ export default function AdminObjects() {
     },
   });
 
+  const createGroupMutation = useMutation({
+    mutationFn: async () => {
+      const name = groupName.trim();
+      if (!name) throw new Error("Object group name is required");
+
+      const response = await apiRequest("/api/entities/groups", "POST", {
+        name,
+        slug: toKebabSlug(name),
+        description: groupDescription.trim() || undefined,
+        entityIds: groupEntityIds,
+      });
+      return parseStrictApiJson(response, "create object group");
+    },
+    onSuccess: async () => {
+      toast({ title: "Object group created" });
+      setGroupName("");
+      setGroupDescription("");
+      setGroupObjectSearch("");
+      setGroupEntityIds([]);
+      await queryClient.invalidateQueries({ queryKey: ["/api/entities/groups"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to create object group",
+        description: error?.message || "Please check name and tagged objects",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteGroupMutation = useMutation({
+    mutationFn: async (groupId: string) => {
+      const response = await apiRequest(`/api/entities/groups/${groupId}`, "DELETE");
+      return parseStrictApiJson(response, "delete object group");
+    },
+    onSuccess: async () => {
+      toast({ title: "Object group deleted" });
+      await queryClient.invalidateQueries({ queryKey: ["/api/entities/groups"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to delete object group",
+        description: error?.message || "Please try again",
+        variant: "destructive",
+      });
+    },
+  });
+
   const bulkGraphMutation = useMutation({
     mutationFn: async () => {
       const lines = bulkGraphInput
@@ -640,6 +725,15 @@ export default function AdminObjects() {
     setActiveTab("objects-list");
   };
 
+  const addEntityToGroupDraft = (entityId: string) => {
+    setGroupEntityIds((current) => (current.includes(entityId) ? current : [...current, entityId]));
+    setGroupObjectSearch("");
+  };
+
+  const removeEntityFromGroupDraft = (entityId: string) => {
+    setGroupEntityIds((current) => current.filter((id) => id !== entityId));
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -661,10 +755,14 @@ export default function AdminObjects() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className={`grid w-full ${(activeTab === "object-form" || activeTab === "object-view") ? "grid-cols-5" : "grid-cols-4"}`}>
+        <TabsList className={`grid w-full ${(activeTab === "object-form" || activeTab === "object-view") ? "grid-cols-6" : "grid-cols-5"}`}>
           <TabsTrigger value="objects-list" data-testid="tab-objects-list">
             <Database className="h-4 w-4 mr-2" />
             Objects List
+          </TabsTrigger>
+          <TabsTrigger value="object-groups" data-testid="tab-object-groups">
+            <Users className="h-4 w-4 mr-2" />
+            Object Groups
           </TabsTrigger>
           <TabsTrigger value="object-types" data-testid="tab-object-types">
             <Tag className="h-4 w-4 mr-2" />
@@ -836,6 +934,146 @@ export default function AdminObjects() {
                     ))}
                   </TableBody>
                 </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Object Groups Tab */}
+        <TabsContent value="object-groups" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Create Object Group</CardTitle>
+              <CardDescription>
+                Group objects for dropdowns, single-select, multi-select, and other platform flows.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Object Group Name *</label>
+                  <Input
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    placeholder="e.g., Onboarding Locations"
+                    data-testid="input-object-group-name"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Description (optional)</label>
+                  <Input
+                    value={groupDescription}
+                    onChange={(e) => setGroupDescription(e.target.value)}
+                    placeholder="Where this group is used"
+                    data-testid="input-object-group-description"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Tag Objects</label>
+                <div className="space-y-2 mt-1">
+                  <Input
+                    value={groupObjectSearch}
+                    onChange={(e) => setGroupObjectSearch(e.target.value)}
+                    placeholder="Search object to tag"
+                    data-testid="input-object-group-search"
+                  />
+                  {groupObjectSuggestions.length > 0 && (
+                    <div className="border rounded max-h-40 overflow-y-auto" data-testid="list-object-group-suggestions">
+                      {groupObjectSuggestions.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
+                          onClick={() => addEntityToGroupDraft(item.id)}
+                          data-testid={`item-object-group-suggestion-${item.id}`}
+                        >
+                          {item.title}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-1" data-testid="list-object-group-selected">
+                    {selectedGroupObjects.length > 0 ? (
+                      selectedGroupObjects.map((item) => (
+                        <Badge key={item.id} variant="secondary" className="text-xs flex items-center gap-1">
+                          {item.title}
+                          <button type="button" onClick={() => removeEntityFromGroupDraft(item.id)}>x</button>
+                        </Badge>
+                      ))
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No tagged objects yet</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Button
+                  type="button"
+                  onClick={() => createGroupMutation.mutate()}
+                  disabled={!groupName.trim() || createGroupMutation.isPending}
+                  data-testid="button-create-object-group"
+                >
+                  {createGroupMutation.isPending ? "Creating..." : "Create Group"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Saved Object Groups</CardTitle>
+              <CardDescription>One object can belong to multiple groups.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isGroupsLoading ? (
+                <div className="text-sm text-muted-foreground">Loading groups...</div>
+              ) : objectGroups.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No object groups yet.</div>
+              ) : (
+                <div className="space-y-3" data-testid="list-object-groups">
+                  {objectGroups.map((group) => (
+                    <div key={group.id} className="border rounded p-3 space-y-2" data-testid={`row-object-group-${group.id}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <div className="font-medium">{group.name}</div>
+                          {group.description && <div className="text-xs text-muted-foreground">{group.description}</div>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{group.objectCount} objects</Badge>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm(`Delete object group \"${group.name}\"?`)) {
+                                deleteGroupMutation.mutate(group.id);
+                              }
+                            }}
+                            disabled={deleteGroupMutation.isPending}
+                            data-testid={`button-delete-object-group-${group.id}`}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {group.objects.length > 0 ? (
+                          group.objects.slice(0, 20).map((obj) => (
+                            <Badge key={`${group.id}-${obj.id}`} variant="secondary" className="text-xs">{obj.title}</Badge>
+                          ))
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No objects tagged</span>
+                        )}
+                        {group.objects.length > 20 && (
+                          <Badge variant="secondary" className="text-xs">+{group.objects.length - 20}</Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>

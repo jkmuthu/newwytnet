@@ -1228,6 +1228,41 @@ export const entityTags = pgTable("entity_tags", {
   uniqueTag: unique("entity_unique_tag").on(table.entityId, table.resourceType, table.resourceId),
 }));
 
+// Object Groups - Reusable collections of objects for forms, selectors, and workflows
+export const objectGroups = pgTable("object_groups", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 150 }).notNull().unique(),
+  slug: varchar("slug", { length: 180 }).notNull().unique(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: 'set null' }),
+  hubId: uuid("hub_id").references(() => hubs.id, { onDelete: 'set null' }),
+
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: 'set null' }),
+  updatedBy: varchar("updated_by").references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  slugIdx: index("object_group_slug_idx").on(table.slug),
+  activeIdx: index("object_group_active_idx").on(table.isActive),
+  tenantIdx: index("object_group_tenant_idx").on(table.tenantId),
+}));
+
+// Object Group Members - allows one object to be used in multiple groups
+export const objectGroupEntities = pgTable("object_group_entities", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  objectGroupId: uuid("object_group_id").notNull().references(() => objectGroups.id, { onDelete: 'cascade' }),
+  entityId: uuid("entity_id").notNull().references(() => entities.id, { onDelete: 'cascade' }),
+  displayOrder: integer("display_order").default(0),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  groupIdx: index("object_group_entities_group_idx").on(table.objectGroupId),
+  entityIdx: index("object_group_entities_entity_idx").on(table.entityId),
+  uniqueGroupEntity: unique("object_group_entities_unique").on(table.objectGroupId, table.entityId),
+}));
+
 // User App Installations - Tracks which platform modules/apps users have installed
 export const userAppInstallations = pgTable("user_app_installations", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -2887,6 +2922,43 @@ export const createEntityTagSchema = z.object({
 export const updateEntityTagSchema = createEntityTagSchema.partial();
 export type CreateEntityTagType = z.infer<typeof createEntityTagSchema>;
 export type UpdateEntityTagType = z.infer<typeof updateEntityTagSchema>;
+
+// Object Groups
+export type ObjectGroup = typeof objectGroups.$inferSelect;
+export type InsertObjectGroup = typeof objectGroups.$inferInsert;
+
+export const insertObjectGroupSchema = createInsertSchema(objectGroups).omit({ id: true, createdAt: true, updatedAt: true });
+export const selectObjectGroupSchema = createSelectSchema(objectGroups);
+export type InsertObjectGroupType = z.infer<typeof insertObjectGroupSchema>;
+export type SelectObjectGroupType = z.infer<typeof selectObjectGroupSchema>;
+
+export const createObjectGroupSchema = z.object({
+  name: z.string().min(1).max(150),
+  slug: z.string().min(1).max(180).regex(/^[a-z0-9-]+$/),
+  description: z.string().optional(),
+  isActive: z.boolean().default(true),
+  tenantId: z.string().uuid().optional(),
+  hubId: z.string().uuid().optional(),
+  entityIds: z.array(z.string().uuid()).default([]),
+});
+
+export const updateObjectGroupSchema = createObjectGroupSchema.partial().omit({ entityIds: true });
+export type CreateObjectGroupType = z.infer<typeof createObjectGroupSchema>;
+export type UpdateObjectGroupType = z.infer<typeof updateObjectGroupSchema>;
+
+// Object Group Members
+export type ObjectGroupEntity = typeof objectGroupEntities.$inferSelect;
+export type InsertObjectGroupEntity = typeof objectGroupEntities.$inferInsert;
+
+export const insertObjectGroupEntitySchema = createInsertSchema(objectGroupEntities).omit({ id: true, createdAt: true });
+export const selectObjectGroupEntitySchema = createSelectSchema(objectGroupEntities);
+export type InsertObjectGroupEntityType = z.infer<typeof insertObjectGroupEntitySchema>;
+export type SelectObjectGroupEntityType = z.infer<typeof selectObjectGroupEntitySchema>;
+
+export const setObjectGroupMembersSchema = z.object({
+  entityIds: z.array(z.string().uuid()).max(1000),
+});
+export type SetObjectGroupMembersType = z.infer<typeof setObjectGroupMembersSchema>;
 
 // User App Installations Types
 export type UserAppInstallation = typeof userAppInstallations.$inferSelect;

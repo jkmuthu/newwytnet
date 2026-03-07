@@ -7387,13 +7387,18 @@ When suggesting improvements, format your response with suggestions in a structu
     entities, 
     entityRelationships, 
     entityTags,
+    objectGroups,
+    objectGroupEntities,
     createEntityTypeSchema,
     updateEntityTypeSchema,
     createEntitySchema,
     updateEntitySchema,
     createEntityRelationshipSchema,
     updateEntityRelationshipSchema,
-    createEntityTagSchema
+    createEntityTagSchema,
+    createObjectGroupSchema,
+    updateObjectGroupSchema,
+    setObjectGroupMembersSchema
   } = await import("@shared/schema");
 
   // Entity quality and graph helpers
@@ -8452,6 +8457,299 @@ When suggesting improvements, format your response with suggestions in a structu
   });
 
   // Entity Search & Discovery
+
+  // Object Groups - APIs
+
+  // GET all object groups
+  app.get('/api/entities/groups', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const groups = await db
+        .select()
+        .from(objectGroups)
+        .orderBy(asc(objectGroups.name));
+
+      const groupIds = groups.map((group) => group.id);
+      const members = groupIds.length > 0
+        ? await db
+            .select({
+              objectGroupId: objectGroupEntities.objectGroupId,
+              entityId: objectGroupEntities.entityId,
+              title: entities.title,
+            })
+            .from(objectGroupEntities)
+            .innerJoin(entities, eq(objectGroupEntities.entityId, entities.id))
+            .where(inArray(objectGroupEntities.objectGroupId, groupIds))
+            .orderBy(asc(objectGroupEntities.displayOrder), asc(entities.title))
+        : [];
+
+      const membersByGroup = new Map<string, Array<{ id: string; title: string }>>();
+      for (const member of members) {
+        const list = membersByGroup.get(member.objectGroupId) || [];
+        list.push({ id: member.entityId, title: member.title });
+        membersByGroup.set(member.objectGroupId, list);
+      }
+
+      res.json({
+        success: true,
+        groups: groups.map((group) => ({
+          ...group,
+          objects: membersByGroup.get(group.id) || [],
+          objectCount: (membersByGroup.get(group.id) || []).length,
+        })),
+      });
+    } catch (error) {
+      console.error('Error fetching object groups:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch object groups' });
+    }
+  });
+
+  // GET single object group
+  app.get('/api/entities/groups/:groupId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { groupId } = req.params;
+      const [group] = await db.select().from(objectGroups).where(eq(objectGroups.id, groupId)).limit(1);
+      if (!group) {
+        return res.status(404).json({ success: false, error: 'Object group not found' });
+      }
+
+      const members = await db
+        .select({
+          id: entities.id,
+          title: entities.title,
+          slug: entities.slug,
+          entityTypeId: entities.entityTypeId,
+        })
+        .from(objectGroupEntities)
+        .innerJoin(entities, eq(objectGroupEntities.entityId, entities.id))
+        .where(eq(objectGroupEntities.objectGroupId, groupId))
+        .orderBy(asc(objectGroupEntities.displayOrder), asc(entities.title));
+
+      res.json({ success: true, group: { ...group, objects: members, objectCount: members.length } });
+    } catch (error) {
+      console.error('Error fetching object group:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch object group' });
+    }
+  });
+
+  // POST create object group with tagged objects
+  app.post('/api/entities/groups', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const actorId = getActorId(req);
+      if (!actorId) {
+        return res.status(401).json({ success: false, error: 'Admin authentication required' });
+      }
+
+      const payload = createObjectGroupSchema.parse(req.body);
+      const normalizedName = normalizeEntityText(payload.name);
+      const normalizedSlug = normalizeSlug(payload.slug || normalizedName);
+      if (!normalizedSlug) {
+        return res.status(400).json({ success: false, error: 'Invalid group slug' });
+      }
+
+      const [nameConflict] = await db
+        .select({ id: objectGroups.id })
+        .from(objectGroups)
+        .where(sql`lower(${objectGroups.name}) = lower(${normalizedName})`)
+        .limit(1);
+      if (nameConflict) {
+        return res.status(409).json({ success: false, error: 'Object group name already exists' });
+      }
+
+      const [slugConflict] = await db
+        .select({ id: objectGroups.id })
+        .from(objectGroups)
+        .where(eq(objectGroups.slug, normalizedSlug))
+        .limit(1);
+      if (slugConflict) {
+        return res.status(409).json({ success: false, error: 'Object group slug already exists' });
+      }
+
+      const uniqueEntityIds = Array.from(new Set(payload.entityIds || []));
+      if (uniqueEntityIds.length > 0) {
+        const entityRows = await db
+          .select({ id: entities.id })
+          .from(entities)
+          .where(inArray(entities.id, uniqueEntityIds));
+        if (entityRows.length !== uniqueEntityIds.length) {
+          return res.status(400).json({ success: false, error: 'One or more tagged objects do not exist' });
+        }
+      }
+
+      const result = await db.transaction(async (tx) => {
+        const [group] = await tx
+          .insert(objectGroups)
+          .values({
+            name: normalizedName,
+            slug: normalizedSlug,
+            description: payload.description,
+            isActive: payload.isActive,
+            tenantId: payload.tenantId,
+            hubId: payload.hubId,
+            createdBy: actorId,
+            updatedBy: actorId,
+          })
+          .returning();
+
+        if (uniqueEntityIds.length > 0) {
+          await tx.insert(objectGroupEntities).values(
+            uniqueEntityIds.map((entityId, index) => ({
+              objectGroupId: group.id,
+              entityId,
+              displayOrder: index,
+              createdBy: actorId,
+            })),
+          );
+        }
+
+        return group;
+      });
+
+      res.status(201).json({ success: true, group: result });
+    } catch (error: any) {
+      console.error('Error creating object group:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ success: false, error: 'Validation error', details: error.errors });
+      }
+      res.status(500).json({ success: false, error: 'Failed to create object group' });
+    }
+  });
+
+  // PATCH update object group metadata
+  app.patch('/api/entities/groups/:groupId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { groupId } = req.params;
+      const actorId = getActorId(req);
+      if (!actorId) {
+        return res.status(401).json({ success: false, error: 'Admin authentication required' });
+      }
+
+      const payload = updateObjectGroupSchema.parse(req.body);
+      const patchData: Record<string, any> = {
+        ...payload,
+        updatedBy: actorId,
+        updatedAt: new Date(),
+      };
+
+      if (payload.name !== undefined) {
+        patchData.name = normalizeEntityText(payload.name);
+      }
+
+      if (payload.slug !== undefined || payload.name !== undefined) {
+        const slugSource = payload.slug || payload.name || '';
+        const nextSlug = normalizeSlug(slugSource);
+        if (!nextSlug) {
+          return res.status(400).json({ success: false, error: 'Invalid group slug' });
+        }
+        patchData.slug = nextSlug;
+
+        const [slugConflict] = await db
+          .select({ id: objectGroups.id })
+          .from(objectGroups)
+          .where(and(eq(objectGroups.slug, nextSlug), not(eq(objectGroups.id, groupId))))
+          .limit(1);
+        if (slugConflict) {
+          return res.status(409).json({ success: false, error: 'Object group slug already exists' });
+        }
+      }
+
+      if (patchData.name) {
+        const [nameConflict] = await db
+          .select({ id: objectGroups.id })
+          .from(objectGroups)
+          .where(and(sql`lower(${objectGroups.name}) = lower(${patchData.name})`, not(eq(objectGroups.id, groupId))))
+          .limit(1);
+        if (nameConflict) {
+          return res.status(409).json({ success: false, error: 'Object group name already exists' });
+        }
+      }
+
+      const [updated] = await db
+        .update(objectGroups)
+        .set(patchData)
+        .where(eq(objectGroups.id, groupId))
+        .returning();
+
+      if (!updated) {
+        return res.status(404).json({ success: false, error: 'Object group not found' });
+      }
+
+      res.json({ success: true, group: updated });
+    } catch (error: any) {
+      console.error('Error updating object group:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ success: false, error: 'Validation error', details: error.errors });
+      }
+      res.status(500).json({ success: false, error: 'Failed to update object group' });
+    }
+  });
+
+  // POST set full object membership for a group
+  app.post('/api/entities/groups/:groupId/members', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { groupId } = req.params;
+      const actorId = getActorId(req);
+      if (!actorId) {
+        return res.status(401).json({ success: false, error: 'Admin authentication required' });
+      }
+
+      const payload = setObjectGroupMembersSchema.parse(req.body);
+      const uniqueEntityIds = Array.from(new Set(payload.entityIds || []));
+
+      const [group] = await db.select({ id: objectGroups.id }).from(objectGroups).where(eq(objectGroups.id, groupId)).limit(1);
+      if (!group) {
+        return res.status(404).json({ success: false, error: 'Object group not found' });
+      }
+
+      if (uniqueEntityIds.length > 0) {
+        const entityRows = await db
+          .select({ id: entities.id })
+          .from(entities)
+          .where(inArray(entities.id, uniqueEntityIds));
+        if (entityRows.length !== uniqueEntityIds.length) {
+          return res.status(400).json({ success: false, error: 'One or more tagged objects do not exist' });
+        }
+      }
+
+      await db.transaction(async (tx) => {
+        await tx.delete(objectGroupEntities).where(eq(objectGroupEntities.objectGroupId, groupId));
+        if (uniqueEntityIds.length > 0) {
+          await tx.insert(objectGroupEntities).values(
+            uniqueEntityIds.map((entityId, index) => ({
+              objectGroupId: groupId,
+              entityId,
+              displayOrder: index,
+              createdBy: actorId,
+            })),
+          );
+        }
+
+        await tx
+          .update(objectGroups)
+          .set({ updatedBy: actorId, updatedAt: new Date() })
+          .where(eq(objectGroups.id, groupId));
+      });
+
+      res.json({ success: true, message: 'Object group members updated' });
+    } catch (error: any) {
+      console.error('Error updating object group members:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ success: false, error: 'Validation error', details: error.errors });
+      }
+      res.status(500).json({ success: false, error: 'Failed to update object group members' });
+    }
+  });
+
+  // DELETE object group
+  app.delete('/api/entities/groups/:groupId', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { groupId } = req.params;
+      await db.delete(objectGroups).where(eq(objectGroups.id, groupId));
+      res.json({ success: true, message: 'Object group deleted' });
+    } catch (error) {
+      console.error('Error deleting object group:', error);
+      res.status(500).json({ success: false, error: 'Failed to delete object group' });
+    }
+  });
 
   // GET search entities
   app.get('/api/entities/search', adminAuthMiddleware, async (req: any, res) => {
