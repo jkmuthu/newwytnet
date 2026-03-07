@@ -759,85 +759,6 @@ export default function AdminObjects() {
             </Select>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Bulk Graph Builder</CardTitle>
-              <CardDescription>
-                Build parent chains with <code>{">"}</code> and friend links with <code>{"="}</code>.
-                Example: <code>World &gt; India &gt; Tamilnadu &gt; Madurai</code> and <code>India = Russia</code>.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-3">
-                <div>
-                  <label className="text-sm font-medium">Default Type For New Objects</label>
-                  <Select value={bulkGraphTypeId} onValueChange={setBulkGraphTypeId}>
-                    <SelectTrigger data-testid="select-bulk-graph-type">
-                      <SelectValue placeholder="Select object type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {objectTypes.map((type) => (
-                        <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Graph Input</label>
-                  <Textarea
-                    value={bulkGraphInput}
-                    onChange={(e) => setBulkGraphInput(e.target.value)}
-                    rows={5}
-                    placeholder="World > India > Tamilnadu > Madurai"
-                    data-testid="textarea-bulk-graph-input"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  onClick={() => bulkGraphMutation.mutate()}
-                  disabled={bulkGraphMutation.isPending || !bulkGraphInput.trim() || !bulkGraphTypeId}
-                  data-testid="button-run-bulk-graph"
-                >
-                  {bulkGraphMutation.isPending ? "Processing..." : "Run Graph Build"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setBulkGraphInput("");
-                    setBulkGraphReport(null);
-                  }}
-                  data-testid="button-clear-bulk-graph"
-                >
-                  Clear
-                </Button>
-              </div>
-
-              {bulkGraphReport && (
-                <div className="border rounded p-3 space-y-2" data-testid="panel-bulk-graph-report">
-                  <div className="text-sm font-medium">Last Run Summary</div>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
-                    <Badge variant="secondary">Created: {bulkGraphReport.created.length}</Badge>
-                    <Badge variant="secondary">Reused: {bulkGraphReport.reused.length}</Badge>
-                    <Badge variant="secondary">Linked: {bulkGraphReport.linked.length}</Badge>
-                    <Badge variant="secondary">Skipped: {bulkGraphReport.skipped.length}</Badge>
-                    <Badge variant={bulkGraphReport.failed.length > 0 ? "destructive" : "secondary"}>Failed: {bulkGraphReport.failed.length}</Badge>
-                  </div>
-                  {bulkGraphReport.failed.length > 0 && (
-                    <div className="text-xs text-red-700 space-y-1">
-                      {bulkGraphReport.failed.slice(0, 6).map((item, idx) => (
-                        <div key={`bulk-fail-${idx}`}>{item}</div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
           {selectedObjectIds.length >= 2 && (
             <Card>
               <CardContent className="pt-4">
@@ -891,10 +812,13 @@ export default function AdminObjects() {
                           aria-label="Select all objects"
                         />
                       </TableHead>
+                      <TableHead>Object Icon</TableHead>
                       <TableHead>Object Name</TableHead>
+                      <TableHead>Aliases (count)</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Aliases</TableHead>
-                      <TableHead className="text-center">Status</TableHead>
+                      <TableHead>Parent</TableHead>
+                      <TableHead>Childs (count)</TableHead>
+                      <TableHead>Friends (count)</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1220,7 +1144,11 @@ export default function AdminObjects() {
             <CardContent>
               {viewingObject ? (
                 <>
-                  <ObjectDetailsView object={viewingObject} objectType={objectTypes.find((t) => t.id === viewingObject.entityTypeId)} />
+                  <ObjectDetailsView
+                    object={viewingObject}
+                    objectType={objectTypes.find((t) => t.id === viewingObject.entityTypeId)}
+                    onDeleted={closeViewTab}
+                  />
                   <div className="pt-3">
                     <Button variant="outline" type="button" onClick={closeViewTab} data-testid="button-close-object-view">
                       Back To Objects List
@@ -1240,39 +1168,37 @@ export default function AdminObjects() {
 
 // Object Row Component with Edit capability
 function ObjectRow({ object, objectTypes, onView, onEdit, isSelected, onToggleSelect }: { object: ObjectItem; objectTypes: ObjectType[]; onView: (object: ObjectItem) => void; onEdit: (object: ObjectItem) => void; isSelected: boolean; onToggleSelect: (objectId: string, checked: boolean) => void }) {
-  const { toast } = useToast();
-
   const objectType = objectTypes.find(t => t.id === object.entityTypeId);
 
-  const deleteMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/entities/${object.id}`, "DELETE"),
-    onSuccess: () => {
-      toast({ title: "Object deleted successfully" });
-      queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
+  const { data: relationshipsData } = useQuery<{ relationships: any[] }>({
+    queryKey: ["/api/entities", object.id, "relationships", "list-row"],
+    queryFn: async () => {
+      const response = await fetch(`/api/entities/${object.id}/relationships`, { credentials: "include" });
+      if (!response.ok) return { relationships: [] };
+      return response.json();
     },
-    onError: () => {
-      toast({ title: "Failed to delete object", variant: "destructive" });
-    }
   });
 
-  const handleDelete = () => {
-    if (confirm(`Are you sure you want to delete "${object.title}"?`)) {
-      deleteMutation.mutate();
-    }
-  };
+  const metadata = object.metadata || {};
+  const iconUrl = typeof metadata.iconUrl === "string" && metadata.iconUrl.trim() ? metadata.iconUrl : DEFAULT_OBJECT_ICON;
+  const relationships = relationshipsData?.relationships || [];
+  const parentRel = relationships.find((rel: any) => String(rel.type || rel.relationshipType).toLowerCase() === "parent");
+  const childCount = relationships.filter((rel: any) => String(rel.type || rel.relationshipType).toLowerCase() === "child").length;
+  const friendCount = relationships.filter((rel: any) => String(rel.type || rel.relationshipType).toLowerCase() === "friend").length;
+  const aliasCount = Array.isArray(object.aliases) ? object.aliases.length : 0;
 
   return (
     <TableRow data-testid={`row-object-${object.slug}`}>
       <TableCell>
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={isSelected}
-            onChange={(e) => onToggleSelect(object.id, e.target.checked)}
-            aria-label={`Select ${object.title}`}
-          />
-          <span className="h-2 w-2 rounded-full bg-gray-300" aria-hidden="true" />
-        </div>
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={(e) => onToggleSelect(object.id, e.target.checked)}
+          aria-label={`Select ${object.title}`}
+        />
+      </TableCell>
+      <TableCell>
+        <img src={iconUrl} alt={`${object.title} icon`} className="h-8 w-8 rounded border object-cover" />
       </TableCell>
       <TableCell>
         <div className="font-medium" data-testid={`text-object-title-${object.id}`}>
@@ -1283,39 +1209,25 @@ function ObjectRow({ object, objectTypes, onView, onEdit, isSelected, onToggleSe
         )}
       </TableCell>
       <TableCell>
-        {objectType && (
+        <Badge variant="secondary" className="text-xs">{aliasCount}</Badge>
+      </TableCell>
+      <TableCell>
+        {objectType ? (
           <Badge variant="outline" data-testid={`badge-object-type-${object.id}`}>
             {objectType.name}
           </Badge>
+        ) : (
+          <span className="text-xs text-gray-400">-</span>
         )}
       </TableCell>
       <TableCell>
-        <div className="flex flex-wrap gap-1">
-          {object.aliases && object.aliases.length > 0 ? (
-            object.aliases.slice(0, 3).map((alias, i) => (
-              <Badge key={i} variant="secondary" className="text-xs">
-                {alias}
-              </Badge>
-            ))
-          ) : (
-            <span className="text-xs text-gray-400">-</span>
-          )}
-          {object.aliases && object.aliases.length > 3 && (
-            <Badge variant="secondary" className="text-xs">
-              +{object.aliases.length - 3}
-            </Badge>
-          )}
-        </div>
+        <span className="text-sm">{parentRel?.targetEntityTitle || "Main"}</span>
       </TableCell>
-      <TableCell className="text-center">
-        <div className="flex items-center justify-center gap-2">
-          {object.tagCount > 0 && (
-            <Badge variant="outline" className="text-xs">
-              <Tag className="h-3 w-3 mr-1" />
-              {object.tagCount}
-            </Badge>
-          )}
-        </div>
+      <TableCell>
+        <Badge variant="secondary" className="text-xs">{childCount}</Badge>
+      </TableCell>
+      <TableCell>
+        <Badge variant="secondary" className="text-xs">{friendCount}</Badge>
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-2">
@@ -1336,16 +1248,6 @@ function ObjectRow({ object, objectTypes, onView, onEdit, isSelected, onToggleSe
           >
             <Edit className="h-4 w-4 text-blue-600" />
           </Button>
-          
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={handleDelete}
-            disabled={deleteMutation.isPending}
-            data-testid={`button-delete-object-${object.id}`}
-          >
-            <Trash2 className="h-4 w-4 text-red-600" />
-          </Button>
         </div>
       </TableCell>
     </TableRow>
@@ -1353,10 +1255,29 @@ function ObjectRow({ object, objectTypes, onView, onEdit, isSelected, onToggleSe
 }
 
 // Object Details View Component
-function ObjectDetailsView({ object, objectType }: { object: ObjectItem; objectType?: ObjectType }) {
+function ObjectDetailsView({ object, objectType, onDeleted }: { object: ObjectItem; objectType?: ObjectType; onDeleted?: () => void }) {
+  const { toast } = useToast();
   const { data: relationshipsData } = useQuery<{ relationships: any[] }>({
     queryKey: ["/api/entities", object.id, "relationships"],
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => apiRequest(`/api/entities/${object.id}`, "DELETE"),
+    onSuccess: async () => {
+      toast({ title: "Object deleted successfully" });
+      await queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
+      onDeleted?.();
+    },
+    onError: () => {
+      toast({ title: "Failed to delete object", variant: "destructive" });
+    },
+  });
+
+  const handleDelete = () => {
+    if (confirm(`Are you sure you want to delete "${object.title}"?`)) {
+      deleteMutation.mutate();
+    }
+  };
 
   const relationships = relationshipsData?.relationships || [];
   const metadata = object.metadata || {};
@@ -1376,6 +1297,18 @@ function ObjectDetailsView({ object, objectType }: { object: ObjectItem; objectT
           {object.title}
         </h3>
         <p className="text-sm text-muted-foreground mt-1">{object.description || "No description"}</p>
+        <div className="mt-3">
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDelete}
+            disabled={deleteMutation.isPending}
+            data-testid={`button-delete-object-view-${object.id}`}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            {deleteMutation.isPending ? "Deleting..." : "Delete Object"}
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-4">
