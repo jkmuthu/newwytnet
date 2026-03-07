@@ -338,6 +338,26 @@ export default function AdminObjects() {
     setActiveTab("objects-list");
   };
 
+  const openViewById = async (objectId: string) => {
+    const inList = objects.find((obj) => obj.id === objectId);
+    if (inList) {
+      setViewingObject(inList);
+      setActiveTab("object-view");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/entities/${objectId}?includeRelationships=false`, { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to load linked object");
+      const payload = await response.json();
+      if (!payload?.entity) throw new Error("Linked object not found");
+      setViewingObject(payload.entity as ObjectItem);
+      setActiveTab("object-view");
+    } catch (error: any) {
+      toast({ title: "Unable to open linked object", description: error?.message || "Please try again", variant: "destructive" });
+    }
+  };
+
   const handleFormSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
     closeObjectForm();
@@ -1498,6 +1518,7 @@ export default function AdminObjects() {
                     object={viewingObject}
                     objectType={objectTypes.find((t) => t.id === viewingObject.entityTypeId)}
                     onDeleted={closeViewTab}
+                    onOpenObject={openViewById}
                   />
                   <div className="pt-3">
                     <Button variant="outline" type="button" onClick={closeViewTab} data-testid="button-close-object-view">
@@ -1639,7 +1660,7 @@ function ObjectRow({ object, objectTypes, onView, onEdit, onFilterByParent, isSe
 }
 
 // Object Details View Component
-function ObjectDetailsView({ object, objectType, onDeleted }: { object: ObjectItem; objectType?: ObjectType; onDeleted?: () => void }) {
+function ObjectDetailsView({ object, objectType, onDeleted, onOpenObject }: { object: ObjectItem; objectType?: ObjectType; onDeleted?: () => void; onOpenObject?: (objectId: string) => void | Promise<void> }) {
   const { toast } = useToast();
   const { data: relationshipsData } = useQuery<{ relationships: any[] }>({
     queryKey: ["/api/entities", object.id, "relationships"],
@@ -1664,6 +1685,9 @@ function ObjectDetailsView({ object, objectType, onDeleted }: { object: ObjectIt
   };
 
   const relationships = relationshipsData?.relationships || [];
+  const parentRelationships = relationships.filter((rel: any) => String(rel.type || rel.relationshipType).toLowerCase() === "parent");
+  const childRelationships = relationships.filter((rel: any) => String(rel.type || rel.relationshipType).toLowerCase() === "child");
+  const friendRelationships = relationships.filter((rel: any) => String(rel.type || rel.relationshipType).toLowerCase() === "friend");
   const metadata = object.metadata || {};
   const objectImages = Array.isArray(metadata.images)
     ? metadata.images.filter((img: unknown) => typeof img === "string" && img.trim())
@@ -1675,111 +1699,167 @@ function ObjectDetailsView({ object, objectType, onDeleted }: { object: ObjectIt
     : [];
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          {object.title}
-        </h3>
-        <p className="text-sm text-muted-foreground mt-1">{object.description || "No description"}</p>
-        <div className="mt-3">
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            disabled={deleteMutation.isPending}
-            data-testid={`button-delete-object-view-${object.id}`}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            {deleteMutation.isPending ? "Deleting..." : "Delete Object"}
-          </Button>
-        </div>
-      </div>
-
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,7fr)_minmax(260px,3fr)] gap-6">
       <div className="space-y-4">
-        <div className="grid grid-cols-1 gap-4">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            {object.title}
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1">{object.description || "No description"}</p>
+          <div className="mt-3">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              data-testid={`button-delete-object-view-${object.id}`}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              {deleteMutation.isPending ? "Deleting..." : "Delete Object"}
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-600">Object Type</label>
+              <div className="mt-1">
+                {objectType && (
+                  <Badge variant="outline">{objectType.name}</Badge>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div>
-            <label className="text-sm font-medium text-gray-600">Object Type</label>
-            <div className="mt-1">
-              {objectType && (
-                <Badge variant="outline">{objectType.name}</Badge>
+            <label className="text-sm font-medium text-gray-600">Aliases</label>
+            <div className="mt-1 flex flex-wrap gap-1">
+              {object.aliases && object.aliases.length > 0 ? (
+                object.aliases.map((alias, i) => (
+                  <Badge key={i} variant="secondary">{alias}</Badge>
+                ))
+              ) : (
+                <span className="text-sm text-gray-500">No aliases</span>
               )}
             </div>
           </div>
-        </div>
 
-        <div>
-          <label className="text-sm font-medium text-gray-600">Aliases</label>
-          <div className="mt-1 flex flex-wrap gap-1">
-            {object.aliases && object.aliases.length > 0 ? (
-              object.aliases.map((alias, i) => (
-                <Badge key={i} variant="secondary">{alias}</Badge>
-              ))
+          {(metadata.iconUrl || metadata.materiality) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-600">Object Icon</label>
+                <div className="mt-2">
+                  <img
+                    src={typeof metadata.iconUrl === "string" && metadata.iconUrl.trim() ? metadata.iconUrl : DEFAULT_OBJECT_ICON}
+                    alt="Object icon"
+                    className="h-12 w-12 rounded border object-cover"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-600">Materiality</label>
+                <div className="mt-1 text-sm capitalize">{metadata.materiality || "-"}</div>
+              </div>
+            </div>
+          )}
+
+          {objectImages.length > 0 && (
+            <div>
+              <label className="text-sm font-medium text-gray-600">Object Images</label>
+              <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-3">
+                {objectImages.slice(0, 6).map((img: string, idx: number) => (
+                  <a key={`${img}-${idx}`} href={img} target="_blank" rel="noreferrer" className="block border rounded p-2 text-xs truncate hover:bg-muted">
+                    {img}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {customFields.length > 0 && (
+            <div>
+              <label className="text-sm font-medium text-gray-600">Custom Fields</label>
+              <div className="mt-2 space-y-2">
+                {customFields.map((field: any, idx: number) => (
+                  <div key={`${field.key}-${idx}`} className="grid grid-cols-2 gap-2 text-sm border rounded px-3 py-2">
+                    <span className="font-medium">{field.key}</span>
+                    <span className="text-gray-600">{field.value || "-"}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="border rounded-lg p-4 h-fit bg-muted/20">
+        <h4 className="font-semibold mb-3">Related Objects</h4>
+
+        <div className="space-y-4 text-sm">
+          <div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Parent</div>
+            {parentRelationships.length > 0 ? (
+              <div className="space-y-1">
+                {parentRelationships.map((rel: any) => (
+                  <button
+                    key={`parent-${rel.id}`}
+                    type="button"
+                    className="block w-full text-left rounded px-2 py-1 hover:bg-muted"
+                    onClick={() => onOpenObject?.(rel.targetEntityId)}
+                    data-testid={`link-related-parent-${rel.id}`}
+                  >
+                    {rel.targetEntityTitle || rel.targetEntityId}
+                  </button>
+                ))}
+              </div>
             ) : (
-              <span className="text-sm text-gray-500">No aliases</span>
+              <div className="text-muted-foreground">Main</div>
+            )}
+          </div>
+
+          <div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Childs</div>
+            {childRelationships.length > 0 ? (
+              <div className="space-y-1">
+                {childRelationships.map((rel: any) => (
+                  <button
+                    key={`child-${rel.id}`}
+                    type="button"
+                    className="block w-full text-left rounded px-2 py-1 hover:bg-muted"
+                    onClick={() => onOpenObject?.(rel.targetEntityId)}
+                    data-testid={`link-related-child-${rel.id}`}
+                  >
+                    {rel.targetEntityTitle || rel.targetEntityId}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-muted-foreground">No childs</div>
+            )}
+          </div>
+
+          <div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Friends</div>
+            {friendRelationships.length > 0 ? (
+              <div className="space-y-1">
+                {friendRelationships.map((rel: any) => (
+                  <button
+                    key={`friend-${rel.id}`}
+                    type="button"
+                    className="block w-full text-left rounded px-2 py-1 hover:bg-muted"
+                    onClick={() => onOpenObject?.(rel.targetEntityId)}
+                    data-testid={`link-related-friend-${rel.id}`}
+                  >
+                    {rel.targetEntityTitle || rel.targetEntityId}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-muted-foreground">No friends</div>
             )}
           </div>
         </div>
-
-        {(metadata.iconUrl || metadata.materiality) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-600">Object Icon</label>
-              <div className="mt-2">
-                <img
-                  src={typeof metadata.iconUrl === "string" && metadata.iconUrl.trim() ? metadata.iconUrl : DEFAULT_OBJECT_ICON}
-                  alt="Object icon"
-                  className="h-12 w-12 rounded border object-cover"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-600">Materiality</label>
-              <div className="mt-1 text-sm capitalize">{metadata.materiality || "-"}</div>
-            </div>
-          </div>
-        )}
-
-        {objectImages.length > 0 && (
-          <div>
-            <label className="text-sm font-medium text-gray-600">Object Images</label>
-            <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-3">
-              {objectImages.slice(0, 6).map((img: string, idx: number) => (
-                <a key={`${img}-${idx}`} href={img} target="_blank" rel="noreferrer" className="block border rounded p-2 text-xs truncate hover:bg-muted">
-                  {img}
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {customFields.length > 0 && (
-          <div>
-            <label className="text-sm font-medium text-gray-600">Custom Fields</label>
-            <div className="mt-2 space-y-2">
-              {customFields.map((field: any, idx: number) => (
-                <div key={`${field.key}-${idx}`} className="grid grid-cols-2 gap-2 text-sm border rounded px-3 py-2">
-                  <span className="font-medium">{field.key}</span>
-                  <span className="text-gray-600">{field.value || "-"}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {relationships.length > 0 && (
-          <div>
-            <label className="text-sm font-medium text-gray-600">Relationships ({relationships.length})</label>
-            <div className="mt-2 space-y-2">
-              {relationships.map((rel: any, i) => (
-                <div key={i} className="p-2 border rounded text-sm">
-                  <span className="font-medium">{rel.type}</span>
-                  <span className="text-gray-500 mx-2">→</span>
-                  <span>{rel.targetEntityTitle || rel.targetEntityId}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
