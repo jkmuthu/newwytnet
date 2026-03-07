@@ -119,6 +119,15 @@ export default function AdminObjects() {
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
   const [selectedObjectIds, setSelectedObjectIds] = useState<string[]>([]);
   const [mergeTargetId, setMergeTargetId] = useState<string>("");
+  const [isTypeFormOpen, setIsTypeFormOpen] = useState(false);
+  const [editingType, setEditingType] = useState<ObjectType | undefined>(undefined);
+  const [typeFormData, setTypeFormData] = useState({
+    name: "",
+    slug: "",
+    description: "",
+    icon: "",
+    color: "gray",
+  });
 
   // Fetch object types
   const { data: objectTypesData } = useQuery<{ types: ObjectType[] }>({
@@ -191,6 +200,75 @@ export default function AdminObjects() {
     queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
     closeObjectForm();
   };
+
+  const openCreateTypeForm = () => {
+    setEditingType(undefined);
+    setTypeFormData({ name: "", slug: "", description: "", icon: "", color: "gray" });
+    setIsTypeFormOpen(true);
+  };
+
+  const openEditTypeForm = (type: ObjectType) => {
+    setEditingType(type);
+    setTypeFormData({
+      name: type.name || "",
+      slug: type.slug || "",
+      description: type.description || "",
+      icon: type.icon || "",
+      color: type.color || "gray",
+    });
+    setIsTypeFormOpen(true);
+  };
+
+  const closeTypeForm = () => {
+    setEditingType(undefined);
+    setIsTypeFormOpen(false);
+  };
+
+  const saveTypeMutation = useMutation({
+    mutationFn: () => {
+      const payload = {
+        name: typeFormData.name.trim(),
+        slug: (typeFormData.slug.trim() || toKebabSlug(typeFormData.name)).slice(0, 100),
+        description: typeFormData.description.trim() || undefined,
+        icon: typeFormData.icon.trim() || undefined,
+        color: typeFormData.color.trim() || undefined,
+      };
+
+      if (editingType) {
+        return apiRequest(`/api/entities/types/${editingType.id}`, "PATCH", payload);
+      }
+      return apiRequest("/api/entities/types", "POST", payload);
+    },
+    onSuccess: async () => {
+      toast({ title: `Object type ${editingType ? "updated" : "created"} successfully` });
+      closeTypeForm();
+      await queryClient.invalidateQueries({ queryKey: ["/api/entities/types"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: `Failed to ${editingType ? "update" : "create"} object type`,
+        description: error?.message || "Please check type details and try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteTypeMutation = useMutation({
+    mutationFn: (typeId: string) => apiRequest(`/api/entities/types/${typeId}`, "DELETE"),
+    onSuccess: async () => {
+      toast({ title: "Object type deleted successfully" });
+      await queryClient.invalidateQueries({ queryKey: ["/api/entities/types"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to delete object type",
+        description: error?.message || "System types cannot be deleted.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const mergeMutation = useMutation({
     mutationFn: () => {
@@ -431,27 +509,145 @@ export default function AdminObjects() {
         <TabsContent value="object-types" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Object Types</CardTitle>
-              <CardDescription>Core object types in the knowledge graph</CardDescription>
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <CardTitle>Object Types</CardTitle>
+                  <CardDescription>Core object types in the knowledge graph</CardDescription>
+                </div>
+                <Button type="button" onClick={openCreateTypeForm} data-testid="button-add-object-type">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Type
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
+              {isTypeFormOpen && (
+                <div className="border rounded-lg p-4 mb-4 space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm font-medium">Type Name *</label>
+                      <Input
+                        value={typeFormData.name}
+                        onChange={(e) => setTypeFormData((current) => ({
+                          ...current,
+                          name: e.target.value,
+                          slug: editingType ? current.slug : toKebabSlug(e.target.value),
+                        }))}
+                        placeholder="e.g., Topic"
+                        data-testid="input-type-name"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Slug *</label>
+                      <Input
+                        value={typeFormData.slug}
+                        onChange={(e) => setTypeFormData((current) => ({ ...current, slug: toKebabSlug(e.target.value) }))}
+                        placeholder="e.g., topic"
+                        data-testid="input-type-slug"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-sm font-medium">Type Icon</label>
+                      <Input
+                        value={typeFormData.icon}
+                        onChange={(e) => setTypeFormData((current) => ({ ...current, icon: e.target.value }))}
+                        placeholder="e.g., tag, globe, briefcase"
+                        data-testid="input-type-icon"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Color</label>
+                      <Input
+                        value={typeFormData.color}
+                        onChange={(e) => setTypeFormData((current) => ({ ...current, color: e.target.value }))}
+                        placeholder="e.g., blue, emerald, slate"
+                        data-testid="input-type-color"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Description</label>
+                    <Textarea
+                      value={typeFormData.description}
+                      onChange={(e) => setTypeFormData((current) => ({ ...current, description: e.target.value }))}
+                      rows={2}
+                      placeholder="Short description"
+                      data-testid="input-type-description"
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      disabled={!typeFormData.name.trim() || !typeFormData.slug.trim() || saveTypeMutation.isPending}
+                      onClick={() => saveTypeMutation.mutate()}
+                      data-testid="button-save-object-type"
+                    >
+                      {saveTypeMutation.isPending ? "Saving..." : (editingType ? "Update Type" : "Create Type")}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={closeTypeForm} data-testid="button-cancel-object-type">
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {objectTypes.map((type) => (
                   <div
                     key={type.id}
-                    className="p-3 border rounded-lg hover:border-purple-400 cursor-pointer transition-colors"
+                    className="p-3 border rounded-lg hover:border-purple-400 transition-colors"
                     onClick={() => {
                       setSelectedType(type.id);
                       setActiveTab("objects-list");
                     }}
                     data-testid={`card-object-type-${type.slug}`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline" className={`bg-${type.color}-100 text-${type.color}-700`}>
-                        {type.name}
-                      </Badge>
-                      {type.isSystem && <CheckCircle className="h-3 w-3 text-green-600" />}
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs rounded border px-2 py-0.5 text-muted-foreground">{type.icon || "icon"}</span>
+                        <Badge variant="outline" className={`bg-${type.color}-100 text-${type.color}-700`}>
+                          {type.name}
+                        </Badge>
+                        {type.isSystem && <CheckCircle className="h-3 w-3 text-green-600" />}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditTypeForm(type);
+                          }}
+                          data-testid={`button-edit-object-type-${type.id}`}
+                        >
+                          <Edit className="h-3.5 w-3.5 text-blue-600" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={type.isSystem || deleteTypeMutation.isPending}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm(`Delete object type \"${type.name}\"?`)) {
+                              deleteTypeMutation.mutate(type.id);
+                            }
+                          }}
+                          data-testid={`button-delete-object-type-${type.id}`}
+                        >
+                          <Trash2 className={`h-3.5 w-3.5 ${type.isSystem ? "text-gray-300" : "text-red-600"}`} />
+                        </Button>
+                      </div>
                     </div>
+                    {type.description && (
+                      <div className="text-xs text-muted-foreground line-clamp-1 mb-1">{type.description}</div>
+                    )}
                     <div className="text-xs text-gray-500">{getObjectCountByType(type.id)} objects</div>
                   </div>
                 ))}
