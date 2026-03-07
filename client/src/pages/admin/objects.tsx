@@ -232,8 +232,28 @@ export default function AdminObjects() {
     setIsTypeFormOpen(false);
   };
 
+  const parseStrictApiJson = async (response: Response, action: string) => {
+    const raw = await response.text();
+    const contentType = response.headers.get("content-type") || "";
+    const looksLikeHtml = raw.trim().startsWith("<!DOCTYPE") || raw.trim().startsWith("<html");
+
+    if (!response.ok) {
+      throw new Error(raw || `Failed to ${action}`);
+    }
+
+    if (!contentType.includes("application/json") || looksLikeHtml) {
+      throw new Error(`Server returned HTML for ${action}.`);
+    }
+
+    try {
+      return JSON.parse(raw);
+    } catch {
+      throw new Error(`Server returned invalid JSON for ${action}.`);
+    }
+  };
+
   const saveTypeMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const payload = {
         name: typeFormData.name.trim(),
         slug: (typeFormData.slug.trim() || toKebabSlug(typeFormData.name)).slice(0, 100),
@@ -243,9 +263,11 @@ export default function AdminObjects() {
       };
 
       if (editingType) {
-        return apiRequest(`/api/entities/types/${editingType.id}`, "PATCH", payload);
+        const response = await apiRequest(`/api/entities/types/${editingType.id}`, "PATCH", payload);
+        return parseStrictApiJson(response, "update object type");
       }
-      return apiRequest("/api/entities/types", "POST", payload);
+      const response = await apiRequest("/api/entities/types", "POST", payload);
+      return parseStrictApiJson(response, "create object type");
     },
     onSuccess: async () => {
       toast({ title: `Object type ${editingType ? "updated" : "created"} successfully` });
@@ -263,7 +285,10 @@ export default function AdminObjects() {
   });
 
   const deleteTypeMutation = useMutation({
-    mutationFn: (typeId: string) => apiRequest(`/api/entities/types/${typeId}`, "DELETE"),
+    mutationFn: async (typeId: string) => {
+      const response = await apiRequest(`/api/entities/types/${typeId}`, "DELETE");
+      return parseStrictApiJson(response, "delete object type");
+    },
     onSuccess: async () => {
       toast({ title: "Object type deleted successfully" });
       await queryClient.invalidateQueries({ queryKey: ["/api/entities/types"] });
@@ -341,10 +366,17 @@ export default function AdminObjects() {
 
       // Try dedicated endpoint first.
       try {
-        return await apiRequest(`/api/entities/types/${deleteImpact.type.id}/delete-with-replacement`, "POST", { replacementTypeId });
+        const response = await apiRequest(`/api/entities/types/${deleteImpact.type.id}/delete-with-replacement`, "POST", { replacementTypeId });
+        return await parseStrictApiJson(response, "delete object type with replacement");
       } catch (error: any) {
         const rawMessage = String(error?.message || "");
-        const looksLikeStaleRoute = rawMessage.includes("<!DOCTYPE") || rawMessage.includes("<html") || rawMessage.includes("Cannot POST") || rawMessage.includes("404:");
+        const looksLikeStaleRoute =
+          rawMessage.includes("<!DOCTYPE") ||
+          rawMessage.includes("<html") ||
+          rawMessage.includes("Cannot POST") ||
+          rawMessage.includes("404:") ||
+          rawMessage.includes("returned HTML") ||
+          rawMessage.includes("invalid JSON");
         if (!looksLikeStaleRoute) {
           throw error;
         }
@@ -352,14 +384,19 @@ export default function AdminObjects() {
         // Fallback path for older/stale runtime: reassign objects then delete type.
         const affected = objects.filter((obj) => obj.entityTypeId === deleteImpact.type.id);
         for (const obj of affected) {
-          await apiRequest(`/api/entities/${obj.id}`, "PATCH", { entityTypeId: replacementTypeId });
+          const patchResponse = await apiRequest(`/api/entities/${obj.id}`, "PATCH", { entityTypeId: replacementTypeId });
+          await parseStrictApiJson(patchResponse, "reassign object type");
         }
-        await apiRequest(`/api/entities/types/${deleteImpact.type.id}`, "DELETE");
-        return new Response(null, { status: 200 });
+        const deleteResponse = await apiRequest(`/api/entities/types/${deleteImpact.type.id}`, "DELETE");
+        await parseStrictApiJson(deleteResponse, "delete object type");
+
+        return { success: true, fallbackMode: true };
       }
     },
-    onSuccess: async () => {
-      toast({ title: "Object type deleted with replacement" });
+    onSuccess: async (payload: any) => {
+      toast({
+        title: payload?.fallbackMode ? "Object type deleted (fallback mode)" : "Object type deleted with replacement",
+      });
       setDeleteImpact(null);
       setReplacementTypeId("");
       await queryClient.invalidateQueries({ queryKey: ["/api/entities/types"] });
@@ -368,7 +405,7 @@ export default function AdminObjects() {
     onError: (error: any) => {
       toast({
         title: "Delete failed",
-        description: error?.message || "Please choose a valid replacement type.",
+        description: error?.message || "Please choose a valid replacement type and ensure API server is running.",
         variant: "destructive",
       });
     },
