@@ -507,9 +507,13 @@ export default function AdminObjects() {
       await queryClient.invalidateQueries({ queryKey: ["/api/entities/groups"] });
     },
     onError: (error: any) => {
+      const message = String(error?.message || "");
+      const staleRuntime = message.includes("Server returned HTML") || message.includes("<!DOCTYPE") || message.includes("<html");
       toast({
         title: "Failed to create object group",
-        description: error?.message || "Please check name and tagged objects",
+        description: staleRuntime
+          ? "Local server is running stale routes. Restart dev server and retry."
+          : (error?.message || "Please check name and tagged objects"),
         variant: "destructive",
       });
     },
