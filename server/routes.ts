@@ -7533,6 +7533,59 @@ When suggesting improvements, format your response with suggestions in a structu
     sourceEntityIds: z.array(z.string().uuid()).min(1).max(100),
   });
 
+  // GET hierarchy options for parent filters
+  // - without parentId: returns all root nodes (Main level)
+  // - with parentId: returns direct children of that parent
+  app.get('/api/entities/hierarchy/options', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const parentId = typeof req.query.parentId === 'string' ? req.query.parentId : '';
+
+      if (parentId) {
+        const children = await db
+          .select({ id: entities.id, title: entities.title })
+          .from(entityRelationships)
+          .innerJoin(entities, eq(entities.id, entityRelationships.sourceEntityId))
+          .where(
+            and(
+              eq(entityRelationships.relationshipType, 'parent'),
+              eq(entityRelationships.isActive, true),
+              eq(entityRelationships.targetEntityId, parentId),
+            ),
+          )
+          .orderBy(asc(entities.title));
+
+        return res.json({ success: true, options: children });
+      }
+
+      const childRows = await db
+        .select({ childId: entityRelationships.sourceEntityId })
+        .from(entityRelationships)
+        .where(
+          and(
+            eq(entityRelationships.relationshipType, 'parent'),
+            eq(entityRelationships.isActive, true),
+          ),
+        );
+
+      const childIds = Array.from(new Set(childRows.map((row) => row.childId)));
+
+      let rootsQuery = db
+        .select({ id: entities.id, title: entities.title })
+        .from(entities)
+        .$dynamic();
+
+      if (childIds.length > 0) {
+        rootsQuery = rootsQuery.where(not(inArray(entities.id, childIds)));
+      }
+
+      const roots = await rootsQuery.orderBy(asc(entities.title));
+      res.json({ success: true, options: roots });
+    } catch (error) {
+      console.error('Error fetching entity hierarchy options:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch hierarchy options' });
+    }
+  });
+
   // Entity Types - CRUD APIs
 
   // GET all entity types

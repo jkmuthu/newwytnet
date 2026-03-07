@@ -57,6 +57,11 @@ interface ObjectGroupItem {
   objects: Array<{ id: string; title: string }>;
 }
 
+interface HierarchyOptionItem {
+  id: string;
+  title: string;
+}
+
 type CustomFieldType = "text" | "textarea" | "number" | "date" | "boolean" | "email" | "url" | "select";
 
 interface DynamicField {
@@ -161,6 +166,8 @@ export default function AdminObjects() {
   const [groupDescription, setGroupDescription] = useState("");
   const [groupObjectSearch, setGroupObjectSearch] = useState("");
   const [groupEntityIds, setGroupEntityIds] = useState<string[]>([]);
+  const [parentSelections, setParentSelections] = useState<string[]>([]);
+  const [parentOptionsByLevel, setParentOptionsByLevel] = useState<HierarchyOptionItem[][]>([]);
 
   // Fetch object types
   const { data: objectTypesData } = useQuery<{ types: ObjectType[] }>({
@@ -185,6 +192,15 @@ export default function AdminObjects() {
   const objectTypes = objectTypesData?.types || [];
   const objects = objectsData?.entities || [];
   const selectedObjects = objects.filter((obj) => selectedObjectIds.includes(obj.id));
+
+  const { data: rootHierarchyData } = useQuery<{ options: HierarchyOptionItem[] }>({
+    queryKey: ["/api/entities/hierarchy/options", "roots"],
+    queryFn: async () => {
+      const response = await fetch("/api/entities/hierarchy/options", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch parent roots");
+      return response.json();
+    },
+  });
 
   const { data: groupsData, isLoading: isGroupsLoading } = useQuery<{ groups: ObjectGroupItem[] }>({
     queryKey: ["/api/entities/groups"],
@@ -224,6 +240,58 @@ export default function AdminObjects() {
       setMergeTargetId("");
     }
   }, [selectedObjectIds, mergeTargetId]);
+
+  useEffect(() => {
+    const roots = rootHierarchyData?.options || [];
+    setParentOptionsByLevel([roots]);
+  }, [rootHierarchyData?.options]);
+
+  const loadHierarchyChildren = async (parentId: string, level: number) => {
+    const response = await fetch(`/api/entities/hierarchy/options?parentId=${parentId}`, { credentials: "include" });
+    if (!response.ok) throw new Error("Failed to load child hierarchy options");
+    const payload = await response.json();
+    const options = Array.isArray(payload?.options) ? (payload.options as HierarchyOptionItem[]) : [];
+
+    setParentOptionsByLevel((current) => {
+      const next = current.slice(0, level + 1);
+      if (options.length > 0) {
+        next[level + 1] = options;
+      }
+      return next;
+    });
+  };
+
+  const handleParentSelection = (level: number, value: string) => {
+    if (level === 0 && value === "__all_main__") {
+      setParentSelections([]);
+      setParentOptionsByLevel((current) => [current[0] || []]);
+      return;
+    }
+
+    if (value === "__select__") {
+      return;
+    }
+
+    const nextSelections = [...parentSelections.slice(0, level), value];
+    setParentSelections(nextSelections);
+    setParentOptionsByLevel((current) => current.slice(0, level + 1));
+    void loadHierarchyChildren(value, level);
+  };
+
+  const filteredObjects = useMemo(() => {
+    if (parentSelections.length === 0) return objects;
+
+    const deepestLevel = parentSelections.length - 1;
+    const deepestSelection = parentSelections[deepestLevel];
+    const nextLevelOptions = parentOptionsByLevel[deepestLevel + 1] || [];
+
+    if (nextLevelOptions.length > 0) {
+      const visibleIds = new Set(nextLevelOptions.map((item) => item.id));
+      return objects.filter((obj) => visibleIds.has(obj.id));
+    }
+
+    return objects.filter((obj) => obj.id === deepestSelection);
+  }, [objects, parentSelections, parentOptionsByLevel]);
 
   // Get object count by type
   const getObjectCountByType = (typeId: string) => {
@@ -717,11 +785,16 @@ export default function AdminObjects() {
   };
 
   const toggleSelectAllVisible = (checked: boolean) => {
+    const visibleIds = filteredObjects.map((obj) => obj.id);
     if (!checked) {
-      setSelectedObjectIds([]);
+      setSelectedObjectIds((current) => current.filter((id) => !visibleIds.includes(id)));
       return;
     }
-    setSelectedObjectIds(objects.map((obj) => obj.id));
+    setSelectedObjectIds((current) => {
+      const next = new Set(current);
+      visibleIds.forEach((id) => next.add(id));
+      return Array.from(next);
+    });
   };
 
   const openTypeObjects = (typeId: string) => {
@@ -837,8 +910,8 @@ export default function AdminObjects() {
           </div>
 
           {/* Search & Filters */}
-          <div className="flex gap-4">
-            <div className="relative flex-1">
+          <div className="flex flex-wrap gap-3 items-start">
+            <div className="relative w-full md:w-[340px]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search objects by name or alias..."
@@ -849,7 +922,7 @@ export default function AdminObjects() {
               />
             </div>
             <Select value={selectedType} onValueChange={setSelectedType}>
-              <SelectTrigger className="w-[200px]" data-testid="select-object-type-filter">
+              <SelectTrigger className="w-[180px]" data-testid="select-object-type-filter">
                 <SelectValue placeholder="All Types" />
               </SelectTrigger>
               <SelectContent>
@@ -859,6 +932,28 @@ export default function AdminObjects() {
                 ))}
               </SelectContent>
             </Select>
+
+            <div className="flex flex-wrap items-center gap-2" data-testid="filters-parent-cascade">
+              <span className="text-sm text-muted-foreground">Parent:</span>
+              {parentOptionsByLevel.map((options, level) => (
+                <Select
+                  key={`parent-level-${level}`}
+                  value={level === 0 ? (parentSelections[0] || "__all_main__") : (parentSelections[level] || "__select__")}
+                  onValueChange={(value) => handleParentSelection(level, value)}
+                >
+                  <SelectTrigger className="w-[180px]" data-testid={`select-parent-level-${level}`}>
+                    <SelectValue placeholder={level === 0 ? "All Main" : "Choose"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {level === 0 && <SelectItem value="__all_main__">All Main</SelectItem>}
+                    {level > 0 && <SelectItem value="__select__">Choose</SelectItem>}
+                    {options.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>{item.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ))}
+            </div>
           </div>
 
           {selectedObjectIds.length >= 2 && (
@@ -897,7 +992,7 @@ export default function AdminObjects() {
             <CardContent className="p-0">
               {isLoading ? (
                 <div className="text-center py-12 text-gray-500">Loading objects...</div>
-              ) : objects.length === 0 ? (
+              ) : filteredObjects.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   <Database className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                   <p>No objects found</p>
@@ -909,7 +1004,7 @@ export default function AdminObjects() {
                       <TableHead className="w-[60px]">
                         <input
                           type="checkbox"
-                          checked={objects.length > 0 && selectedObjectIds.length === objects.length}
+                          checked={filteredObjects.length > 0 && filteredObjects.every((obj) => selectedObjectIds.includes(obj.id))}
                           onChange={(e) => toggleSelectAllVisible(e.target.checked)}
                           aria-label="Select all objects"
                         />
@@ -925,7 +1020,7 @@ export default function AdminObjects() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {objects.map((object) => (
+                    {filteredObjects.map((object) => (
                       <ObjectRow 
                         key={object.id} 
                         object={object} 
