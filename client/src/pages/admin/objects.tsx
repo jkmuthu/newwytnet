@@ -196,7 +196,7 @@ export default function AdminObjects() {
   const { data: rootHierarchyData } = useQuery<{ options: HierarchyOptionItem[] }>({
     queryKey: ["/api/entities/hierarchy/options", "roots"],
     queryFn: async () => {
-      const response = await fetch("/api/entities/hierarchy/options", { credentials: "include" });
+      const response = await fetch("/api/entities/hierarchy/options?parentId=__main__", { credentials: "include" });
       if (!response.ok) throw new Error("Failed to fetch parent roots");
       return response.json();
     },

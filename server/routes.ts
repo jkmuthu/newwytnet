@@ -7540,7 +7540,7 @@ When suggesting improvements, format your response with suggestions in a structu
     try {
       const parentId = typeof req.query.parentId === 'string' ? req.query.parentId : '';
 
-      if (parentId) {
+      if (parentId && parentId !== '__main__') {
         const children = await db
           .select({ id: entities.id, title: entities.title })
           .from(entityRelationships)
@@ -7569,6 +7569,29 @@ When suggesting improvements, format your response with suggestions in a structu
 
       const childIds = Array.from(new Set(childRows.map((row) => row.childId)));
 
+      // If a canonical object titled "Main" exists, treat its children as Main-level options as well.
+      const mainRows = await db
+        .select({ id: entities.id })
+        .from(entities)
+        .where(ilike(entities.title, 'main'));
+
+      const mainIds = mainRows.map((row) => row.id);
+
+      const childrenOfMain = mainIds.length > 0
+        ? await db
+            .select({ id: entities.id, title: entities.title })
+            .from(entityRelationships)
+            .innerJoin(entities, eq(entities.id, entityRelationships.sourceEntityId))
+            .where(
+              and(
+                eq(entityRelationships.relationshipType, 'parent'),
+                eq(entityRelationships.isActive, true),
+                inArray(entityRelationships.targetEntityId, mainIds),
+              ),
+            )
+            .orderBy(asc(entities.title))
+        : [];
+
       let rootsQuery = db
         .select({ id: entities.id, title: entities.title })
         .from(entities)
@@ -7579,7 +7602,13 @@ When suggesting improvements, format your response with suggestions in a structu
       }
 
       const roots = await rootsQuery.orderBy(asc(entities.title));
-      res.json({ success: true, options: roots });
+
+      const merged = new Map<string, { id: string; title: string }>();
+      for (const row of roots) merged.set(row.id, row);
+      for (const row of childrenOfMain) merged.set(row.id, row);
+
+      const options = Array.from(merged.values()).sort((a, b) => a.title.localeCompare(b.title));
+      res.json({ success: true, options });
     } catch (error) {
       console.error('Error fetching entity hierarchy options:', error);
       res.status(500).json({ success: false, error: 'Failed to fetch hierarchy options' });
