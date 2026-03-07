@@ -281,11 +281,23 @@ export default function AdminObjects() {
   const fetchDeleteImpactMutation = useMutation({
     mutationFn: async (typeId: string) => {
       const response = await fetch(`/api/entities/types/${typeId}/delete-impact`, { credentials: 'include' });
+      const raw = await response.text();
+
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || "Failed to fetch delete impact");
+        throw new Error(raw || "Failed to fetch delete impact");
       }
-      return response.json();
+
+      const contentType = response.headers.get("content-type") || "";
+      const looksLikeHtml = raw.trim().startsWith("<!DOCTYPE") || raw.trim().startsWith("<html");
+      if (!contentType.includes("application/json") || looksLikeHtml) {
+        throw new Error("Delete impact API returned HTML instead of JSON. Please restart local server and try again.");
+      }
+
+      try {
+        return JSON.parse(raw);
+      } catch {
+        throw new Error("Delete impact API returned invalid JSON. Please restart local server and try again.");
+      }
     },
     onSuccess: (payload: any) => {
       setDeleteImpact(payload.impact as TypeDeleteImpact);
