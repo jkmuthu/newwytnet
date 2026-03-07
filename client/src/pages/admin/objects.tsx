@@ -1232,8 +1232,13 @@ function ObjectDetailsView({ object, objectType }: { object: ObjectItem; objectT
 
 function ObjectRelationshipsEditor({ entity }: { entity: ObjectItem }) {
   const { toast } = useToast();
-  const [targetEntityId, setTargetEntityId] = useState<string>("");
-  const [relationshipType, setRelationshipType] = useState<"parent" | "child" | "friend">("friend");
+  const MAIN_PARENT = "__main__";
+  const [parentTargetId, setParentTargetId] = useState<string>(MAIN_PARENT);
+  const [childTargetId, setChildTargetId] = useState<string>("");
+  const [friendTargetId, setFriendTargetId] = useState<string>("");
+  const [childDraftIds, setChildDraftIds] = useState<string[]>([]);
+  const [friendDraftIds, setFriendDraftIds] = useState<string[]>([]);
+  const [isSavingParent, setIsSavingParent] = useState(false);
 
   const { data: allEntitiesData } = useQuery<{ entities: ObjectItem[] }>({
     queryKey: ["/api/entities", "relationship-editor", entity.id],
@@ -1254,22 +1259,19 @@ function ObjectRelationshipsEditor({ entity }: { entity: ObjectItem }) {
   });
 
   const relationshipMutation = useMutation({
-    mutationFn: async () => {
-      const payload = {
+    mutationFn: (payload: { targetEntityId: string; relationshipType: "parent" | "child" | "friend" }) => {
+      return apiRequest("/api/entities/relationships", "POST", {
         sourceEntityId: entity.id,
-        targetEntityId,
-        relationshipType,
-        isBidirectional: relationshipType === "friend",
+        targetEntityId: payload.targetEntityId,
+        relationshipType: payload.relationshipType,
+        isBidirectional: payload.relationshipType === "friend",
         metadata: {},
         strength: 1,
         isActive: true,
-      };
-
-      return apiRequest("/api/entities/relationships", "POST", payload);
+      });
     },
     onSuccess: async () => {
       toast({ title: "Relationship added" });
-      setTargetEntityId("");
       await queryClient.invalidateQueries({ queryKey: ["/api/entities", entity.id, "relationships", "editor"] });
       await queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
     },
@@ -1300,44 +1302,208 @@ function ObjectRelationshipsEditor({ entity }: { entity: ObjectItem }) {
   const allEntities = (allEntitiesData?.entities || []).filter((item) => item.id !== entity.id);
   const relationships = relationshipsData?.relationships || [];
 
+  const getRelType = (rel: any): string => String(rel.type || rel.relationshipType || "").toLowerCase();
+
+  const parentRelationships = relationships.filter((rel: any) => getRelType(rel) === "parent");
+  const childRelationships = relationships.filter((rel: any) => getRelType(rel) === "child");
+  const friendRelationships = relationships.filter((rel: any) => getRelType(rel) === "friend");
+
+  useEffect(() => {
+    const currentParent = parentRelationships[0]?.targetEntityId;
+    setParentTargetId(currentParent || MAIN_PARENT);
+  }, [entity.id, relationshipsData?.relationships]);
+
+  const addTagDraft = (
+    candidateId: string,
+    setCandidate: (value: string) => void,
+    draftIds: string[],
+    setDraftIds: (updater: (prev: string[]) => string[]) => void,
+    existingRels: any[],
+  ) => {
+    if (!candidateId) return;
+    const alreadyExists = existingRels.some((rel) => rel.targetEntityId === candidateId);
+    if (alreadyExists) {
+      toast({ title: "Already assigned", description: "This object is already linked.", variant: "destructive" });
+      setCandidate("");
+      return;
+    }
+
+    if (draftIds.includes(candidateId)) {
+      setCandidate("");
+      return;
+    }
+
+    setDraftIds((prev) => [...prev, candidateId]);
+    setCandidate("");
+  };
+
+  const saveTaggedRelationships = async (
+    type: "child" | "friend",
+    draftIds: string[],
+    clearDraft: () => void,
+  ) => {
+    if (draftIds.length === 0) return;
+
+    const results = await Promise.allSettled(
+      draftIds.map((targetId) =>
+        relationshipMutation.mutateAsync({ targetEntityId: targetId, relationshipType: type }),
+      ),
+    );
+
+    const failed = results.filter((result) => result.status === "rejected").length;
+    if (failed > 0) {
+      toast({
+        title: `Saved with ${failed} issue(s)`,
+        description: `Some ${type} relationships could not be added (possibly duplicates).`,
+        variant: "destructive",
+      });
+    }
+
+    clearDraft();
+    await queryClient.invalidateQueries({ queryKey: ["/api/entities", entity.id, "relationships", "editor"] });
+  };
+
+  const saveParent = async () => {
+    try {
+      setIsSavingParent(true);
+
+      for (const rel of parentRelationships) {
+        if (parentTargetId === MAIN_PARENT || rel.targetEntityId !== parentTargetId) {
+          await apiRequest(`/api/entities/relationships/${rel.id}`, "DELETE");
+        }
+      }
+
+      if (parentTargetId !== MAIN_PARENT) {
+        const hasCurrentParent = parentRelationships.some((rel) => rel.targetEntityId === parentTargetId);
+        if (!hasCurrentParent) {
+          await relationshipMutation.mutateAsync({ targetEntityId: parentTargetId, relationshipType: "parent" });
+        }
+      }
+
+      toast({ title: "Parent updated" });
+      await queryClient.invalidateQueries({ queryKey: ["/api/entities", entity.id, "relationships", "editor"] });
+    } catch (error: any) {
+      toast({
+        title: "Failed to update parent",
+        description: error?.message || "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingParent(false);
+    }
+  };
+
+  const getTitleById = (id: string) => allEntities.find((item) => item.id === id)?.title || id;
+
   return (
     <div className="space-y-4">
       <div>
-        <h4 className="font-semibold">Parent / Child / Friend</h4>
-        <p className="text-xs text-muted-foreground mt-1">Manage graph relationships directly from this object.</p>
+        <h4 className="font-semibold">Assign Relationship</h4>
+        <p className="text-xs text-muted-foreground mt-1">Choose one parent (Main default), and tag multiple child/friend relationships.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-        <Select value={relationshipType} onValueChange={(value) => setRelationshipType(value as "parent" | "child" | "friend")}>
-          <SelectTrigger data-testid="select-relationship-type">
-            <SelectValue placeholder="Relationship type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="parent">Parent</SelectItem>
-            <SelectItem value="child">Child</SelectItem>
-            <SelectItem value="friend">Friend</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="space-y-2 border rounded p-3">
+        <label className="text-sm font-medium">Parent (choose only one)</label>
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_140px] gap-2">
+          <Select value={parentTargetId} onValueChange={setParentTargetId}>
+            <SelectTrigger data-testid="select-parent-target">
+              <SelectValue placeholder="Select parent or Main" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={MAIN_PARENT}>Main</SelectItem>
+              {allEntities.map((item) => (
+                <SelectItem key={item.id} value={item.id}>{item.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button type="button" onClick={saveParent} disabled={isSavingParent} data-testid="button-save-parent">
+            {isSavingParent ? "Saving..." : "Save Parent"}
+          </Button>
+        </div>
+      </div>
 
-        <Select value={targetEntityId} onValueChange={setTargetEntityId}>
-          <SelectTrigger data-testid="select-relationship-target">
-            <SelectValue placeholder="Select target object" />
-          </SelectTrigger>
-          <SelectContent>
-            {allEntities.map((item) => (
-              <SelectItem key={item.id} value={item.id}>{item.title}</SelectItem>
+      <div className="space-y-2 border rounded p-3">
+        <label className="text-sm font-medium">Child Tags (multiple)</label>
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_120px_120px] gap-2">
+          <Select value={childTargetId} onValueChange={setChildTargetId}>
+            <SelectTrigger data-testid="select-child-target">
+              <SelectValue placeholder="Select child object" />
+            </SelectTrigger>
+            <SelectContent>
+              {allEntities.map((item) => (
+                <SelectItem key={item.id} value={item.id}>{item.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => addTagDraft(childTargetId, setChildTargetId, childDraftIds, setChildDraftIds, childRelationships)}
+            disabled={!childTargetId}
+            data-testid="button-add-child-tag"
+          >
+            Add Tag
+          </Button>
+          <Button
+            type="button"
+            onClick={() => saveTaggedRelationships("child", childDraftIds, () => setChildDraftIds([]))}
+            disabled={childDraftIds.length === 0 || relationshipMutation.isPending}
+            data-testid="button-save-child-tags"
+          >
+            Save Children
+          </Button>
+        </div>
+        {childDraftIds.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {childDraftIds.map((id) => (
+              <Badge key={id} variant="secondary" className="text-xs">
+                {getTitleById(id)}
+              </Badge>
             ))}
-          </SelectContent>
-        </Select>
+          </div>
+        )}
+      </div>
 
-        <Button
-          type="button"
-          onClick={() => relationshipMutation.mutate()}
-          disabled={!targetEntityId || relationshipMutation.isPending}
-          data-testid="button-add-relationship"
-        >
-          {relationshipMutation.isPending ? "Adding..." : "Add Relationship"}
-        </Button>
+      <div className="space-y-2 border rounded p-3">
+        <label className="text-sm font-medium">Friend Tags (multiple)</label>
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_120px_120px] gap-2">
+          <Select value={friendTargetId} onValueChange={setFriendTargetId}>
+            <SelectTrigger data-testid="select-friend-target">
+              <SelectValue placeholder="Select friend object" />
+            </SelectTrigger>
+            <SelectContent>
+              {allEntities.map((item) => (
+                <SelectItem key={item.id} value={item.id}>{item.title}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => addTagDraft(friendTargetId, setFriendTargetId, friendDraftIds, setFriendDraftIds, friendRelationships)}
+            disabled={!friendTargetId}
+            data-testid="button-add-friend-tag"
+          >
+            Add Tag
+          </Button>
+          <Button
+            type="button"
+            onClick={() => saveTaggedRelationships("friend", friendDraftIds, () => setFriendDraftIds([]))}
+            disabled={friendDraftIds.length === 0 || relationshipMutation.isPending}
+            data-testid="button-save-friend-tags"
+          >
+            Save Friends
+          </Button>
+        </div>
+        {friendDraftIds.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {friendDraftIds.map((id) => (
+              <Badge key={id} variant="secondary" className="text-xs">
+                {getTitleById(id)}
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
