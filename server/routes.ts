@@ -7418,6 +7418,25 @@ When suggesting improvements, format your response with suggestions in a structu
     const blocked = new Set(["test", "temp", "asdf", "qwerty", "abc", "xxx", "null", "undefined"]);
     if (blocked.has(lowered)) return false;
 
+    const compact = lowered.replace(/\s/g, "");
+
+    // Reject obvious sequential placeholders like abcdefgh / 123456.
+    if (compact.length >= 5) {
+      let isAlphaSequence = true;
+      let isDigitSequence = true;
+      for (let i = 1; i < compact.length; i++) {
+        const prev = compact.charCodeAt(i - 1);
+        const cur = compact.charCodeAt(i);
+        if (!(cur === prev + 1 && prev >= 97 && prev <= 122 && cur >= 97 && cur <= 122)) {
+          isAlphaSequence = false;
+        }
+        if (!(cur === prev + 1 && prev >= 48 && prev <= 57 && cur >= 48 && cur <= 57)) {
+          isDigitSequence = false;
+        }
+      }
+      if (isAlphaSequence || isDigitSequence) return false;
+    }
+
     const uniqueChars = new Set(lowered.replace(/\s/g, "")).size;
     if (uniqueChars < 2) return false;
 
@@ -7479,6 +7498,35 @@ When suggesting improvements, format your response with suggestions in a structu
       null
     );
   };
+
+  const findGlobalEntityConflicts = async (args: { title: string; slug: string; excludeId?: string }) => {
+    const titleWhere = args.excludeId
+      ? and(sql`lower(${entities.title}) = lower(${args.title})`, not(eq(entities.id, args.excludeId)))
+      : sql`lower(${entities.title}) = lower(${args.title})`;
+
+    const slugWhere = args.excludeId
+      ? and(eq(entities.slug, args.slug), not(eq(entities.id, args.excludeId)))
+      : eq(entities.slug, args.slug);
+
+    const [titleConflict] = await db
+      .select({ id: entities.id, title: entities.title, entityTypeId: entities.entityTypeId })
+      .from(entities)
+      .where(titleWhere)
+      .limit(1);
+
+    const [slugConflict] = await db
+      .select({ id: entities.id, slug: entities.slug, entityTypeId: entities.entityTypeId })
+      .from(entities)
+      .where(slugWhere)
+      .limit(1);
+
+    return { titleConflict, slugConflict };
+  };
+
+  const mergeEntitiesSchema = z.object({
+    targetEntityId: z.string().uuid(),
+    sourceEntityIds: z.array(z.string().uuid()).min(1).max(100),
+  });
 
   const normalizeCategoryNames = (metadata: any) => {
     const raw = Array.isArray(metadata?.categories) ? metadata.categories : [];
@@ -7899,38 +7947,20 @@ When suggesting improvements, format your response with suggestions in a structu
 
       const aliases = normalizeAliases(validatedData.aliases, title, entityType.maxAliases || 10);
 
-      const [duplicateTitle] = await db
-        .select({ id: entities.id })
-        .from(entities)
-        .where(
-          and(
-            eq(entities.entityTypeId, validatedData.entityTypeId),
-            sql`lower(${entities.title}) = lower(${title})`,
-          ),
-        )
-        .limit(1);
-
-      if (duplicateTitle) {
-        return res.status(409).json({ success: false, error: 'A canonical object with this title already exists' });
-      }
-
       const baseSlug = normalizeSlug(validatedData.slug || title);
       if (!baseSlug) {
         return res.status(400).json({ success: false, error: 'Unable to generate valid slug from title' });
       }
 
-      let slug = baseSlug;
-      let suffix = 1;
-      while (true) {
-        const [existingSlug] = await db
-          .select({ id: entities.id })
-          .from(entities)
-          .where(and(eq(entities.entityTypeId, validatedData.entityTypeId), eq(entities.slug, slug)))
-          .limit(1);
-        if (!existingSlug) break;
-        suffix += 1;
-        slug = `${baseSlug}-${suffix}`;
+      const { titleConflict, slugConflict } = await findGlobalEntityConflicts({ title, slug: baseSlug });
+      if (titleConflict) {
+        return res.status(409).json({ success: false, error: 'A canonical object with this title already exists (global uniqueness)' });
       }
+      if (slugConflict) {
+        return res.status(409).json({ success: false, error: 'Slug already exists for another object (global uniqueness)' });
+      }
+
+      const slug = baseSlug;
 
       const [newEntity] = await db.insert(entities)
         .values({
@@ -7989,20 +8019,15 @@ When suggesting improvements, format your response with suggestions in a structu
           return res.status(400).json({ success: false, error: 'Title is not meaningful enough for a canonical object' });
         }
 
-        const [duplicateTitle] = await db
-          .select({ id: entities.id })
-          .from(entities)
-          .where(
-            and(
-              eq(entities.entityTypeId, targetTypeId),
-              sql`lower(${entities.title}) = lower(${normalizedTitle})`,
-              not(eq(entities.id, entityId)),
-            ),
-          )
-          .limit(1);
+        const titleSlugCandidate = normalizeSlug(validatedData.slug || normalizedTitle);
+        const { titleConflict } = await findGlobalEntityConflicts({
+          title: normalizedTitle,
+          slug: titleSlugCandidate,
+          excludeId: entityId,
+        });
 
-        if (duplicateTitle) {
-          return res.status(409).json({ success: false, error: 'A canonical object with this title already exists' });
+        if (titleConflict) {
+          return res.status(409).json({ success: false, error: 'A canonical object with this title already exists (global uniqueness)' });
         }
 
         patchData.title = normalizedTitle;
@@ -8021,20 +8046,14 @@ When suggesting improvements, format your response with suggestions in a structu
       }
 
       if (patchData.slug) {
-        const [duplicateSlug] = await db
-          .select({ id: entities.id })
-          .from(entities)
-          .where(
-            and(
-              eq(entities.entityTypeId, targetTypeId),
-              eq(entities.slug, patchData.slug),
-              not(eq(entities.id, entityId)),
-            ),
-          )
-          .limit(1);
+        const { slugConflict: duplicateSlug } = await findGlobalEntityConflicts({
+          title: patchData.title || currentEntity.title,
+          slug: patchData.slug,
+          excludeId: entityId,
+        });
 
         if (duplicateSlug) {
-          return res.status(409).json({ success: false, error: 'Slug already exists for this object type' });
+          return res.status(409).json({ success: false, error: 'Slug already exists for another object (global uniqueness)' });
         }
       }
 
@@ -8067,6 +8086,174 @@ When suggesting improvements, format your response with suggestions in a structu
         return res.status(400).json({ success: false, error: 'Validation error', details: error.errors });
       }
       res.status(500).json({ success: false, error: 'Failed to update entity' });
+    }
+  });
+
+  // POST merge entities into a canonical target
+  app.post('/api/entities/merge', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const actorId = getActorId(req);
+      if (!actorId) {
+        return res.status(401).json({ success: false, error: 'Admin authentication required' });
+      }
+
+      const payload = mergeEntitiesSchema.parse(req.body);
+      const sourceIds = Array.from(new Set(payload.sourceEntityIds.filter((id) => id !== payload.targetEntityId)));
+
+      if (sourceIds.length === 0) {
+        return res.status(400).json({ success: false, error: 'Select at least one source object different from target' });
+      }
+
+      const [target] = await db.select().from(entities).where(eq(entities.id, payload.targetEntityId)).limit(1);
+      if (!target) {
+        return res.status(404).json({ success: false, error: 'Target object not found' });
+      }
+
+      const sources = await db.select().from(entities).where(inArray(entities.id, sourceIds));
+      if (sources.length !== sourceIds.length) {
+        return res.status(404).json({ success: false, error: 'One or more source objects not found' });
+      }
+
+      // Merge titles + aliases into canonical aliases.
+      const sourceAliasList = sources.flatMap((s) => (Array.isArray(s.aliases) ? s.aliases : [])) as string[];
+      const aliasSeed = [
+        ...(Array.isArray(target.aliases) ? (target.aliases as string[]) : []),
+        ...sources.map((s) => s.title),
+        ...sourceAliasList,
+      ];
+
+      const [targetType] = await db
+        .select({ maxAliases: entityTypes.maxAliases })
+        .from(entityTypes)
+        .where(eq(entityTypes.id, target.entityTypeId))
+        .limit(1);
+
+      const mergedAliases = normalizeAliases(aliasSeed, target.title, Math.max(targetType?.maxAliases || 10, 100));
+
+      const targetMetadata = (target.metadata && typeof target.metadata === 'object') ? target.metadata as Record<string, any> : {};
+      const mergedFrom = Array.from(
+        new Set([
+          ...(Array.isArray(targetMetadata.mergedFrom) ? targetMetadata.mergedFrom as string[] : []),
+          ...sources.map((s) => s.id),
+        ]),
+      );
+
+      await db.update(entities)
+        .set({
+          aliases: mergedAliases,
+          metadata: {
+            ...targetMetadata,
+            mergedFrom,
+            mergedAt: new Date().toISOString(),
+          },
+          updatedBy: actorId,
+          updatedAt: new Date(),
+        })
+        .where(eq(entities.id, target.id));
+
+      // Move relationships from source entities to target entity with dedupe.
+      const rels = await db
+        .select()
+        .from(entityRelationships)
+        .where(
+          or(
+            inArray(entityRelationships.sourceEntityId, sourceIds),
+            inArray(entityRelationships.targetEntityId, sourceIds),
+          ),
+        );
+
+      for (const rel of rels) {
+        const mappedSource = sourceIds.includes(rel.sourceEntityId) ? target.id : rel.sourceEntityId;
+        const mappedTarget = sourceIds.includes(rel.targetEntityId) ? target.id : rel.targetEntityId;
+
+        if (mappedSource === mappedTarget) continue;
+
+        const [exists] = await db
+          .select({ id: entityRelationships.id })
+          .from(entityRelationships)
+          .where(
+            and(
+              eq(entityRelationships.sourceEntityId, mappedSource),
+              eq(entityRelationships.targetEntityId, mappedTarget),
+              eq(entityRelationships.relationshipType, rel.relationshipType),
+            ),
+          )
+          .limit(1);
+
+        if (!exists) {
+          await db.insert(entityRelationships).values({
+            sourceEntityId: mappedSource,
+            targetEntityId: mappedTarget,
+            relationshipType: rel.relationshipType,
+            isBidirectional: rel.isBidirectional,
+            context: rel.context,
+            metadata: rel.metadata,
+            strength: rel.strength,
+            isActive: rel.isActive,
+            createdBy: actorId,
+          });
+        }
+      }
+
+      await db.delete(entityRelationships).where(
+        or(
+          inArray(entityRelationships.sourceEntityId, sourceIds),
+          inArray(entityRelationships.targetEntityId, sourceIds),
+        ),
+      );
+
+      // Move tags from source entities to target entity with unique-tag dedupe.
+      const tags = await db.select().from(entityTags).where(inArray(entityTags.entityId, sourceIds));
+      for (const tag of tags) {
+        const [tagExists] = await db
+          .select({ id: entityTags.id })
+          .from(entityTags)
+          .where(
+            and(
+              eq(entityTags.entityId, target.id),
+              eq(entityTags.resourceType, tag.resourceType),
+              eq(entityTags.resourceId, tag.resourceId),
+            ),
+          )
+          .limit(1);
+
+        if (!tagExists) {
+          await db.insert(entityTags).values({
+            entityId: target.id,
+            resourceType: tag.resourceType,
+            resourceId: tag.resourceId,
+            tagContext: tag.tagContext,
+            tenantId: tag.tenantId,
+            hubId: tag.hubId,
+            appId: tag.appId,
+            metadata: tag.metadata,
+            taggedBy: tag.taggedBy || actorId,
+          });
+        }
+      }
+
+      await db.delete(entityTags).where(inArray(entityTags.entityId, sourceIds));
+
+      // Finally remove source objects.
+      await db.delete(entities).where(inArray(entities.id, sourceIds));
+
+      const [updatedTarget] = await db.select().from(entities).where(eq(entities.id, target.id)).limit(1);
+
+      res.json({
+        success: true,
+        entity: updatedTarget,
+        merged: {
+          targetEntityId: target.id,
+          removedSourceCount: sourceIds.length,
+          removedSourceIds: sourceIds,
+        },
+      });
+    } catch (error: any) {
+      console.error('Error merging entities:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ success: false, error: 'Validation error', details: error.errors });
+      }
+      res.status(500).json({ success: false, error: 'Failed to merge entities' });
     }
   });
 

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -117,6 +117,8 @@ export default function AdminObjects() {
   const [editingObject, setEditingObject] = useState<ObjectItem | undefined>(undefined);
   const [viewingObject, setViewingObject] = useState<ObjectItem | undefined>(undefined);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
+  const [selectedObjectIds, setSelectedObjectIds] = useState<string[]>([]);
+  const [mergeTargetId, setMergeTargetId] = useState<string>("");
 
   // Fetch object types
   const { data: objectTypesData } = useQuery<{ types: ObjectType[] }>({
@@ -140,6 +142,17 @@ export default function AdminObjects() {
 
   const objectTypes = objectTypesData?.types || [];
   const objects = objectsData?.entities || [];
+  const selectedObjects = objects.filter((obj) => selectedObjectIds.includes(obj.id));
+
+  useEffect(() => {
+    setSelectedObjectIds((current) => current.filter((id) => objects.some((obj) => obj.id === id)));
+  }, [objects]);
+
+  useEffect(() => {
+    if (mergeTargetId && !selectedObjectIds.includes(mergeTargetId)) {
+      setMergeTargetId("");
+    }
+  }, [selectedObjectIds, mergeTargetId]);
 
   // Get object count by type
   const getObjectCountByType = (typeId: string) => {
@@ -179,6 +192,43 @@ export default function AdminObjects() {
     closeObjectForm();
   };
 
+  const mergeMutation = useMutation({
+    mutationFn: () => {
+      const sourceEntityIds = selectedObjectIds.filter((id) => id !== mergeTargetId);
+      return apiRequest("/api/entities/merge", "POST", { targetEntityId: mergeTargetId, sourceEntityIds });
+    },
+    onSuccess: async () => {
+      toast({ title: "Objects merged successfully" });
+      setSelectedObjectIds([]);
+      setMergeTargetId("");
+      await queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Merge failed",
+        description: error?.message || "Please check selected objects and try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleObjectSelection = (objectId: string, checked: boolean) => {
+    setSelectedObjectIds((current) => {
+      if (checked) {
+        return current.includes(objectId) ? current : [...current, objectId];
+      }
+      return current.filter((id) => id !== objectId);
+    });
+  };
+
+  const toggleSelectAllVisible = (checked: boolean) => {
+    if (!checked) {
+      setSelectedObjectIds([]);
+      return;
+    }
+    setSelectedObjectIds(objects.map((obj) => obj.id));
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -200,7 +250,7 @@ export default function AdminObjects() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className={`grid w-full ${(activeTab === "object-form" && activeTab === "object-view") ? "grid-cols-6" : (activeTab === "object-form" || activeTab === "object-view") ? "grid-cols-5" : "grid-cols-4"}`}>
+        <TabsList className={`grid w-full ${(activeTab === "object-form" || activeTab === "object-view") ? "grid-cols-5" : "grid-cols-4"}`}>
           <TabsTrigger value="objects-list" data-testid="tab-objects-list">
             <Database className="h-4 w-4 mr-2" />
             Objects List
@@ -298,6 +348,37 @@ export default function AdminObjects() {
             </Select>
           </div>
 
+          {selectedObjectIds.length >= 2 && (
+            <Card>
+              <CardContent className="pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-[1fr_280px_160px] gap-3 items-center">
+                  <div className="text-sm">
+                    <span className="font-medium">{selectedObjectIds.length}</span> objects selected for merge.
+                    <span className="text-muted-foreground"> Choose canonical target object.</span>
+                  </div>
+                  <Select value={mergeTargetId} onValueChange={setMergeTargetId}>
+                    <SelectTrigger data-testid="select-merge-target">
+                      <SelectValue placeholder="Select target object" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {selectedObjects.map((obj) => (
+                        <SelectItem key={obj.id} value={obj.id}>{obj.title}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    disabled={!mergeTargetId || selectedObjectIds.length < 2 || mergeMutation.isPending}
+                    onClick={() => mergeMutation.mutate()}
+                    data-testid="button-merge-objects"
+                  >
+                    {mergeMutation.isPending ? "Merging..." : "Merge Selected"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Objects Table */}
           <Card>
             <CardContent className="p-0">
@@ -312,7 +393,14 @@ export default function AdminObjects() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[40px]"></TableHead>
+                      <TableHead className="w-[60px]">
+                        <input
+                          type="checkbox"
+                          checked={objects.length > 0 && selectedObjectIds.length === objects.length}
+                          onChange={(e) => toggleSelectAllVisible(e.target.checked)}
+                          aria-label="Select all objects"
+                        />
+                      </TableHead>
                       <TableHead>Object Name</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Aliases</TableHead>
@@ -328,6 +416,8 @@ export default function AdminObjects() {
                         objectTypes={objectTypes}
                         onView={openViewTab}
                         onEdit={openEditForm}
+                        isSelected={selectedObjectIds.includes(object.id)}
+                        onToggleSelect={toggleObjectSelection}
                       />
                     ))}
                   </TableBody>
@@ -429,12 +519,6 @@ export default function AdminObjects() {
                 onSuccess={handleFormSuccess}
               />
 
-              {formMode === "edit" && editingObject && (
-                <div className="pt-6 border-t mt-6">
-                  <ObjectRelationshipsEditor entity={editingObject} />
-                </div>
-              )}
-
               <div className="pt-3">
                 <Button variant="outline" type="button" onClick={closeObjectForm} data-testid="button-close-object-form">
                   Back To Objects List
@@ -472,7 +556,7 @@ export default function AdminObjects() {
 }
 
 // Object Row Component with Edit capability
-function ObjectRow({ object, objectTypes, onView, onEdit }: { object: ObjectItem; objectTypes: ObjectType[]; onView: (object: ObjectItem) => void; onEdit: (object: ObjectItem) => void }) {
+function ObjectRow({ object, objectTypes, onView, onEdit, isSelected, onToggleSelect }: { object: ObjectItem; objectTypes: ObjectType[]; onView: (object: ObjectItem) => void; onEdit: (object: ObjectItem) => void; isSelected: boolean; onToggleSelect: (objectId: string, checked: boolean) => void }) {
   const { toast } = useToast();
 
   const objectType = objectTypes.find(t => t.id === object.entityTypeId);
@@ -497,11 +581,19 @@ function ObjectRow({ object, objectTypes, onView, onEdit }: { object: ObjectItem
   return (
     <TableRow data-testid={`row-object-${object.slug}`}>
       <TableCell>
-        {object.isVerified ? (
-          <CheckCircle className="h-4 w-4 text-green-600" data-testid={`icon-verified-${object.id}`} />
-        ) : (
-          <Circle className="h-4 w-4 text-gray-300" />
-        )}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={(e) => onToggleSelect(object.id, e.target.checked)}
+            aria-label={`Select ${object.title}`}
+          />
+          {object.isVerified ? (
+            <CheckCircle className="h-4 w-4 text-green-600" data-testid={`icon-verified-${object.id}`} />
+          ) : (
+            <Circle className="h-4 w-4 text-gray-300" />
+          )}
+        </div>
       </TableCell>
       <TableCell>
         <div className="font-medium" data-testid={`text-object-title-${object.id}`}>
@@ -1183,7 +1275,7 @@ function ObjectForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
-        <div className="lg:col-span-7 space-y-4">
+        <div className="lg:col-span-6 space-y-4">
           <div>
             <label className="text-sm font-medium">Object Name *</label>
             <Input
@@ -1497,7 +1589,7 @@ function ObjectForm({
           </div>
         </div>
 
-        <div className="lg:col-span-3 space-y-4">
+        <div className="lg:col-span-4 space-y-4">
           <div className="border rounded p-3 space-y-3">
             <h4 className="font-medium">Configuration</h4>
             <div className="flex items-center gap-4">
