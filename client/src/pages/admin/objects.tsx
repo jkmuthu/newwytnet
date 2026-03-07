@@ -305,6 +305,40 @@ export default function AdminObjects() {
     return objects.filter((obj) => obj.id === deepestSelection);
   }, [objects, parentSelections, parentOptionsByLevel]);
 
+  const objectTitleById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const obj of objects) {
+      map.set(obj.id, obj.title);
+    }
+    return map;
+  }, [objects]);
+
+  const parentBreadcrumbItems = useMemo(() => {
+    return parentSelections.map((id, index) => {
+      const levelOptions = parentOptionsByLevel[index] || [];
+      const fromOptions = levelOptions.find((item) => item.id === id)?.title;
+      return {
+        id,
+        title: fromOptions || objectTitleById.get(id) || "Unknown",
+      };
+    });
+  }, [parentSelections, parentOptionsByLevel, objectTitleById]);
+
+  const jumpToHierarchyLevel = (index: number) => {
+    if (index < 0) {
+      setParentSelections([]);
+      setParentOptionsByLevel((current) => [current[0] || []]);
+      return;
+    }
+
+    const selectedId = parentSelections[index];
+    if (!selectedId) return;
+
+    setParentSelections(parentSelections.slice(0, index + 1));
+    setParentOptionsByLevel((current) => current.slice(0, index + 1));
+    void loadHierarchyChildren(selectedId, index);
+  };
+
   // Get object count by type
   const getObjectCountByType = (typeId: string) => {
     return objects.filter(e => e.entityTypeId === typeId).length;
@@ -987,6 +1021,32 @@ export default function AdminObjects() {
               ))}
             </div>
           </div>
+
+          {parentSelections.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 text-sm" data-testid="breadcrumb-parent-hierarchy">
+              <button
+                type="button"
+                className="text-muted-foreground hover:text-foreground hover:underline"
+                onClick={() => jumpToHierarchyLevel(-1)}
+                data-testid="breadcrumb-main"
+              >
+                Main
+              </button>
+              {parentBreadcrumbItems.map((item, idx) => (
+                <div key={`crumb-${item.id}-${idx}`} className="flex items-center gap-2">
+                  <span className="text-muted-foreground">/</span>
+                  <button
+                    type="button"
+                    className={`hover:underline ${idx === parentBreadcrumbItems.length - 1 ? "font-medium text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    onClick={() => jumpToHierarchyLevel(idx)}
+                    data-testid={`breadcrumb-level-${idx}`}
+                  >
+                    {item.title}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
           {selectedObjectIds.length >= 2 && (
             <Card>
