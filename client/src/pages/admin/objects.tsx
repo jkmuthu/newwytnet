@@ -1572,6 +1572,7 @@ function ObjectForm({
 }) {
   const { toast } = useToast();
   const isEdit = !!object;
+  const MAIN_PARENT = "__main__";
 
   const metadata = object?.metadata || {};
   const initialImages = Array.isArray(metadata.images)
@@ -1613,6 +1614,26 @@ function ObjectForm({
     initialCustomFields.length > 0 ? initialCustomFields : [{ id: `field-${Date.now()}`, key: "", type: "text", value: "", optionsText: "" }],
   );
   const [dragSource, setDragSource] = useState<{ list: "fields"; index: number } | null>(null);
+  const [draftParentTargetId, setDraftParentTargetId] = useState<string>(MAIN_PARENT);
+  const [draftParentQuery, setDraftParentQuery] = useState("");
+  const [draftChildInput, setDraftChildInput] = useState("");
+  const [draftFriendInput, setDraftFriendInput] = useState("");
+  const [draftChildIds, setDraftChildIds] = useState<string[]>([]);
+  const [draftFriendIds, setDraftFriendIds] = useState<string[]>([]);
+
+  const { data: allEntitiesData } = useQuery<{ entities: ObjectItem[] }>({
+    queryKey: ["/api/entities", "object-form-relationship-drafts", object?.id || "new"],
+    queryFn: async () => {
+      const response = await fetch("/api/entities?limit=200", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to load objects");
+      return response.json();
+    },
+  });
+
+  const allEntities = useMemo(
+    () => (allEntitiesData?.entities || []).filter((item) => !object || item.id !== object.id),
+    [allEntitiesData?.entities, object?.id],
+  );
 
   const autoPluralAlias = useMemo(() => buildPluralAlias(formData.title), [formData.title]);
   const allAliases = useMemo(
@@ -1628,16 +1649,38 @@ function ObjectForm({
   }, [formData.description]);
 
   const imageSlots = useMemo(() => Array.from({ length: 6 }, (_, idx) => objectImages[idx] || ""), [objectImages]);
+
+  const draftParentSuggestions = useMemo(() => {
+    const q = draftParentQuery.trim().toLowerCase();
+    if (!q) return [] as ObjectItem[];
+    return allEntities.filter((item) => item.title.toLowerCase().includes(q)).slice(0, 8);
+  }, [allEntities, draftParentQuery]);
+
+  const draftChildSuggestions = useMemo(() => {
+    const q = draftChildInput.trim().toLowerCase();
+    if (!q) return [] as ObjectItem[];
+    const blocked = new Set([draftParentTargetId, ...draftChildIds, ...draftFriendIds]);
+    return allEntities
+      .filter((item) => item.title.toLowerCase().includes(q) && !blocked.has(item.id))
+      .slice(0, 8);
+  }, [allEntities, draftChildInput, draftParentTargetId, draftChildIds, draftFriendIds]);
+
+  const draftFriendSuggestions = useMemo(() => {
+    const q = draftFriendInput.trim().toLowerCase();
+    if (!q) return [] as ObjectItem[];
+    const blocked = new Set([draftParentTargetId, ...draftFriendIds, ...draftChildIds]);
+    return allEntities
+      .filter((item) => item.title.toLowerCase().includes(q) && !blocked.has(item.id))
+      .slice(0, 8);
+  }, [allEntities, draftFriendInput, draftParentTargetId, draftFriendIds, draftChildIds]);
+
+  const getEntityTitleById = (id: string) => allEntities.find((item) => item.id === id)?.title || id;
   const saveMutation = useMutation({
     mutationFn: (data: any) => {
       if (isEdit) {
         return apiRequest(`/api/entities/${object.id}`, "PATCH", data);
       }
       return apiRequest("/api/entities", "POST", data);
-    },
-    onSuccess: () => {
-      toast({ title: `Object ${isEdit ? 'updated' : 'created'} successfully` });
-      onSuccess();
     },
     onError: (error: any) => {
       toast({
@@ -1648,7 +1691,35 @@ function ObjectForm({
     }
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const addDraftRelationshipTag = (type: "child" | "friend", targetId: string) => {
+    if (!targetId) return;
+    if (draftParentTargetId === targetId) {
+      toast({ title: "Parent already selected", description: "Choose a different object for tags.", variant: "destructive" });
+      return;
+    }
+
+    if (type === "child") {
+      if (draftChildIds.includes(targetId)) return;
+      setDraftChildIds((current) => [...current, targetId]);
+      setDraftChildInput("");
+      return;
+    }
+
+    if (draftFriendIds.includes(targetId)) return;
+    setDraftFriendIds((current) => [...current, targetId]);
+    setDraftFriendInput("");
+  };
+
+  const removeDraftRelationshipTag = (type: "child" | "friend", targetId: string) => {
+    if (type === "child") {
+      setDraftChildIds((current) => current.filter((id) => id !== targetId));
+      return;
+    }
+
+    setDraftFriendIds((current) => current.filter((id) => id !== targetId));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const normalizedDynamicFields = dynamicFields
@@ -1682,15 +1753,61 @@ function ObjectForm({
       }, {}),
     };
 
-    saveMutation.mutate({
-      title: formData.title,
-      entityTypeId: formData.entityTypeId,
-      description: formData.description,
-      aliases: allAliases,
-      slug: toKebabSlug(formData.title),
-      imageUrl: objectImages[0] || undefined,
-      metadata: mergedMetadata,
-    });
+    try {
+      const saveResponse = await saveMutation.mutateAsync({
+        title: formData.title,
+        entityTypeId: formData.entityTypeId,
+        description: formData.description,
+        aliases: allAliases,
+        slug: toKebabSlug(formData.title),
+        imageUrl: objectImages[0] || undefined,
+        metadata: mergedMetadata,
+      });
+
+      const savePayload = await saveResponse.json().catch(() => null);
+      const createdEntityId: string | undefined = isEdit ? object?.id : savePayload?.entity?.id;
+
+      const relationshipTasks = !isEdit && createdEntityId
+        ? [
+            ...(draftParentTargetId !== MAIN_PARENT ? [{ type: "parent" as const, targetId: draftParentTargetId }] : []),
+            ...draftChildIds.map((targetId) => ({ type: "child" as const, targetId })),
+            ...draftFriendIds.map((targetId) => ({ type: "friend" as const, targetId })),
+          ]
+        : [];
+
+      const relationshipFailures: string[] = [];
+      for (const task of relationshipTasks) {
+        try {
+          await apiRequest("/api/entities/relationships", "POST", {
+            sourceEntityId: createdEntityId,
+            targetEntityId: task.targetId,
+            relationshipType: task.type,
+            isBidirectional: task.type === "friend",
+            metadata: {},
+            strength: 1,
+            isActive: true,
+          });
+        } catch (error: any) {
+          relationshipFailures.push(`${task.type}: ${getEntityTitleById(task.targetId)} (${error?.message || "failed"})`);
+        }
+      }
+
+      if (relationshipTasks.length === 0) {
+        toast({ title: `Object ${isEdit ? "updated" : "created"} successfully` });
+      } else if (relationshipFailures.length === 0) {
+        toast({ title: "Object created with relationships" });
+      } else {
+        toast({
+          title: "Object created, some relationships failed",
+          description: relationshipFailures.slice(0, 3).join(" | "),
+          variant: "destructive",
+        });
+      }
+
+      onSuccess();
+    } catch {
+      // Handled by mutation onError
+    }
   };
 
   const addAlias = () => {
@@ -2253,9 +2370,159 @@ function ObjectForm({
             {isEdit && object ? (
               <ObjectRelationshipsEditor entity={object} />
             ) : (
-              <div className="space-y-1">
-                <h4 className="font-medium">Assign Relationship</h4>
-                <p className="text-xs text-muted-foreground">Create the object first, then assign parent/child/friend relationships here.</p>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium">Assign Relationship</h4>
+                  <p className="text-xs text-muted-foreground mt-1">Relationships will be linked automatically right after object creation.</p>
+                </div>
+
+                <div className="space-y-2 border rounded p-3">
+                  <label className="text-sm font-medium">Parent * (Default: Main)</label>
+                  <div className="grid grid-cols-1 md:grid-cols-[120px_1fr] gap-2 items-start">
+                    <Button
+                      type="button"
+                      variant={draftParentTargetId === MAIN_PARENT ? "default" : "outline"}
+                      onClick={() => {
+                        setDraftParentTargetId(MAIN_PARENT);
+                        setDraftParentQuery("");
+                      }}
+                      data-testid="button-draft-parent-main"
+                    >
+                      Main
+                    </Button>
+                    <div className="space-y-1">
+                      <Input
+                        value={draftParentQuery}
+                        onChange={(e) => setDraftParentQuery(e.target.value)}
+                        placeholder="Type to find parent object"
+                        data-testid="input-draft-parent-search"
+                      />
+                      {draftParentSuggestions.length > 0 && (
+                        <div className="border rounded max-h-32 overflow-y-auto" data-testid="list-draft-parent-suggestions">
+                          {draftParentSuggestions.map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
+                              onClick={() => {
+                                setDraftParentTargetId(item.id);
+                                setDraftParentQuery(item.title);
+                              }}
+                            >
+                              {item.title}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2 border rounded p-3">
+                  <label className="text-sm font-medium">Tag Childs</label>
+                  <div className="grid grid-cols-1 md:grid-cols-[1fr_100px] gap-2 items-start">
+                    <div className="space-y-1">
+                      <Input
+                        value={draftChildInput}
+                        onChange={(e) => setDraftChildInput(e.target.value)}
+                        placeholder="Type to tag child objects"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && draftChildSuggestions[0]) {
+                            e.preventDefault();
+                            addDraftRelationshipTag("child", draftChildSuggestions[0].id);
+                          }
+                        }}
+                        data-testid="input-draft-child-tag"
+                      />
+                      {draftChildSuggestions.length > 0 && (
+                        <div className="border rounded max-h-32 overflow-y-auto" data-testid="list-draft-child-suggestions">
+                          {draftChildSuggestions.map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
+                              onClick={() => addDraftRelationshipTag("child", item.id)}
+                            >
+                              {item.title}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => draftChildSuggestions[0] && addDraftRelationshipTag("child", draftChildSuggestions[0].id)}
+                      disabled={!draftChildSuggestions[0]}
+                      data-testid="button-draft-add-child-tag"
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  {draftChildIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {draftChildIds.map((id) => (
+                        <Badge key={id} variant="secondary" className="text-xs flex items-center gap-1">
+                          {getEntityTitleById(id)}
+                          <button type="button" onClick={() => removeDraftRelationshipTag("child", id)}>x</button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2 border rounded p-3">
+                  <label className="text-sm font-medium">Tag Friends</label>
+                  <div className="grid grid-cols-1 md:grid-cols-[1fr_100px] gap-2 items-start">
+                    <div className="space-y-1">
+                      <Input
+                        value={draftFriendInput}
+                        onChange={(e) => setDraftFriendInput(e.target.value)}
+                        placeholder="Type to tag friend objects"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && draftFriendSuggestions[0]) {
+                            e.preventDefault();
+                            addDraftRelationshipTag("friend", draftFriendSuggestions[0].id);
+                          }
+                        }}
+                        data-testid="input-draft-friend-tag"
+                      />
+                      {draftFriendSuggestions.length > 0 && (
+                        <div className="border rounded max-h-32 overflow-y-auto" data-testid="list-draft-friend-suggestions">
+                          {draftFriendSuggestions.map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
+                              onClick={() => addDraftRelationshipTag("friend", item.id)}
+                            >
+                              {item.title}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => draftFriendSuggestions[0] && addDraftRelationshipTag("friend", draftFriendSuggestions[0].id)}
+                      disabled={!draftFriendSuggestions[0]}
+                      data-testid="button-draft-add-friend-tag"
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  {draftFriendIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {draftFriendIds.map((id) => (
+                        <Badge key={id} variant="secondary" className="text-xs flex items-center gap-1">
+                          {getEntityTitleById(id)}
+                          <button type="button" onClick={() => removeDraftRelationshipTag("friend", id)}>x</button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
