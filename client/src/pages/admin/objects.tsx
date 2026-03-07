@@ -108,7 +108,8 @@ export default function AdminObjects() {
   const [activeTab, setActiveTab] = useState<string>("objects-list");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editingObject, setEditingObject] = useState<ObjectItem | undefined>(undefined);
+  const [formMode, setFormMode] = useState<"create" | "edit">("create");
 
   // Fetch object types
   const { data: objectTypesData } = useQuery<{ types: ObjectType[] }>({
@@ -138,6 +139,29 @@ export default function AdminObjects() {
     return objects.filter(e => e.entityTypeId === typeId).length;
   };
 
+  const openCreateForm = () => {
+    setFormMode("create");
+    setEditingObject(undefined);
+    setActiveTab("object-form");
+  };
+
+  const openEditForm = (object: ObjectItem) => {
+    setFormMode("edit");
+    setEditingObject(object);
+    setActiveTab("object-form");
+  };
+
+  const closeObjectForm = () => {
+    setEditingObject(undefined);
+    setFormMode("create");
+    setActiveTab("objects-list");
+  };
+
+  const handleFormSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
+    closeObjectForm();
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -151,32 +175,15 @@ export default function AdminObjects() {
             Manage objects and knowledge graph structure
           </p>
         </div>
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-create-object">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Object
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Create New Object</DialogTitle>
-              <DialogDescription>Add a new object to the knowledge graph</DialogDescription>
-            </DialogHeader>
-            <ObjectForm 
-              objectTypes={objectTypes} 
-              onSuccess={() => {
-                setCreateDialogOpen(false);
-                queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
-              }}
-            />
-          </DialogContent>
-        </Dialog>
+        <Button onClick={openCreateForm} data-testid="button-create-object">
+          <Plus className="h-4 w-4 mr-2" />
+          Create Object
+        </Button>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className={`grid w-full ${activeTab === "object-form" ? "grid-cols-5" : "grid-cols-4"}`}>
           <TabsTrigger value="objects-list" data-testid="tab-objects-list">
             <Database className="h-4 w-4 mr-2" />
             Objects List
@@ -193,6 +200,12 @@ export default function AdminObjects() {
             <SettingsIcon className="h-4 w-4 mr-2" />
             Settings
           </TabsTrigger>
+          {activeTab === "object-form" && (
+            <TabsTrigger value="object-form" data-testid="tab-object-form">
+              <Edit className="h-4 w-4 mr-2" />
+              Object Form
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Objects List Tab */}
@@ -289,7 +302,8 @@ export default function AdminObjects() {
                       <ObjectRow 
                         key={object.id} 
                         object={object} 
-                        objectTypes={objectTypes} 
+                        objectTypes={objectTypes}
+                        onEdit={openEditForm}
                       />
                     ))}
                   </TableBody>
@@ -375,16 +389,38 @@ export default function AdminObjects() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="object-form" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>{formMode === "edit" ? "Edit Object" : "Create New Object"}</CardTitle>
+              <CardDescription>
+                {formMode === "edit" ? "Update object information in-place" : "Add a new object to the knowledge graph"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ObjectForm
+                object={editingObject}
+                objectTypes={objectTypes}
+                onSuccess={handleFormSuccess}
+              />
+              <div className="pt-3">
+                <Button variant="outline" type="button" onClick={closeObjectForm} data-testid="button-close-object-form">
+                  Back To Objects List
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
 
 // Object Row Component with Edit capability
-function ObjectRow({ object, objectTypes }: { object: ObjectItem; objectTypes: ObjectType[] }) {
+function ObjectRow({ object, objectTypes, onEdit }: { object: ObjectItem; objectTypes: ObjectType[]; onEdit: (object: ObjectItem) => void }) {
   const { toast } = useToast();
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const objectType = objectTypes.find(t => t.id === object.entityTypeId);
 
@@ -474,31 +510,14 @@ function ObjectRow({ object, objectTypes }: { object: ObjectItem; objectTypes: O
             </DialogContent>
           </Dialog>
           
-          <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                data-testid={`button-edit-object-${object.id}`}
-              >
-                <Edit className="h-4 w-4 text-blue-600" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Edit Object</DialogTitle>
-                <DialogDescription>Update object information</DialogDescription>
-              </DialogHeader>
-              <ObjectForm
-                object={object}
-                objectTypes={objectTypes}
-                onSuccess={() => {
-                  setEditDialogOpen(false);
-                  queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
-                }}
-              />
-            </DialogContent>
-          </Dialog>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit(object)}
+            data-testid={`button-edit-object-${object.id}`}
+          >
+            <Edit className="h-4 w-4 text-blue-600" />
+          </Button>
           
           <Button 
             variant="ghost" 
