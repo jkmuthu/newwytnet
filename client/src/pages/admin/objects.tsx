@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { GripVertical, Network, Plus, Search, Tag, CheckCircle, Circle, Trash2, Edit, BarChart3, Settings as SettingsIcon, Database, Eye, Upload } from "lucide-react";
+import { GripVertical, Network, Plus, Search, Tag, Trash2, Edit, BarChart3, Settings as SettingsIcon, Database, Eye, Upload } from "lucide-react";
 
 interface ObjectType {
   id: string;
@@ -35,15 +35,12 @@ interface ObjectItem {
   aliases: string[];
   description?: string;
   entityTypeId: string;
-  isVerified: boolean;
-  isPublic: boolean;
   tagCount: number;
   imageUrl?: string;
   metadata?: {
     iconUrl?: string;
     images?: string[];
     materiality?: "tangible" | "intangible";
-    categories?: string[];
     customFields?: Array<{ key: string; type?: string; value: string; options?: string[] }>;
     [key: string]: any;
   };
@@ -527,11 +524,11 @@ export default function AdminObjects() {
             </Card>
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-gray-600">Verified</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-600">With Description</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold" data-testid="text-verified-objects">
-                  {objects.filter(e => e.isVerified).length}
+                <div className="text-2xl font-bold" data-testid="text-described-objects">
+                  {objects.filter(e => !!e.description && e.description.trim().length > 0).length}
                 </div>
               </CardContent>
             </Card>
@@ -910,16 +907,16 @@ export default function AdminObjects() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <SettingsIcon className="h-5 w-5" />
-                Object Configuration
+                Object Visibility
               </CardTitle>
-              <CardDescription>Configure object settings and preferences</CardDescription>
+              <CardDescription>Configure object visibility settings and preferences</CardDescription>
             </CardHeader>
             <CardContent className="py-12">
               <div className="text-center text-muted-foreground">
                 <SettingsIcon className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <h3 className="text-lg font-semibold mb-2">Settings Coming Soon</h3>
                 <p className="text-sm">
-                  Object configuration options, validation rules, and system preferences will be available here.
+                  Object visibility options, validation rules, and system preferences will be available here.
                 </p>
               </div>
             </CardContent>
@@ -938,7 +935,6 @@ export default function AdminObjects() {
               <ObjectForm
                 object={editingObject}
                 objectTypes={objectTypes}
-                allObjects={objects}
                 onBack={closeObjectForm}
                 onSuccess={handleFormSuccess}
               />
@@ -1006,11 +1002,7 @@ function ObjectRow({ object, objectTypes, onView, onEdit, isSelected, onToggleSe
             onChange={(e) => onToggleSelect(object.id, e.target.checked)}
             aria-label={`Select ${object.title}`}
           />
-          {object.isVerified ? (
-            <CheckCircle className="h-4 w-4 text-green-600" data-testid={`icon-verified-${object.id}`} />
-          ) : (
-            <Circle className="h-4 w-4 text-gray-300" />
-          )}
+          <span className="h-2 w-2 rounded-full bg-gray-300" aria-hidden="true" />
         </div>
       </TableCell>
       <TableCell>
@@ -1104,9 +1096,6 @@ function ObjectDetailsView({ object, objectType }: { object: ObjectItem; objectT
     : object.imageUrl
       ? [object.imageUrl]
       : [];
-  const categories = Array.isArray(metadata.categories)
-    ? metadata.categories.filter((cat: unknown) => typeof cat === "string" && cat.trim())
-    : [];
   const customFields = Array.isArray(metadata.customFields)
     ? metadata.customFields.filter((f: any) => f && typeof f.key === "string")
     : [];
@@ -1115,31 +1104,19 @@ function ObjectDetailsView({ object, objectType }: { object: ObjectItem; objectT
     <div className="space-y-4">
       <div>
         <h3 className="text-lg font-semibold flex items-center gap-2">
-          {object.isVerified && <CheckCircle className="h-5 w-5 text-green-600" />}
           {object.title}
         </h3>
         <p className="text-sm text-muted-foreground mt-1">{object.description || "No description"}</p>
       </div>
 
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <div>
             <label className="text-sm font-medium text-gray-600">Object Type</label>
             <div className="mt-1">
               {objectType && (
                 <Badge variant="outline">{objectType.name}</Badge>
               )}
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-600">Status</label>
-            <div className="mt-1 flex gap-2">
-              <Badge variant={object.isVerified ? "default" : "secondary"}>
-                {object.isVerified ? "Verified" : "Unverified"}
-              </Badge>
-              <Badge variant={object.isPublic ? "default" : "secondary"}>
-                {object.isPublic ? "Public" : "Private"}
-              </Badge>
             </div>
           </div>
         </div>
@@ -1157,8 +1134,8 @@ function ObjectDetailsView({ object, objectType }: { object: ObjectItem; objectT
           </div>
         </div>
 
-        {(metadata.iconUrl || metadata.materiality || categories.length > 0) && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {(metadata.iconUrl || metadata.materiality) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-600">Object Icon</label>
               <div className="mt-2">
@@ -1172,14 +1149,6 @@ function ObjectDetailsView({ object, objectType }: { object: ObjectItem; objectT
             <div>
               <label className="text-sm font-medium text-gray-600">Materiality</label>
               <div className="mt-1 text-sm capitalize">{metadata.materiality || "-"}</div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-600">Categories</label>
-              <div className="mt-1 flex flex-wrap gap-1">
-                {categories.length > 0 ? categories.map((cat: string) => (
-                  <Badge key={cat} variant="secondary">{cat}</Badge>
-                )) : <span className="text-sm text-gray-500">-</span>}
-              </div>
             </div>
           </div>
         )}
@@ -1592,13 +1561,11 @@ function ObjectRelationshipsEditor({ entity }: { entity: ObjectItem }) {
 function ObjectForm({ 
   object, 
   objectTypes, 
-  allObjects,
   onBack,
   onSuccess 
 }: { 
   object?: ObjectItem;
   objectTypes: ObjectType[]; 
-  allObjects: ObjectItem[];
   onBack: () => void;
   onSuccess: () => void;
 }) {
@@ -1631,19 +1598,15 @@ function ObjectForm({
     description: object?.description || "",
     objectIconUrl: typeof metadata.iconUrl === "string" && metadata.iconUrl.trim() ? metadata.iconUrl : DEFAULT_OBJECT_ICON,
     materiality: metadata.materiality === "intangible" ? "intangible" : "tangible",
-    isVerified: object?.isVerified || false,
-    isPublic: object?.isPublic ?? true,
   });
   const [manualAliases, setManualAliases] = useState<string[]>(object?.aliases || []);
   const [aliasInput, setAliasInput] = useState("");
-  const [categoryInput, setCategoryInput] = useState("");
   const [imageInput, setImageInput] = useState("");
   const [objectImages, setObjectImages] = useState<string[]>(initialImages);
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [isIconUploading, setIsIconUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const iconInputRef = useRef<HTMLInputElement>(null);
-  const [categories, setCategories] = useState<string[]>(Array.isArray(metadata.categories) ? metadata.categories : []);
   const [dynamicFields, setDynamicFields] = useState<DynamicField[]>(
     initialCustomFields.length > 0 ? initialCustomFields : [{ id: `field-${Date.now()}`, key: "", type: "text", value: "", optionsText: "" }],
   );
@@ -1654,21 +1617,6 @@ function ObjectForm({
     () => uniqueList([...manualAliases, ...(autoPluralAlias ? [autoPluralAlias] : [])]),
     [manualAliases, autoPluralAlias],
   );
-  const categorySuggestions = useMemo(() => {
-    const query = categoryInput.trim().toLowerCase();
-    if (query.length < 1) return [];
-
-    const matches = uniqueList(
-      allObjects
-        .map((obj) => obj.title)
-        .filter((title) => !!title && title.toLowerCase().includes(query)),
-    );
-
-    return matches
-      .filter((title) => !categories.some((c) => c.toLowerCase() === title.toLowerCase()))
-      .slice(0, 8);
-  }, [allObjects, categories, categoryInput]);
-
   const saveMutation = useMutation({
     mutationFn: (data: any) => {
       if (isEdit) {
@@ -1707,7 +1655,6 @@ function ObjectForm({
       ...(metadata || {}),
       iconUrl: formData.objectIconUrl || DEFAULT_OBJECT_ICON,
       materiality: formData.materiality,
-      categories: uniqueList(categories),
       images: uniqueList(objectImages).slice(0, 6),
       customFields: normalizedDynamicFields,
       dynamicData: normalizedDynamicFields.reduce<Record<string, string | number | boolean>>((acc, field) => {
@@ -1729,8 +1676,6 @@ function ObjectForm({
       description: formData.description,
       aliases: allAliases,
       slug: toKebabSlug(formData.title),
-      isVerified: formData.isVerified,
-      isPublic: formData.isPublic,
       imageUrl: objectImages[0] || undefined,
       metadata: mergedMetadata,
     });
@@ -1745,24 +1690,6 @@ function ObjectForm({
 
   const removeAlias = (alias: string) => {
     setManualAliases((current) => current.filter((item) => item.toLowerCase() !== alias.toLowerCase()));
-  };
-
-  const addCategory = () => {
-    const next = categoryInput.trim();
-    if (!next) return;
-    setCategories((current) => uniqueList([...current, next]));
-    setCategoryInput("");
-  };
-
-  const addCategoryFromSuggestion = (value: string) => {
-    const next = value.trim();
-    if (!next) return;
-    setCategories((current) => uniqueList([...current, next]));
-    setCategoryInput("");
-  };
-
-  const removeCategory = (category: string) => {
-    setCategories((current) => current.filter((item) => item.toLowerCase() !== category.toLowerCase()));
   };
 
   const addImage = () => {
@@ -2260,7 +2187,7 @@ function ObjectForm({
           </div>
 
           <div className="border rounded p-3 space-y-3">
-            <h4 className="font-medium">Configuration</h4>
+            <h4 className="font-medium">Object Visibility</h4>
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -2280,75 +2207,6 @@ function ObjectForm({
                 />
                 Intangible
               </label>
-            </div>
-            <div className="flex items-center gap-4 pt-1">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={formData.isVerified}
-                  onChange={(e) => setFormData({ ...formData, isVerified: e.target.checked })}
-                  className="rounded"
-                  data-testid="checkbox-object-verified"
-                />
-                Verified
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={formData.isPublic}
-                  onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
-                  className="rounded"
-                  data-testid="checkbox-object-public"
-                />
-                Public
-              </label>
-            </div>
-          </div>
-
-          <div className="border rounded p-3 space-y-3">
-            <h4 className="font-medium">Object Category (multiple)</h4>
-            <div className="flex gap-2">
-              <Input
-                value={categoryInput}
-                onChange={(e) => setCategoryInput(e.target.value)}
-                placeholder="Type to find existing objects/tags"
-                data-testid="input-object-category"
-              />
-              <Button type="button" variant="secondary" onClick={addCategory} data-testid="button-add-object-category">Add</Button>
-            </div>
-            {categorySuggestions.length > 0 && (
-              <div className="border rounded max-h-40 overflow-y-auto" data-testid="list-category-suggestions">
-                {categorySuggestions.map((suggestion) => (
-                  <button
-                    key={suggestion}
-                    type="button"
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
-                    onClick={() => addCategoryFromSuggestion(suggestion)}
-                    data-testid={`item-category-suggestion-${toKebabSlug(suggestion)}`}
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="flex flex-wrap gap-2">
-              {categories.length === 0 ? (
-                <span className="text-xs text-gray-500">No categories</span>
-              ) : (
-                categories.map((category) => (
-                  <Badge key={category} variant="secondary" className="flex items-center gap-1">
-                    {category}
-                    <button
-                      type="button"
-                      onClick={() => removeCategory(category)}
-                      className="ml-1 text-xs"
-                      aria-label={`Remove category ${category}`}
-                    >
-                      x
-                    </button>
-                  </Badge>
-                ))
-              )}
             </div>
           </div>
 

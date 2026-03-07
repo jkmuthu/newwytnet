@@ -7528,200 +7528,6 @@ When suggesting improvements, format your response with suggestions in a structu
     sourceEntityIds: z.array(z.string().uuid()).min(1).max(100),
   });
 
-  const normalizeCategoryNames = (metadata: any) => {
-    const raw = Array.isArray(metadata?.categories) ? metadata.categories : [];
-    const seen = new Set<string>();
-    const output: string[] = [];
-
-    for (const item of raw) {
-      if (typeof item !== 'string') continue;
-      const cleaned = normalizeEntityText(item);
-      if (!cleaned) continue;
-      const key = cleaned.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      output.push(cleaned);
-      if (output.length >= 50) break;
-    }
-
-    return output;
-  };
-
-  const ensureUniqueSlugForType = async (typeId: string, baseInput: string, excludedEntityId?: string) => {
-    const baseSlug = normalizeSlug(baseInput || 'category');
-    let slug = baseSlug || `category-${Date.now()}`;
-    let suffix = 1;
-
-    while (true) {
-      const existing = await db
-        .select({ id: entities.id })
-        .from(entities)
-        .where(
-          and(
-            eq(entities.entityTypeId, typeId),
-            eq(entities.slug, slug),
-            ...(excludedEntityId ? [not(eq(entities.id, excludedEntityId))] : []),
-          ),
-        )
-        .limit(1);
-
-      if (existing.length === 0) break;
-      suffix += 1;
-      slug = `${baseSlug}-${suffix}`;
-    }
-
-    return slug;
-  };
-
-  const syncEntityCategories = async (entityId: string, metadata: any, actorId: string) => {
-    const categoryNames = normalizeCategoryNames(metadata);
-
-    const [categoryType] = await db
-      .select({ id: entityTypes.id })
-      .from(entityTypes)
-      .where(and(eq(entityTypes.slug, 'category'), eq(entityTypes.isActive, true)))
-      .limit(1);
-
-    if (!categoryType) return;
-
-    const normalizedWanted = new Set(categoryNames.map((name) => name.toLowerCase()));
-
-    const existingCategoryRows = await db
-      .select({ id: entities.id, title: entities.title })
-      .from(entities)
-      .where(eq(entities.entityTypeId, categoryType.id));
-    const byLowerTitle = new Map(existingCategoryRows.map((row) => [row.title.toLowerCase(), row]));
-
-    const existingRelations = await db
-      .select()
-      .from(entityRelationships)
-      .where(
-        and(
-          or(
-            eq(entityRelationships.sourceEntityId, entityId),
-            eq(entityRelationships.targetEntityId, entityId),
-          ),
-          eq(entityRelationships.relationshipType, 'friend'),
-        ),
-      );
-
-    const linkedCategoryIds = Array.from(
-      new Set(
-        existingRelations.map((rel) =>
-          rel.sourceEntityId === entityId ? rel.targetEntityId : rel.sourceEntityId,
-        ),
-      ),
-    );
-
-    const linkedCategories = linkedCategoryIds.length
-      ? await db
-          .select({ id: entities.id, title: entities.title })
-          .from(entities)
-          .where(and(inArray(entities.id, linkedCategoryIds), eq(entities.entityTypeId, categoryType.id)))
-      : [];
-
-    const linkedCategoryMap = new Map(linkedCategories.map((row) => [row.id, row.title.toLowerCase()]));
-
-    for (const rel of existingRelations) {
-      const peerId = rel.sourceEntityId === entityId ? rel.targetEntityId : rel.sourceEntityId;
-      const linkedLower = linkedCategoryMap.get(peerId);
-      if (!linkedLower) continue;
-      if (normalizedWanted.has(linkedLower)) continue;
-
-      await db.delete(entityRelationships).where(eq(entityRelationships.id, rel.id));
-
-      await db
-        .delete(entityRelationships)
-        .where(
-          and(
-            eq(entityRelationships.sourceEntityId, peerId),
-            eq(entityRelationships.targetEntityId, entityId),
-            eq(entityRelationships.relationshipType, 'friend'),
-          ),
-        );
-    }
-
-    for (const categoryName of categoryNames) {
-      const key = categoryName.toLowerCase();
-      let category = byLowerTitle.get(key);
-
-      if (!category) {
-        const categorySlug = await ensureUniqueSlugForType(categoryType.id, categoryName);
-        const [createdCategory] = await db
-          .insert(entities)
-          .values({
-            title: categoryName,
-            aliases: [],
-            slug: categorySlug,
-            entityTypeId: categoryType.id,
-            description: 'Auto-created category object',
-            metadata: { autoCreated: true, source: 'objects-form' },
-            isPublic: true,
-            isVerified: false,
-            isActive: true,
-            createdBy: actorId,
-            updatedBy: actorId,
-          })
-          .returning({ id: entities.id, title: entities.title });
-
-        category = createdCategory;
-        byLowerTitle.set(key, category);
-      }
-
-      const [forward] = await db
-        .select({ id: entityRelationships.id })
-        .from(entityRelationships)
-        .where(
-          and(
-            eq(entityRelationships.sourceEntityId, entityId),
-            eq(entityRelationships.targetEntityId, category.id),
-            eq(entityRelationships.relationshipType, 'friend'),
-          ),
-        )
-        .limit(1);
-
-      if (!forward) {
-        await db.insert(entityRelationships).values({
-          sourceEntityId: entityId,
-          targetEntityId: category.id,
-          relationshipType: 'friend',
-          isBidirectional: true,
-          context: 'category',
-          metadata: { autoCreated: true },
-          strength: 1,
-          isActive: true,
-          createdBy: actorId,
-        });
-      }
-
-      const [reverse] = await db
-        .select({ id: entityRelationships.id })
-        .from(entityRelationships)
-        .where(
-          and(
-            eq(entityRelationships.sourceEntityId, category.id),
-            eq(entityRelationships.targetEntityId, entityId),
-            eq(entityRelationships.relationshipType, 'friend'),
-          ),
-        )
-        .limit(1);
-
-      if (!reverse) {
-        await db.insert(entityRelationships).values({
-          sourceEntityId: category.id,
-          targetEntityId: entityId,
-          relationshipType: 'friend',
-          isBidirectional: true,
-          context: 'category',
-          metadata: { autoCreated: true },
-          strength: 1,
-          isActive: true,
-          createdBy: actorId,
-        });
-      }
-    }
-  };
-
   // Entity Types - CRUD APIs
 
   // GET all entity types
@@ -7916,8 +7722,6 @@ When suggesting improvements, format your response with suggestions in a structu
       const { 
         typeId, 
         search, 
-        isPublic, 
-        isVerified, 
         tenantId, 
         hubId,
         page = '1', 
@@ -7933,8 +7737,6 @@ When suggesting improvements, format your response with suggestions in a structu
 
       if (typeId) conditions.push(eq(entities.entityTypeId, typeId));
       if (search) conditions.push(ilike(entities.title, `%${search}%`));
-      if (isPublic !== undefined) conditions.push(eq(entities.isPublic, isPublic === 'true'));
-      if (isVerified !== undefined) conditions.push(eq(entities.isVerified, isVerified === 'true'));
       if (tenantId) conditions.push(eq(entities.tenantId, tenantId));
       if (hubId) conditions.push(eq(entities.hubId, hubId));
 
@@ -7944,7 +7746,7 @@ When suggesting improvements, format your response with suggestions in a structu
       }
 
       const results = await query
-        .orderBy(desc(entities.isVerified), desc(entities.tagCount), desc(entities.createdAt))
+        .orderBy(desc(entities.tagCount), desc(entities.createdAt))
         .limit(limitNum)
         .offset(offset);
 
@@ -8065,8 +7867,6 @@ When suggesting improvements, format your response with suggestions in a structu
         })
         .returning();
 
-      await syncEntityCategories(newEntity.id, newEntity.metadata, actorId);
-
       res.status(201).json({ success: true, entity: newEntity });
     } catch (error: any) {
       console.error('Error creating entity:', error);
@@ -8165,10 +7965,6 @@ When suggesting improvements, format your response with suggestions in a structu
 
       if (!updatedEntity) {
         return res.status(404).json({ success: false, error: 'Entity not found' });
-      }
-
-      if (validatedData.metadata !== undefined) {
-        await syncEntityCategories(updatedEntity.id, updatedEntity.metadata, actorId);
       }
 
       res.json({ success: true, entity: updatedEntity });
@@ -8683,7 +8479,7 @@ When suggesting improvements, format your response with suggestions in a structu
       }
 
       const results = await query
-        .orderBy(desc(entities.isVerified), desc(entities.tagCount), desc(entities.createdAt))
+        .orderBy(desc(entities.tagCount), desc(entities.createdAt))
         .limit(limitNum);
 
       // Get filtered count

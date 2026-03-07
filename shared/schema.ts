@@ -1136,9 +1136,7 @@ export const entities = pgTable("entities", {
   tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: 'set null' }),
   hubId: uuid("hub_id").references(() => hubs.id, { onDelete: 'set null' }),
   
-  // Visibility & Access
-  isPublic: boolean("is_public").default(true),
-  isVerified: boolean("is_verified").default(false), // Admin verified
+  // Access
   isActive: boolean("is_active").default(true),
   
   // Statistics
@@ -1157,8 +1155,6 @@ export const entities = pgTable("entities", {
   tenantIdx: index("entity_tenant_idx").on(table.tenantId),
   hubIdx: index("entity_hub_idx").on(table.hubId),
   activeIdx: index("entity_active_idx").on(table.isActive),
-  publicIdx: index("entity_public_idx").on(table.isPublic),
-  verifiedIdx: index("entity_verified_idx").on(table.isVerified),
   tagCountIdx: index("entity_tag_count_idx").on(table.tagCount),
   uniqueTypeSlug: unique("entity_unique_type_slug").on(table.entityTypeId, table.slug),
 }));
@@ -2835,8 +2831,6 @@ export const createEntitySchema = z.object({
   seoDescription: z.string().optional(),
   tenantId: z.string().uuid().optional(),
   hubId: z.string().uuid().optional(),
-  isVerified: z.boolean().default(false),
-  isPublic: z.boolean().default(true),
   isActive: z.boolean().default(true),
 });
 

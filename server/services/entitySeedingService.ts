@@ -170,7 +170,6 @@ export class EntitySeedingService {
                   aliases: starter.aliases || [],
                   description: starter.description,
                   metadata: starter.metadata || {},
-                  isVerified: starter.isVerified || false,
                   tagCount: 0
                 });
               
