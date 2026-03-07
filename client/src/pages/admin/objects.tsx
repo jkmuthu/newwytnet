@@ -57,6 +57,14 @@ interface DynamicField {
   optionsText?: string;
 }
 
+interface BulkGraphReport {
+  created: string[];
+  reused: string[];
+  linked: string[];
+  skipped: string[];
+  failed: string[];
+}
+
 const DEFAULT_OBJECT_ICON = "/assets/default-object-icon.svg";
 const ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
 const DESCRIPTION_STOP_WORDS = new Set(["is", "was", "that"]);
@@ -134,6 +142,11 @@ export default function AdminObjects() {
   });
   const [deleteImpact, setDeleteImpact] = useState<TypeDeleteImpact | null>(null);
   const [replacementTypeId, setReplacementTypeId] = useState<string>("");
+  const [bulkGraphInput, setBulkGraphInput] = useState(
+    "World > India > Tamilnadu > Madurai\nIndia = Russia",
+  );
+  const [bulkGraphTypeId, setBulkGraphTypeId] = useState<string>("");
+  const [bulkGraphReport, setBulkGraphReport] = useState<BulkGraphReport | null>(null);
 
   // Fetch object types
   const { data: objectTypesData } = useQuery<{ types: ObjectType[] }>({
@@ -158,6 +171,12 @@ export default function AdminObjects() {
   const objectTypes = objectTypesData?.types || [];
   const objects = objectsData?.entities || [];
   const selectedObjects = objects.filter((obj) => selectedObjectIds.includes(obj.id));
+
+  useEffect(() => {
+    if (!bulkGraphTypeId && objectTypes.length > 0) {
+      setBulkGraphTypeId(objectTypes[0].id);
+    }
+  }, [objectTypes, bulkGraphTypeId]);
 
   useEffect(() => {
     setSelectedObjectIds((current) => current.filter((id) => objects.some((obj) => obj.id === id)));
@@ -429,6 +448,176 @@ export default function AdminObjects() {
     },
   });
 
+  const bulkGraphMutation = useMutation({
+    mutationFn: async () => {
+      const lines = bulkGraphInput
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+
+      if (lines.length === 0) {
+        throw new Error("Add at least one hierarchy line.");
+      }
+
+      if (!bulkGraphTypeId) {
+        throw new Error("Select object type for new objects.");
+      }
+
+      const parsedNodes: string[] = [];
+      const parentEdges: Array<{ parent: string; child: string }> = [];
+      const friendEdges: Array<{ left: string; right: string }> = [];
+
+      for (const line of lines) {
+        if (line.includes(">")) {
+          const chain = line.split(">").map((part) => part.trim()).filter(Boolean);
+          if (chain.length < 2) {
+            throw new Error(`Invalid hierarchy line: ${line}`);
+          }
+          parsedNodes.push(...chain);
+          for (let i = 1; i < chain.length; i += 1) {
+            parentEdges.push({ parent: chain[i - 1], child: chain[i] });
+          }
+          continue;
+        }
+
+        if (line.includes("=")) {
+          const pair = line.split("=").map((part) => part.trim()).filter(Boolean);
+          if (pair.length !== 2) {
+            throw new Error(`Invalid friend line: ${line}`);
+          }
+          parsedNodes.push(pair[0], pair[1]);
+          friendEdges.push({ left: pair[0], right: pair[1] });
+          continue;
+        }
+
+        throw new Error(`Unsupported line format: ${line}`);
+      }
+
+      const uniqueNodes = uniqueList(parsedNodes);
+      const report: BulkGraphReport = { created: [], reused: [], linked: [], skipped: [], failed: [] };
+
+      const entitiesMap = new Map<string, { id: string; title: string }>();
+      const readRes = await fetch("/api/entities?limit=500", { credentials: "include" });
+      if (!readRes.ok) throw new Error("Failed to fetch existing objects for bulk run.");
+      const readPayload = await readRes.json();
+      const existingEntities: ObjectItem[] = Array.isArray(readPayload?.entities) ? readPayload.entities : [];
+      for (const entity of existingEntities) {
+        entitiesMap.set(entity.title.trim().toLowerCase(), { id: entity.id, title: entity.title });
+      }
+
+      const nodeIdByName = new Map<string, string>();
+
+      for (const rawTitle of uniqueNodes) {
+        const normalizedKey = rawTitle.trim().toLowerCase();
+        const existing = entitiesMap.get(normalizedKey);
+        if (existing) {
+          nodeIdByName.set(rawTitle, existing.id);
+          report.reused.push(rawTitle);
+          continue;
+        }
+
+        try {
+          const response = await apiRequest("/api/entities", "POST", {
+            title: rawTitle,
+            aliases: [buildPluralAlias(rawTitle)].filter(Boolean),
+            slug: toKebabSlug(rawTitle),
+            entityTypeId: bulkGraphTypeId,
+            description: "",
+            metadata: {},
+          });
+          const payload = await response.json();
+          const id = payload?.entity?.id;
+          if (!id) {
+            report.failed.push(`Create ${rawTitle}: missing id in response`);
+            continue;
+          }
+          nodeIdByName.set(rawTitle, id);
+          entitiesMap.set(normalizedKey, { id, title: rawTitle });
+          report.created.push(rawTitle);
+        } catch (error: any) {
+          const fallback = entitiesMap.get(normalizedKey);
+          if (fallback) {
+            nodeIdByName.set(rawTitle, fallback.id);
+            report.reused.push(rawTitle);
+            continue;
+          }
+          report.failed.push(`Create ${rawTitle}: ${error?.message || "failed"}`);
+        }
+      }
+
+      const createRelationship = async (sourceEntityId: string, targetEntityId: string, relationshipType: "parent" | "friend", label: string) => {
+        try {
+          await apiRequest("/api/entities/relationships", "POST", {
+            sourceEntityId,
+            targetEntityId,
+            relationshipType,
+            isBidirectional: relationshipType === "friend",
+            metadata: {},
+            strength: 1,
+            isActive: true,
+          });
+          report.linked.push(label);
+        } catch (error: any) {
+          const message = String(error?.message || "failed");
+          if (message.includes("already") || message.includes("409:")) {
+            report.skipped.push(label);
+            return;
+          }
+          report.failed.push(`${label}: ${message}`);
+        }
+      };
+
+      for (const edge of parentEdges) {
+        const childId = nodeIdByName.get(edge.child);
+        const parentId = nodeIdByName.get(edge.parent);
+        const label = `${edge.parent} > ${edge.child}`;
+        if (!childId || !parentId) {
+          report.failed.push(`${label}: unresolved node id`);
+          continue;
+        }
+        await createRelationship(childId, parentId, "parent", label);
+      }
+
+      for (const edge of friendEdges) {
+        const leftId = nodeIdByName.get(edge.left);
+        const rightId = nodeIdByName.get(edge.right);
+        const label = `${edge.left} = ${edge.right}`;
+        if (!leftId || !rightId) {
+          report.failed.push(`${label}: unresolved node id`);
+          continue;
+        }
+        await createRelationship(leftId, rightId, "friend", label);
+      }
+
+      return report;
+    },
+    onSuccess: async (report) => {
+      setBulkGraphReport(report);
+      await queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
+
+      if (report.failed.length > 0) {
+        toast({
+          title: "Bulk graph completed with issues",
+          description: `${report.created.length} created, ${report.linked.length} links, ${report.failed.length} failed`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Bulk graph completed",
+        description: `${report.created.length} created, ${report.reused.length} reused, ${report.linked.length} linked`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Bulk graph failed",
+        description: error?.message || "Could not process graph input",
+        variant: "destructive",
+      });
+    },
+  });
+
   const toggleObjectSelection = (objectId: string, checked: boolean) => {
     setSelectedObjectIds((current) => {
       if (checked) {
@@ -569,6 +758,85 @@ export default function AdminObjects() {
               </SelectContent>
             </Select>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Bulk Graph Builder</CardTitle>
+              <CardDescription>
+                Build parent chains with <code>{">"}</code> and friend links with <code>{"="}</code>.
+                Example: <code>World &gt; India &gt; Tamilnadu &gt; Madurai</code> and <code>India = Russia</code>.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-3">
+                <div>
+                  <label className="text-sm font-medium">Default Type For New Objects</label>
+                  <Select value={bulkGraphTypeId} onValueChange={setBulkGraphTypeId}>
+                    <SelectTrigger data-testid="select-bulk-graph-type">
+                      <SelectValue placeholder="Select object type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {objectTypes.map((type) => (
+                        <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Graph Input</label>
+                  <Textarea
+                    value={bulkGraphInput}
+                    onChange={(e) => setBulkGraphInput(e.target.value)}
+                    rows={5}
+                    placeholder="World > India > Tamilnadu > Madurai"
+                    data-testid="textarea-bulk-graph-input"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  onClick={() => bulkGraphMutation.mutate()}
+                  disabled={bulkGraphMutation.isPending || !bulkGraphInput.trim() || !bulkGraphTypeId}
+                  data-testid="button-run-bulk-graph"
+                >
+                  {bulkGraphMutation.isPending ? "Processing..." : "Run Graph Build"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setBulkGraphInput("");
+                    setBulkGraphReport(null);
+                  }}
+                  data-testid="button-clear-bulk-graph"
+                >
+                  Clear
+                </Button>
+              </div>
+
+              {bulkGraphReport && (
+                <div className="border rounded p-3 space-y-2" data-testid="panel-bulk-graph-report">
+                  <div className="text-sm font-medium">Last Run Summary</div>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
+                    <Badge variant="secondary">Created: {bulkGraphReport.created.length}</Badge>
+                    <Badge variant="secondary">Reused: {bulkGraphReport.reused.length}</Badge>
+                    <Badge variant="secondary">Linked: {bulkGraphReport.linked.length}</Badge>
+                    <Badge variant="secondary">Skipped: {bulkGraphReport.skipped.length}</Badge>
+                    <Badge variant={bulkGraphReport.failed.length > 0 ? "destructive" : "secondary"}>Failed: {bulkGraphReport.failed.length}</Badge>
+                  </div>
+                  {bulkGraphReport.failed.length > 0 && (
+                    <div className="text-xs text-red-700 space-y-1">
+                      {bulkGraphReport.failed.slice(0, 6).map((item, idx) => (
+                        <div key={`bulk-fail-${idx}`}>{item}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {selectedObjectIds.length >= 2 && (
             <Card>
