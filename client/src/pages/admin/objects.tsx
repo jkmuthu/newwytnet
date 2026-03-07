@@ -59,6 +59,7 @@ interface DynamicField {
 
 const DEFAULT_OBJECT_ICON = "/assets/default-object-icon.svg";
 const ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
+const DESCRIPTION_STOP_WORDS = new Set(["is", "was", "that"]);
 
 const toKebabSlug = (value: string) =>
   value
@@ -1373,7 +1374,7 @@ function ObjectRelationshipsEditor({ entity }: { entity: ObjectItem }) {
       </div>
 
       <div className="space-y-2 border rounded p-3">
-        <label className="text-sm font-medium">Parent (choose only one)</label>
+        <label className="text-sm font-medium">Parent * (Default: Main)</label>
         <div className="grid grid-cols-1 md:grid-cols-[120px_1fr_120px] gap-2 items-start">
           <Button
             type="button"
@@ -1601,22 +1602,32 @@ function ObjectForm({
   });
   const [manualAliases, setManualAliases] = useState<string[]>(object?.aliases || []);
   const [aliasInput, setAliasInput] = useState("");
-  const [imageInput, setImageInput] = useState("");
   const [objectImages, setObjectImages] = useState<string[]>(initialImages);
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [isIconUploading, setIsIconUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const bulkImageInputRef = useRef<HTMLInputElement>(null);
+  const slotImageInputRef = useRef<HTMLInputElement>(null);
   const iconInputRef = useRef<HTMLInputElement>(null);
+  const [activeImageSlotIndex, setActiveImageSlotIndex] = useState<number | null>(null);
   const [dynamicFields, setDynamicFields] = useState<DynamicField[]>(
     initialCustomFields.length > 0 ? initialCustomFields : [{ id: `field-${Date.now()}`, key: "", type: "text", value: "", optionsText: "" }],
   );
-  const [dragSource, setDragSource] = useState<{ list: "images" | "fields"; index: number } | null>(null);
+  const [dragSource, setDragSource] = useState<{ list: "fields"; index: number } | null>(null);
 
   const autoPluralAlias = useMemo(() => buildPluralAlias(formData.title), [formData.title]);
   const allAliases = useMemo(
     () => uniqueList([...manualAliases, ...(autoPluralAlias ? [autoPluralAlias] : [])]),
     [manualAliases, autoPluralAlias],
   );
+  const descriptionTagWords = useMemo(() => {
+    const words = formData.description
+      .split(/[^a-zA-Z0-9]+/)
+      .map((word) => word.trim().toLowerCase())
+      .filter((word) => word.length > 2 && !DESCRIPTION_STOP_WORDS.has(word));
+    return uniqueList(words).slice(0, 30);
+  }, [formData.description]);
+
+  const imageSlots = useMemo(() => Array.from({ length: 6 }, (_, idx) => objectImages[idx] || ""), [objectImages]);
   const saveMutation = useMutation({
     mutationFn: (data: any) => {
       if (isEdit) {
@@ -1656,6 +1667,7 @@ function ObjectForm({
       iconUrl: formData.objectIconUrl || DEFAULT_OBJECT_ICON,
       materiality: formData.materiality,
       images: uniqueList(objectImages).slice(0, 6),
+      autoTaggableWords: descriptionTagWords,
       customFields: normalizedDynamicFields,
       dynamicData: normalizedDynamicFields.reduce<Record<string, string | number | boolean>>((acc, field) => {
         if (field.type === "number") {
@@ -1692,22 +1704,36 @@ function ObjectForm({
     setManualAliases((current) => current.filter((item) => item.toLowerCase() !== alias.toLowerCase()));
   };
 
-  const addImage = () => {
-    const next = imageInput.trim();
-    if (!next) return;
-    if (!/^https?:\/\//i.test(next)) {
-      toast({ title: "Image URL must start with http:// or https://", variant: "destructive" });
-      return;
+  const uploadSingleImage = async (file: File): Promise<string> => {
+    if (!ALLOWED_IMAGE_MIME_TYPES.includes(file.type)) {
+      throw new Error(`${file.name} has unsupported image type`);
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error(`${file.name} exceeds 5MB`);
     }
 
-    setObjectImages((current) => {
-      const merged = uniqueList([...current, next]).slice(0, 6);
-      if (merged.length === current.length && !current.includes(next)) {
-        toast({ title: "Only 6 object images are allowed", variant: "destructive" });
-      }
-      return merged;
+    const form = new FormData();
+    form.append("file", file);
+    form.append("directory", "objects/images");
+
+    const res = await fetch("/api/admin/upload-image", {
+      method: "POST",
+      body: form,
+      credentials: "include",
     });
-    setImageInput("");
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `Upload failed for ${file.name}`);
+    }
+
+    const data = await res.json();
+    const url = typeof data.url === "string" ? data.url.trim() : "";
+    if (!url) {
+      throw new Error("Upload response did not include image URL");
+    }
+
+    return url;
   };
 
   const uploadFiles = async (files: FileList | File[]) => {
@@ -1726,34 +1752,11 @@ function ObjectForm({
 
       const uploadedUrls: string[] = [];
       for (const file of selected) {
-        if (!ALLOWED_IMAGE_MIME_TYPES.includes(file.type)) {
-          toast({ title: `${file.name} has unsupported image type`, variant: "destructive" });
-          continue;
-        }
-
-        if (file.size > 5 * 1024 * 1024) {
-          toast({ title: `${file.name} exceeds 5MB`, variant: "destructive" });
-          continue;
-        }
-
-        const form = new FormData();
-        form.append("file", file);
-        form.append("directory", "objects/images");
-
-        const res = await fetch("/api/admin/upload-image", {
-          method: "POST",
-          body: form,
-          credentials: "include",
-        });
-
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(text || `Upload failed for ${file.name}`);
-        }
-
-        const data = await res.json();
-        if (typeof data.url === "string" && data.url.trim()) {
-          uploadedUrls.push(data.url.trim());
+        try {
+          const url = await uploadSingleImage(file);
+          uploadedUrls.push(url);
+        } catch (error: any) {
+          toast({ title: error?.message || `Upload failed for ${file.name}`, variant: "destructive" });
         }
       }
 
@@ -1773,8 +1776,30 @@ function ObjectForm({
       });
     } finally {
       setIsImageUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+      if (bulkImageInputRef.current) {
+        bulkImageInputRef.current.value = "";
+      }
+    }
+  };
+
+  const replaceImageAtSlot = async (slotIndex: number, file: File) => {
+    setIsImageUploading(true);
+    try {
+      const url = await uploadSingleImage(file);
+      setObjectImages((current) => {
+        const next = [...current];
+        while (next.length < 6) next.push("");
+        next[slotIndex] = url;
+        return next.filter((item) => !!item).slice(0, 6);
+      });
+      toast({ title: `Image ${slotIndex + 1} updated` });
+    } catch (error: any) {
+      toast({ title: "Image update failed", description: error?.message || "Could not update image", variant: "destructive" });
+    } finally {
+      setIsImageUploading(false);
+      setActiveImageSlotIndex(null);
+      if (slotImageInputRef.current) {
+        slotImageInputRef.current.value = "";
       }
     }
   };
@@ -1848,17 +1873,13 @@ function ObjectForm({
     setDynamicFields((current) => current.map((field) => (field.id === fieldId ? { ...field, ...patch } : field)));
   };
 
-  const handleDragStart = (list: "images" | "fields", index: number) => {
+  const handleDragStart = (list: "fields", index: number) => {
     setDragSource({ list, index });
   };
 
-  const handleDrop = (list: "images" | "fields", dropIndex: number) => {
+  const handleDrop = (list: "fields", dropIndex: number) => {
     if (!dragSource || dragSource.list !== list) return;
-    if (list === "images") {
-      setObjectImages((current) => reorderItems(current, dragSource.index, dropIndex));
-    } else {
-      setDynamicFields((current) => reorderItems(current, dragSource.index, dropIndex));
-    }
+    setDynamicFields((current) => reorderItems(current, dragSource.index, dropIndex));
     setDragSource(null);
   };
 
@@ -1877,30 +1898,7 @@ function ObjectForm({
           </div>
 
           <div>
-            <label className="text-sm font-medium">Object Type (tag only one) *</label>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {objectTypes.map((type) => {
-                const selected = formData.entityTypeId === type.id;
-                return (
-                  <button
-                    key={type.id}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, entityTypeId: type.id })}
-                    className={`rounded-full border px-3 py-1 text-sm transition-colors ${selected ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-                    data-testid={`tag-object-type-${type.slug}`}
-                  >
-                    {type.name}
-                  </button>
-                );
-              })}
-            </div>
-            {!formData.entityTypeId && (
-              <p className="text-xs text-red-600 mt-1">Select one object type.</p>
-            )}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Aliases</label>
+            <label className="text-sm font-medium">Aliases *</label>
             <div className="mt-2 flex gap-2">
               <Input
                 value={aliasInput}
@@ -1938,84 +1936,29 @@ function ObjectForm({
           </div>
 
           <div>
-            <label className="text-sm font-medium">Object Icon</label>
-            <div className="mt-2 flex items-center gap-3 border rounded p-3">
-              <img
-                src={formData.objectIconUrl || DEFAULT_OBJECT_ICON}
-                alt="Object icon"
-                className="h-14 w-14 rounded border object-cover"
-              />
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">Default icon shown until you upload a custom icon.</p>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => iconInputRef.current?.click()}
-                    data-testid="button-upload-object-icon"
-                  >
-                    {isIconUploading ? "Uploading..." : "Change Icon"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setFormData((current) => ({ ...current, objectIconUrl: DEFAULT_OBJECT_ICON }))}
-                    data-testid="button-reset-object-icon"
-                  >
-                    Use Default
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">Allowed: png/jpg/webp/gif/svg, max 2MB.</p>
-              </div>
-            </div>
-            <input
-              ref={iconInputRef}
-              type="file"
-              accept={ALLOWED_IMAGE_MIME_TYPES.join(",")}
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  void uploadIcon(file);
-                }
-              }}
-              data-testid="input-upload-object-icon"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Object Description</label>
+            <label className="text-sm font-medium">Description</label>
             <Textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={4}
               data-testid="input-object-description"
             />
+            <p className="text-xs text-muted-foreground mt-1">Words excluding "is", "was", and "that" are auto-taggable while composing.</p>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {descriptionTagWords.length === 0 ? (
+                <span className="text-xs text-gray-500">No auto tags yet</span>
+              ) : (
+                descriptionTagWords.map((word) => (
+                  <Badge key={word} variant="secondary" className="text-xs">{word}</Badge>
+                ))
+              )}
+            </div>
           </div>
 
           <div>
             <label className="text-sm font-medium">Object Images (up to 6)</label>
-            <div
-              className="mt-2 rounded-lg border border-dashed p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                if (e.dataTransfer.files?.length) {
-                  void uploadFiles(e.dataTransfer.files);
-                }
-              }}
-              data-testid="dropzone-object-images"
-            >
-              <Upload className="h-5 w-5 mx-auto mb-2 text-gray-500" />
-              <p className="text-sm font-medium">Drag and drop image files here</p>
-              <p className="text-xs text-muted-foreground mt-1">or click to browse (png/jpg/webp/gif/svg, max 5MB each)</p>
-              {isImageUploading && <p className="text-xs mt-2">Uploading...</p>}
-            </div>
             <input
-              ref={fileInputRef}
+              ref={bulkImageInputRef}
               type="file"
               accept={ALLOWED_IMAGE_MIME_TYPES.join(",")}
               multiple
@@ -2027,34 +1970,61 @@ function ObjectForm({
               }}
               data-testid="input-upload-object-images"
             />
-            <div className="mt-2 flex gap-2">
-              <Input
-                value={imageInput}
-                onChange={(e) => setImageInput(e.target.value)}
-                placeholder="https://..."
-                data-testid="input-object-image-url"
-              />
-              <Button type="button" variant="secondary" onClick={addImage} data-testid="button-add-object-image">Add</Button>
+            <input
+              ref={slotImageInputRef}
+              type="file"
+              accept={ALLOWED_IMAGE_MIME_TYPES.join(",")}
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file && activeImageSlotIndex !== null) {
+                  void replaceImageAtSlot(activeImageSlotIndex, file);
+                }
+              }}
+              data-testid="input-replace-object-image"
+            />
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <p className="text-xs text-muted-foreground">6 fixed slots, click any slot to add or replace image.</p>
+              <Button type="button" variant="secondary" onClick={() => bulkImageInputRef.current?.click()} data-testid="button-upload-object-images">
+                {isImageUploading ? "Uploading..." : "Upload Images"}
+              </Button>
             </div>
-            <div className="mt-2 space-y-2">
-              {objectImages.length === 0 ? (
-                <p className="text-xs text-gray-500">No images added</p>
-              ) : objectImages.map((image, index) => (
-                <div
-                  key={`${image}-${index}`}
-                  className="flex items-center gap-2 border rounded px-2 py-1"
-                  draggable
-                  onDragStart={() => handleDragStart("images", index)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => handleDrop("images", index)}
-                  data-testid={`row-object-image-${index}`}
+            <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3">
+              {imageSlots.map((imageUrl, index) => (
+                <button
+                  key={`object-image-slot-${index}`}
+                  type="button"
+                  className="relative border rounded p-2 text-left hover:bg-muted/40"
+                  onClick={() => {
+                    setActiveImageSlotIndex(index);
+                    slotImageInputRef.current?.click();
+                  }}
+                  data-testid={`slot-object-image-${index + 1}`}
                 >
-                  <GripVertical className="h-4 w-4 text-gray-400" />
-                  <span className="text-xs flex-1 truncate">{image}</span>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => removeImage(image)}>
-                    <Trash2 className="h-4 w-4 text-red-600" />
-                  </Button>
-                </div>
+                  <div className="aspect-[4/3] w-full rounded border bg-gray-50 overflow-hidden flex items-center justify-center">
+                    {imageUrl ? (
+                      <img src={imageUrl} alt={`Object image ${index + 1}`} className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="text-xs text-gray-500">Image {index + 1}</span>
+                    )}
+                  </div>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">{imageUrl ? "Click to change" : "Click to add"}</span>
+                    {imageUrl && (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        className="text-xs text-red-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeImage(imageUrl);
+                        }}
+                      >
+                        Remove
+                      </span>
+                    )}
+                  </div>
+                </button>
               ))}
             </div>
           </div>
@@ -2187,7 +2157,55 @@ function ObjectForm({
           </div>
 
           <div className="border rounded p-3 space-y-3">
-            <h4 className="font-medium">Object Visibility</h4>
+            <h4 className="font-medium">Object Icon</h4>
+            <div className="flex items-center gap-3 border rounded p-3">
+              <img
+                src={formData.objectIconUrl || DEFAULT_OBJECT_ICON}
+                alt="Object icon"
+                className="h-14 w-14 rounded border object-cover"
+              />
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">Default icon shown until you upload a custom icon.</p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => iconInputRef.current?.click()}
+                    data-testid="button-upload-object-icon"
+                  >
+                    {isIconUploading ? "Uploading..." : "Change Icon"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFormData((current) => ({ ...current, objectIconUrl: DEFAULT_OBJECT_ICON }))}
+                    data-testid="button-reset-object-icon"
+                  >
+                    Use Default
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Allowed: png/jpg/webp/gif/svg, max 2MB.</p>
+              </div>
+            </div>
+            <input
+              ref={iconInputRef}
+              type="file"
+              accept={ALLOWED_IMAGE_MIME_TYPES.join(",")}
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  void uploadIcon(file);
+                }
+              }}
+              data-testid="input-upload-object-icon"
+            />
+          </div>
+
+          <div className="border rounded p-3 space-y-3">
+            <h4 className="font-medium">Object Visibility * (Default: Tangible)</h4>
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -2210,12 +2228,33 @@ function ObjectForm({
             </div>
           </div>
 
+          <div className="border rounded p-3 space-y-3">
+            <h4 className="font-medium">Object Type * (Single)</h4>
+            <div className="flex flex-wrap gap-2">
+              {objectTypes.map((type) => {
+                const selected = formData.entityTypeId === type.id;
+                return (
+                  <button
+                    key={type.id}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, entityTypeId: type.id })}
+                    className={`rounded-full border px-3 py-1 text-sm transition-colors ${selected ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                    data-testid={`tag-object-type-${type.slug}`}
+                  >
+                    {type.name}
+                  </button>
+                );
+              })}
+            </div>
+            {!formData.entityTypeId && <p className="text-xs text-red-600">Select one object type.</p>}
+          </div>
+
           <div className="border rounded p-3">
             {isEdit && object ? (
               <ObjectRelationshipsEditor entity={object} />
             ) : (
               <div className="space-y-1">
-                <h4 className="font-medium">Relationships Assignment</h4>
+                <h4 className="font-medium">Assign Relationship</h4>
                 <p className="text-xs text-muted-foreground">Create the object first, then assign parent/child/friend relationships here.</p>
               </div>
             )}
