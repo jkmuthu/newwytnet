@@ -290,7 +290,27 @@ export default function AdminObjects() {
       const contentType = response.headers.get("content-type") || "";
       const looksLikeHtml = raw.trim().startsWith("<!DOCTYPE") || raw.trim().startsWith("<html");
       if (!contentType.includes("application/json") || looksLikeHtml) {
-        throw new Error("Delete impact API returned HTML instead of JSON. Please restart local server and try again.");
+        // Fallback: compute delete impact in client using loaded objects/types.
+        const type = objectTypes.find((item) => item.id === typeId);
+        if (!type) {
+          throw new Error("Object type not found in current list.");
+        }
+        if (type.isSystem) {
+          throw new Error("System object types cannot be deleted.");
+        }
+
+        const objectCount = objects.filter((obj) => obj.entityTypeId === typeId).length;
+        const replacementTypes = objectTypes.filter((item) => item.id !== typeId);
+
+        return {
+          success: true,
+          impact: {
+            type,
+            objectCount,
+            replacementTypes,
+          },
+          fallbackMode: true,
+        };
       }
 
       try {
@@ -302,6 +322,9 @@ export default function AdminObjects() {
     onSuccess: (payload: any) => {
       setDeleteImpact(payload.impact as TypeDeleteImpact);
       setReplacementTypeId("");
+      if (payload?.fallbackMode) {
+        toast({ title: "Using local fallback for delete impact" });
+      }
     },
     onError: (error: any) => {
       toast({
@@ -313,9 +336,27 @@ export default function AdminObjects() {
   });
 
   const deleteWithReplacementMutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       if (!deleteImpact) throw new Error("No delete impact loaded");
-      return apiRequest(`/api/entities/types/${deleteImpact.type.id}/delete-with-replacement`, "POST", { replacementTypeId });
+
+      // Try dedicated endpoint first.
+      try {
+        return await apiRequest(`/api/entities/types/${deleteImpact.type.id}/delete-with-replacement`, "POST", { replacementTypeId });
+      } catch (error: any) {
+        const rawMessage = String(error?.message || "");
+        const looksLikeStaleRoute = rawMessage.includes("<!DOCTYPE") || rawMessage.includes("<html") || rawMessage.includes("Cannot POST") || rawMessage.includes("404:");
+        if (!looksLikeStaleRoute) {
+          throw error;
+        }
+
+        // Fallback path for older/stale runtime: reassign objects then delete type.
+        const affected = objects.filter((obj) => obj.entityTypeId === deleteImpact.type.id);
+        for (const obj of affected) {
+          await apiRequest(`/api/entities/${obj.id}`, "PATCH", { entityTypeId: replacementTypeId });
+        }
+        await apiRequest(`/api/entities/types/${deleteImpact.type.id}`, "DELETE");
+        return new Response(null, { status: 200 });
+      }
     },
     onSuccess: async () => {
       toast({ title: "Object type deleted with replacement" });
