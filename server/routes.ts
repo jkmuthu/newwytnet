@@ -8503,6 +8503,76 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // GET lightweight object group options for forms
+  // Query params:
+  // - includeObjects=true|false (default true)
+  // - q=<group name search>
+  // - groupIds=<comma-separated UUIDs>
+  app.get('/api/entities/groups/options', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const includeObjects = String(req.query.includeObjects || 'true').toLowerCase() !== 'false';
+      const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+      const groupIds = typeof req.query.groupIds === 'string'
+        ? req.query.groupIds.split(',').map((id) => id.trim()).filter(Boolean)
+        : [];
+
+      const conditions: any[] = [eq(objectGroups.isActive, true)];
+      if (q) {
+        conditions.push(ilike(objectGroups.name, `%${q}%`));
+      }
+      if (groupIds.length > 0) {
+        conditions.push(inArray(objectGroups.id, groupIds));
+      }
+
+      const groups = await db
+        .select({ id: objectGroups.id, name: objectGroups.name, slug: objectGroups.slug })
+        .from(objectGroups)
+        .where(and(...conditions))
+        .orderBy(asc(objectGroups.name));
+
+      if (!includeObjects || groups.length === 0) {
+        return res.json({
+          success: true,
+          groups: groups.map((group) => ({ ...group, objectCount: 0, objects: [] })),
+        });
+      }
+
+      const groupIdList = groups.map((group) => group.id);
+      const rows = await db
+        .select({
+          objectGroupId: objectGroupEntities.objectGroupId,
+          id: entities.id,
+          title: entities.title,
+        })
+        .from(objectGroupEntities)
+        .innerJoin(entities, eq(objectGroupEntities.entityId, entities.id))
+        .where(inArray(objectGroupEntities.objectGroupId, groupIdList))
+        .orderBy(asc(objectGroupEntities.displayOrder), asc(entities.title));
+
+      const objectsByGroup = new Map<string, Array<{ id: string; title: string }>>();
+      for (const row of rows) {
+        const list = objectsByGroup.get(row.objectGroupId) || [];
+        list.push({ id: row.id, title: row.title });
+        objectsByGroup.set(row.objectGroupId, list);
+      }
+
+      res.json({
+        success: true,
+        groups: groups.map((group) => {
+          const objects = objectsByGroup.get(group.id) || [];
+          return {
+            ...group,
+            objectCount: objects.length,
+            objects,
+          };
+        }),
+      });
+    } catch (error) {
+      console.error('Error fetching object group options:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch object group options' });
+    }
+  });
+
   // GET single object group
   app.get('/api/entities/groups/:groupId', adminAuthMiddleware, async (req: any, res) => {
     try {
