@@ -7816,6 +7816,98 @@ When suggesting improvements, format your response with suggestions in a structu
     }
   });
 
+  // GET delete impact for an entity type
+  app.get('/api/entities/types/:typeId/delete-impact', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { typeId } = req.params;
+
+      const [type] = await db.select().from(entityTypes).where(eq(entityTypes.id, typeId)).limit(1);
+      if (!type) {
+        return res.status(404).json({ success: false, error: 'Entity type not found' });
+      }
+
+      if (type.isSystem) {
+        return res.status(403).json({ success: false, error: 'System object types cannot be deleted' });
+      }
+
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(entities)
+        .where(eq(entities.entityTypeId, typeId));
+
+      const replacements = await db
+        .select({ id: entityTypes.id, name: entityTypes.name, slug: entityTypes.slug, icon: entityTypes.icon, color: entityTypes.color })
+        .from(entityTypes)
+        .where(and(not(eq(entityTypes.id, typeId)), eq(entityTypes.isActive, true)))
+        .orderBy(entityTypes.displayOrder, entityTypes.name);
+
+      res.json({
+        success: true,
+        impact: {
+          type,
+          objectCount: count,
+          replacementTypes: replacements,
+        },
+      });
+    } catch (error) {
+      console.error('Error getting entity type delete impact:', error);
+      res.status(500).json({ success: false, error: 'Failed to fetch delete impact' });
+    }
+  });
+
+  // POST delete entity type with object replacement type
+  app.post('/api/entities/types/:typeId/delete-with-replacement', adminAuthMiddleware, async (req: any, res) => {
+    try {
+      const { typeId } = req.params;
+      const body = z.object({ replacementTypeId: z.string().uuid() }).parse(req.body);
+
+      if (body.replacementTypeId === typeId) {
+        return res.status(400).json({ success: false, error: 'Replacement type must be different' });
+      }
+
+      const [sourceType] = await db.select().from(entityTypes).where(eq(entityTypes.id, typeId)).limit(1);
+      if (!sourceType) {
+        return res.status(404).json({ success: false, error: 'Entity type not found' });
+      }
+      if (sourceType.isSystem) {
+        return res.status(403).json({ success: false, error: 'System object types cannot be deleted' });
+      }
+
+      const [replacementType] = await db
+        .select()
+        .from(entityTypes)
+        .where(and(eq(entityTypes.id, body.replacementTypeId), eq(entityTypes.isActive, true)))
+        .limit(1);
+
+      if (!replacementType) {
+        return res.status(400).json({ success: false, error: 'Replacement type not found or inactive' });
+      }
+
+      const moved = await db.transaction(async (tx) => {
+        const updatedRows = await tx
+          .update(entities)
+          .set({ entityTypeId: body.replacementTypeId, updatedAt: new Date() })
+          .where(eq(entities.entityTypeId, typeId))
+          .returning({ id: entities.id });
+
+        await tx.delete(entityTypes).where(eq(entityTypes.id, typeId));
+        return updatedRows.length;
+      });
+
+      res.json({
+        success: true,
+        movedCount: moved,
+        message: `Moved ${moved} objects to ${replacementType.name} and deleted ${sourceType.name}`,
+      });
+    } catch (error: any) {
+      console.error('Error deleting entity type with replacement:', error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ success: false, error: 'Validation error', details: error.errors });
+      }
+      res.status(500).json({ success: false, error: 'Failed to delete entity type with replacement' });
+    }
+  });
+
   // Entities - CRUD APIs
 
   // GET all entities (with filters and pagination)

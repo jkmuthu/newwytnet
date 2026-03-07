@@ -22,6 +22,12 @@ interface ObjectType {
   isSystem: boolean;
 }
 
+interface TypeDeleteImpact {
+  type: ObjectType;
+  objectCount: number;
+  replacementTypes: ObjectType[];
+}
+
 interface ObjectItem {
   id: string;
   title: string;
@@ -128,6 +134,8 @@ export default function AdminObjects() {
     icon: "",
     color: "gray",
   });
+  const [deleteImpact, setDeleteImpact] = useState<TypeDeleteImpact | null>(null);
+  const [replacementTypeId, setReplacementTypeId] = useState<string>("");
 
   // Fetch object types
   const { data: objectTypesData } = useQuery<{ types: ObjectType[] }>({
@@ -265,6 +273,49 @@ export default function AdminObjects() {
       toast({
         title: "Failed to delete object type",
         description: error?.message || "System types cannot be deleted.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const fetchDeleteImpactMutation = useMutation({
+    mutationFn: async (typeId: string) => {
+      const response = await fetch(`/api/entities/types/${typeId}/delete-impact`, { credentials: 'include' });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "Failed to fetch delete impact");
+      }
+      return response.json();
+    },
+    onSuccess: (payload: any) => {
+      setDeleteImpact(payload.impact as TypeDeleteImpact);
+      setReplacementTypeId("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Cannot prepare delete",
+        description: error?.message || "Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteWithReplacementMutation = useMutation({
+    mutationFn: () => {
+      if (!deleteImpact) throw new Error("No delete impact loaded");
+      return apiRequest(`/api/entities/types/${deleteImpact.type.id}/delete-with-replacement`, "POST", { replacementTypeId });
+    },
+    onSuccess: async () => {
+      toast({ title: "Object type deleted with replacement" });
+      setDeleteImpact(null);
+      setReplacementTypeId("");
+      await queryClient.invalidateQueries({ queryKey: ["/api/entities/types"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Delete failed",
+        description: error?.message || "Please choose a valid replacement type.",
         variant: "destructive",
       });
     },
@@ -596,6 +647,55 @@ export default function AdminObjects() {
                 </div>
               )}
 
+              {deleteImpact && (
+                <div className="border rounded-lg p-4 mb-4 space-y-3 bg-red-50/50" data-testid="panel-delete-type-impact">
+                  <div>
+                    <h4 className="font-semibold text-red-700">Delete Object Type: {deleteImpact.type.name}</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      This type currently has <span className="font-medium">{deleteImpact.objectCount}</span> objects.
+                      Choose a replacement type to move them before delete.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium">Replacement Type *</label>
+                    <Select value={replacementTypeId} onValueChange={setReplacementTypeId}>
+                      <SelectTrigger data-testid="select-replacement-type">
+                        <SelectValue placeholder="Select replacement type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {deleteImpact.replacementTypes.map((item) => (
+                          <SelectItem key={item.id} value={item.id}>{item.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={!replacementTypeId || deleteWithReplacementMutation.isPending}
+                      onClick={() => deleteWithReplacementMutation.mutate()}
+                      data-testid="button-confirm-delete-type"
+                    >
+                      {deleteWithReplacementMutation.isPending ? "Deleting..." : "Delete With Replacement"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setDeleteImpact(null);
+                        setReplacementTypeId("");
+                      }}
+                      data-testid="button-cancel-delete-type"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {objectTypes.map((type) => (
                   <div
@@ -632,12 +732,10 @@ export default function AdminObjects() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          disabled={type.isSystem || deleteTypeMutation.isPending}
+                          disabled={type.isSystem || fetchDeleteImpactMutation.isPending}
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (confirm(`Delete object type \"${type.name}\"?`)) {
-                              deleteTypeMutation.mutate(type.id);
-                            }
+                            fetchDeleteImpactMutation.mutate(type.id);
                           }}
                           data-testid={`button-delete-object-type-${type.id}`}
                         >
