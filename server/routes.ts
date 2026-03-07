@@ -7573,7 +7573,12 @@ When suggesting improvements, format your response with suggestions in a structu
       const mainRows = await db
         .select({ id: entities.id })
         .from(entities)
-        .where(ilike(entities.title, 'main'));
+        .where(
+          or(
+            sql`trim(lower(${entities.title})) = 'main'`,
+            sql`lower(${entities.slug}) = 'main'`,
+          ),
+        );
 
       const mainIds = mainRows.map((row) => row.id);
 
@@ -7607,7 +7612,9 @@ When suggesting improvements, format your response with suggestions in a structu
       for (const row of roots) merged.set(row.id, row);
       for (const row of childrenOfMain) merged.set(row.id, row);
 
-      const options = Array.from(merged.values()).sort((a, b) => a.title.localeCompare(b.title));
+      const options = Array.from(merged.values())
+        .filter((row) => row.title.trim().toLowerCase() !== 'main')
+        .sort((a, b) => a.title.localeCompare(b.title));
       res.json({ success: true, options });
     } catch (error) {
       console.error('Error fetching entity hierarchy options:', error);

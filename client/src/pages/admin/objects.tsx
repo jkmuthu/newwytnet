@@ -278,6 +278,18 @@ export default function AdminObjects() {
     void loadHierarchyChildren(value, level);
   };
 
+  const applyParentFilter = (parentId: string) => {
+    if (!parentId || parentId === "__main__") {
+      setParentSelections([]);
+      setParentOptionsByLevel((current) => [current[0] || []]);
+      return;
+    }
+
+    setParentSelections([parentId]);
+    setParentOptionsByLevel((current) => current.slice(0, 1));
+    void loadHierarchyChildren(parentId, 0);
+  };
+
   const filteredObjects = useMemo(() => {
     if (parentSelections.length === 0) return objects;
 
@@ -1027,6 +1039,7 @@ export default function AdminObjects() {
                         objectTypes={objectTypes}
                         onView={openViewTab}
                         onEdit={openEditForm}
+                        onFilterByParent={applyParentFilter}
                         isSelected={selectedObjectIds.includes(object.id)}
                         onToggleSelect={toggleObjectSelection}
                       />
@@ -1504,7 +1517,7 @@ export default function AdminObjects() {
 }
 
 // Object Row Component with Edit capability
-function ObjectRow({ object, objectTypes, onView, onEdit, isSelected, onToggleSelect }: { object: ObjectItem; objectTypes: ObjectType[]; onView: (object: ObjectItem) => void; onEdit: (object: ObjectItem) => void; isSelected: boolean; onToggleSelect: (objectId: string, checked: boolean) => void }) {
+function ObjectRow({ object, objectTypes, onView, onEdit, onFilterByParent, isSelected, onToggleSelect }: { object: ObjectItem; objectTypes: ObjectType[]; onView: (object: ObjectItem) => void; onEdit: (object: ObjectItem) => void; onFilterByParent: (parentId: string) => void; isSelected: boolean; onToggleSelect: (objectId: string, checked: boolean) => void }) {
   const objectType = objectTypes.find(t => t.id === object.entityTypeId);
 
   const { data: relationshipsData } = useQuery<{ relationships: any[] }>({
@@ -1538,15 +1551,22 @@ function ObjectRow({ object, objectTypes, onView, onEdit, isSelected, onToggleSe
         <img src={iconUrl} alt={`${object.title} icon`} className="h-8 w-8 rounded border object-cover" />
       </TableCell>
       <TableCell>
-        <div className="font-medium" data-testid={`text-object-title-${object.id}`}>
+        <button
+          type="button"
+          className="font-medium text-left hover:underline"
+          onClick={() => onView(object)}
+          data-testid={`text-object-title-${object.id}`}
+        >
           {object.title}
-        </div>
+        </button>
         {object.description && (
           <div className="text-xs text-gray-500 mt-1 line-clamp-1">{object.description}</div>
         )}
       </TableCell>
       <TableCell>
-        <Badge variant="secondary" className="text-xs">{aliasCount}</Badge>
+        <button type="button" onClick={() => onView(object)} data-testid={`button-aliases-count-${object.id}`}>
+          <Badge variant="secondary" className="text-xs hover:bg-secondary/80">{aliasCount}</Badge>
+        </button>
       </TableCell>
       <TableCell>
         {objectType ? (
@@ -1558,13 +1578,40 @@ function ObjectRow({ object, objectTypes, onView, onEdit, isSelected, onToggleSe
         )}
       </TableCell>
       <TableCell>
-        <span className="text-sm">{parentRel?.targetEntityTitle || "Main"}</span>
+        {parentRel?.targetEntityId ? (
+          <button
+            type="button"
+            className="text-sm hover:underline"
+            onClick={() => onFilterByParent(parentRel.targetEntityId)}
+            data-testid={`button-filter-parent-${object.id}`}
+          >
+            {parentRel.targetEntityTitle || "Main"}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="text-sm hover:underline"
+            onClick={() => onFilterByParent("__main__")}
+            data-testid={`button-filter-parent-main-${object.id}`}
+          >
+            Main
+          </button>
+        )}
       </TableCell>
       <TableCell>
-        <Badge variant="secondary" className="text-xs">{childCount}</Badge>
+        <button
+          type="button"
+          onClick={() => childCount > 0 && onFilterByParent(object.id)}
+          disabled={childCount === 0}
+          data-testid={`button-filter-children-${object.id}`}
+        >
+          <Badge variant="secondary" className="text-xs hover:bg-secondary/80">{childCount}</Badge>
+        </button>
       </TableCell>
       <TableCell>
-        <Badge variant="secondary" className="text-xs">{friendCount}</Badge>
+        <button type="button" onClick={() => onView(object)} data-testid={`button-friends-count-${object.id}`}>
+          <Badge variant="secondary" className="text-xs hover:bg-secondary/80">{friendCount}</Badge>
+        </button>
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-2">
