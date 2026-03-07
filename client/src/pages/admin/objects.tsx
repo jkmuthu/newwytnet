@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -35,21 +34,28 @@ interface ObjectItem {
   tagCount: number;
   imageUrl?: string;
   metadata?: {
-    icon?: string;
+    iconUrl?: string;
     images?: string[];
     materiality?: "tangible" | "intangible";
     categories?: string[];
-    customFields?: Array<{ key: string; value: string }>;
+    customFields?: Array<{ key: string; type?: string; value: string; options?: string[] }>;
     [key: string]: any;
   };
   entityType?: ObjectType;
 }
 
+type CustomFieldType = "text" | "textarea" | "number" | "date" | "boolean" | "email" | "url" | "select";
+
 interface DynamicField {
   id: string;
   key: string;
+  type: CustomFieldType;
   value: string;
+  optionsText?: string;
 }
+
+const DEFAULT_OBJECT_ICON = "/assets/default-object-icon.svg";
+const ALLOWED_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"];
 
 const toKebabSlug = (value: string) =>
   value
@@ -109,6 +115,7 @@ export default function AdminObjects() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [editingObject, setEditingObject] = useState<ObjectItem | undefined>(undefined);
+  const [viewingObject, setViewingObject] = useState<ObjectItem | undefined>(undefined);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
 
   // Fetch object types
@@ -157,6 +164,16 @@ export default function AdminObjects() {
     setActiveTab("objects-list");
   };
 
+  const openViewTab = (object: ObjectItem) => {
+    setViewingObject(object);
+    setActiveTab("object-view");
+  };
+
+  const closeViewTab = () => {
+    setViewingObject(undefined);
+    setActiveTab("objects-list");
+  };
+
   const handleFormSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
     closeObjectForm();
@@ -183,7 +200,7 @@ export default function AdminObjects() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className={`grid w-full ${activeTab === "object-form" ? "grid-cols-5" : "grid-cols-4"}`}>
+        <TabsList className={`grid w-full ${(activeTab === "object-form" && activeTab === "object-view") ? "grid-cols-6" : (activeTab === "object-form" || activeTab === "object-view") ? "grid-cols-5" : "grid-cols-4"}`}>
           <TabsTrigger value="objects-list" data-testid="tab-objects-list">
             <Database className="h-4 w-4 mr-2" />
             Objects List
@@ -204,6 +221,12 @@ export default function AdminObjects() {
             <TabsTrigger value="object-form" data-testid="tab-object-form">
               <Edit className="h-4 w-4 mr-2" />
               Object Form
+            </TabsTrigger>
+          )}
+          {activeTab === "object-view" && (
+            <TabsTrigger value="object-view" data-testid="tab-object-view">
+              <Eye className="h-4 w-4 mr-2" />
+              Object View
             </TabsTrigger>
           )}
         </TabsList>
@@ -303,6 +326,7 @@ export default function AdminObjects() {
                         key={object.id} 
                         object={object} 
                         objectTypes={objectTypes}
+                        onView={openViewTab}
                         onEdit={openEditForm}
                       />
                     ))}
@@ -404,11 +428,41 @@ export default function AdminObjects() {
                 objectTypes={objectTypes}
                 onSuccess={handleFormSuccess}
               />
+
+              {formMode === "edit" && editingObject && (
+                <div className="pt-6 border-t mt-6">
+                  <ObjectRelationshipsEditor entity={editingObject} />
+                </div>
+              )}
+
               <div className="pt-3">
                 <Button variant="outline" type="button" onClick={closeObjectForm} data-testid="button-close-object-form">
                   Back To Objects List
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="object-view" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Object Details</CardTitle>
+              <CardDescription>View complete object information and graph links</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {viewingObject ? (
+                <>
+                  <ObjectDetailsView object={viewingObject} objectType={objectTypes.find((t) => t.id === viewingObject.entityTypeId)} />
+                  <div className="pt-3">
+                    <Button variant="outline" type="button" onClick={closeViewTab} data-testid="button-close-object-view">
+                      Back To Objects List
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-sm text-muted-foreground">No object selected.</div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -418,9 +472,8 @@ export default function AdminObjects() {
 }
 
 // Object Row Component with Edit capability
-function ObjectRow({ object, objectTypes, onEdit }: { object: ObjectItem; objectTypes: ObjectType[]; onEdit: (object: ObjectItem) => void }) {
+function ObjectRow({ object, objectTypes, onView, onEdit }: { object: ObjectItem; objectTypes: ObjectType[]; onView: (object: ObjectItem) => void; onEdit: (object: ObjectItem) => void }) {
   const { toast } = useToast();
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
 
   const objectType = objectTypes.find(t => t.id === object.entityTypeId);
 
@@ -495,20 +548,14 @@ function ObjectRow({ object, objectTypes, onEdit }: { object: ObjectItem; object
       </TableCell>
       <TableCell className="text-right">
         <div className="flex items-center justify-end gap-2">
-          <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                data-testid={`button-view-object-${object.id}`}
-              >
-                <Eye className="h-4 w-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-              <ObjectDetailsView object={object} objectType={objectType} />
-            </DialogContent>
-          </Dialog>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onView(object)}
+            data-testid={`button-view-object-${object.id}`}
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
           
           <Button
             variant="ghost"
@@ -556,13 +603,13 @@ function ObjectDetailsView({ object, objectType }: { object: ObjectItem; objectT
 
   return (
     <div className="space-y-4">
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
+      <div>
+        <h3 className="text-lg font-semibold flex items-center gap-2">
           {object.isVerified && <CheckCircle className="h-5 w-5 text-green-600" />}
           {object.title}
-        </DialogTitle>
-        <DialogDescription>{object.description || "No description"}</DialogDescription>
-      </DialogHeader>
+        </h3>
+        <p className="text-sm text-muted-foreground mt-1">{object.description || "No description"}</p>
+      </div>
 
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
@@ -600,11 +647,17 @@ function ObjectDetailsView({ object, objectType }: { object: ObjectItem; objectT
           </div>
         </div>
 
-        {(metadata.icon || metadata.materiality || categories.length > 0) && (
+        {(metadata.iconUrl || metadata.materiality || categories.length > 0) && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-600">Object Icon</label>
-              <div className="mt-1 text-sm">{metadata.icon || "-"}</div>
+              <div className="mt-2">
+                <img
+                  src={typeof metadata.iconUrl === "string" && metadata.iconUrl.trim() ? metadata.iconUrl : DEFAULT_OBJECT_ICON}
+                  alt="Object icon"
+                  className="h-12 w-12 rounded border object-cover"
+                />
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600">Materiality</label>
@@ -667,6 +720,144 @@ function ObjectDetailsView({ object, objectType }: { object: ObjectItem; objectT
   );
 }
 
+function ObjectRelationshipsEditor({ entity }: { entity: ObjectItem }) {
+  const { toast } = useToast();
+  const [targetEntityId, setTargetEntityId] = useState<string>("");
+  const [relationshipType, setRelationshipType] = useState<"parent" | "child" | "friend">("friend");
+
+  const { data: allEntitiesData } = useQuery<{ entities: ObjectItem[] }>({
+    queryKey: ["/api/entities", "relationship-editor", entity.id],
+    queryFn: async () => {
+      const response = await fetch("/api/entities?limit=200", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to load objects");
+      return response.json();
+    },
+  });
+
+  const { data: relationshipsData } = useQuery<{ relationships: any[] }>({
+    queryKey: ["/api/entities", entity.id, "relationships", "editor"],
+    queryFn: async () => {
+      const response = await fetch(`/api/entities/${entity.id}/relationships`, { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to load relationships");
+      return response.json();
+    },
+  });
+
+  const relationshipMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        sourceEntityId: entity.id,
+        targetEntityId,
+        relationshipType,
+        isBidirectional: relationshipType === "friend",
+        metadata: {},
+        strength: 1,
+        isActive: true,
+      };
+
+      return apiRequest("/api/entities/relationships", "POST", payload);
+    },
+    onSuccess: async () => {
+      toast({ title: "Relationship added" });
+      setTargetEntityId("");
+      await queryClient.invalidateQueries({ queryKey: ["/api/entities", entity.id, "relationships", "editor"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/entities"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to add relationship",
+        description: error?.message || "Please try again",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (relationshipId: string) => apiRequest(`/api/entities/relationships/${relationshipId}`, "DELETE"),
+    onSuccess: async () => {
+      toast({ title: "Relationship removed" });
+      await queryClient.invalidateQueries({ queryKey: ["/api/entities", entity.id, "relationships", "editor"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to remove relationship",
+        description: error?.message || "Please try again",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const allEntities = (allEntitiesData?.entities || []).filter((item) => item.id !== entity.id);
+  const relationships = relationshipsData?.relationships || [];
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h4 className="font-semibold">Parent / Child / Friend</h4>
+        <p className="text-xs text-muted-foreground mt-1">Manage graph relationships directly from this object.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <Select value={relationshipType} onValueChange={(value) => setRelationshipType(value as "parent" | "child" | "friend")}>
+          <SelectTrigger data-testid="select-relationship-type">
+            <SelectValue placeholder="Relationship type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="parent">Parent</SelectItem>
+            <SelectItem value="child">Child</SelectItem>
+            <SelectItem value="friend">Friend</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={targetEntityId} onValueChange={setTargetEntityId}>
+          <SelectTrigger data-testid="select-relationship-target">
+            <SelectValue placeholder="Select target object" />
+          </SelectTrigger>
+          <SelectContent>
+            {allEntities.map((item) => (
+              <SelectItem key={item.id} value={item.id}>{item.title}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Button
+          type="button"
+          onClick={() => relationshipMutation.mutate()}
+          disabled={!targetEntityId || relationshipMutation.isPending}
+          data-testid="button-add-relationship"
+        >
+          {relationshipMutation.isPending ? "Adding..." : "Add Relationship"}
+        </Button>
+      </div>
+
+      <div className="space-y-2">
+        {relationships.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No relationships yet.</p>
+        ) : (
+          relationships.map((rel: any) => (
+            <div key={rel.id} className="flex items-center justify-between border rounded px-3 py-2" data-testid={`row-relationship-${rel.id}`}>
+              <div className="flex items-center gap-2 text-sm">
+                <Badge variant="secondary" className="capitalize">{rel.type || rel.relationshipType}</Badge>
+                <span>{rel.targetEntityTitle || rel.targetEntityId}</span>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => deleteMutation.mutate(rel.id)}
+                disabled={deleteMutation.isPending}
+                data-testid={`button-delete-relationship-${rel.id}`}
+              >
+                <Trash2 className="h-4 w-4 text-red-600" />
+              </Button>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 // Object Form Component (for both Create and Edit)
 function ObjectForm({ 
   object, 
@@ -692,7 +883,11 @@ function ObjectForm({
       .map((field: any, idx: number) => ({
         id: `${field.key || "field"}-${idx}`,
         key: String(field.key || ""),
+        type: (["text", "textarea", "number", "date", "boolean", "email", "url", "select"] as string[]).includes(String(field.type || ""))
+          ? (field.type as CustomFieldType)
+          : "text",
         value: String(field.value || ""),
+        optionsText: Array.isArray(field.options) ? field.options.join(", ") : "",
       }))
     : [];
 
@@ -700,7 +895,7 @@ function ObjectForm({
     title: object?.title || "",
     entityTypeId: object?.entityTypeId || objectTypes[0]?.id || "",
     description: object?.description || "",
-    objectIcon: typeof metadata.icon === "string" ? metadata.icon : "",
+    objectIconUrl: typeof metadata.iconUrl === "string" && metadata.iconUrl.trim() ? metadata.iconUrl : DEFAULT_OBJECT_ICON,
     materiality: metadata.materiality === "intangible" ? "intangible" : "tangible",
     isVerified: object?.isVerified || false,
     isPublic: object?.isPublic ?? true,
@@ -711,10 +906,12 @@ function ObjectForm({
   const [imageInput, setImageInput] = useState("");
   const [objectImages, setObjectImages] = useState<string[]>(initialImages);
   const [isImageUploading, setIsImageUploading] = useState(false);
+  const [isIconUploading, setIsIconUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const iconInputRef = useRef<HTMLInputElement>(null);
   const [categories, setCategories] = useState<string[]>(Array.isArray(metadata.categories) ? metadata.categories : []);
   const [dynamicFields, setDynamicFields] = useState<DynamicField[]>(
-    initialCustomFields.length > 0 ? initialCustomFields : [{ id: `field-${Date.now()}`, key: "", value: "" }],
+    initialCustomFields.length > 0 ? initialCustomFields : [{ id: `field-${Date.now()}`, key: "", type: "text", value: "", optionsText: "" }],
   );
   const [dragSource, setDragSource] = useState<{ list: "images" | "fields"; index: number } | null>(null);
 
@@ -748,18 +945,32 @@ function ObjectForm({
     e.preventDefault();
 
     const normalizedDynamicFields = dynamicFields
-      .map((field) => ({ key: field.key.trim(), value: field.value.trim() }))
+      .map((field) => ({
+        key: field.key.trim(),
+        type: field.type,
+        value: field.value.trim(),
+        options: field.type === "select"
+          ? uniqueList((field.optionsText || "").split(",").map((opt) => opt.trim()).filter(Boolean))
+          : undefined,
+      }))
       .filter((field) => field.key.length > 0);
 
     const mergedMetadata = {
       ...(metadata || {}),
-      icon: formData.objectIcon.trim() || undefined,
+      iconUrl: formData.objectIconUrl || DEFAULT_OBJECT_ICON,
       materiality: formData.materiality,
       categories: uniqueList(categories),
       images: uniqueList(objectImages).slice(0, 6),
       customFields: normalizedDynamicFields,
-      dynamicData: normalizedDynamicFields.reduce<Record<string, string>>((acc, field) => {
-        acc[field.key] = field.value;
+      dynamicData: normalizedDynamicFields.reduce<Record<string, string | number | boolean>>((acc, field) => {
+        if (field.type === "number") {
+          const num = Number(field.value);
+          acc[field.key] = Number.isFinite(num) ? num : field.value;
+        } else if (field.type === "boolean") {
+          acc[field.key] = field.value === "true";
+        } else {
+          acc[field.key] = field.value;
+        }
         return acc;
       }, {}),
     };
@@ -833,8 +1044,8 @@ function ObjectForm({
 
       const uploadedUrls: string[] = [];
       for (const file of selected) {
-        if (!file.type.startsWith("image/")) {
-          toast({ title: `${file.name} is not an image`, variant: "destructive" });
+        if (!ALLOWED_IMAGE_MIME_TYPES.includes(file.type)) {
+          toast({ title: `${file.name} has unsupported image type`, variant: "destructive" });
           continue;
         }
 
@@ -845,9 +1056,9 @@ function ObjectForm({
 
         const form = new FormData();
         form.append("file", file);
-        form.append("directory", "objects");
+        form.append("directory", "objects/images");
 
-        const res = await fetch("/api/admin/upload", {
+        const res = await fetch("/api/admin/upload-image", {
           method: "POST",
           body: form,
           credentials: "include",
@@ -886,18 +1097,68 @@ function ObjectForm({
     }
   };
 
+  const uploadIcon = async (file: File) => {
+    if (!ALLOWED_IMAGE_MIME_TYPES.includes(file.type)) {
+      toast({ title: "Icon type not allowed (png, jpg, webp, gif, svg)", variant: "destructive" });
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Icon must be 2MB or smaller", variant: "destructive" });
+      return;
+    }
+
+    setIsIconUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("directory", "objects/icons");
+
+      const res = await fetch("/api/admin/upload-image", {
+        method: "POST",
+        body: form,
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Icon upload failed");
+      }
+
+      const data = await res.json();
+      const url = typeof data.url === "string" && data.url.trim() ? data.url.trim() : "";
+      if (!url) {
+        throw new Error("Upload response did not include image URL");
+      }
+
+      setFormData((current) => ({ ...current, objectIconUrl: url }));
+      toast({ title: "Icon uploaded" });
+    } catch (error: any) {
+      toast({
+        title: "Icon upload failed",
+        description: error?.message || "Could not upload icon",
+        variant: "destructive",
+      });
+    } finally {
+      setIsIconUploading(false);
+      if (iconInputRef.current) {
+        iconInputRef.current.value = "";
+      }
+    }
+  };
+
   const removeImage = (image: string) => {
     setObjectImages((current) => current.filter((item) => item !== image));
   };
 
   const addDynamicField = () => {
-    setDynamicFields((current) => [...current, { id: `field-${Date.now()}-${current.length}`, key: "", value: "" }]);
+    setDynamicFields((current) => [...current, { id: `field-${Date.now()}-${current.length}`, key: "", type: "text", value: "", optionsText: "" }]);
   };
 
   const removeDynamicField = (fieldId: string) => {
     setDynamicFields((current) => {
       const next = current.filter((field) => field.id !== fieldId);
-      return next.length > 0 ? next : [{ id: `field-${Date.now()}`, key: "", value: "" }];
+      return next.length > 0 ? next : [{ id: `field-${Date.now()}`, key: "", type: "text", value: "", optionsText: "" }];
     });
   };
 
@@ -921,279 +1182,414 @@ function ObjectForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="text-sm font-medium">Object Name *</label>
-        <Input
-          value={formData.title}
-          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-          required
-          data-testid="input-object-title"
-        />
-      </div>
-      
-      <div>
-        <label className="text-sm font-medium">Object Type (tag only one) *</label>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {objectTypes.map((type) => {
-            const selected = formData.entityTypeId === type.id;
-            return (
-              <button
-                key={type.id}
-                type="button"
-                onClick={() => setFormData({ ...formData, entityTypeId: type.id })}
-                className={`rounded-full border px-3 py-1 text-sm transition-colors ${selected ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-                data-testid={`tag-object-type-${type.slug}`}
-              >
-                {type.name}
-              </button>
-            );
-          })}
-        </div>
-        {!formData.entityTypeId && (
-          <p className="text-xs text-red-600 mt-1">Select one object type.</p>
-        )}
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
+        <div className="lg:col-span-7 space-y-4">
+          <div>
+            <label className="text-sm font-medium">Object Name *</label>
+            <Input
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              required
+              data-testid="input-object-title"
+            />
+          </div>
 
-      <div>
-        <label className="text-sm font-medium">Aliases</label>
-        <div className="mt-2 flex gap-2">
-          <Input
-            value={aliasInput}
-            onChange={(e) => setAliasInput(e.target.value)}
-            placeholder="Add alias and press Add"
-            data-testid="input-object-aliases"
-          />
-          <Button type="button" variant="secondary" onClick={addAlias} data-testid="button-add-alias">Add</Button>
+          <div>
+            <label className="text-sm font-medium">Object Type (tag only one) *</label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {objectTypes.map((type) => {
+                const selected = formData.entityTypeId === type.id;
+                return (
+                  <button
+                    key={type.id}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, entityTypeId: type.id })}
+                    className={`rounded-full border px-3 py-1 text-sm transition-colors ${selected ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                    data-testid={`tag-object-type-${type.slug}`}
+                  >
+                    {type.name}
+                  </button>
+                );
+              })}
+            </div>
+            {!formData.entityTypeId && (
+              <p className="text-xs text-red-600 mt-1">Select one object type.</p>
+            )}
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Aliases</label>
+            <div className="mt-2 flex gap-2">
+              <Input
+                value={aliasInput}
+                onChange={(e) => setAliasInput(e.target.value)}
+                placeholder="Add alias and press Add"
+                data-testid="input-object-aliases"
+              />
+              <Button type="button" variant="secondary" onClick={addAlias} data-testid="button-add-alias">Add</Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Plural alias is auto-generated from Object Name.</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {allAliases.length === 0 ? (
+                <span className="text-xs text-gray-500">No aliases yet</span>
+              ) : (
+                allAliases.map((alias) => {
+                  const isAuto = autoPluralAlias && alias.toLowerCase() === autoPluralAlias.toLowerCase();
+                  return (
+                    <Badge key={alias} variant={isAuto ? "default" : "secondary"} className="flex items-center gap-1">
+                      {alias}
+                      {!isAuto && (
+                        <button
+                          type="button"
+                          onClick={() => removeAlias(alias)}
+                          className="ml-1 text-xs"
+                          aria-label={`Remove alias ${alias}`}
+                        >
+                          x
+                        </button>
+                      )}
+                    </Badge>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Object Icon</label>
+            <div className="mt-2 flex items-center gap-3 border rounded p-3">
+              <img
+                src={formData.objectIconUrl || DEFAULT_OBJECT_ICON}
+                alt="Object icon"
+                className="h-14 w-14 rounded border object-cover"
+              />
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">Default icon shown until you upload a custom icon.</p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => iconInputRef.current?.click()}
+                    data-testid="button-upload-object-icon"
+                  >
+                    {isIconUploading ? "Uploading..." : "Change Icon"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFormData((current) => ({ ...current, objectIconUrl: DEFAULT_OBJECT_ICON }))}
+                    data-testid="button-reset-object-icon"
+                  >
+                    Use Default
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Allowed: png/jpg/webp/gif/svg, max 2MB.</p>
+              </div>
+            </div>
+            <input
+              ref={iconInputRef}
+              type="file"
+              accept={ALLOWED_IMAGE_MIME_TYPES.join(",")}
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  void uploadIcon(file);
+                }
+              }}
+              data-testid="input-upload-object-icon"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Object Description</label>
+            <Textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              rows={4}
+              data-testid="input-object-description"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Object Images (up to 6)</label>
+            <div
+              className="mt-2 rounded-lg border border-dashed p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files?.length) {
+                  void uploadFiles(e.dataTransfer.files);
+                }
+              }}
+              data-testid="dropzone-object-images"
+            >
+              <Upload className="h-5 w-5 mx-auto mb-2 text-gray-500" />
+              <p className="text-sm font-medium">Drag and drop image files here</p>
+              <p className="text-xs text-muted-foreground mt-1">or click to browse (png/jpg/webp/gif/svg, max 5MB each)</p>
+              {isImageUploading && <p className="text-xs mt-2">Uploading...</p>}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={ALLOWED_IMAGE_MIME_TYPES.join(",")}
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files?.length) {
+                  void uploadFiles(e.target.files);
+                }
+              }}
+              data-testid="input-upload-object-images"
+            />
+            <div className="mt-2 flex gap-2">
+              <Input
+                value={imageInput}
+                onChange={(e) => setImageInput(e.target.value)}
+                placeholder="https://..."
+                data-testid="input-object-image-url"
+              />
+              <Button type="button" variant="secondary" onClick={addImage} data-testid="button-add-object-image">Add</Button>
+            </div>
+            <div className="mt-2 space-y-2">
+              {objectImages.length === 0 ? (
+                <p className="text-xs text-gray-500">No images added</p>
+              ) : objectImages.map((image, index) => (
+                <div
+                  key={`${image}-${index}`}
+                  className="flex items-center gap-2 border rounded px-2 py-1"
+                  draggable
+                  onDragStart={() => handleDragStart("images", index)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => handleDrop("images", index)}
+                  data-testid={`row-object-image-${index}`}
+                >
+                  <GripVertical className="h-4 w-4 text-gray-400" />
+                  <span className="text-xs flex-1 truncate">{image}</span>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => removeImage(image)}>
+                    <Trash2 className="h-4 w-4 text-red-600" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Custom Fields (all field types)</label>
+              <Button type="button" variant="secondary" size="sm" onClick={addDynamicField} data-testid="button-add-custom-field">
+                <Plus className="h-3 w-3 mr-1" />
+                Add Field
+              </Button>
+            </div>
+            <div className="mt-2 space-y-2">
+              {dynamicFields.map((field, index) => (
+                <div
+                  key={field.id}
+                  className="border rounded p-2"
+                  draggable
+                  onDragStart={() => handleDragStart("fields", index)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => handleDrop("fields", index)}
+                  data-testid={`row-custom-field-${index}`}
+                >
+                  <div className="grid grid-cols-[24px_1fr_180px_40px] gap-2 items-center">
+                    <GripVertical className="h-4 w-4 text-gray-400" />
+                    <Input
+                      value={field.key}
+                      onChange={(e) => updateDynamicField(field.id, { key: e.target.value })}
+                      placeholder="Field name"
+                    />
+                    <Select value={field.type} onValueChange={(value) => updateDynamicField(field.id, { type: value as CustomFieldType, value: "", optionsText: field.type === "select" ? field.optionsText : "" })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Field type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="text">Text</SelectItem>
+                        <SelectItem value="textarea">Textarea</SelectItem>
+                        <SelectItem value="number">Number</SelectItem>
+                        <SelectItem value="date">Date</SelectItem>
+                        <SelectItem value="boolean">Boolean</SelectItem>
+                        <SelectItem value="email">Email</SelectItem>
+                        <SelectItem value="url">URL</SelectItem>
+                        <SelectItem value="select">Select</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => removeDynamicField(field.id)}>
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    </Button>
+                  </div>
+
+                  <div className="mt-2 grid grid-cols-1 gap-2">
+                    {field.type === "textarea" && (
+                      <Textarea
+                        value={field.value}
+                        onChange={(e) => updateDynamicField(field.id, { value: e.target.value })}
+                        rows={2}
+                        placeholder="Field value"
+                      />
+                    )}
+
+                    {field.type === "number" && (
+                      <Input
+                        type="number"
+                        value={field.value}
+                        onChange={(e) => updateDynamicField(field.id, { value: e.target.value })}
+                        placeholder="Number value"
+                      />
+                    )}
+
+                    {field.type === "date" && (
+                      <Input
+                        type="date"
+                        value={field.value}
+                        onChange={(e) => updateDynamicField(field.id, { value: e.target.value })}
+                      />
+                    )}
+
+                    {field.type === "boolean" && (
+                      <Select value={field.value || "false"} onValueChange={(value) => updateDynamicField(field.id, { value })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select value" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="true">True</SelectItem>
+                          <SelectItem value="false">False</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    {(field.type === "email" || field.type === "url" || field.type === "text") && (
+                      <Input
+                        type={field.type === "email" ? "email" : field.type === "url" ? "url" : "text"}
+                        value={field.value}
+                        onChange={(e) => updateDynamicField(field.id, { value: e.target.value })}
+                        placeholder="Field value"
+                      />
+                    )}
+
+                    {field.type === "select" && (
+                      <>
+                        <Input
+                          value={field.optionsText || ""}
+                          onChange={(e) => updateDynamicField(field.id, { optionsText: e.target.value })}
+                          placeholder="Options (comma separated)"
+                        />
+                        <Select value={field.value} onValueChange={(value) => updateDynamicField(field.id, { value })}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose option" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {uniqueList((field.optionsText || "").split(",").map((opt) => opt.trim()).filter(Boolean)).map((opt) => (
+                              <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">Plural alias is auto-generated from Object Name.</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {allAliases.length === 0 ? (
-            <span className="text-xs text-gray-500">No aliases yet</span>
-          ) : (
-            allAliases.map((alias) => {
-              const isAuto = autoPluralAlias && alias.toLowerCase() === autoPluralAlias.toLowerCase();
-              return (
-                <Badge key={alias} variant={isAuto ? "default" : "secondary"} className="flex items-center gap-1">
-                  {alias}
-                  {!isAuto && (
+
+        <div className="lg:col-span-3 space-y-4">
+          <div className="border rounded p-3 space-y-3">
+            <h4 className="font-medium">Configuration</h4>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="materiality"
+                  checked={formData.materiality === "tangible"}
+                  onChange={() => setFormData({ ...formData, materiality: "tangible" })}
+                />
+                Tangible
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="materiality"
+                  checked={formData.materiality === "intangible"}
+                  onChange={() => setFormData({ ...formData, materiality: "intangible" })}
+                />
+                Intangible
+              </label>
+            </div>
+            <div className="flex items-center gap-4 pt-1">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={formData.isVerified}
+                  onChange={(e) => setFormData({ ...formData, isVerified: e.target.checked })}
+                  className="rounded"
+                  data-testid="checkbox-object-verified"
+                />
+                Verified
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={formData.isPublic}
+                  onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
+                  className="rounded"
+                  data-testid="checkbox-object-public"
+                />
+                Public
+              </label>
+            </div>
+          </div>
+
+          <div className="border rounded p-3 space-y-3">
+            <h4 className="font-medium">Object Category (multiple)</h4>
+            <div className="flex gap-2">
+              <Input
+                value={categoryInput}
+                onChange={(e) => setCategoryInput(e.target.value)}
+                placeholder="Add category"
+                data-testid="input-object-category"
+              />
+              <Button type="button" variant="secondary" onClick={addCategory} data-testid="button-add-object-category">Add</Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {categories.length === 0 ? (
+                <span className="text-xs text-gray-500">No categories</span>
+              ) : (
+                categories.map((category) => (
+                  <Badge key={category} variant="secondary" className="flex items-center gap-1">
+                    {category}
                     <button
                       type="button"
-                      onClick={() => removeAlias(alias)}
+                      onClick={() => removeCategory(category)}
                       className="ml-1 text-xs"
-                      aria-label={`Remove alias ${alias}`}
+                      aria-label={`Remove category ${category}`}
                     >
                       x
                     </button>
-                  )}
-                </Badge>
-              );
-            })
-          )}
-        </div>
-      </div>
-
-      <div>
-        <label className="text-sm font-medium">Object Icon</label>
-        <Input
-          value={formData.objectIcon}
-          onChange={(e) => setFormData({ ...formData, objectIcon: e.target.value })}
-          placeholder="e.g., globe, building, person"
-          data-testid="input-object-icon"
-        />
-      </div>
-      
-      <div>
-        <label className="text-sm font-medium">Object Description</label>
-        <Textarea
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          rows={4}
-          data-testid="input-object-description"
-        />
-      </div>
-
-      <div>
-        <label className="text-sm font-medium">Object Images (up to 6)</label>
-        <div
-          className="mt-2 rounded-lg border border-dashed p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors"
-          onClick={() => fileInputRef.current?.click()}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault();
-            if (e.dataTransfer.files?.length) {
-              void uploadFiles(e.dataTransfer.files);
-            }
-          }}
-          data-testid="dropzone-object-images"
-        >
-          <Upload className="h-5 w-5 mx-auto mb-2 text-gray-500" />
-          <p className="text-sm font-medium">Drag and drop image files here</p>
-          <p className="text-xs text-muted-foreground mt-1">or click to browse (max 5MB each, up to 6 images)</p>
-          {isImageUploading && <p className="text-xs mt-2">Uploading...</p>}
-        </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={(e) => {
-            if (e.target.files?.length) {
-              void uploadFiles(e.target.files);
-            }
-          }}
-          data-testid="input-upload-object-images"
-        />
-        <div className="mt-2 flex gap-2">
-          <Input
-            value={imageInput}
-            onChange={(e) => setImageInput(e.target.value)}
-            placeholder="https://..."
-            data-testid="input-object-image-url"
-          />
-          <Button type="button" variant="secondary" onClick={addImage} data-testid="button-add-object-image">Add</Button>
-        </div>
-        <div className="mt-2 space-y-2">
-          {objectImages.length === 0 ? (
-            <p className="text-xs text-gray-500">No images added</p>
-          ) : objectImages.map((image, index) => (
-            <div
-              key={`${image}-${index}`}
-              className="flex items-center gap-2 border rounded px-2 py-1"
-              draggable
-              onDragStart={() => handleDragStart("images", index)}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => handleDrop("images", index)}
-              data-testid={`row-object-image-${index}`}
-            >
-              <GripVertical className="h-4 w-4 text-gray-400" />
-              <span className="text-xs flex-1 truncate">{image}</span>
-              <Button type="button" variant="ghost" size="sm" onClick={() => removeImage(image)}>
-                <Trash2 className="h-4 w-4 text-red-600" />
-              </Button>
+                  </Badge>
+                ))
+              )}
             </div>
-          ))}
+          </div>
+
+          <div className="border rounded p-3">
+            {isEdit && object ? (
+              <ObjectRelationshipsEditor entity={object} />
+            ) : (
+              <div className="space-y-1">
+                <h4 className="font-medium">Relationships Assignment</h4>
+                <p className="text-xs text-muted-foreground">Create the object first, then assign parent/child/friend relationships here.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Configuration</label>
-        <div className="flex items-center gap-6">
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              name="materiality"
-              checked={formData.materiality === "tangible"}
-              onChange={() => setFormData({ ...formData, materiality: "tangible" })}
-            />
-            Tangible
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              name="materiality"
-              checked={formData.materiality === "intangible"}
-              onChange={() => setFormData({ ...formData, materiality: "intangible" })}
-            />
-            Intangible
-          </label>
-        </div>
-      </div>
-
-      <div>
-        <label className="text-sm font-medium">Object Category (tag multiple)</label>
-        <div className="mt-2 flex gap-2">
-          <Input
-            value={categoryInput}
-            onChange={(e) => setCategoryInput(e.target.value)}
-            placeholder="Add category and press Add"
-            data-testid="input-object-category"
-          />
-          <Button type="button" variant="secondary" onClick={addCategory} data-testid="button-add-object-category">Add</Button>
-        </div>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {categories.length === 0 ? (
-            <span className="text-xs text-gray-500">No categories</span>
-          ) : (
-            categories.map((category) => (
-              <Badge key={category} variant="secondary" className="flex items-center gap-1">
-                {category}
-                <button
-                  type="button"
-                  onClick={() => removeCategory(category)}
-                  className="ml-1 text-xs"
-                  aria-label={`Remove category ${category}`}
-                >
-                  x
-                </button>
-              </Badge>
-            ))
-          )}
-        </div>
-      </div>
-
-      <div>
-        <div className="flex items-center justify-between">
-          <label className="text-sm font-medium">Custom Fields (scalable dataset)</label>
-          <Button type="button" variant="secondary" size="sm" onClick={addDynamicField} data-testid="button-add-custom-field">
-            <Plus className="h-3 w-3 mr-1" />
-            Add Field
-          </Button>
-        </div>
-        <div className="mt-2 space-y-2">
-          {dynamicFields.map((field, index) => (
-            <div
-              key={field.id}
-              className="grid grid-cols-[24px_1fr_1fr_40px] gap-2 items-center border rounded px-2 py-2"
-              draggable
-              onDragStart={() => handleDragStart("fields", index)}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => handleDrop("fields", index)}
-              data-testid={`row-custom-field-${index}`}
-            >
-              <GripVertical className="h-4 w-4 text-gray-400" />
-              <Input
-                value={field.key}
-                onChange={(e) => updateDynamicField(field.id, { key: e.target.value })}
-                placeholder="Field name"
-              />
-              <Input
-                value={field.value}
-                onChange={(e) => updateDynamicField(field.id, { value: e.target.value })}
-                placeholder="Field value"
-              />
-              <Button type="button" variant="ghost" size="sm" onClick={() => removeDynamicField(field.id)}>
-                <Trash2 className="h-4 w-4 text-red-600" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={formData.isVerified}
-            onChange={(e) => setFormData({ ...formData, isVerified: e.target.checked })}
-            className="rounded"
-            data-testid="checkbox-object-verified"
-          />
-          Verified
-        </label>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={formData.isPublic}
-            onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
-            className="rounded"
-            data-testid="checkbox-object-public"
-          />
-          Public
-        </label>
-      </div>
-      
-      <div className="flex gap-2 pt-4">
+      <div className="flex gap-2 pt-2">
         <Button type="submit" disabled={saveMutation.isPending} data-testid="button-submit-object">
           {saveMutation.isPending ? (isEdit ? "Updating..." : "Creating...") : (isEdit ? "Update Object" : "Create Object")}
         </Button>
