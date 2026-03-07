@@ -1759,14 +1759,157 @@ function ObjectDetailsView({ object, objectType, onDeleted, onOpenObject }: { ob
     : [];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,7fr)_minmax(260px,3fr)] gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,7fr)_minmax(280px,3fr)] gap-6">
       <div className="space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            {object.title}
-          </h3>
+        <div className="border rounded-lg p-4">
+          <h3 className="text-xl font-semibold">{object.title}</h3>
           <p className="text-sm text-muted-foreground mt-1">{object.description || "No description"}</p>
-          <div className="mt-3">
+
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">Object Type</div>
+              <div className="mt-2">
+                {objectType ? <Badge variant="outline">{objectType.name}</Badge> : <span className="text-sm text-muted-foreground">-</span>}
+              </div>
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">Materiality</div>
+              <div className="mt-2 text-sm capitalize">{metadata.materiality || "-"}</div>
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Aliases</div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {object.aliases && object.aliases.length > 0 ? (
+                object.aliases.map((alias, i) => (
+                  <Badge key={i} variant="secondary">{alias}</Badge>
+                ))
+              ) : (
+                <span className="text-sm text-muted-foreground">No aliases</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="border rounded-lg p-4">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-3">Media</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+            <div>
+              <div className="text-sm font-medium">Object Icon</div>
+              <img
+                src={typeof metadata.iconUrl === "string" && metadata.iconUrl.trim() ? metadata.iconUrl : DEFAULT_OBJECT_ICON}
+                alt="Object icon"
+                className="h-16 w-16 rounded border object-cover mt-2"
+              />
+            </div>
+            <div>
+              <div className="text-sm font-medium">Object Images</div>
+              {objectImages.length > 0 ? (
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {objectImages.slice(0, 6).map((img: string, idx: number) => (
+                    <a key={`${img}-${idx}`} href={img} target="_blank" rel="noreferrer" className="block border rounded overflow-hidden hover:opacity-90">
+                      <img src={img} alt={`Object image ${idx + 1}`} className="w-full h-16 object-cover" />
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-2 text-sm text-muted-foreground">No images</div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="border rounded-lg p-4">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-3">Custom Fields</div>
+          {customFields.length > 0 ? (
+            <div className="space-y-2">
+              {customFields.map((field: any, idx: number) => (
+                <div key={`${field.key}-${idx}`} className="grid grid-cols-[180px_1fr] gap-3 text-sm border rounded px-3 py-2">
+                  <span className="font-medium">{field.key}</span>
+                  <span className="text-gray-600">{field.value || "-"}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No custom fields</div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-4">
+        <div className="border rounded-lg p-4 bg-muted/20">
+          <h4 className="font-semibold mb-3">Related Objects</h4>
+
+          <div className="space-y-4 text-sm">
+            <div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Parent ({parentRelationships.length})</div>
+              {parentRelationships.length > 0 ? (
+                <div className="space-y-1">
+                  {parentRelationships.map((rel: any) => (
+                    <button
+                      key={`parent-${rel.id}`}
+                      type="button"
+                      className="block w-full text-left rounded px-2 py-1 hover:bg-muted"
+                      onClick={() => onOpenObject?.(rel.targetEntityId)}
+                      data-testid={`link-related-parent-${rel.id}`}
+                    >
+                      {rel.targetEntityTitle || rel.targetEntityId}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-muted-foreground">Main</div>
+              )}
+            </div>
+
+            <div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Childs ({childRelationships.length})</div>
+              {childRelationships.length > 0 ? (
+                <div className="space-y-1">
+                  {childRelationships.map((rel: any) => (
+                    <button
+                      key={`child-${rel.id}`}
+                      type="button"
+                      className="block w-full text-left rounded px-2 py-1 hover:bg-muted"
+                      onClick={() => onOpenObject?.(rel.targetEntityId)}
+                      data-testid={`link-related-child-${rel.id}`}
+                    >
+                      {rel.targetEntityTitle || rel.targetEntityId}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-muted-foreground">No childs</div>
+              )}
+            </div>
+
+            <div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Friends ({friendRelationships.length})</div>
+              {friendRelationships.length > 0 ? (
+                <div className="space-y-1">
+                  {friendRelationships.map((rel: any) => (
+                    <button
+                      key={`friend-${rel.id}`}
+                      type="button"
+                      className="block w-full text-left rounded px-2 py-1 hover:bg-muted"
+                      onClick={() => onOpenObject?.(rel.targetEntityId)}
+                      data-testid={`link-related-friend-${rel.id}`}
+                    >
+                      {rel.targetEntityTitle || rel.targetEntityId}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-muted-foreground">No friends</div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-auto border rounded-lg p-3 bg-red-50/40">
+          <div className="text-xs text-red-700 mb-2">Danger Zone</div>
+          <div className="flex justify-end">
             <Button
               variant="destructive"
               size="sm"
@@ -1777,147 +1920,6 @@ function ObjectDetailsView({ object, objectType, onDeleted, onOpenObject }: { ob
               <Trash2 className="h-4 w-4 mr-2" />
               {deleteMutation.isPending ? "Deleting..." : "Delete Object"}
             </Button>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-600">Object Type</label>
-              <div className="mt-1">
-                {objectType && (
-                  <Badge variant="outline">{objectType.name}</Badge>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-600">Aliases</label>
-            <div className="mt-1 flex flex-wrap gap-1">
-              {object.aliases && object.aliases.length > 0 ? (
-                object.aliases.map((alias, i) => (
-                  <Badge key={i} variant="secondary">{alias}</Badge>
-                ))
-              ) : (
-                <span className="text-sm text-gray-500">No aliases</span>
-              )}
-            </div>
-          </div>
-
-          {(metadata.iconUrl || metadata.materiality) && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-600">Object Icon</label>
-                <div className="mt-2">
-                  <img
-                    src={typeof metadata.iconUrl === "string" && metadata.iconUrl.trim() ? metadata.iconUrl : DEFAULT_OBJECT_ICON}
-                    alt="Object icon"
-                    className="h-12 w-12 rounded border object-cover"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-600">Materiality</label>
-                <div className="mt-1 text-sm capitalize">{metadata.materiality || "-"}</div>
-              </div>
-            </div>
-          )}
-
-          {objectImages.length > 0 && (
-            <div>
-              <label className="text-sm font-medium text-gray-600">Object Images</label>
-              <div className="mt-2 grid grid-cols-2 md:grid-cols-3 gap-3">
-                {objectImages.slice(0, 6).map((img: string, idx: number) => (
-                  <a key={`${img}-${idx}`} href={img} target="_blank" rel="noreferrer" className="block border rounded p-2 text-xs truncate hover:bg-muted">
-                    {img}
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {customFields.length > 0 && (
-            <div>
-              <label className="text-sm font-medium text-gray-600">Custom Fields</label>
-              <div className="mt-2 space-y-2">
-                {customFields.map((field: any, idx: number) => (
-                  <div key={`${field.key}-${idx}`} className="grid grid-cols-2 gap-2 text-sm border rounded px-3 py-2">
-                    <span className="font-medium">{field.key}</span>
-                    <span className="text-gray-600">{field.value || "-"}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="border rounded-lg p-4 h-fit bg-muted/20">
-        <h4 className="font-semibold mb-3">Related Objects</h4>
-
-        <div className="space-y-4 text-sm">
-          <div>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Parent</div>
-            {parentRelationships.length > 0 ? (
-              <div className="space-y-1">
-                {parentRelationships.map((rel: any) => (
-                  <button
-                    key={`parent-${rel.id}`}
-                    type="button"
-                    className="block w-full text-left rounded px-2 py-1 hover:bg-muted"
-                    onClick={() => onOpenObject?.(rel.targetEntityId)}
-                    data-testid={`link-related-parent-${rel.id}`}
-                  >
-                    {rel.targetEntityTitle || rel.targetEntityId}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="text-muted-foreground">Main</div>
-            )}
-          </div>
-
-          <div>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Childs</div>
-            {childRelationships.length > 0 ? (
-              <div className="space-y-1">
-                {childRelationships.map((rel: any) => (
-                  <button
-                    key={`child-${rel.id}`}
-                    type="button"
-                    className="block w-full text-left rounded px-2 py-1 hover:bg-muted"
-                    onClick={() => onOpenObject?.(rel.targetEntityId)}
-                    data-testid={`link-related-child-${rel.id}`}
-                  >
-                    {rel.targetEntityTitle || rel.targetEntityId}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="text-muted-foreground">No childs</div>
-            )}
-          </div>
-
-          <div>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Friends</div>
-            {friendRelationships.length > 0 ? (
-              <div className="space-y-1">
-                {friendRelationships.map((rel: any) => (
-                  <button
-                    key={`friend-${rel.id}`}
-                    type="button"
-                    className="block w-full text-left rounded px-2 py-1 hover:bg-muted"
-                    onClick={() => onOpenObject?.(rel.targetEntityId)}
-                    data-testid={`link-related-friend-${rel.id}`}
-                  >
-                    {rel.targetEntityTitle || rel.targetEntityId}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="text-muted-foreground">No friends</div>
-            )}
           </div>
         </div>
       </div>
