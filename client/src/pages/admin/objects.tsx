@@ -358,6 +358,11 @@ export default function AdminObjects() {
     setSelectedObjectIds(objects.map((obj) => obj.id));
   };
 
+  const openTypeObjects = (typeId: string) => {
+    setSelectedType(typeId);
+    setActiveTab("objects-list");
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -696,59 +701,92 @@ export default function AdminObjects() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                {objectTypes.map((type) => (
-                  <div
-                    key={type.id}
-                    className="p-3 border rounded-lg hover:border-purple-400 transition-colors"
-                    onClick={() => {
-                      setSelectedType(type.id);
-                      setActiveTab("objects-list");
-                    }}
-                    data-testid={`card-object-type-${type.slug}`}
-                  >
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs rounded border px-2 py-0.5 text-muted-foreground">{type.icon || "icon"}</span>
-                        <Badge variant="outline" className={`bg-${type.color}-100 text-${type.color}-700`}>
-                          {type.name}
-                        </Badge>
-                        {type.isSystem && <CheckCircle className="h-3 w-3 text-green-600" />}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEditTypeForm(type);
-                          }}
-                          data-testid={`button-edit-object-type-${type.id}`}
-                        >
-                          <Edit className="h-3.5 w-3.5 text-blue-600" />
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          disabled={type.isSystem || fetchDeleteImpactMutation.isPending}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            fetchDeleteImpactMutation.mutate(type.id);
-                          }}
-                          data-testid={`button-delete-object-type-${type.id}`}
-                        >
-                          <Trash2 className={`h-3.5 w-3.5 ${type.isSystem ? "text-gray-300" : "text-red-600"}`} />
-                        </Button>
-                      </div>
-                    </div>
-                    {type.description && (
-                      <div className="text-xs text-muted-foreground line-clamp-1 mb-1">{type.description}</div>
-                    )}
-                    <div className="text-xs text-gray-500">{getObjectCountByType(type.id)} objects</div>
-                  </div>
-                ))}
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Icon</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-center">Objects</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {objectTypes.map((type) => (
+                      <TableRow key={type.id} data-testid={`row-object-type-${type.slug}`}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className={`bg-${type.color}-100 text-${type.color}-700`}>
+                              {type.name}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs rounded border px-2 py-0.5 text-muted-foreground">{type.icon || "icon"}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-xs text-muted-foreground line-clamp-1">
+                            {type.description || "No description"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className="text-sm font-medium">{getObjectCountByType(type.id)}</span>
+                        </TableCell>
+                        <TableCell>
+                          {type.isSystem ? (
+                            <Badge variant="secondary">System</Badge>
+                          ) : (
+                            <Badge variant="outline">Custom</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openTypeObjects(type.id)}
+                              data-testid={`button-open-type-objects-${type.id}`}
+                            >
+                              Open
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEditTypeForm(type)}
+                              data-testid={`button-edit-object-type-${type.id}`}
+                            >
+                              <Edit className="h-3.5 w-3.5 text-blue-600" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (type.isSystem) {
+                                  toast({
+                                    title: "System type is locked",
+                                    description: "System object types cannot be deleted.",
+                                    variant: "destructive",
+                                  });
+                                  return;
+                                }
+                                fetchDeleteImpactMutation.mutate(type.id);
+                              }}
+                              disabled={fetchDeleteImpactMutation.isPending}
+                              data-testid={`button-delete-object-type-${type.id}`}
+                            >
+                              <Trash2 className={`h-3.5 w-3.5 ${type.isSystem ? "text-red-300" : "text-red-600"}`} />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>
